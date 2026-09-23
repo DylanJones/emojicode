@@ -22,68 +22,68 @@ namespace EmojicodeCompiler {
 RunTimeHelper::RunTimeHelper(CodeGenerator *generator) : generator_(generator) {}
 
 void RunTimeHelper::declareRunTime() {
-    alloc_ = declareRunTimeFunction("ejcAlloc", llvm::Type::getInt8PtrTy(generator_->context()),
+    alloc_ = declareRunTimeFunction("ejcAlloc", generator_->typeHelper().pointer(),
                                     llvm::Type::getInt64Ty(generator_->context()));
-    alloc_->addAttribute(0, llvm::Attribute::NonNull);
-    alloc_->addFnAttr(llvm::Attribute::getWithAllocSizeArgs(generator_->context(), 0, llvm::Optional<unsigned>()));
-    alloc_->addAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::NoAlias);
+    alloc_->addRetAttr(llvm::Attribute::NonNull);
+    alloc_->addFnAttr(llvm::Attribute::getWithAllocSizeArgs(generator_->context(), 0, std::nullopt));
+    alloc_->addRetAttr(llvm::Attribute::NoAlias);
 
     panic_ = declareRunTimeFunction("ejcPanic", llvm::Type::getVoidTy(generator_->context()),
-                                    llvm::Type::getInt8PtrTy(generator_->context()));
+                                    generator_->typeHelper().pointer());
     panic_->addFnAttr(llvm::Attribute::NoReturn);
     panic_->addFnAttr(llvm::Attribute::Cold);  // A program should panic rarely.
 
     inheritsFrom_ = declareRunTimeFunction("ejcInheritsFrom", llvm::Type::getInt1Ty(generator_->context()), {
-        generator_->typeHelper().classInfo()->getPointerTo(), generator_->typeHelper().classInfo()->getPointerTo()
+        generator_->typeHelper().pointer(), generator_->typeHelper().pointer()
     });
-    inheritsFrom_->addFnAttr(llvm::Attribute::ReadOnly);
+    inheritsFrom_->setOnlyReadsMemory();
     inheritsFrom_->addFnAttr(llvm::Attribute::Speculatable);
     inheritsFrom_->addParamAttr(0, llvm::Attribute::NonNull);
     inheritsFrom_->addParamAttr(1, llvm::Attribute::NonNull);
 
     findProtocolConformance_ = declareRunTimeFunction("ejcFindProtocolConformance",
-                                                      generator_->typeHelper().protocolConformance()->getPointerTo(), {
-        generator_->typeHelper().protocolConformanceEntry()->getPointerTo(),
-        generator_->typeHelper().runTimeTypeInfo()->getPointerTo()
+                                                      generator_->typeHelper().pointer(), {
+        generator_->typeHelper().pointer(),
+        generator_->typeHelper().pointer()
     });
-    findProtocolConformance_->addFnAttr(llvm::Attribute::ReadOnly);
+    findProtocolConformance_->setOnlyReadsMemory();
     findProtocolConformance_->addFnAttr(llvm::Attribute::Speculatable);
     findProtocolConformance_->addParamAttr(0, llvm::Attribute::NonNull);
     findProtocolConformance_->addParamAttr(1, llvm::Attribute::NonNull);
 
     checkGenericArgs_ = declareRunTimeFunction("ejcCheckGenericArgs", llvm::Type::getInt1Ty(generator_->context()), {
-        generator_->typeHelper().typeDescription()->getPointerTo(),
-        generator_->typeHelper().typeDescription()->getPointerTo(),
+        generator_->typeHelper().pointer(),
+        generator_->typeHelper().pointer(),
         llvm::Type::getInt16Ty(generator_->context()),
         llvm::Type::getInt16Ty(generator_->context())
     });
     checkGenericArgs_->removeFnAttr(llvm::Attribute::NoRecurse);
-    checkGenericArgs_->addFnAttr(llvm::Attribute::ReadOnly);
+    checkGenericArgs_->setOnlyReadsMemory();
     checkGenericArgs_->addFnAttr(llvm::Attribute::Speculatable);
     checkGenericArgs_->addParamAttr(0, llvm::Attribute::NonNull);
     checkGenericArgs_->addParamAttr(1, llvm::Attribute::NonNull);
 
     typeDescriptionLength_ = declareRunTimeFunction("ejcTypeDescriptionLength",
                                                    llvm::Type::getInt64Ty(generator_->context()),
-                                                   generator_->typeHelper().typeDescription()->getPointerTo());
-    typeDescriptionLength_->addFnAttr(llvm::Attribute::ReadOnly);
+                                                   generator_->typeHelper().pointer());
+    typeDescriptionLength_->setOnlyReadsMemory();
     typeDescriptionLength_->addFnAttr(llvm::Attribute::Speculatable);
     typeDescriptionLength_->addParamAttr(0, llvm::Attribute::NonNull);
 
     indexTypeDescription_ = declareRunTimeFunction("ejcIndexTypeDescription",
-                                                    generator_->typeHelper().typeDescription()->getPointerTo(),
-                                                    { generator_->typeHelper().typeDescription()->getPointerTo(),
+                                                    generator_->typeHelper().pointer(),
+                                                    { generator_->typeHelper().pointer(),
                                                       llvm::Type::getInt64Ty(generator_->context()) });
-    indexTypeDescription_->addFnAttr(llvm::Attribute::ReadOnly);
+    indexTypeDescription_->setOnlyReadsMemory();
     indexTypeDescription_->addFnAttr(llvm::Attribute::Speculatable);
     indexTypeDescription_->addParamAttr(0, llvm::Attribute::NonNull);
 
     retain_ = declareMemoryRunTimeFunction("ejcRetain");
     retainMemory_ = declareMemoryRunTimeFunction("ejcRetainMemory");
     releaseMemory_ = declareMemoryRunTimeFunction("ejcReleaseMemory");
-    retain_->addFnAttr(llvm::Attribute::InaccessibleMemOrArgMemOnly);
-    retainMemory_->addFnAttr(llvm::Attribute::InaccessibleMemOrArgMemOnly);
-    releaseMemory_->addFnAttr(llvm::Attribute::InaccessibleMemOrArgMemOnly);
+    retain_->setOnlyAccessesInaccessibleMemOrArgMem();
+    retainMemory_->setOnlyAccessesInaccessibleMemOrArgMem();
+    releaseMemory_->setOnlyAccessesInaccessibleMemOrArgMem();
 
     /// All of these call deinitializers and we cannot make any predictions about their memory usage
     release_ = declareMemoryRunTimeFunction("ejcRelease");
@@ -92,7 +92,7 @@ void RunTimeHelper::declareRunTime() {
     releaseLocal_ = declareMemoryRunTimeFunction("ejcReleaseLocal");
 
     isOnlyReference_ = declareRunTimeFunction("ejcIsOnlyReference", llvm::Type::getInt1Ty(generator_->context()),
-                                     llvm::Type::getInt8PtrTy(generator_->context()));
+                                     generator_->typeHelper().pointer());
     isOnlyReference_->addParamAttr(0, llvm::Attribute::NonNull);
     isOnlyReference_->addParamAttr(0, llvm::Attribute::NoCapture);
 
@@ -111,15 +111,15 @@ void RunTimeHelper::declareRunTime() {
     buildRetainRelease(Type(Type::noReturn(), {}, Type::noReturn()), "callable.boxRetain", "callable.boxRelease",
                        boxInfoCallables_);
 
-    malloc_ = declareRunTimeFunction("malloc", llvm::Type::getInt8PtrTy(generator_->context()),
+    malloc_ = declareRunTimeFunction("malloc", generator_->typeHelper().pointer(),
                                     llvm::Type::getInt64Ty(generator_->context()));
     malloc_->removeFnAttr(llvm::Attribute::NoRecurse);
-    malloc_->addAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull);
-    malloc_->addFnAttr(llvm::Attribute::getWithAllocSizeArgs(generator_->context(), 0, llvm::Optional<unsigned>()));
-    malloc_->addAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::NoAlias);
+    malloc_->addRetAttr(llvm::Attribute::NonNull);
+    malloc_->addFnAttr(llvm::Attribute::getWithAllocSizeArgs(generator_->context(), 0, std::nullopt));
+    malloc_->addRetAttr(llvm::Attribute::NoAlias);
 
     free_ = declareRunTimeFunction("free", llvm::Type::getVoidTy(generator_->context()),
-                                   llvm::Type::getInt8PtrTy(generator_->context()));
+                                   generator_->typeHelper().pointer());
     free_->removeFnAttr(llvm::Attribute::NoRecurse);
     free_->addParamAttr(0, llvm::Attribute::NonNull);
 }
@@ -135,7 +135,7 @@ llvm::Function* RunTimeHelper::declareRunTimeFunction(const char *name, llvm::Ty
 
 llvm::Function* RunTimeHelper::declareMemoryRunTimeFunction(const char *name) {
     auto fn = declareRunTimeFunction(name, llvm::Type::getVoidTy(generator_->context()),
-                                     llvm::Type::getInt8PtrTy(generator_->context()));
+                                     generator_->typeHelper().pointer());
     fn->addParamAttr(0, llvm::Attribute::NonNull);
     fn->addParamAttr(0, llvm::Attribute::NoCapture);
     return fn;
@@ -170,7 +170,7 @@ std::pair<llvm::Function*, llvm::Function*> RunTimeHelper::buildRetainRelease(co
     boxInfo->setInitializer(llvm::ConstantStruct::get(generator_->typeHelper().boxInfo(), {
         llvm::ConstantAggregateZero::get(generator_->typeHelper().runTimeTypeInfo()),
         retain, release,
-        llvm::ConstantPointerNull::get(generator_->typeHelper().protocolConformanceEntry()->getPointerTo())
+        llvm::ConstantPointerNull::get(generator_->typeHelper().pointer())
     }));
     boxInfo->setLinkage(llvm::GlobalValue::LinkageTypes::LinkOnceAnyLinkage);
     return {retain, release};

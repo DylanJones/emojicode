@@ -9,10 +9,6 @@
 
 namespace EmojicodeCompiler {
 
-char ConstantReferenceCountingPass::id = 0;
-char LocalReferenceCountingPass::id = 0;
-char RedundantReferenceCountingPass::id = 0;
-
 bool ReferenceCountingPass::runOnFunction(llvm::Function &function) {
     modified_ = false;
     for (auto &block : function) {
@@ -47,12 +43,7 @@ bool ReferenceCountingPass::isReleaseFunction(llvm::Function *function) {
 }
 
 void LocalReferenceCountingPass::transformMemoryInst(llvm::CallInst *callInst) {
-    auto operand = callInst->getArgOperand(0);
-
-    auto bitcast = llvm::dyn_cast<llvm::BitCastInst>(operand);
-    if (bitcast == nullptr) return;
-
-    auto initCall = llvm::dyn_cast<llvm::CallInst>(bitcast->getOperand(0));
+    auto initCall = llvm::dyn_cast<llvm::CallInst>(callInst->getArgOperand(0)->stripPointerCasts());
 
     if (initCall == nullptr || initCall->getCalledFunction() == nullptr ||
         initCall->getCalledFunction()->arg_size() == 0 ||
@@ -76,8 +67,9 @@ void LocalReferenceCountingPass::transformMemoryInst(llvm::CallInst *callInst) {
     }
     else if (callInst->getCalledFunction() == runTime_->retain()) {
         llvm::IRBuilder<> builder(callInst);
-        auto count = builder.CreateConstInBoundsGEP2_32(alloca->getType()->getElementType(), alloca, 0, 0);
-        auto store = builder.CreateStore(builder.CreateAdd(builder.getInt64(1), builder.CreateLoad(count)), count);
+        auto count = builder.CreateConstInBoundsGEP2_32(alloca->getAllocatedType(), alloca, 0, 0);
+        auto countValue = builder.CreateLoad(builder.getInt64Ty(), count);
+        auto store = builder.CreateStore(builder.CreateAdd(builder.getInt64(1), countValue), count);
         callInst->replaceAllUsesWith(store);
         modified_ = true;
     }

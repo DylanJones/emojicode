@@ -1,4 +1,4 @@
-# Emojicode [![Build Status](https://travis-ci.org/emojicode/emojicode.svg?branch=master)](https://travis-ci.org/emojicode/emojicode) [![Join the chat at https://gitter.im/emojicode/emojicode][image-2]][2]
+# Emojicode [![CI](https://github.com/emojicode/emojicode/actions/workflows/ci.yml/badge.svg)](https://github.com/emojicode/emojicode/actions/workflows/ci.yml) [![Join the chat at https://gitter.im/emojicode/emojicode][image-2]][2]
 
 Emojicode is an open source, high-level, multi-paradigm
 programming language consisting of emojis. It features Object-Orientation, Optionals, Generics and Closures.
@@ -15,10 +15,16 @@ We highly recommend to follow Emojicode’s Twitter account [@Real\_Emojicode][6
 
 Prerequisites (versions are recommendations):
 
-- clang and clang++ 6.0.1 or gcc and g++ 7.2
-- CMake 3.5.1+ and (preferably) Ninja
-- LLVM 7
-- Python 3.5.2+ for testing
+- A C++17 compiler, e.g. clang 18+ or gcc 13+
+- CMake 3.20+ and (preferably) Ninja
+- LLVM 18 or newer (tested with LLVM 18 and 20)
+- Python 3.8+ for testing
+
+On Ubuntu 24.04 these can be installed with:
+
+```sh
+sudo apt install clang-20 llvm-20-dev cmake ninja-build python3 rsync zlib1g-dev libzstd-dev
+```
 
 Steps:
 
@@ -37,6 +43,9 @@ Steps:
    cd build
    cmake .. -GNinja
    ```
+
+   If CMake does not pick up the right LLVM version, point it to LLVM’s CMake
+   directory, e.g. `-DLLVM_DIR=/usr/lib/llvm-20/lib/cmake/llvm`.
 
    You can of course also run CMake in another directory or use another build
    system than Ninja. Refer to the CMake documentation for more information.
@@ -71,7 +80,7 @@ Steps:
 
 ### 🐋 Building using Docker
 
-A `Dockerfile` is available for building in a Ubuntu `18.04` environment.
+A `Dockerfile` is available for building in a Ubuntu `24.04` environment.
 
 Steps:
 

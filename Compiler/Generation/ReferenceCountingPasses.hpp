@@ -9,14 +9,20 @@
 #define ReferenceCountingPasses_hpp
 
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/PassManager.h>
 #include "RunTimeHelper.hpp"
 #include <map>
 
 namespace EmojicodeCompiler {
 
-class ReferenceCountingPass : public llvm::FunctionPass {
+class ReferenceCountingPass {
 public:
-    ReferenceCountingPass(RunTimeHelper *runTime, char &id) : FunctionPass(id), runTime_(runTime) {}
+    explicit ReferenceCountingPass(RunTimeHelper *runTime) : runTime_(runTime) {}
+    virtual ~ReferenceCountingPass() = default;
+
+    llvm::PreservedAnalyses run(llvm::Function &function, llvm::FunctionAnalysisManager &) {
+        return runOnFunction(function) ? llvm::PreservedAnalyses::none() : llvm::PreservedAnalyses::all();
+    }
 protected:
     RunTimeHelper *runTime_;
     std::vector<llvm::Instruction*> toBeDeleted_;
@@ -25,7 +31,7 @@ protected:
     /// Called by this class’s implementation of runOnFunction() for every ejcRetain/Release family call.
     virtual void transformMemoryInst(llvm::CallInst *callInst) {}
 
-    bool runOnFunction(llvm::Function &function) override;
+    virtual bool runOnFunction(llvm::Function &function);
 
     /// Calls eraseFromParent() on all instructions in toBeDeleted_ and clears it.
     void deleteInstructions();
@@ -36,22 +42,20 @@ protected:
 };
 
 /// Detects calls to the ejcRetain/Relase family with constant expresssions as argument and removes them.
-class ConstantReferenceCountingPass : public ReferenceCountingPass {
+class ConstantReferenceCountingPass : public ReferenceCountingPass,
+    public llvm::PassInfoMixin<ConstantReferenceCountingPass> {
 public:
-    static char id;
-
-    ConstantReferenceCountingPass(RunTimeHelper *runTime) : ReferenceCountingPass(runTime, id) {}
+    explicit ConstantReferenceCountingPass(RunTimeHelper *runTime) : ReferenceCountingPass(runTime) {}
 private:
     void transformMemoryInst(llvm::CallInst *callInst) override;
 };
 
 /// This pass finds calls to the ejcRetain/Relase family where the argument is certainly stack allocated and replaces
 /// the calls with either ejcReleaseLocal or code to directly increment the counter.
-class LocalReferenceCountingPass : public ReferenceCountingPass {
+class LocalReferenceCountingPass : public ReferenceCountingPass,
+    public llvm::PassInfoMixin<LocalReferenceCountingPass> {
 public:
-    static char id;
-
-    LocalReferenceCountingPass(RunTimeHelper *runTime) : ReferenceCountingPass(runTime, id) {}
+    explicit LocalReferenceCountingPass(RunTimeHelper *runTime) : ReferenceCountingPass(runTime) {}
 private:
     void transformMemoryInst(llvm::CallInst *callInst) override;
 };
@@ -66,11 +70,10 @@ private:
 /// call void @ejcRelease(i8* %18)  ; will be removed
 /// ret %_.class_1f41f* %1
 /// ```
-class RedundantReferenceCountingPass : public ReferenceCountingPass {
+class RedundantReferenceCountingPass : public ReferenceCountingPass,
+    public llvm::PassInfoMixin<RedundantReferenceCountingPass> {
 public:
-    static char id;
-
-    RedundantReferenceCountingPass(RunTimeHelper *runTime) : ReferenceCountingPass(runTime, id) {}
+    explicit RedundantReferenceCountingPass(RunTimeHelper *runTime) : ReferenceCountingPass(runTime) {}
 private:
     void transformBlock(llvm::BasicBlock &block);
     bool findCounterpart(llvm::CallInst *release, std::map<llvm::Value*, std::vector<llvm::CallInst*>> &retains);

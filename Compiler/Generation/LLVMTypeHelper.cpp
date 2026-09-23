@@ -40,65 +40,62 @@ LLVMTypeHelper::LLVMTypeHelper(llvm::LLVMContext &context, CodeGenerator *codeGe
     typeDescription_->setBody({
         // Pointer to the generic type info of the described type.
         // The address itself is used to determine whether to types are equal!
-        runTimeTypeInfo_->getPointerTo(),
+        pointer(),
         llvm::Type::getInt1Ty(context_)  // optional
     });
 
     boxInfoType_ = llvm::StructType::create(context_, "boxInfo");
     box_ = llvm::StructType::create(context_, "box");
 
-    boxRetainRelease_ = llvm::FunctionType::get(llvm::Type::getVoidTy(context_), box()->getPointerTo(), false);
+    boxRetainRelease_ = llvm::FunctionType::get(llvm::Type::getVoidTy(context_), pointer(), false);
 
     protocolsTable_ = llvm::StructType::create({
         llvm::Type::getInt1Ty(context_),  // whether the boxed value itself is the callee (i.e. value type) or not
-        llvm::Type::getInt8PtrTy(context_)->getPointerTo(),
-        boxInfoType_->getPointerTo(),
-        boxRetainRelease_->getPointerTo(), boxRetainRelease_->getPointerTo()
+        pointer(),  // dispatch table
+        pointer(),  // box info
+        pointer(), pointer()  // box retain and release
     }, "protocolConformance");
-    protocolConformanceEntry_ = llvm::StructType::create({
-        llvm::Type::getInt1PtrTy(context_), protocolsTable_->getPointerTo() }, "protocolConformanceEntry");
+    protocolConformanceEntry_ = llvm::StructType::create({ pointer(), pointer() }, "protocolConformanceEntry");
 
     boxInfoType_->setBody({
         runTimeTypeInfo_,  // must be first so that we can cast back and forth between boxInfo and runTimeTypeInfo
-        boxRetainRelease_->getPointerTo(),
-        boxRetainRelease_->getPointerTo(),
-        protocolConformanceEntry_->getPointerTo()
+        pointer(),  // box retain
+        pointer(),  // box release
+        pointer()  // protocol conformance entries
     });
 
     box_->setBody({
-        boxInfoType_->getPointerTo(), llvm::ArrayType::get(llvm::Type::getInt8Ty(context_), kBoxSize),
+        pointer(), llvm::ArrayType::get(llvm::Type::getInt8Ty(context_), kBoxSize),
     });
 
     classInfoType_ = llvm::StructType::create(context_, "classInfo");
     classInfoType_->setBody({
         runTimeTypeInfo_,  // must be first so that we can cast back and forth between classInfo and runTimeTypeInfo
-        llvm::Type::getInt8PtrTy(context_)->getPointerTo(),
-        protocolConformanceEntry_->getPointerTo(),
-        classInfoType_->getPointerTo(),
-        llvm::Type::getInt8PtrTy(context_)  // destructor pointer
+        pointer(),  // dispatch table
+        pointer(),  // protocol conformance entries
+        pointer(),  // superclass class info
+        pointer()  // destructor pointer
     });
 
     callable_ = llvm::StructType::create({
-        llvm::Type::getInt8PtrTy(context_),  // function pointer
-        llvm::Type::getInt8PtrTy(context_)  // capture pointer
+        pointer(),  // function pointer
+        pointer()  // capture pointer
     }, "callable");
 
-    someobjectPtr_ = llvm::StructType::create({
-        llvm::Type::getInt8PtrTy(context_),  // control block
-        classInfoType_->getPointerTo()
-    }, "someobject")->getPointerTo();
+    someobject_ = llvm::StructType::create({
+        pointer(),  // control block
+        pointer()  // class info
+    }, "someobject");
 
-    captureDeinit_ = llvm::FunctionType::get(llvm::Type::getVoidTy(context_),
-                                             llvm::Type::getInt8PtrTy(context_), false);
+    captureDeinit_ = llvm::FunctionType::get(llvm::Type::getVoidTy(context_), pointer(), false);
 
-    callableBoxCapture_ = llvm::StructType::get(llvm::Type::getInt8PtrTy(context_),
-                                                captureDeinit()->getPointerTo(), callable());
+    callableBoxCapture_ = llvm::StructType::get(pointer(), pointer(), callable());
 
     auto compiler = codeGenerator_->compiler();
     compiler->sInteger->createUnspecificReification().type = llvm::Type::getInt64Ty(context_);
     compiler->sReal->createUnspecificReification().type = llvm::Type::getDoubleTy(context_);
     compiler->sBoolean->createUnspecificReification().type = llvm::Type::getInt1Ty(context_);
-    compiler->sMemory->createUnspecificReification().type = llvm::Type::getInt8PtrTy(context_);
+    compiler->sMemory->createUnspecificReification().type = pointer();
     compiler->sByte->createUnspecificReification().type = llvm::Type::getInt8Ty(context_);
 
     tbaaRoot_ = mdBuilder_.createTBAARoot("something");
@@ -114,19 +111,19 @@ void LLVMTypeHelper::withReificationContext(ReificationContext context, std::fun
 }
 
 llvm::StructType* LLVMTypeHelper::llvmTypeForCapture(const Capture &capture, llvm::Type *thisType, bool escaping) {
-    std::vector<llvm::Type *> types { llvm::Type::getInt8PtrTy(context_), captureDeinit_->getPointerTo() };
+    std::vector<llvm::Type *> types { pointer(), pointer() };
     if (capture.capturesSelf()) {
         types.emplace_back(thisType);
     }
-    std::transform(capture.captures.begin(), capture.captures.end(), std::back_inserter(types),
-                   [this, escaping](auto &capture) {
-        return escaping ? llvmTypeFor(capture.type) : llvmTypeFor(capture.type)->getPointerTo();
+    std::transform(capture.variableTypes.begin(), capture.variableTypes.end(), std::back_inserter(types),
+                   [this, escaping](llvm::Type *type) -> llvm::Type* {
+        return escaping ? type : pointer();
     });
     return llvm::StructType::get(context_, types);
 }
 
 llvm::ArrayType* LLVMTypeHelper::multiprotocolConformance(const Type &type) {
-    return llvm::ArrayType::get(protocolConformance()->getPointerTo(), type.protocols().size());
+    return llvm::ArrayType::get(pointer(), type.protocols().size());
 }
 
 llvm::Type* LLVMTypeHelper::typeForFunction(const Type &type, Function *function) {
@@ -153,7 +150,7 @@ llvm::Type* LLVMTypeHelper::typeForFunction(const Type &type, Function *function
 llvm::FunctionType* LLVMTypeHelper::functionTypeFor(Function *function) {
     std::vector<llvm::Type *> args;
     if (function->isClosure()) {
-        args.emplace_back(llvm::Type::getInt8PtrTy(context_));
+        args.emplace_back(pointer());
     }
     else if (hasThisArgument(function)) {
         args.emplace_back(typeForFunction(function->typeContext().calleeType(), function));
@@ -166,13 +163,13 @@ llvm::FunctionType* LLVMTypeHelper::functionTypeFor(Function *function) {
         args.emplace_back(genericArgsStore(function->typeContext().calleeType()));
     }
     if (isTypeMethod(function) && function->owner()->storesGenericArgs()) {
-        args.emplace_back(typeDescription_->getPointerTo());
+        args.emplace_back(pointer());
     }
     if (!function->genericParameters().empty()) {
-        args.emplace_back(typeDescription_->getPointerTo());
+        args.emplace_back(pointer());
     }
     if (function->errorProne()) {
-        args.emplace_back(typeForFunction(function->errorType()->type(), function)->getPointerTo());
+        args.emplace_back(pointer());
     }
     llvm::Type *returnType;
     if (function->functionType() == FunctionType::ObjectInitializer) {
@@ -200,15 +197,30 @@ bool LLVMTypeHelper::isRemote(const Type &type) {
 
 llvm::Type* LLVMTypeHelper::genericArgsStore(const Type &calleeType) {
     if (calleeType.is<TypeType::ValueType>()) {
-        return managable(typeDescription_)->getPointerTo();
+        return pointer();
     }
-    return llvm::StructType::get(typeDescription_->getPointerTo(), llvm::Type::getInt1Ty(context_));
+    return llvm::StructType::get(pointer(), llvm::Type::getInt1Ty(context_));
 }
 
 llvm::Type* LLVMTypeHelper::llvmTypeFor(const Type &type) {
     auto llvmType = typeForOrdinaryType(type);
     assert(llvmType != nullptr);
-    return type.isReference() ? llvmType->getPointerTo() : llvmType;
+    return type.isReference() ? pointer() : llvmType;
+}
+
+llvm::Type* LLVMTypeHelper::llvmTypeForPointee(const Type &type) {
+    assert(isDereferenceable(type));
+    if (type.isReference()) {
+        return typeForOrdinaryType(type);
+    }
+    if (type.type() == TypeType::Someobject) {
+        return someobject_;
+    }
+    return llvmTypeForTypeDefinition(type);
+}
+
+llvm::PointerType* LLVMTypeHelper::pointer() const {
+    return llvm::PointerType::get(context_, 0);
 }
 
 llvm::Type* LLVMTypeHelper::typeForOrdinaryType(const Type &type) {
@@ -232,19 +244,19 @@ llvm::Type* LLVMTypeHelper::getSimpleType(const Type &type) {
             return callable_;
         case TypeType::TypeAsValue:
             if (type.typeOfTypeValue().type() == TypeType::Class) {
-                return classInfoType_->getPointerTo();
+                return pointer();
             }
             return llvm::StructType::get(context_);
         case TypeType::Enum:
             return llvm::Type::getInt64Ty(context_);
         case TypeType::Someobject:
-            return someobjectPtr_;
+            return pointer();
         case TypeType::NoReturn:
             return llvm::Type::getVoidTy(context_);
         case TypeType::ValueType:
             return llvmTypeForTypeDefinition(type);
         case TypeType::Class:
-            return llvmTypeForTypeDefinition(type)->getPointerTo();
+            return pointer();
         default:
             throw std::logic_error("No LLVM type could be established.");
     }
@@ -261,8 +273,8 @@ llvm::Type* LLVMTypeHelper::llvmTypeForTypeDefinition(const Type &type) {
 
     std::vector<llvm::Type *> types;
     if (type.is<TypeType::Class>()) {
-        types.emplace_back(llvm::Type::getInt8PtrTy(context_));
-        types.emplace_back(classInfoType_->getPointerTo());
+        types.emplace_back(pointer());
+        types.emplace_back(pointer());
     }
 
     if (type.typeDefinition()->storesGenericArgs()) {
@@ -278,7 +290,7 @@ llvm::Type* LLVMTypeHelper::llvmTypeForTypeDefinition(const Type &type) {
 }
 
 llvm::StructType* LLVMTypeHelper::managable(llvm::Type *type) const {
-    return llvm::StructType::get(context_, { llvm::Type::getInt8PtrTy(context_), type });
+    return llvm::StructType::get(context_, { pointer(), type });
 }
 
 llvm::MDNode* LLVMTypeHelper::tbaaNodeFor(const Type &type, bool classAsStruct) {

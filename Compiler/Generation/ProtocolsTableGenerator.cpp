@@ -72,7 +72,7 @@ llvm::GlobalVariable* ProtocolsTableGenerator::multiprotocol(const Type &multipr
         virtualTable.emplace_back(conformer.typeDefinition()->protocolTableFor(protocol.unboxed()));
     }
 
-    auto arrayType = llvm::ArrayType::get(generator_->typeHelper().protocolConformance()->getPointerTo(),
+    auto arrayType = llvm::ArrayType::get(generator_->typeHelper().pointer(),
                                           multiprotocol.protocols().size());
     auto array = llvm::ConstantArray::get(arrayType, virtualTable);
     auto var = new llvm::GlobalVariable(*generator_->module(), arrayType, true,
@@ -86,7 +86,7 @@ llvm::GlobalVariable* ProtocolsTableGenerator::createDispatchTable(const Type &t
                                                                    const ProtocolConformance &conformance,
                                                                    llvm::Constant *boxInfo) {
     auto &list = conformance.type->type().protocol()->methods().list();
-    auto arrayType = llvm::ArrayType::get(llvm::Type::getInt8PtrTy(generator_->context()), list.size());
+    auto arrayType = llvm::ArrayType::get(generator_->typeHelper().pointer(), list.size());
 
     std::vector<llvm::Constant *> virtualTable;
     virtualTable.resize(list.size());
@@ -109,7 +109,9 @@ llvm::GlobalVariable* ProtocolsTableGenerator::createDispatchTable(const Type &t
                                        (type.type() == TypeType::Class ||
                                         generator_->typeHelper().isRemote(type)) ? 1 : 0);
     auto conformanceStruct = llvm::ConstantStruct::get(generator_->typeHelper().protocolConformance(),
-                                                 {load, avGep, llvm::ConstantExpr::getBitCast(boxInfo, generator_->typeHelper().boxInfo()->getPointerTo()), type.typeDefinition()->boxRetainRelease().first, type.typeDefinition()->boxRetainRelease().second });
+                                                       { load, avGep, boxInfo,
+                                                         type.typeDefinition()->boxRetainRelease().first,
+                                                         type.typeDefinition()->boxRetainRelease().second });
     return getConformanceVariable(type, conformance.type->type(), conformanceStruct);
 }
 

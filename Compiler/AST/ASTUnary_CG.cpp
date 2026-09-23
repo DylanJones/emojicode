@@ -37,7 +37,7 @@ Value* ASTUnwrap::generate(FunctionCodeGenerator *fg) const {
     fg->createIfElseBranchCond(createExpectFalse(fg, hasNoValue), [this, fg]() {
         std::stringstream str;
         str << "Unwrapped an optional that contained no value. (" << position().toRuntimeString() << ")";
-        auto string = fg->builder().CreateGlobalStringPtr(str.str());
+        auto string = fg->builder().CreateGlobalString(str.str());
         fg->builder().CreateCall(fg->generator()->runTime().panic(), string);
         fg->builder().CreateUnreachable();
         return false;
@@ -53,7 +53,8 @@ Value* ASTUnwrap::generateErrorUnwrap(FunctionCodeGenerator *fg) const {
     auto value = expr_->generate(fg);
     fg->createIfElseBranchCond(createExpectFalse(fg, isError(fg, errorDest)), [&]() {
         auto string = std::make_shared<ASTCGUTF8Literal>(position().toRuntimeString(), position());
-        CallCodeGenerator(fg, CallType::StaticDispatch).generate(fg->builder().CreateLoad(errorDest),
+        auto error = fg->builder().CreateLoad(fg->typeHelper().pointer(), errorDest);
+        CallCodeGenerator(fg, CallType::StaticDispatch).generate(error,
                                                                  Type(fg->compiler()->sError),
                                                                  ASTArguments(position(), { string }),
                                                                  method_, nullptr);

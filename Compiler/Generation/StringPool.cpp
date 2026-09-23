@@ -40,14 +40,12 @@ llvm::Value* StringPool::addToPool(const std::string &string) {
     auto compiler = codeGenerator_->compiler();
 
     auto stringType = Type(compiler->sString);
-    auto stringLlvm = llvm::dyn_cast<llvm::StructType>(llvm::dyn_cast<llvm::PointerType>(codeGenerator_->typeHelper().llvmTypeFor(stringType))->getElementType());
-
-    auto varCast = llvm::ConstantExpr::getBitCast(var, llvm::Type::getInt8PtrTy(codeGenerator_->context()));
+    auto stringLlvm = llvm::cast<llvm::StructType>(codeGenerator_->typeHelper().llvmTypeForTypeDefinition(stringType));
 
     auto stringStruct = llvm::ConstantStruct::get(stringLlvm, {
         codeGenerator_->runTime().ignoreBlockPtr(),
         compiler->sString->classInfo(),
-        varCast,
+        var,
         llvm::ConstantInt::get(llvm::Type::getInt64Ty(codeGenerator_->context()), string.size())
     });
 

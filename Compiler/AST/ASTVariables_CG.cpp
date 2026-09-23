@@ -24,13 +24,13 @@ Value* AccessesAnyVariable::managementValue(FunctionCodeGenerator *fg) const {
     if (inInstanceScope()) {
         llvm::Value *objectPointer = instanceVariablePointer(fg);
         if (!fg->isManagedByReference(variableType_)) {
-            objectPointer = fg->builder().CreateLoad(objectPointer);
+            objectPointer = fg->builder().CreateLoad(fg->instanceVariableType(id()), objectPointer);
         }
         return objectPointer;
     }
 
-    auto var = fg->scoper().getVariable(id());
-    return fg->isManagedByReference(variableType_) ? var : fg->builder().CreateLoad(var);
+    auto &var = fg->scoper().getVariable(id());
+    return fg->isManagedByReference(variableType_) ? var.ptr : fg->builder().CreateLoad(var.type, var.ptr);
 }
 
 void AccessesAnyVariable::release(FunctionCodeGenerator *fg) const {
@@ -51,7 +51,7 @@ Value* ASTGetVariable::generate(FunctionCodeGenerator *fg) const {
         if (reference_) {
             return ptr;
         }
-        auto val = fg->builder().CreateLoad(ptr);
+        auto val = fg->builder().CreateLoad(fg->instanceVariableType(id()), ptr);
         setTbaaMetadata(fg, val);
         if (expressionType().isManaged()) {
             fg->retain(fg->isManagedByReference(expressionType()) ? ptr : val, expressionType());
@@ -64,13 +64,13 @@ Value* ASTGetVariable::generate(FunctionCodeGenerator *fg) const {
 
     auto &localVariable = fg->scoper().getVariable(id());
     if (reference_) {
-        return localVariable;
+        return localVariable.ptr;
     }
 
-    auto val = fg->builder().CreateLoad(localVariable);
+    auto val = fg->builder().CreateLoad(localVariable.type, localVariable.ptr);
     setTbaaMetadata(fg, val);
     if (!returned_ && !isTemporary() && expressionType().isManaged()) {
-        fg->retain(fg->isManagedByReference(expressionType()) ? localVariable : val, expressionType());
+        fg->retain(fg->isManagedByReference(expressionType()) ? localVariable.ptr : val, expressionType());
         handleResult(fg, val);  // See above
     }
     return val;
@@ -90,8 +90,9 @@ void ASTVariableInit::generate(FunctionCodeGenerator *fg) const {
 
 llvm::Value* ASTVariableInit::variablePointer(EmojicodeCompiler::FunctionCodeGenerator *fg) const {
     if (declare_) {
-        auto varPtr = fg->createEntryAlloca(fg->typeHelper().llvmTypeFor(expr_->expressionType()), utf8(name()));
-        fg->scoper().getVariable(id()) = varPtr;
+        auto type = fg->typeHelper().llvmTypeFor(expr_->expressionType());
+        auto varPtr = fg->createEntryAlloca(type, utf8(name()));
+        fg->scoper().getVariable(id()) = CGVariable(varPtr, type);
         return varPtr;
     }
 
@@ -99,13 +100,13 @@ llvm::Value* ASTVariableInit::variablePointer(EmojicodeCompiler::FunctionCodeGen
         return instanceVariablePointer(fg);
     }
 
-    return fg->scoper().getVariable(id());
+    return fg->scoper().getVariable(id()).ptr;
 }
 
 void ASTVariableDeclaration::generate(FunctionCodeGenerator *fg) const {
     auto type = fg->typeHelper().llvmTypeFor(type_->type());
     auto alloca = fg->createEntryAlloca(type, utf8(varName_));
-    fg->scoper().getVariable(id_) = alloca;
+    fg->scoper().getVariable(id_) = CGVariable(alloca, type);
 
     if (type_->type().type() == TypeType::Optional) {
         fg->builder().CreateStore(fg->buildSimpleOptionalWithoutValue(type_->type()), alloca);
@@ -128,14 +129,13 @@ void ASTConstantVariable::generateAssignment(FunctionCodeGenerator *fg) const {
 Value* ASTIsOnlyReference::generate(FunctionCodeGenerator *fg) const {
     Value *val;
     if (inInstanceScope()) {
-        val = fg->builder().CreateLoad(instanceVariablePointer(fg));
+        val = fg->builder().CreateLoad(fg->instanceVariableType(id()), instanceVariablePointer(fg));
     }
     else {
         auto &localVariable = fg->scoper().getVariable(id());
-        val = fg->builder().CreateLoad(localVariable);
+        val = fg->builder().CreateLoad(localVariable.type, localVariable.ptr);
     }
-    auto ptr = fg->builder().CreateBitCast(val, llvm::Type::getInt8PtrTy(fg->ctx()));
-    return fg->builder().CreateCall(fg->generator()->runTime().isOnlyReference(), ptr);
+    return fg->builder().CreateCall(fg->generator()->runTime().isOnlyReference(), val);
 }
 
 }  // namespace EmojicodeCompiler

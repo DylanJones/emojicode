@@ -17,6 +17,8 @@
 
 namespace llvm {
 class Function;
+class StructType;
+class Type;
 }  // namespace llvm
 
 namespace EmojicodeCompiler {
@@ -27,7 +29,9 @@ struct Capture {
     std::vector<VariableCapture> captures;
     /// The type of the captured type context. If this is TypeType::NoReturn, the type context is not captured.
     Type self = Type::noReturn();
-    llvm::Type *type = nullptr;
+    llvm::StructType *type = nullptr;
+    /// The LLVM types of the captured variables as they are stored in the capturing function.
+    std::vector<llvm::Type *> variableTypes;
 
     bool capturesSelf() const { return self.type() != TypeType::NoReturn; }
 };

@@ -43,6 +43,14 @@ public:
     /// @returns An LLVM type corresponding to the provided Type.
     /// @throws std::logic_error if no type can be established. This will normally not happen.
     llvm::Type* llvmTypeFor(const Type &type);
+    /// @returns The LLVM type of the memory a value of the provided type points to.
+    /// @pre isDereferenceable() must return true for @c type.
+    llvm::Type* llvmTypeForPointee(const Type &type);
+    /// @returns The LLVM type of the struct that represents an instance of the type definition of the provided type.
+    /// For classes this is the type of the object to which values of the class type point.
+    llvm::Type* llvmTypeForTypeDefinition(const Type &type);
+    /// @returns The (opaque) LLVM pointer type.
+    llvm::PointerType* pointer() const;
     /// @returns The LLVM type representing boxes.
     llvm::Type* box() const;
     /// @returns An LLVM function type (a signature) matching the provided Function.
@@ -62,11 +70,13 @@ public:
     /// has a superclass.
     llvm::StructType* classInfo() const { return classInfoType_; }
     llvm::StructType* protocolConformance() const { return protocolsTable_; }
-    llvm::PointerType* someobject() const { return someobjectPtr_; }
+    /// The layout shared by all objects: A control block pointer followed by a pointer to the class info.
+    llvm::StructType* someobject() const { return someobject_; }
     llvm::FunctionType* boxRetainRelease() const { return boxRetainRelease_; }
     llvm::FunctionType* captureDeinit() const { return captureDeinit_; }
     llvm::StructType* protocolConformanceEntry() const { return protocolConformanceEntry_; }
 
+    /// @param capture The capture. Its variableTypes must be set.
     llvm::StructType* llvmTypeForCapture(const Capture &capture, llvm::Type *thisType, bool escaping);
     llvm::ArrayType* multiprotocolConformance(const Type &type);
 
@@ -88,6 +98,9 @@ public:
     /// have a control block pointer.
     llvm::StructType* managable(llvm::Type *type) const;
 
+    /// @returns The type in which the generic arguments are stored in an instance of @c calleeType.
+    llvm::Type* genericArgsStore(const Type &calleeType);
+
     void withReificationContext(ReificationContext context, std::function<void()> function);
 
     llvm::MDBuilder* mdBuilder() { return &mdBuilder_; }
@@ -104,7 +117,7 @@ private:
     llvm::StructType *callable_;
     llvm::StructType *typeDescription_;
     llvm::StructType *runTimeTypeInfo_;
-    llvm::PointerType *someobjectPtr_;
+    llvm::StructType *someobject_;
     llvm::FunctionType *boxRetainRelease_;
     llvm::FunctionType *captureDeinit_;
     llvm::StructType *protocolConformanceEntry_;
@@ -121,10 +134,6 @@ private:
     std::unique_ptr<ReificationContext> reifiContext_;
 
     llvm::Type *typeForOrdinaryType(const Type &type);
-
-    llvm::Type* llvmTypeForTypeDefinition(const Type &type);
-
-    llvm::Type* genericArgsStore(const Type &calleeType);
 };
 
 }  // namespace EmojicodeCompiler

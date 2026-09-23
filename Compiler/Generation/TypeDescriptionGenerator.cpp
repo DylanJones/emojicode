@@ -74,11 +74,12 @@ llvm::Value* TypeDescriptionGenerator::extractTypeDescriptionPtr() {
     if (fg_->calleeType().is<TypeType::TypeAsValue>()) {
         return fg_->genericArgsPtr();
     }
-    auto ptr = fg_->builder().CreateLoad(fg_->genericArgsPtr());
+    auto ptr = fg_->builder().CreateLoad(fg_->genericArgsType(), fg_->genericArgsPtr());
     if (fg_->calleeType().is<TypeType::Class>()) {
         return fg_->builder().CreateExtractValue(ptr, 0);
     }
-    return fg_->builder().CreateConstInBoundsGEP2_32(ptr->getType()->getPointerElementType(), ptr, 0, 1);
+    auto type = fg_->typeHelper().managable(fg_->typeHelper().typeDescription());
+    return fg_->builder().CreateConstInBoundsGEP2_32(type, ptr, 0, 1);
 }
 
 void TypeDescriptionGenerator::addDynamic(llvm::Value *gargs, size_t index) {
@@ -124,27 +125,27 @@ llvm::Value* TypeDescriptionGenerator::finish() {
     llvm::Value *current, *alloc;
     auto typeDesc = fg_->typeHelper().typeDescription();
     if (user_ == User::Function) {
-        stack_ = fg_->builder().CreateIntrinsic(llvm::Intrinsic::stacksave, {}, {});
+        stack_ = fg_->builder().CreateStackSave();
         current = alloc = fg_->builder().CreateAlloca(typeDesc, size);
     }
     else {
         auto allocSize = fg_->builder().CreateMul(fg_->sizeOf(typeDesc), size);
         if (user_ == User::Class) {
-            current = alloc = fg_->builder().CreateBitCast(fg_->builder().CreateCall(fg_->generator()->runTime().malloc(), allocSize), typeDesc->getPointerTo());
+            current = alloc = fg_->builder().CreateCall(fg_->generator()->runTime().malloc(), allocSize);
         }
         else {
-            auto size = fg_->builder().CreateAdd(fg_->sizeOf(llvm::Type::getInt8PtrTy(fg_->ctx())), allocSize);
-            auto allocUncasted = fg_->builder().CreateCall(fg_->generator()->runTime().alloc(), size);
+            auto size = fg_->builder().CreateAdd(fg_->sizeOf(fg_->typeHelper().pointer()), allocSize);
+            alloc = fg_->builder().CreateCall(fg_->generator()->runTime().alloc(), size);
             auto type = fg_->typeHelper().managable(fg_->typeHelper().typeDescription());
-            alloc = fg_->builder().CreateBitCast(allocUncasted, type->getPointerTo());
             current = fg_->builder().CreateConstInBoundsGEP2_32(type, alloc, 0, 1);
         }
     }
 
     for (auto &tdv : types_) {
         if (tdv.isCopy()) {
-            fg_->builder().CreateMemCpy(current, 0, tdv.from, 0, fg_->builder().CreateMul(fg_->sizeOf(typeDesc), tdv.size));
-            current = fg_->builder().CreateInBoundsGEP(current, tdv.size);
+            fg_->builder().CreateMemCpy(current, llvm::MaybeAlign(), tdv.from, llvm::MaybeAlign(),
+                                        fg_->builder().CreateMul(fg_->sizeOf(typeDesc), tdv.size));
+            current = fg_->builder().CreateInBoundsGEP(typeDesc, current, tdv.size);
         }
         else {
             fg_->builder().CreateStore(tdv.concrete, current);
@@ -152,7 +153,7 @@ llvm::Value* TypeDescriptionGenerator::finish() {
         }
     }
     if (user_ == User::Class) {
-        auto sct = llvm::ConstantStruct::getAnon({ llvm::UndefValue::get(typeDesc->getPointerTo()),
+        auto sct = llvm::ConstantStruct::getAnon({ llvm::UndefValue::get(fg_->typeHelper().pointer()),
             llvm::ConstantInt::getFalse(fg_->ctx()) });;
         return fg_->builder().CreateInsertValue(sct, alloc, { 0 });
     }
@@ -176,8 +177,7 @@ llvm::Value* TypeDescriptionGenerator::finishStatic() {
     var->setUnnamedAddr(llvm::GlobalVariable::UnnamedAddr::Global);
 
     if (user_ == User::ValueTypeOrValue) {
-        auto mng = fg_->typeHelper().managable(fg_->typeHelper().typeDescription())->getPointerTo();
-        return fg_->builder().CreateBitCast(var, mng);
+        return var;
     }
     auto gep = buildConstant00Gep(type, var, fg_->ctx());
     if (user_ == User::Class) {
@@ -189,7 +189,7 @@ llvm::Value* TypeDescriptionGenerator::finishStatic() {
 void TypeDescriptionGenerator::restoreStack() {
     assert(user_ == User::Function);
     if (stack_ != nullptr) {
-        fg_->builder().CreateIntrinsic(llvm::Intrinsic::stackrestore, {}, stack_);
+        fg_->builder().CreateStackRestore(stack_);
     }
 }
 

@@ -11,7 +11,6 @@
 
 #include "LLVMTypeHelper.hpp"
 #include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
 #include <memory>
 #include <string>

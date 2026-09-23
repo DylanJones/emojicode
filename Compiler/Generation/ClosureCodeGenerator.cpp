@@ -36,28 +36,27 @@ void ClosureCodeGenerator::declareArguments(llvm::Function *llvmFunction) {
 
 void ClosureCodeGenerator::loadCapturedVariables(Value *value) {
     if (thunk_) {
-        auto capture = builder().CreateBitCast(value, typeHelper().callableBoxCapture()->getPointerTo());
-        auto callable = builder().CreateConstInBoundsGEP2_32(typeHelper().callableBoxCapture(), capture, 0, 2);
-        thisValue_ = builder().CreateLoad(callable);
+        auto callable = builder().CreateConstInBoundsGEP2_32(typeHelper().callableBoxCapture(), value, 0, 2);
+        thisValue_ = builder().CreateLoad(typeHelper().callable(), callable);
         return;
     }
 
-    Value *captures = builder().CreateBitCast(value, capture_.type->getPointerTo());
+    auto loadCapture = [&](unsigned index) {
+        return builder().CreateLoad(capture_.type->getElementType(index),
+                                    builder().CreateConstInBoundsGEP2_32(capture_.type, value, 0, index));
+    };
 
-    size_t index = 2;
+    unsigned index = 2;
     if (capture_.capturesSelf()) {
-        thisValue_ = builder().CreateLoad(builder().CreateConstInBoundsGEP2_32(capture_.type, captures, 0, index++));
+        thisValue_ = loadCapture(index++);
     }
-    if (escaping_) {
-        for (auto &capture : capture_.captures) {
-            auto value = builder().CreateLoad(builder().CreateConstInBoundsGEP2_32(capture_.type, captures, 0, index++));
-            setVariable(capture.captureId, value);
+    for (size_t i = 0; i < capture_.captures.size(); i++) {
+        auto &capture = capture_.captures[i];
+        if (escaping_) {
+            setVariable(capture.captureId, loadCapture(index++));
         }
-    }
-    else {
-        for (auto &capture : capture_.captures) {
-            auto ptr = builder().CreateLoad(builder().CreateConstInBoundsGEP2_32(capture_.type, captures, 0, index++));
-            scoper().getVariable(capture.captureId) = ptr;
+        else {
+            scoper().getVariable(capture.captureId) = CGVariable(loadCapture(index++), capture_.variableTypes[i]);
         }
     }
 }
