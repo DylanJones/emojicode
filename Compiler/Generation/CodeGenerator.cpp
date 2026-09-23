@@ -22,17 +22,20 @@
 #include "Creator.hpp"
 #include "RunTimeTypeInfoFlags.hpp"
 #include <algorithm>
-#include <llvm/IR/IRPrintingPasses.h>
+#include <llvm/Config/llvm-config.h>
+#include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
+#include <llvm/MC/TargetRegistry.h>
+#include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/FileSystem.h>
-#include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
-#include <llvm/Transforms/IPO.h>
-#include <llvm/Transforms/Scalar.h>
-#include <llvm/Transforms/Utils.h>
+#include <llvm/TargetParser/Host.h>
+#include <llvm/TargetParser/Triple.h>
+#include <llvm/Transforms/IPO/StripDeadPrototypes.h>
+#include <llvm/Transforms/Utils/Mem2Reg.h>
 #include <vector>
 
 namespace EmojicodeCompiler {
@@ -40,8 +43,7 @@ namespace EmojicodeCompiler {
 CodeGenerator::CodeGenerator(Compiler *compiler, bool optimize)
 : compiler_(compiler), typeHelper_(context(), this),
   module_(std::make_unique<llvm::Module>(compiler->mainPackage()->name(), context())),
-  pool_(std::make_unique<StringPool>(this)), runTime_(std::make_unique<RunTimeHelper>(this)),
-  optimizationManager_(std::make_unique<OptimizationManager>(module_.get(), optimize, runTime_.get())) {
+  pool_(std::make_unique<StringPool>(this)), runTime_(std::make_unique<RunTimeHelper>(this)) {
     runTime_->declareRunTime();
 
     llvm::InitializeAllTargetInfos();
@@ -50,18 +52,27 @@ CodeGenerator::CodeGenerator(Compiler *compiler, bool optimize)
     llvm::InitializeAllAsmParsers();
     llvm::InitializeAllAsmPrinters();
 
-    auto targetTriple = llvm::sys::getDefaultTargetTriple();
+    auto targetTriple = llvm::Triple(llvm::sys::getDefaultTargetTriple());
     std::string error;
-    auto target = llvm::TargetRegistry::lookupTarget(targetTriple, error);
+    auto target = llvm::TargetRegistry::lookupTarget(targetTriple.str(), error);
+    if (target == nullptr) {
+        throw std::domain_error("Could not find a target for " + targetTriple.str() + ": " + error);
+    }
 
     auto cpu = "generic";
     auto features = "";
 
     llvm::TargetOptions opt;
+#if LLVM_VERSION_MAJOR >= 21
     targetMachine_ = target->createTargetMachine(targetTriple, cpu, features, opt, llvm::Reloc::PIC_);
-
-    module()->setDataLayout(targetMachine_->createDataLayout());
     module()->setTargetTriple(targetTriple);
+#else
+    targetMachine_ = target->createTargetMachine(targetTriple.str(), cpu, features, opt, llvm::Reloc::PIC_);
+    module()->setTargetTriple(targetTriple.str());
+#endif
+    module()->setDataLayout(targetMachine_->createDataLayout());
+
+    optimizationManager_ = std::make_unique<OptimizationManager>(optimize, runTime_.get(), targetMachine_);
 }
 
 CodeGenerator::~CodeGenerator() = default;
@@ -111,24 +122,36 @@ void CodeGenerator::generate() {
 }
 
 void CodeGenerator::emit(bool ir, const std::string &outPath) {
-    llvm::legacy::PassManager pass;
-    pass.add(llvm::createVerifierPass(false));
-
     std::error_code errorCode;
-    llvm::raw_fd_ostream dest(outPath, errorCode, llvm::sys::fs::F_None);
+    llvm::raw_fd_ostream dest(outPath, errorCode, llvm::sys::fs::OF_None);
 
     if (ir) {
-        pass.add(llvm::createPromoteMemoryToRegisterPass());
-        pass.add(llvm::createStripDeadPrototypesPass());
-        pass.add(llvm::createPrintModulePass(dest));
+        llvm::LoopAnalysisManager lam;
+        llvm::FunctionAnalysisManager fam;
+        llvm::CGSCCAnalysisManager cgam;
+        llvm::ModuleAnalysisManager mam;
+        llvm::PassBuilder passBuilder(targetMachine_);
+        passBuilder.registerModuleAnalyses(mam);
+        passBuilder.registerCGSCCAnalyses(cgam);
+        passBuilder.registerFunctionAnalyses(fam);
+        passBuilder.registerLoopAnalyses(lam);
+        passBuilder.crossRegisterProxies(lam, fam, cgam, mam);
+
+        llvm::ModulePassManager pass;
+        pass.addPass(llvm::VerifierPass(false));
+        pass.addPass(llvm::createModuleToFunctionPassAdaptor(llvm::PromotePass()));
+        pass.addPass(llvm::StripDeadPrototypesPass());
+        pass.run(*module(), mam);
+        module()->print(dest, nullptr);
     }
     else {
-        auto fileType = llvm::TargetMachine::CGFT_ObjectFile;
-        if (targetMachine_->addPassesToEmitFile(pass, dest, nullptr, fileType)) {
+        llvm::legacy::PassManager pass;
+        pass.add(llvm::createVerifierPass(false));
+        if (targetMachine_->addPassesToEmitFile(pass, dest, nullptr, llvm::CodeGenFileType::ObjectFile)) {
             throw std::domain_error("TargetMachine can't emit a file of this type");
         }
+        pass.run(*module());
     }
-    pass.run(*module());
     dest.flush();
 }
 
@@ -251,13 +274,12 @@ void CodeGenerator::addParamAttrs(const Parameter &param, size_t index, llvm::Fu
 
 void CodeGenerator::addParamDereferenceable(const Type &type, size_t index, llvm::Function *function, bool ret) {
     if (typeHelper_.isDereferenceable(type)) {
-        auto llvmType = typeHelper_.llvmTypeFor(type);
-        auto elementType = llvm::dyn_cast<llvm::PointerType>(llvmType)->getElementType();
+        auto size = querySize(typeHelper_.llvmTypeForPointee(type));
         if (ret) {
-            function->addDereferenceableAttr(0, querySize(elementType));
+            function->addRetAttrs(llvm::AttrBuilder(context()).addDereferenceableAttr(size));
         }
         else {
-            function->addParamAttrs(index, llvm::AttrBuilder().addDereferenceableAttr(querySize(elementType)));
+            function->addDereferenceableParamAttr(index, size);
         }
     }
 }

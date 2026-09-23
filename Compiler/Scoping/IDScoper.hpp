@@ -14,6 +14,7 @@
 
 namespace llvm {
 class Value;
+class Type;
 }  // namespace llvm
 
 namespace EmojicodeCompiler {
@@ -41,9 +42,17 @@ private:
     std::vector<Element> variables_;
 };
 
+/// A local variable during code generation: A pointer to the memory holding its value and the LLVM type of the value.
+struct CGVariable {
+    CGVariable() = default;
+    CGVariable(llvm::Value *ptr, llvm::Type *type) : ptr(ptr), type(type) {}
+    llvm::Value *ptr = nullptr;
+    llvm::Type *type = nullptr;
+};
+
 /// CGScoper is used to keep track of the llvm::Value instances that are currently assigned to local variables during
 /// their generation with FunctionCodeGenerator.
-using CGScoper = IDScoper<llvm::Value*>;
+using CGScoper = IDScoper<CGVariable>;
 
 }  // namespace EmojicodeCompiler
 

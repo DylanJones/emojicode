@@ -68,14 +68,14 @@ Value* ASTCollectionLiteral::init(FunctionCodeGenerator *fg, std::vector<llvm::V
     CallCodeGenerator(fg, CallType::StaticDispatch).generate(value, type_, ASTArguments(position()),
                                                              initializer_, nullptr, args);
     handleResult(fg, nullptr, value);
-    return fg->builder().CreateLoad(value);
+    return fg->builder().CreateLoad(fg->typeHelper().llvmTypeFor(type_), value);
 }
 
 std::pair<llvm::Value *, llvm::Value *> EmojicodeCompiler::ASTCollectionLiteral::prepareValueArray(FunctionCodeGenerator *fg, llvm::Type *type, size_t count,
                                                                                                    const char *name) const {
     auto arrayType = llvm::ArrayType::get(type, count);
     auto structType = llvm::StructType::get(fg->generator()->context(),
-                                            { fg->builder().getInt8PtrTy(), arrayType });
+                                            { fg->builder().getPtrTy(), arrayType });
 
     auto structure = fg->createEntryAlloca(structType, name);
     fg->builder().CreateStore(fg->generator()->runTime().ignoreBlockPtr(),
@@ -93,8 +93,7 @@ Value* ASTCollectionLiteral::generate(FunctionCodeGenerator *fg) const {
         fg->builder().CreateStore(value->generate(fg), current);
         current = fg->builder().CreateConstInBoundsGEP1_32(fg->typeHelper().box(), current, 1);
     }
-    return init(fg, { fg->builder().CreateBitCast(structure, fg->builder().getInt8PtrTy()),
-                      fg->int64(values_.size()) });
+    return init(fg, { structure, fg->int64(values_.size()) });
 }
 
 Value *ASTCollectionLiteral::generatePairs(FunctionCodeGenerator *fg) const {
@@ -109,8 +108,7 @@ Value *ASTCollectionLiteral::generatePairs(FunctionCodeGenerator *fg) const {
         currentKey = fg->builder().CreateConstInBoundsGEP1_32(string, currentKey, 1);
         currentValue = fg->builder().CreateConstInBoundsGEP1_32(fg->typeHelper().box(), currentValue, 1);
     }
-    return init(fg, {fg->builder().CreateBitCast(keys, fg->builder().getInt8PtrTy()),
-                     fg->builder().CreateBitCast(values, fg->builder().getInt8PtrTy()), fg->int64(values_.size() / 2)});
+    return init(fg, { keys, values, fg->int64(values_.size() / 2) });
 }
 
 

@@ -30,24 +30,22 @@ Value* ASTRebox::generate(FunctionCodeGenerator *fg) const {
     if (expressionType().boxedFor().type() == TypeType::Something) {
         auto box = expr_->generate(fg);
         auto pct = fg->typeHelper().protocolConformance();
-        auto pc = fg->builder().CreateBitCast(fg->builder().CreateExtractValue(box, 0), pct->getPointerTo());
-        auto bi = fg->builder().CreateLoad(fg->builder().CreateConstInBoundsGEP2_32(pct, pc, 0, 2));
+        auto pc = fg->builder().CreateExtractValue(box, 0);
+        auto bi = fg->builder().CreateLoad(fg->typeHelper().pointer(),
+                                           fg->builder().CreateConstInBoundsGEP2_32(pct, pc, 0, 2));
         return fg->builder().CreateInsertValue(box, bi, 0);
     }
 
     auto box = getAllocaTheBox(fg);
     auto protocolRtti = expressionType().boxedFor().protocol()->rtti();
-    auto conformance = fg->buildFindProtocolConformance(box, fg->builder().CreateLoad(fg->buildGetBoxInfoPtr(box)),
-                                                        protocolRtti);
-    auto confPtrTy = fg->typeHelper().protocolConformance()->getPointerTo();
-    auto infoPtr = fg->buildGetBoxInfoPtr(box);
-    fg->builder().CreateStore(conformance, fg->builder().CreateBitCast(infoPtr, confPtrTy->getPointerTo()));
-    return fg->builder().CreateLoad(box);
+    auto boxInfo = fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxInfoPtr(box));
+    auto conformance = fg->buildFindProtocolConformance(box, boxInfo, protocolRtti);
+    fg->builder().CreateStore(conformance, fg->buildGetBoxInfoPtr(box));
+    return fg->builder().CreateLoad(fg->typeHelper().box(), box);
 }
 
 Value* ASTBoxing::getBoxValuePtr(Value *box, FunctionCodeGenerator *fg) const {
-    Type type = expr_->expressionType().unboxed().unoptionalized();
-    return fg->buildGetBoxValuePtr(box, type);
+    return fg->buildGetBoxValuePtr(box);
 }
 
 Value* ASTBoxing::getSimpleOptional(Value *value, FunctionCodeGenerator *fg) const {
@@ -66,12 +64,12 @@ Value* ASTBoxing::getAllocaTheBox(FunctionCodeGenerator *fg) const {
 
 Value* ASTBoxing::getGetValueFromBox(Value *box, FunctionCodeGenerator *fg) const {
     auto containedType = expr_->expressionType().unboxed().unoptionalized();
+    auto type = fg->typeHelper().llvmTypeFor(containedType);
     if (fg->typeHelper().isRemote(containedType)) {
-        auto type = fg->typeHelper().llvmTypeFor(containedType);
-        auto ptrPtr = fg->buildGetBoxValuePtr(box, type->getPointerTo()->getPointerTo());
-        return fg->builder().CreateLoad(fg->builder().CreateLoad(ptrPtr));
+        auto ptrPtr = fg->buildGetBoxValuePtr(box);
+        return fg->builder().CreateLoad(type, fg->builder().CreateLoad(fg->typeHelper().pointer(), ptrPtr));
     }
-    return fg->builder().CreateLoad(getBoxValuePtr(box, fg));
+    return fg->builder().CreateLoad(type, getBoxValuePtr(box, fg));
 }
 
 void ASTBoxing::valueTypeInit(FunctionCodeGenerator *fg, Value *destination) const {
@@ -108,7 +106,7 @@ Value* ASTSimpleToBox::generate(FunctionCodeGenerator *fg) const {
     else {
         getPutValueIntoBox(box, expr_->generate(fg), fg);
     }
-    return fg->builder().CreateLoad(box);
+    return fg->builder().CreateLoad(fg->typeHelper().box(), box);
 }
 
 Value* ASTSimpleOptionalToBox::generate(FunctionCodeGenerator *fg) const {
@@ -122,20 +120,18 @@ Value* ASTSimpleOptionalToBox::generate(FunctionCodeGenerator *fg) const {
     }, [&] {
         auto box = fg->createEntryAlloca(fg->typeHelper().box());
         getPutValueIntoBox(box, fg->buildGetOptionalValue(value, expr_->expressionType()), fg);
-        return fg->builder().CreateLoad(box);
+        return fg->builder().CreateLoad(fg->typeHelper().box(), box);
     });
 }
 
 Value* ASTToBox::buildStoreAddress(Value *box, FunctionCodeGenerator *fg) const {
     auto containedType = expr_->expressionType().unboxed().unoptionalized();
     if (fg->typeHelper().isRemote(containedType)) {
-        auto containedTypeLlvm = fg->typeHelper().llvmTypeFor(containedType);
-        auto mngType = fg->typeHelper().managable(containedTypeLlvm);
-        auto ctPtrPtr = containedTypeLlvm->getPointerTo()->getPointerTo();
-        auto boxPtr1 = fg->buildGetBoxValuePtr(box, ctPtrPtr);
-        auto boxPtr2 = fg->buildGetBoxValuePtrAfter(box, mngType->getPointerTo(), containedTypeLlvm->getPointerTo());
+        auto mngType = fg->typeHelper().managable(fg->typeHelper().llvmTypeFor(containedType));
+        auto boxPtr1 = fg->buildGetBoxValuePtr(box);
+        auto boxPtr2 = fg->buildGetBoxValuePtrAfter(box, fg->typeHelper().pointer(), fg->typeHelper().pointer());
         auto alloc = allocate(fg, mngType);
-        auto valuePtr = fg->managableGetValuePtr(alloc);
+        auto valuePtr = fg->managableGetValuePtr(mngType, alloc);
         // The first element in the value area is a direct pointer to the struct.
         fg->builder().CreateStore(valuePtr, boxPtr1);
         // The second is a pointer to the allocated object for management.
@@ -154,17 +150,13 @@ void ASTToBox::setBoxInfo(Value *box, FunctionCodeGenerator *fg) const {
     auto boxedFor = expressionType().boxedFor();
     if (boxedFor.type() == TypeType::Protocol || boxedFor.type() == TypeType::MultiProtocol) {
         llvm::Value *table;
-        llvm::Type *type;
         if (boxedFor.type() == TypeType::MultiProtocol) {
-            type = fg->typeHelper().multiprotocolConformance(boxedFor);
             table = ProtocolsTableGenerator(fg->generator()).multiprotocol(boxedFor, expr_->expressionType());
         }
         else {
-            type = fg->typeHelper().protocolConformance();
             table = expr_->expressionType().typeDefinition()->protocolTableFor(boxedFor);
         }
-        auto ptr = fg->builder().CreateBitCast(fg->buildGetBoxInfoPtr(box), type->getPointerTo()->getPointerTo());
-        fg->builder().CreateStore(table, ptr);
+        fg->builder().CreateStore(table, fg->buildGetBoxInfoPtr(box));
         return;
     }
     auto boxInfo = fg->boxInfoFor(expr_->expressionType().unoptionalized());
@@ -184,12 +176,11 @@ Value* ASTStoreTemporarily::generate(FunctionCodeGenerator *fg) const {
 
 Value* ASTBoxReferenceToReference::generate(FunctionCodeGenerator *fg) const {
     auto containedType = expr_->expressionType().unboxed().unoptionalized();
-    auto type = fg->typeHelper().llvmTypeFor(containedType);
     if (fg->typeHelper().isRemote(containedType)) {
-        auto ptrPtr = fg->buildGetBoxValuePtr(expr_->generate(fg), type->getPointerTo()->getPointerTo());
-        return fg->builder().CreateLoad(ptrPtr);
+        auto ptrPtr = fg->buildGetBoxValuePtr(expr_->generate(fg));
+        return fg->builder().CreateLoad(fg->typeHelper().pointer(), ptrPtr);
     }
-    return fg->buildGetBoxValuePtr(expr_->generate(fg), type->getPointerTo());
+    return fg->buildGetBoxValuePtr(expr_->generate(fg));
 }
 
 void ASTBoxReferenceToReference::mutateReference(ExpressionAnalyser *analyser) {
@@ -198,7 +189,7 @@ void ASTBoxReferenceToReference::mutateReference(ExpressionAnalyser *analyser) {
 
 Value* ASTDereference::generate(FunctionCodeGenerator *fg) const {
     auto ptr = expr_->generate(fg);
-    auto val = fg->builder().CreateLoad(ptr);
+    auto val = fg->builder().CreateLoad(fg->typeHelper().llvmTypeFor(expressionType()), ptr);
     if (expressionType().isManaged()) {
         fg->retain(fg->isManagedByReference(expressionType()) ? ptr : val, expressionType());
     }
@@ -215,15 +206,13 @@ Value* ASTBoxReferenceToSimple::generate(FunctionCodeGenerator *fg) const {
     llvm::Value *valuePtr;
 
     if (fg->typeHelper().isRemote(containedType)) {
-        auto type = fg->typeHelper().llvmTypeFor(containedType);
-        auto ptrPtr = fg->buildGetBoxValuePtr(box, type->getPointerTo()->getPointerTo());
-        valuePtr = fg->builder().CreateLoad(ptrPtr);
+        valuePtr = fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxValuePtr(box));
     }
     else {
         valuePtr = getBoxValuePtr(box, fg);
     }
 
-    auto val = fg->builder().CreateLoad(valuePtr);
+    auto val = fg->builder().CreateLoad(fg->typeHelper().llvmTypeFor(containedType), valuePtr);
     if (expressionType().isManaged()) {
         fg->retain(fg->isManagedByReference(expressionType()) ? valuePtr : val, expressionType());
     }

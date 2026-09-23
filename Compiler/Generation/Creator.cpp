@@ -74,7 +74,7 @@ void PackageCreator::createDestructor(Class *klass) {
 void ImportedPackageCreator::createDestructor(Class *klass) {}
 
 void PackageCreator::createClassInfo(Class *klass) {
-    auto type = llvm::ArrayType::get(llvm::Type::getInt8PtrTy(generator_->context()), klass->virtualTable().size());
+    auto type = llvm::ArrayType::get(generator_->typeHelper().pointer(), klass->virtualTable().size());
     auto virtualTable = new llvm::GlobalVariable(*generator_->module(), type, true,
                                                  llvm::GlobalValue::LinkageTypes::PrivateLinkage,
                                                  llvm::ConstantArray::get(type, klass->virtualTable()));
@@ -83,15 +83,14 @@ void PackageCreator::createClassInfo(Class *klass) {
         superclass = klass->superclass()->classInfo();
     }
     else {
-        superclass = llvm::ConstantPointerNull::get(generator_->typeHelper().classInfo()->getPointerTo());
+        superclass = llvm::ConstantPointerNull::get(generator_->typeHelper().pointer());
     }
 
     auto protocolTable = ProtocolsTableGenerator(generator_).createProtocolTable(klass);
-    auto gep = buildConstant00Gep(virtualTable->getType()->getElementType(), virtualTable, generator_->context());
+    auto gep = buildConstant00Gep(type, virtualTable, generator_->context());
     auto rtti = generator_->runTime().createRtti(klass, RunTimeTypeInfoFlags::Class);
     auto initializer = llvm::ConstantStruct::get(generator_->typeHelper().classInfo(), {
-        rtti, gep, protocolTable, superclass,
-        llvm::ConstantExpr::getBitCast(klass->destructor(), llvm::Type::getInt8PtrTy(generator_->context())) });
+        rtti, gep, protocolTable, superclass, klass->destructor() });
     auto info = new llvm::GlobalVariable(*generator_->module(), generator_->typeHelper().classInfo(), true,
                                          llvm::GlobalValue::LinkageTypes::ExternalLinkage, initializer,
                                          mangleClassInfoName(klass));

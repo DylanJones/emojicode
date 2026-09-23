@@ -17,6 +17,15 @@ Value* ASTBinaryOperator::generate(FunctionCodeGenerator *fg) const {
         return generateLogical(fg);
     }
 
+    if (BuiltInType::IsNoValueLeft == builtIn_ || BuiltInType::IsNoValueRight == builtIn_) {
+        // Only the operand that is compared to no value must be generated.
+        auto &operand = builtIn_ == BuiltInType::IsNoValueLeft ? left_ : right_;
+        auto value = operand->generate(fg);
+        return operand->expressionType().storageType() == StorageType::Box
+                ? fg->buildHasNoValueBox(value)
+                : fg->buildOptionalHasNoValue(value, operand->expressionType());
+    }
+
     if (builtIn_ != BuiltInType::None) {
         auto left = left_->generate(fg);
         auto right = right_->generate(fg);
@@ -71,14 +80,6 @@ Value* ASTBinaryOperator::generate(FunctionCodeGenerator *fg) const {
                 return fg->builder().CreateAnd(left, right);
             case BuiltInType::Equal:
                 return fg->builder().CreateICmpEQ(left, right);
-            case BuiltInType::IsNoValueLeft:
-                return left_->expressionType().storageType() == StorageType::Box
-                        ? fg->buildHasNoValueBox(left)
-                        : fg->buildOptionalHasNoValue(left, left_->expressionType());
-            case BuiltInType::IsNoValueRight:
-                return right_->expressionType().storageType() == StorageType::Box
-                        ? fg->buildHasNoValueBox(right)
-                        : fg->buildOptionalHasNoValue(right, right_->expressionType());
             default:
                 break;
         }

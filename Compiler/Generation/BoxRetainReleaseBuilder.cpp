@@ -44,16 +44,15 @@ void buildCopyRetain(CodeGenerator *cg, ValueType *typeDef) {
         if (var.type().isManaged()) {
             auto ptr = fg.instanceVariablePointer(var.id());
             if (!fg.isManagedByReference(var.type())) {
-                ptr = fg.builder().CreateLoad(ptr);
+                ptr = fg.builder().CreateLoad(fg.instanceVariableType(var.id()), ptr);
             }
             fg.retain(ptr, var.type());
         }
     }
 
     if (typeDef->storesGenericArgs()) {
-        auto opc = fg.builder().CreateBitCast(fg.builder().CreateLoad(fg.genericArgsPtr()),
-                                              llvm::Type::getInt8PtrTy(fg.ctx()));
-        fg.builder().CreateCall(fg.generator()->runTime().retain(), { opc });
+        auto genericArgs = fg.builder().CreateLoad(fg.genericArgsType(), fg.genericArgsPtr());
+        fg.builder().CreateCall(fg.generator()->runTime().retain(), { genericArgs });
     }
     fg.builder().CreateRetVoid();
 }
@@ -80,16 +79,13 @@ void buildDestructor(CodeGenerator *cg, TypeDefinition *typeDef) {
     }
 
     if (typeDef->storesGenericArgs()) {
-        auto val = fg.builder().CreateLoad(fg.genericArgsPtr());
+        auto val = fg.builder().CreateLoad(fg.genericArgsType(), fg.genericArgsPtr());
         if (fg.calleeType().is<TypeType::ValueType>()) {
-            auto opc = fg.builder().CreateBitCast(val, llvm::Type::getInt8PtrTy(fg.ctx()));
-            fg.builder().CreateCall(fg.generator()->runTime().releaseMemory(), { opc });
+            fg.builder().CreateCall(fg.generator()->runTime().releaseMemory(), { val });
         }
         else {
             fg.createIf(fg.builder().CreateIsNull(fg.builder().CreateExtractValue(val, { 1 })), [&] {
-                auto opc = fg.builder().CreateBitCast(fg.builder().CreateExtractValue(val, { 0 }),
-                                                      llvm::Type::getInt8PtrTy(fg.ctx()));
-                fg.builder().CreateCall(fg.generator()->runTime().free(), { opc });
+                fg.builder().CreateCall(fg.generator()->runTime().free(), { fg.builder().CreateExtractValue(val, { 0 }) });
             });
         }
     }
@@ -108,37 +104,32 @@ std::pair<llvm::Function*, llvm::Function*> buildBoxRetainRelease(CodeGenerator 
 
     if (type.isManaged()) {
         if (!releaseFg.isManagedByReference(type)) {
-            auto objPtr = releaseFg.buildGetBoxValuePtr(release->args().begin(), type);
-            releaseFg.release(releaseFg.builder().CreateLoad(objPtr), type);
+            auto llvmType = cg->typeHelper().llvmTypeFor(type);
+            auto objPtr = releaseFg.buildGetBoxValuePtr(release->args().begin());
+            releaseFg.release(releaseFg.builder().CreateLoad(llvmType, objPtr), type);
 
-            auto objPtrRetain = retainFg.buildGetBoxValuePtr(retain->args().begin(), type);
-            retainFg.retain(retainFg.builder().CreateLoad(objPtrRetain), type);
+            auto objPtrRetain = retainFg.buildGetBoxValuePtr(retain->args().begin());
+            retainFg.retain(retainFg.builder().CreateLoad(llvmType, objPtrRetain), type);
         }
         else if (cg->typeHelper().isRemote(type)) {
-            auto containedType = cg->typeHelper().llvmTypeFor(type);
-            auto mngType = cg->typeHelper().managable(containedType);
+            auto ptr = cg->typeHelper().pointer();
+            auto mngType = cg->typeHelper().managable(cg->typeHelper().llvmTypeFor(type));
 
-            auto objPtr = releaseFg.buildGetBoxValuePtrAfter(release->args().begin(), mngType->getPointerTo(),
-                                                             containedType->getPointerTo());
-            auto remotePtr = releaseFg.builder().CreateLoad(objPtr);
-            releaseFg.release(releaseFg.managableGetValuePtr(remotePtr), type);
-            releaseFg.builder().CreateCall(cg->runTime().releaseWithoutDeinit(),
-                                           releaseFg.builder().CreateBitCast(remotePtr,
-                                                                             llvm::Type::getInt8PtrTy(cg->context())));
+            auto objPtr = releaseFg.buildGetBoxValuePtrAfter(release->args().begin(), ptr, ptr);
+            auto remotePtr = releaseFg.builder().CreateLoad(ptr, objPtr);
+            releaseFg.release(releaseFg.managableGetValuePtr(mngType, remotePtr), type);
+            releaseFg.builder().CreateCall(cg->runTime().releaseWithoutDeinit(), remotePtr);
 
-            auto objPtrRetain = retainFg.buildGetBoxValuePtrAfter(retain->args().begin(), mngType->getPointerTo(),
-                                                                  containedType->getPointerTo());
-            auto remotePtrRetain = retainFg.builder().CreateLoad(objPtrRetain);
-            retainFg.retain(retainFg.managableGetValuePtr(remotePtrRetain), type);
-            retainFg.builder().CreateCall(cg->runTime().retain(),
-                                          retainFg.builder().CreateBitCast(remotePtrRetain,
-                                                                           llvm::Type::getInt8PtrTy(cg->context())));
+            auto objPtrRetain = retainFg.buildGetBoxValuePtrAfter(retain->args().begin(), ptr, ptr);
+            auto remotePtrRetain = retainFg.builder().CreateLoad(ptr, objPtrRetain);
+            retainFg.retain(retainFg.managableGetValuePtr(mngType, remotePtrRetain), type);
+            retainFg.builder().CreateCall(cg->runTime().retain(), remotePtrRetain);
         }
         else {
-            auto objPtr = releaseFg.buildGetBoxValuePtr(release->args().begin(), type);
+            auto objPtr = releaseFg.buildGetBoxValuePtr(release->args().begin());
             releaseFg.release(objPtr, type);
 
-            auto objPtrRetain = retainFg.buildGetBoxValuePtr(retain->args().begin(), type);
+            auto objPtrRetain = retainFg.buildGetBoxValuePtr(retain->args().begin());
             retainFg.retain(objPtrRetain, type);
         }
     }

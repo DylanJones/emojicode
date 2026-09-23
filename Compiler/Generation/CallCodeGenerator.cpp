@@ -31,15 +31,7 @@ llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, 
         case CallType::StaticContextfreeDispatch:
         case CallType::StaticDispatch: {
             auto llvmFn = function->reificationFor(astArgs.genericArgumentTypes()).function;
-            llvm::Type *castTo = nullptr;
-            if (!args.empty() && args.front()->getType() != llvmFn->args().begin()->getType()) {
-                if (function->functionType() == FunctionType::ObjectInitializer) {
-                    castTo = args.front()->getType();
-                }
-                args.front() = fg()->builder().CreateBitCast(args.front(), llvmFn->args().begin()->getType());
-            }
-            auto ret = fg_->builder().CreateCall(llvmFn, args);
-            return castTo == nullptr ? ret : fg_->builder().CreateBitCast(ret, castTo);
+            return fg_->builder().CreateCall(llvmFn, args);
         }
         case CallType::DynamicDispatch:
         case CallType::DynamicDispatchOnType:
@@ -53,10 +45,8 @@ llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, 
                 conformance = buildFindProtocolConformance(args, type.unboxed());
             }
             else {
-                auto conformanceType = fg()->typeHelper().protocolConformance();
-                auto ptr = fg()->builder().CreateBitCast(fg()->buildGetBoxInfoPtr(args.front()),
-                                                         conformanceType->getPointerTo()->getPointerTo());
-                conformance = fg()->builder().CreateLoad(ptr);
+                conformance = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
+                                                         fg()->buildGetBoxInfoPtr(args.front()));
             }
             return createDynamicProtocolDispatch(function, args, astArgs.genericArgumentTypes(), conformance);
         }
@@ -70,7 +60,7 @@ llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, 
 
 llvm::Value* CallCodeGenerator::buildFindProtocolConformance(const std::vector<llvm::Value *> &args,
                                                              const Type &protocol) {
-    auto boxInfo = fg()->builder().CreateLoad(fg()->buildGetBoxInfoPtr(args.front()));
+    auto boxInfo = fg()->builder().CreateLoad(fg()->typeHelper().pointer(), fg()->buildGetBoxInfoPtr(args.front()));
     return fg()->buildFindProtocolConformance(args.front(), boxInfo, protocol.protocol()->rtti());
 }
 
@@ -109,11 +99,10 @@ llvm::Value *MultiprotocolCallCodeGenerator::generate(llvm::Value *callee, const
     }
     else {
         auto mpt = fg()->typeHelper().multiprotocolConformance(calleeType);
-        auto mp = fg()->builder().CreateBitCast(fg()->buildGetBoxInfoPtr(argsv.front()),
-                                                mpt->getPointerTo()->getPointerTo());
-        auto mpl = fg()->builder().CreateLoad(mp);
+        auto mpl = fg()->builder().CreateLoad(fg()->typeHelper().pointer(), fg()->buildGetBoxInfoPtr(argsv.front()));
 
-        conformance = fg()->builder().CreateLoad(fg()->builder().CreateConstGEP2_32(mpt, mpl, 0, multiprotocolN));
+        conformance = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
+                                                 fg()->builder().CreateConstGEP2_32(mpt, mpl, 0, multiprotocolN));
     }
     return createDynamicProtocolDispatch(function, std::move(argsv), args.genericArgumentTypes(), conformance);
 }
@@ -123,11 +112,13 @@ llvm::Value *CallCodeGenerator::dispatchFromVirtualTable(Function *function, llv
                                                          const std::vector<Type> &genericArguments) {
     auto reification = function->reificationFor(genericArguments);
     auto id = fg()->int32(reification.vti());
-    auto dispatchedFunc = fg()->builder().CreateLoad(fg()->builder().CreateInBoundsGEP(virtualTable, id));
+    auto ptr = fg()->typeHelper().pointer();
+    auto dispatchedFunc = fg()->builder().CreateLoad(ptr, fg()->builder().CreateInBoundsGEP(ptr, virtualTable, id),
+                                                     "dispatchFunc");
 
     std::vector<llvm::Type *> argTypes = reification.functionType()->params();
     if (callType_ == CallType::DynamicProtocolDispatch) {
-        argTypes.front() = llvm::Type::getInt8PtrTy(fg()->generator()->context());
+        argTypes.front() = ptr;
     }
     else if (callType_ == CallType::DynamicDispatch) {
         argTypes.front() = args.front()->getType();
@@ -137,15 +128,14 @@ llvm::Value *CallCodeGenerator::dispatchFromVirtualTable(Function *function, llv
     }
 
     auto funcType = llvm::FunctionType::get(reification.functionType()->getReturnType(), argTypes, false);
-    auto func = fg()->builder().CreateBitCast(dispatchedFunc, funcType->getPointerTo(), "dispatchFunc");
-    return fg_->builder().CreateCall(funcType, func, args);
+    return fg_->builder().CreateCall(funcType, dispatchedFunc, args);
 }
 
 llvm::Value *CallCodeGenerator::createDynamicDispatch(Function *function, const std::vector<llvm::Value *> &args,
                                                       const std::vector<Type> &genericArgs) {
     auto info = callType_ == CallType::DynamicDispatchOnType ? args.front() : fg()->buildGetClassInfoFromObject(args.front());
     auto tablePtr = fg()->builder().CreateConstInBoundsGEP2_32(fg_->typeHelper().classInfo(), info, 0, 1);
-    auto table = fg()->builder().CreateLoad(tablePtr, "table");
+    auto table = fg()->builder().CreateLoad(fg()->typeHelper().pointer(), tablePtr, "table");
     return dispatchFromVirtualTable(function, table, args, genericArgs);
 }
 
@@ -154,20 +144,19 @@ llvm::Value *CallCodeGenerator::createDynamicProtocolDispatch(Function *function
                                                               llvm::Value *conformance) {
     args.front() = getProtocolCallee(args, conformance);
 
-    auto table = fg()->builder().CreateLoad(fg()->builder().CreateConstGEP2_32(conformance->getType()->getPointerElementType(),
-                                                                               conformance, 0, 1), "table");
+    auto tablePtr = fg()->builder().CreateConstGEP2_32(fg()->typeHelper().protocolConformance(), conformance, 0, 1);
+    auto table = fg()->builder().CreateLoad(fg()->typeHelper().pointer(), tablePtr, "table");
     return dispatchFromVirtualTable(function, table, args, genericArgs);
 }
 
 llvm::Value *CallCodeGenerator::getProtocolCallee(std::vector<Value *> &args, llvm::Value *conformance) const {
     auto shouldLoadPtr = fg()->builder().CreateConstGEP2_32(fg()->typeHelper().protocolConformance(),
                                                             conformance, 0, 0);
-    return fg()->createIfElsePhi(fg()->builder().CreateLoad(shouldLoadPtr, "shouldLoad"), [this, &args]() {
-        auto type = llvm::Type::getInt8PtrTy(fg()->generator()->context())->getPointerTo();
-        auto value = fg()->buildGetBoxValuePtr(args.front(), type);
-        return fg()->builder().CreateLoad(value);
+    auto shouldLoad = fg()->builder().CreateLoad(llvm::Type::getInt1Ty(fg()->ctx()), shouldLoadPtr, "shouldLoad");
+    return fg()->createIfElsePhi(shouldLoad, [this, &args]() {
+        return fg()->builder().CreateLoad(fg()->typeHelper().pointer(), fg()->buildGetBoxValuePtr(args.front()));
     }, [this, &args]() {
-        return fg()->buildGetBoxValuePtr(args.front(), llvm::Type::getInt8PtrTy(fg()->generator()->context()));
+        return fg()->buildGetBoxValuePtr(args.front());
     });
 }
 

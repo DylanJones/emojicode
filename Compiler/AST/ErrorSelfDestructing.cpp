@@ -38,9 +38,7 @@ void ErrorSelfDestructing::buildDestruct(FunctionCodeGenerator *fg) const {
         }
         auto clInf = fg->buildGetClassInfoFromObject(fg->thisValue());
         fg->createIf(fg->builder().CreateICmpEQ(clInf, class_->classInfo()), [&] {
-            fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(),
-                                     fg->builder().CreateBitCast(fg->thisValue(),
-                                                                 llvm::Type::getInt8PtrTy(fg->ctx())));
+            fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), fg->thisValue());
         });
     }
 }
@@ -55,9 +53,8 @@ llvm::Value* ErrorHandling::prepareErrorDestination(FunctionCodeGenerator *fg, A
 }
 
 llvm::Value* ErrorHandling::isError(FunctionCodeGenerator *fg, llvm::Value *errorDestination) const {
-    auto type = llvm::dyn_cast<llvm::PointerType>(errorDestination->getType()->getPointerElementType());
-    auto null = llvm::ConstantPointerNull::get(type);
-    return fg->builder().CreateICmpNE(null, fg->builder().CreateLoad(errorDestination));
+    auto null = llvm::ConstantPointerNull::get(fg->typeHelper().pointer());
+    return fg->builder().CreateICmpNE(null, fg->builder().CreateLoad(fg->typeHelper().pointer(), errorDestination));
 }
 
 }  // namespace EmojicodeCompiler

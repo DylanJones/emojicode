@@ -5,11 +5,16 @@
 #ifndef EMOJICODE_OPTIMIZATIONMANAGER_HPP
 #define EMOJICODE_OPTIMIZATIONMANAGER_HPP
 
-#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Analysis/CGSCCPassManager.h>
+#include <llvm/Analysis/LoopAnalysisManager.h>
+#include <llvm/IR/PassManager.h>
+#include <llvm/Passes/PassBuilder.h>
 #include <memory>
 
 namespace llvm {
 class Function;
+class Module;
+class TargetMachine;
 }  // namespace llvm
 
 namespace EmojicodeCompiler {
@@ -18,14 +23,19 @@ class RunTimeHelper;
 
 class OptimizationManager {
 public:
-    explicit OptimizationManager(llvm::Module *module, bool optimize, RunTimeHelper *runTime);
+    OptimizationManager(bool optimize, RunTimeHelper *runTime, llvm::TargetMachine *targetMachine);
     void optimize(llvm::Function *function);
     void optimize(llvm::Module *module);
-    void initialize(RunTimeHelper *runTime);
 private:
     bool optimize_;
-    std::unique_ptr<llvm::legacy::FunctionPassManager> functionPassManager_;
-    std::unique_ptr<llvm::legacy::PassManager> passManager_;
+    RunTimeHelper *runTime_;
+
+    llvm::LoopAnalysisManager lam_;
+    llvm::FunctionAnalysisManager fam_;
+    llvm::CGSCCAnalysisManager cgam_;
+    llvm::ModuleAnalysisManager mam_;
+    std::unique_ptr<llvm::PassBuilder> passBuilder_;
+    llvm::FunctionPassManager functionPassManager_;
 };
 
 }  // namespace EmojicodeCompiler

@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: ${{ matrix.cc }} / LLVM ${{ matrix.llvm }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cc: clang-20
+            cxx: clang++-20
+            llvm: 20
+          - cc: gcc
+            cxx: g++
+            llvm: 18
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+      PYTHONIOENCODING: utf8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build python3 rsync zlib1g-dev libzstd-dev llvm-${{ matrix.llvm }}-dev
+          if [[ "$CC" == clang-* ]]; then sudo apt-get install -y --no-install-recommends ${{ matrix.cc }}; fi
+
+      - name: Configure
+        run: cmake -S . -B build -GNinja -DLLVM_DIR=/usr/lib/llvm-${{ matrix.llvm }}/lib/cmake/llvm
+
+      - name: Build
+        run: ninja -C build
+
+      - name: Test
+        run: ninja -C build tests
+
+      - name: Package
+        if: startsWith(github.ref, 'refs/tags/') && matrix.llvm == 20
+        working-directory: build
+        run: echo "EMOJICODE_DIST_ARCHIVE=$(python3 ../dist.py archive)" >> "$GITHUB_ENV"
+
+      - name: Upload distribution archive
+        if: startsWith(github.ref, 'refs/tags/') && matrix.llvm == 20
+        uses: actions/upload-artifact@v4
+        with:
+          name: emojicode-dist
+          path: ${{ env.EMOJICODE_DIST_ARCHIVE }}

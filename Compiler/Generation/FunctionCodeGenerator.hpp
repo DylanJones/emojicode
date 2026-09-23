@@ -79,31 +79,26 @@ public:
     void buildErrorReturn();
 
     llvm::Value* instanceVariablePointer(size_t id);
+    /// @returns The LLVM type of the instance variable to which instanceVariablePointer() returns a pointer.
+    llvm::Type* instanceVariableType(size_t id);
     llvm::Value* genericArgsPtr();
+    /// @returns The LLVM type of the value to which genericArgsPtr() returns a pointer.
+    /// @pre The function must not be a type method.
+    llvm::Type* genericArgsType();
     llvm::Value* functionGenericArgs() const { return functionGenericArgs_; };
 
     /// @returns The number of bytes an instance of @c type takes up in memory.
-    /// @see sizeOfReferencedType
     llvm::Value* sizeOf(llvm::Type *type);
-    /// @returns The number of bytes an instance of the type pointed to by a pointer of @c ptrType takes up.
-    ///          Behaves like `sizeOf(ptrType->getElementType())`, although this method does not call sizeOf().
-    /// @see sizeOf
-    llvm::Value* sizeOfReferencedType(llvm::PointerType *ptrType);
 
     /// Gets a pointer to the box info field of a box.
     /// @param box Pointer to a box.
     llvm::Value* buildGetBoxInfoPtr(llvm::Value *box);
-    /// @see buildGetBoxValuePtr
-    /// @param type The type is converted to a type with LLVMTypeHelper. The value pointer is then casted to
-    ///             a pointer of this type.
-    llvm::Value* buildGetBoxValuePtr(llvm::Value *box, const Type &type);
-    /// Gets a pointer to the value field of a box as `llvmType`.
+    /// Gets a pointer to the value field of a box.
     /// @param box Pointer to a box.
-    /// @param llvmType The type to which the pointer to the field is cast. Must be a pointer type.
-    llvm::Value* buildGetBoxValuePtr(llvm::Value *box, llvm::Type *llvmType);
-    /// Gets a pointer to the value field of a box as `llvmType`.
+    llvm::Value* buildGetBoxValuePtr(llvm::Value *box);
+    /// Gets a pointer to a value of type `llvmType` that is stored after a value of type `after` in the value field
+    /// of a box.
     /// @param box Pointer to a box.
-    /// @param llvmType The type to which the pointer to the field is cast. Must be a pointer type.
     llvm::Value* buildGetBoxValuePtrAfter(llvm::Value *box, llvm::Type *llvmType, llvm::Type *after);
     llvm::Value* buildHasNoValueBox(llvm::Value *box);
     llvm::Value* buildHasNoValueBoxPtr(llvm::Value *box);
@@ -145,11 +140,11 @@ public:
 
     /// Allocates heap memory using the runtime library’s ejcAlloc.
     ///
-    /// Allocates enough bytes to hold the element type of the pointer type `type`.
+    /// Allocates enough bytes to hold a value of type `type`.
     ///
     /// @note ejcAlloc expects the first element of the allocated type to be a pointer to the control
     /// block.
-    llvm::Value* alloc(llvm::PointerType *type);
+    llvm::Value* alloc(llvm::Type *type);
     /// Allocates stack memory as replacement for a heap memory allocation as performed by alloc().
     ///
     /// In order to ensure compatibility with the runtime library’s retain and release functions, additional bytes
@@ -157,9 +152,10 @@ public:
     ///
     /// @note Like ejcAlloc, this function expects the first element of the allocated type to be a pointer to the
     /// control block.
-    llvm::Value* stackAlloc(llvm::PointerType *type);
+    llvm::Value* stackAlloc(llvm::Type *type);
 
-    llvm::Value* managableGetValuePtr(llvm::Value *managablePtr);
+    /// @param managable The type of the managable (see LLVMTypeHelper::managable()) to which `managablePtr` points.
+    llvm::Value* managableGetValuePtr(llvm::StructType *managable, llvm::Value *managablePtr);
 
     void release(llvm::Value *value, const Type &type);
     /// Like release() but the value to be released is always provided as a pointer. If isManagedByReference() returns
@@ -234,6 +230,10 @@ private:
     void manageBox(bool retain, llvm::Value *boxInfo, llvm::Value *value, const Type &type);
 
     void addParamAttrs(const Type &argType, llvm::Argument &llvmArg);
+
+    /// @returns The LLVM struct type of the instance of the callee type.
+    llvm::StructType* calleeStructType();
+    unsigned instanceVariableIndex(size_t id) const;
 };
 
 }  // namespace EmojicodeCompiler

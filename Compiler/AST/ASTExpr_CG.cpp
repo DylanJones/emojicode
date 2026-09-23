@@ -48,17 +48,16 @@ Value* ASTCallableCall::generate(FunctionCodeGenerator *fg) const {
     auto type = callable_->expressionType();
 
     auto returnType = fg->typeHelper().llvmTypeFor(type.returnType());
-    std::vector<llvm::Type *> argTypes { llvm::Type::getInt8PtrTy(fg->ctx()) };
+    std::vector<llvm::Type *> argTypes { fg->typeHelper().pointer() };
     std::transform(type.parameters(), type.parametersEnd(), std::back_inserter(argTypes), [fg](auto &arg) {
         return fg->typeHelper().llvmTypeFor(arg);
     });
     if (isErrorProne()) {
-        argTypes.emplace_back(fg->typeHelper().llvmTypeFor(errorType())->getPointerTo());
+        argTypes.emplace_back(fg->typeHelper().pointer());
     }
     auto functionType = llvm::FunctionType::get(returnType, argTypes, false);
 
-    auto function = fg->builder().CreateBitCast(fg->builder().CreateExtractValue(callable, 0),
-                                                functionType->getPointerTo());
+    auto function = fg->builder().CreateExtractValue(callable, 0);
     std::vector<llvm::Value *> args{ fg->builder().CreateExtractValue(callable, 1) };
     for (auto &arg : args_.args()) {
         args.emplace_back(arg->generate(fg));
