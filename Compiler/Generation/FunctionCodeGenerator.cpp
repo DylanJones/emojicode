@@ -314,19 +314,19 @@ std::pair<llvm::Value*, llvm::Value*>
 }
 
 llvm::ConstantInt* FunctionCodeGenerator::int8(int8_t value) {
-    return llvm::ConstantInt::get(llvm::Type::getInt8Ty(ctx()), value);
+    return llvm::ConstantInt::getSigned(llvm::Type::getInt8Ty(ctx()), value);
 }
 
 llvm::ConstantInt* FunctionCodeGenerator::int16(int16_t value) {
-    return llvm::ConstantInt::get(llvm::Type::getInt16Ty(ctx()), value);
+    return llvm::ConstantInt::getSigned(llvm::Type::getInt16Ty(ctx()), value);
 }
 
 llvm::ConstantInt* FunctionCodeGenerator::int32(int32_t value) {
-    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx()), value);
+    return llvm::ConstantInt::getSigned(llvm::Type::getInt32Ty(ctx()), value);
 }
 
 llvm::ConstantInt* FunctionCodeGenerator::int64(int64_t value) {
-    return llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx()), value);
+    return llvm::ConstantInt::getSigned(llvm::Type::getInt64Ty(ctx()), value);
 }
 
 llvm::Value* FunctionCodeGenerator::alloc(llvm::Type *type) {
@@ -458,7 +458,7 @@ void FunctionCodeGenerator::manageBox(bool retain, llvm::Value *boxInfo, llvm::V
     }
     auto fn = builder().CreateLoad(typeHelper().pointer(), fnPtr, retain ? "retain" : "release");
     auto call = builder().CreateCall(typeHelper().boxRetainRelease(), fn, value);
-    call->addParamAttr(0, llvm::Attribute::NoCapture);
+    call->addParamAttr(0, llvm::Attribute::getWithCaptureInfo(call->getContext(), llvm::CaptureInfo::none()));
     call->addParamAttr(0, llvm::Attribute::ReadOnly);
     call->addFnAttr(llvm::Attribute::NoUnwind);
 }

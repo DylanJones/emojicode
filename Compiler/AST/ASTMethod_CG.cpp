@@ -29,7 +29,7 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
             case BuiltInType::IntegerToDouble:
                 return fg->builder().CreateSIToFP(v, llvm::Type::getDoubleTy(fg->ctx()));
             case BuiltInType::IntegerInverse:
-                return fg->builder().CreateMul(v, llvm::ConstantInt::get(v->getType(), -1));
+                return fg->builder().CreateMul(v, llvm::ConstantInt::getSigned(v->getType(), -1));
             case BuiltInType::IntegerToByte:
                 return fg->builder().CreateTrunc(v, llvm::Type::getInt8Ty(fg->ctx()));
             case BuiltInType::ByteToInteger:
