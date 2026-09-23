@@ -31,6 +31,9 @@ public:
 private:
     /// If this is true, this is a class downcast. Otherwise a dynamic cast.
     bool isDowncast_ = false;
+    /// True if a dynamic cast operates on a reference to existing storage (e.g. a variable) instead of a temporary
+    /// copy. The result then shares the value with that storage.
+    bool castsBorrowedValue_ = false;
     std::shared_ptr<ASTTypeExpr> typeExpr_;
     Value* downcast(FunctionCodeGenerator *fg) const;
 

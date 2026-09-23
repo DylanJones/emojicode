@@ -22,8 +22,15 @@ Value* ASTCast::generate(FunctionCodeGenerator *fg) const {
     }
 
     auto box = expr_->generate(fg);
-    return fg->builder().CreateCall(getCastFunction(fg->generator()),
-                                    { typeExpr_->generate(fg), box, boxInfo(fg, box) });
+    auto result = fg->builder().CreateCall(getCastFunction(fg->generator()),
+                                           { typeExpr_->generate(fg), box, boxInfo(fg, box) });
+    if (castsBorrowedValue_ && !isTemporary()) {
+        // The result is taken but its value is still owned by the storage it was borrowed from.
+        auto resultPtr = fg->createEntryAlloca(fg->typeHelper().box());
+        fg->builder().CreateStore(result, resultPtr);
+        fg->retain(resultPtr, expressionType());
+    }
+    return result;
 }
 
 Value* getRtti(FunctionCodeGenerator *fg, Value *typeDescPtr) {

@@ -1,0 +1,11 @@
+a 1
+a 2
+not a frog
+made 3
+made 4
+deinit made
+a 5
+end
+deinit frog
+deinit made
+deinit a

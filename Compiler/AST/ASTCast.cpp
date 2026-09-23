@@ -6,6 +6,7 @@
 //
 
 #include "ASTCast.hpp"
+#include "ASTBoxing.hpp"
 #include "Analysis/ExpressionAnalyser.hpp"
 #include "CompilerError.hpp"
 #include "Types/TypeExpectation.hpp"
@@ -40,6 +41,7 @@ Type ASTCast::analyse(ExpressionAnalyser *analyser) {
     }
 
     analyser->comply(TypeExpectation(true, false), &expr_);
+    castsBorrowedValue_ = std::dynamic_pointer_cast<ASTStoreTemporarily>(expr_) == nullptr;
 
     if (type.unboxedType() == TypeType::Protocol) {
         if (!type.genericArguments().empty()) {
