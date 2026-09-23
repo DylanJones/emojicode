@@ -1,6 +1,6 @@
 find_package(LLVM REQUIRED CONFIG)
-if (LLVM_VERSION_MAJOR LESS 18)
-  message(FATAL_ERROR "LLVM 18 or newer is required, found ${LLVM_PACKAGE_VERSION}")
+if (LLVM_VERSION_MAJOR LESS 21)
+  message(FATAL_ERROR "LLVM 21 or newer is required, found ${LLVM_PACKAGE_VERSION}")
 endif()
 message(STATUS "Using LLVM ${LLVM_PACKAGE_VERSION} from ${LLVM_DIR}")
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})

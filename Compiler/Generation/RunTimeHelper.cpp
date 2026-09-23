@@ -94,7 +94,8 @@ void RunTimeHelper::declareRunTime() {
     isOnlyReference_ = declareRunTimeFunction("ejcIsOnlyReference", llvm::Type::getInt1Ty(generator_->context()),
                                      generator_->typeHelper().pointer());
     isOnlyReference_->addParamAttr(0, llvm::Attribute::NonNull);
-    isOnlyReference_->addParamAttr(0, llvm::Attribute::NoCapture);
+    isOnlyReference_->addParamAttr(0, llvm::Attribute::getWithCaptureInfo(isOnlyReference_->getContext(),
+                                                                          llvm::CaptureInfo::none()));
 
     ignoreBlock_ = new llvm::GlobalVariable(*generator_->module(), llvm::Type::getInt8Ty(generator_->context()), true,
                                             llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr,
@@ -137,7 +138,7 @@ llvm::Function* RunTimeHelper::declareMemoryRunTimeFunction(const char *name) {
     auto fn = declareRunTimeFunction(name, llvm::Type::getVoidTy(generator_->context()),
                                      generator_->typeHelper().pointer());
     fn->addParamAttr(0, llvm::Attribute::NonNull);
-    fn->addParamAttr(0, llvm::Attribute::NoCapture);
+    fn->addParamAttr(0, llvm::Attribute::getWithCaptureInfo(fn->getContext(), llvm::CaptureInfo::none()));
     return fn;
 }
 

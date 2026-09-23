@@ -22,7 +22,6 @@
 #include "Creator.hpp"
 #include "RunTimeTypeInfoFlags.hpp"
 #include <algorithm>
-#include <llvm/Config/llvm-config.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/MC/TargetRegistry.h>
@@ -54,7 +53,7 @@ CodeGenerator::CodeGenerator(Compiler *compiler, bool optimize)
 
     auto targetTriple = llvm::Triple(llvm::sys::getDefaultTargetTriple());
     std::string error;
-    auto target = llvm::TargetRegistry::lookupTarget(targetTriple.str(), error);
+    auto target = llvm::TargetRegistry::lookupTarget(targetTriple, error);
     if (target == nullptr) {
         throw std::domain_error("Could not find a target for " + targetTriple.str() + ": " + error);
     }
@@ -63,13 +62,8 @@ CodeGenerator::CodeGenerator(Compiler *compiler, bool optimize)
     auto features = "";
 
     llvm::TargetOptions opt;
-#if LLVM_VERSION_MAJOR >= 21
     targetMachine_ = target->createTargetMachine(targetTriple, cpu, features, opt, llvm::Reloc::PIC_);
     module()->setTargetTriple(targetTriple);
-#else
-    targetMachine_ = target->createTargetMachine(targetTriple.str(), cpu, features, opt, llvm::Reloc::PIC_);
-    module()->setTargetTriple(targetTriple.str());
-#endif
     module()->setDataLayout(targetMachine_->createDataLayout());
 
     optimizationManager_ = std::make_unique<OptimizationManager>(optimize, runTime_.get(), targetMachine_);
@@ -210,7 +204,7 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
             }
         }
         else if (!function->memoryFlowTypeForThis().isEscaping()) {
-            fn->addParamAttr(i, llvm::Attribute::NoCapture);
+            fn->addParamAttr(i, llvm::Attribute::getWithCaptureInfo(fn->getContext(), llvm::CaptureInfo::none()));
         }
 
         if (function->typeContext().calleeType().type() == TypeType::ValueType && !function->mutating()) {
@@ -236,13 +230,13 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
     }
     if (!function->genericParameters().empty() && dynamic_cast<Class*>(function->owner()) == nullptr) {
         fn->addParamAttr(i, llvm::Attribute::NonNull);
-        fn->addParamAttr(i, llvm::Attribute::NoCapture);
+        fn->addParamAttr(i, llvm::Attribute::getWithCaptureInfo(fn->getContext(), llvm::CaptureInfo::none()));
         fn->addParamAttr(i, llvm::Attribute::ReadOnly);
         i++;
     }
     if (function->errorProne()) {
         fn->addParamAttr(i, llvm::Attribute::NonNull);
-        fn->addParamAttr(i, llvm::Attribute::NoCapture);
+        fn->addParamAttr(i, llvm::Attribute::getWithCaptureInfo(fn->getContext(), llvm::CaptureInfo::none()));
         fn->addParamAttr(i, llvm::Attribute::NoAlias);
         i++;
     }
@@ -266,7 +260,8 @@ void CodeGenerator::declareLlvmFunction(Function *function) {
 
 void CodeGenerator::addParamAttrs(const Parameter &param, size_t index, llvm::Function *function) {
     if (!param.memoryFlowType.isEscaping() && param.type->type().type() == TypeType::Class) {
-        function->addParamAttr(index, llvm::Attribute::NoCapture);
+        function->addParamAttr(index, llvm::Attribute::getWithCaptureInfo(function->getContext(),
+                                                                          llvm::CaptureInfo::none()));
     }
 
     addParamDereferenceable(param.type->type(), index, function, false);

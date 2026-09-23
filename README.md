@@ -15,16 +15,23 @@ We highly recommend to follow Emojicode’s Twitter account [@Real\_Emojicode][6
 
 Prerequisites (versions are recommendations):
 
-- A C++17 compiler, e.g. clang 18+ or gcc 13+
+- A C++17 compiler, e.g. clang 21+ or gcc 13+
 - CMake 3.20+ and (preferably) Ninja
-- LLVM 18 or newer (tested with LLVM 18 and 20)
+- LLVM 21 or newer (tested with LLVM 21, 22 and 23)
 - Python 3.8+ for testing
 
-On Ubuntu 24.04 these can be installed with:
+On Ubuntu 24.04 these can be installed from [apt.llvm.org](https://apt.llvm.org):
 
 ```sh
-sudo apt install clang-20 llvm-20-dev cmake ninja-build python3 rsync zlib1g-dev libzstd-dev
+wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-23 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+sudo apt update
+sudo apt install clang-23 llvm-23-dev cmake ninja-build python3 rsync zlib1g-dev libzstd-dev
 ```
+
+On macOS, `brew install llvm cmake ninja` provides everything needed; pass
+`-DLLVM_DIR="$(brew --prefix llvm)/lib/cmake/llvm"` to CMake, since Homebrew’s LLVM
+is not on the default search path.
 
 Steps:
 
@@ -45,7 +52,7 @@ Steps:
    ```
 
    If CMake does not pick up the right LLVM version, point it to LLVM’s CMake
-   directory, e.g. `-DLLVM_DIR=/usr/lib/llvm-20/lib/cmake/llvm`.
+   directory, e.g. `-DLLVM_DIR=/usr/lib/llvm-23/lib/cmake/llvm`.
 
    You can of course also run CMake in another directory or use another build
    system than Ninja. Refer to the CMake documentation for more information.
