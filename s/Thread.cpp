@@ -50,8 +50,8 @@ extern "C" void sMutexLock(Mutex *mutex) {
     mutex->mutex.lock();
 }
 
-extern "C" void sMutexTryLock(Mutex *mutex) {
-    mutex->mutex.try_lock();
+extern "C" runtime::Boolean sMutexTryLock(Mutex *mutex) {
+    return mutex->mutex.try_lock();
 }
 
 extern "C" void sMutexUnlock(Mutex *mutex) {
