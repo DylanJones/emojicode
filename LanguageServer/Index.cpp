@@ -66,15 +66,17 @@ void Index::leavingScope(const ASTBlock &block, const Scope &scope, FunctionAnal
 }
 
 void Index::analysisFailed(FunctionAnalyser *analyser) {
-    // The scopes that were not left yet are known to start at the function at the latest. Where they end is
-    // unknown, as the rest of the function was not analysed.
-    auto &begin = analyser->function()->position();
-    if (begin.isUnknown()) {
+    // The scopes that were not left yet are known to start at the function at the latest and to end at its 🍉 at the
+    // latest. Where exactly is unknown, as the rest of the function was not analysed.
+    auto function = analyser->function();
+    auto &begin = function->position();
+    if (begin.isUnknown() || function->ast() == nullptr || function->ast()->endPosition().isUnknown()) {
         return;
     }
+    auto &end = function->ast()->endPosition();
     for (auto &scope : analyser->scoper().scopes()) {
         recordScope(Location{path(begin.file), begin.line, begin.character},
-                    Location{path(begin.file), SIZE_MAX, SIZE_MAX}, scope, analyser);
+                    Location{path(end.file), end.line, end.character}, scope, analyser);
     }
 }
 

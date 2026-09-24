@@ -566,6 +566,20 @@ class CompletionTests(ServerTestCase):
                                                            "position": {"line": 5, "character": 6}})["items"]
         self.assertEqual(items[0]["label"], "counter")
 
+    def test_no_variables_of_functions_with_errors_elsewhere(self):
+        # 🅰️ has an error, so its analysis stops with its scope open. Its variables must not be offered in 🏁.
+        text = ("🐇 🐟 🍇\n  🆕 🍇🍉\n  ❗️ 🅰️ 🍇\n    5 ➡️ alphabet\n    😀 🔤a🔤 ➕ 1❗️\n  🍉\n🍉\n"
+                "🏁 🍇\n  🍇 alpaca 🔢\n    😀 alpacas❗️\n  🍉 ➡️ f\n  alp\n🍉\n")
+        path = self.write("scopes.emojic", text)
+        client = self.start()
+        client.open(path)
+        client.diagnostics(path)
+        items = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                           "position": {"line": 11, "character": 5}})["items"]
+        labels = [item["label"] for item in items]
+        self.assertNotIn("alphabet", labels)
+        self.assertNotIn("alpaca", labels)
+
     def test_variables_before_better_matches(self):
         # "sum" starts many emoji names and documentation words, but only a later word of the variable's name.
         path = self.write("sum.emojic", "🏁 🍇\n  1 ➡️ total_sum\n  sum\n🍉\n")
