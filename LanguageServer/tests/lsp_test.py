@@ -448,6 +448,34 @@ class NavigationTests(ServerTestCase):
                 classes.append(line)
         self.assertEqual(classes[0], 2)
 
+    def semantic_types(self, text):
+        """Returns the semantic token type of the first token with each text."""
+        data = self.client.request("textDocument/semanticTokens/full",
+                                   {"textDocument": {"uri": uri(self.path)}})["data"]
+        legend = self.client.capabilities["semanticTokensProvider"]["legend"]
+        tokens = {}
+        line = character = 0
+        lines = text.split("\n")
+        for i in range(0, len(data), 5):
+            delta_line, delta_start, length, kind = data[i:i + 4]
+            line += delta_line
+            character = character + delta_start if delta_line == 0 else delta_start
+            token = lines[line].encode("utf-16-le")[character * 2:(character + length) * 2].decode("utf-16-le")
+            tokens.setdefault((token, line), legend["tokenTypes"][kind])
+        return tokens
+
+    def test_semantic_tokens_of_unchanged_code_while_there_are_errors(self):
+        expected = self.semantic_types(FISH)
+        call = position(FISH, "🏊", 2)["line"]
+        self.assertEqual(expected[("🏊", call)], "method")
+        # A syntax error, and an error in a declaration, stop the analysis before the function bodies.
+        for broken in ("  ❗️ 🐽 🍇\n", "  ❗️ 🐽 a 🦖 🍇🍉\n"):
+            text = FISH.replace("  🆕 🍇🍉\n", "  🆕 🍇🍉\n" + broken)
+            self.client.change(self.path, text)
+            tokens = self.semantic_types(text)
+            self.assertEqual(tokens[("🏊", call + 1)], "method", broken)
+            self.assertEqual(tokens[("😀", text.split("\n").index("  😀 🔤Depth 🧲total🧲🔤❗️"))], "method")
+
     def test_document_symbols(self):
         symbols = self.client.request("textDocument/documentSymbol", {"textDocument": {"uri": uri(self.path)}})
         self.assertEqual([s["name"] for s in symbols], ["🐟"])

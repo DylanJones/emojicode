@@ -70,6 +70,9 @@ private:
     /// Returns the latest analysis of the package that contains the open document at @p path, or nullptr. If
     /// @p checkPending is true, the package is checked first if it has pending changes.
     const Analysis* analysisFor(const std::string &path, bool checkPending = true);
+    /// Returns the last analysis of the package that contains the open document at @p path that analysed the function
+    /// bodies, if @p analysis, its latest analysis, did not. Otherwise returns nullptr.
+    const Analysis* previousAnalysis(const std::string &path, const Analysis *analysis);
 
     void respond(const rapidjson::Value &id, rapidjson::Value &result, rapidjson::Document &document);
     void respondError(const rapidjson::Value &id, int code, const std::string &message);
@@ -124,7 +127,8 @@ private:
     std::map<std::string, std::string> roots_;
     /// The last analysis of each root file.
     std::map<std::string, Analysis> analyses_;
-    /// The last analysis of each root file that parsed, which completion uses while the code being typed does not.
+    /// The last analysis of each root file that analysed the function bodies, if the latest one did not. Completion and
+    /// semantic tokens use it while the code being typed has errors that stop the analysis.
     std::map<std::string, Analysis> parsedAnalyses_;
     /// The files for which diagnostics were published from each root file.
     std::map<std::string, std::set<std::string>> published_;

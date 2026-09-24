@@ -467,6 +467,14 @@ const Analysis* Server::analysisFor(const std::string &path, bool checkPending) 
     return analysis == analyses_.end() ? nullptr : &analysis->second;
 }
 
+const Analysis* Server::previousAnalysis(const std::string &path, const Analysis *analysis) {
+    if (analysis == nullptr || analysis->analysed) {
+        return nullptr;
+    }
+    auto previous = parsedAnalyses_.find(analysis->rootPath);
+    return previous == parsedAnalyses_.end() ? nullptr : &previous->second;
+}
+
 Navigator Server::navigator(const Analysis &analysis, const std::string &path, bool describe) {
     return Navigator(analysis, path, [this](const std::string &path) -> const SourceText& { return sourceText(path); },
                      describe);
@@ -579,7 +587,20 @@ void Server::semanticTokens(const Value &id, const Value &params) {
     auto path = uriToPath(string(member(params, "textDocument"), "uri"));
     auto analysis = documents_.count(path) > 0 ? analysisFor(path) : nullptr;
     if (analysis != nullptr) {
-        for (auto value : EmojicodeLanguageServer::semanticTokens(navigator(*analysis, path, false), encoding_)) {
+        // While the analysis stops at an error, unchanged code is classified as it was in the last analysis that
+        // analysed the function bodies, so that it does not change color with every key press.
+        std::optional<SourceText> previousText;
+        std::optional<Navigator> previousNavigator;
+        auto previous = previousAnalysis(path, analysis);
+        auto text = previous != nullptr ? previous->texts.find(path) : analysis->texts.end();
+        if (previous != nullptr && text != previous->texts.end()) {
+            previousText.emplace(text->second);
+            previousNavigator.emplace(*previous, path, [&](const std::string &p) -> const SourceText& {
+                return p == path ? *previousText : sourceText(p);
+            }, false);
+        }
+        for (auto value : EmojicodeLanguageServer::semanticTokens(navigator(*analysis, path, false), encoding_,
+                                                                  previousNavigator ? &*previousNavigator : nullptr)) {
             data.PushBack(value, allocator);
         }
     }
@@ -646,11 +667,8 @@ void Server::completion(const Value &id, const Value &params) {
     if (position) {
         auto &path = position->first;
         auto analysis = analysisFor(path, false);
-        if (analysis != nullptr && !analysis->analysed) {
-            auto parsed = parsedAnalyses_.find(roots_[path]);
-            if (parsed != parsedAnalyses_.end()) {
-                analysis = &parsed->second;
-            }
+        if (auto previous = previousAnalysis(path, analysis)) {
+            analysis = previous;
         }
         auto &source = sourceText(path);
         Completer completer(analysis, path, source, snippetSupport_);

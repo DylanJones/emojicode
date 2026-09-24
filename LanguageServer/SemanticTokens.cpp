@@ -4,6 +4,7 @@
 //
 
 #include "SemanticTokens.hpp"
+#include <algorithm>
 #include <optional>
 
 namespace EmojicodeLanguageServer {
@@ -77,7 +78,54 @@ std::optional<Classification> classify(const Symbol &symbol) {
     return std::nullopt;
 }
 
-std::optional<Classification> classify(const TokenSpan &token, const Navigator &navigator) {
+/// Maps the tokens of a file to those of a previous version of it, on the lines before and after the lines that
+/// changed.
+class PreviousVersion {
+public:
+    PreviousVersion(const SourceText &current, const Navigator &previous)
+        : current_(current), previous_(previous), source_(previous.source()) {
+        auto &now = current.lines;
+        auto &then = source_.lines;
+        auto common = std::min(now.lineCount(), then.lineCount());
+        while (prefix_ < common && now.line(prefix_) == then.line(prefix_)) {
+            prefix_++;
+        }
+        while (suffix_ < common - prefix_ &&
+               now.line(now.lineCount() - 1 - suffix_) == then.line(then.lineCount() - 1 - suffix_)) {
+            suffix_++;
+        }
+    }
+
+    /// Returns what the token of the previous version that corresponds to @p token referred to.
+    std::optional<Symbol> symbol(const TokenSpan &token) const {
+        auto position = current_.lines.lineAndCharacter(token.start);
+        size_t line;
+        if (position.first < prefix_) {
+            line = position.first;
+        }
+        else if (position.first >= current_.lines.lineCount() - suffix_) {
+            line = position.first - current_.lines.lineCount() + source_.lines.lineCount();
+        }
+        else {
+            return std::nullopt;
+        }
+        auto previous = tokenStartingAt(source_.tokens, source_.lines.offset(line, position.second));
+        if (previous == nullptr || previous->value != token.value) {
+            return std::nullopt;
+        }
+        return previous_.symbol(*previous);
+    }
+
+private:
+    const SourceText &current_;
+    const Navigator &previous_;
+    const SourceText &source_;
+    size_t prefix_ = 0;
+    size_t suffix_ = 0;
+};
+
+std::optional<Classification> classify(const TokenSpan &token, const Navigator &navigator,
+                                       const PreviousVersion *previous) {
     switch (token.type) {
         case TokenType::SinglelineComment:
         case TokenType::MultilineComment:
@@ -127,8 +175,12 @@ std::optional<Classification> classify(const TokenSpan &token, const Navigator &
         case TokenType::Mutable:
             return Classification{Modifier};
         case TokenType::Identifier:
-        case TokenType::Variable:
-            if (auto symbol = navigator.symbol(token)) {
+        case TokenType::Variable: {
+            auto symbol = navigator.symbol(token);
+            if (!symbol && previous != nullptr) {
+                symbol = previous->symbol(token);
+            }
+            if (symbol) {
                 if (auto classification = classify(*symbol)) {
                     return classification;
                 }
@@ -137,6 +189,7 @@ std::optional<Classification> classify(const TokenSpan &token, const Navigator &
                 return Classification{Variable};
             }
             return token.value.empty() ? std::nullopt : contextualKeyword(token.value.front());
+        }
         default:
             // Punctuation like 🍇 🍉 ❗️ is left to the client's syntax highlighting.
             return std::nullopt;
@@ -154,8 +207,13 @@ const std::vector<const char *> kSemanticTokenModifiers = {
     "declaration", "readonly", "static", "defaultLibrary", "documentation",
 };
 
-std::vector<uint32_t> semanticTokens(const Navigator &navigator, PositionEncoding encoding) {
+std::vector<uint32_t> semanticTokens(const Navigator &navigator, PositionEncoding encoding,
+                                     const Navigator *previous) {
     auto &source = navigator.source();
+    std::optional<PreviousVersion> previousVersion;
+    if (previous != nullptr) {
+        previousVersion.emplace(source, *previous);
+    }
     std::vector<uint32_t> data;
     size_t previousLine = 0;
     size_t previousStart = 0;
@@ -175,7 +233,7 @@ std::vector<uint32_t> semanticTokens(const Navigator &navigator, PositionEncodin
     };
 
     for (auto &token : source.tokens) {
-        auto classification = classify(token, navigator);
+        auto classification = classify(token, navigator, previousVersion ? &*previousVersion : nullptr);
         if (!classification) {
             continue;
         }
