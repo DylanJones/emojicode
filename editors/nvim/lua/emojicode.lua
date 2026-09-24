@@ -11,8 +11,9 @@ local function count(text, pattern)
   return n
 end
 
---- The indentation of line `lnum`: one level deeper than the previous line if that line opened more blocks (🍇) or
---- collections (🍿) than it closed, and one level shallower if this line starts by closing one (🍉 or 🍆).
+--- The indentation of line `lnum`: one level deeper than the previous line if that line opened more blocks (🍇),
+--- collections (🍿) or generic parameters and arguments (🐚) than it closed, and one level shallower if this line
+--- starts by closing one (🍉 or 🍆).
 function M.indent(lnum)
   lnum = lnum or vim.v.lnum
   local previous = vim.fn.prevnonblank(lnum - 1)
@@ -22,7 +23,7 @@ function M.indent(lnum)
   local indent = vim.fn.indent(previous)
   local width = vim.fn.shiftwidth()
   local line = code(vim.fn.getline(previous))
-  local opened = count(line, '🍇') + count(line, '🍿') - count(line, '🍉') - count(line, '🍆')
+  local opened = count(line, '🍇') + count(line, '🍿') + count(line, '🐚') - count(line, '🍉') - count(line, '🍆')
   -- A line that starts by closing was already dedented; what it opens after that counts.
   if line:match('^%s*🍉') or line:match('^%s*🍆') then
     opened = opened + 1
