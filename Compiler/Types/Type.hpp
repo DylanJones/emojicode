@@ -305,17 +305,23 @@ public:
     void setExact(bool b) { forceExact_ = b; }
 
     inline bool operator<(const Type &rhs) const {
+        // Generic arguments are deliberately compared with themselves, i.e. ignored: maps keyed on types rely on
+        // types that differ only in their generic arguments being equivalent.
         return std::tie(typeContent_, typeDefinition_, rhs.genericArguments_, genericArgumentIndex_,
-                        localResolutionConstraint_) < std::tie(rhs.typeContent_, rhs.typeDefinition_,
-                                                               rhs.genericArguments_, rhs.genericArgumentIndex_,
-                                                               rhs.localResolutionConstraint_);
+                        localResolutionConstraint_, cCallable_) < std::tie(rhs.typeContent_, rhs.typeDefinition_,
+                                                                           rhs.genericArguments_,
+                                                                           rhs.genericArgumentIndex_,
+                                                                           rhs.localResolutionConstraint_,
+                                                                           rhs.cCallable_);
     }
 
     inline bool operator==(const Type &rhs) const {
         return std::tie(typeContent_, typeDefinition_, rhs.genericArguments_, genericArgumentIndex_,
-                        localResolutionConstraint_) == std::tie(rhs.typeContent_, rhs.typeDefinition_,
-                                                                rhs.genericArguments_, rhs.genericArgumentIndex_,
-                                                                rhs.localResolutionConstraint_);
+                        localResolutionConstraint_, cCallable_) == std::tie(rhs.typeContent_, rhs.typeDefinition_,
+                                                                            rhs.genericArguments_,
+                                                                            rhs.genericArgumentIndex_,
+                                                                            rhs.localResolutionConstraint_,
+                                                                            rhs.cCallable_);
     }
 
     inline bool operator!=(const Type &rhs) const { return !(*this == rhs); }
@@ -324,6 +330,11 @@ public:
     bool isManaged() const;
     /// Whether this is a value type whose C representation is a pointer, like 📍 and 🕳 of the c package.
     bool isCPointer() const;
+    /// Whether this is a C function pointer type, 🍇🎍🌊 … 🍉. Values of such types are plain function pointers
+    /// without a capture.
+    bool isCCallable() const { return type() == TypeType::Callable && cCallable_; }
+    /// Makes this callable type a C function pointer type.
+    void setCCallable() { cCallable_ = true; }
     /// Whether values of this type can be passed to and returned from C functions (🎍🌊).
     bool isCRepresentable() const;
 
@@ -366,6 +377,7 @@ private:
     bool isReference_ = false;
     bool mutable_ = false;
     bool forceExact_ = false;
+    bool cCallable_ = false;
 
     void typeName(Type type, const TypeContext &typeContext, std::string &string, Package *package) const;
     bool identicalGenericArguments(Type to, const TypeContext &typeContext, GenericInferer *inf) const;

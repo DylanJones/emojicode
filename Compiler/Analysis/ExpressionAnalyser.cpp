@@ -275,6 +275,7 @@ bool doStorageTypesMatch(const Type &a, const Type &b, const TypeContext &tc) {
 
 bool ExpressionAnalyser::callableBoxingRequired(const TypeExpectation &expectation, const Type &exprType) const {
     if (expectation.type() == TypeType::Callable && exprType.type() == TypeType::Callable &&
+        !expectation.isCCallable() && !exprType.isCCallable() &&
         expectation.parametersCount() == exprType.parametersCount()) {
         auto mismatch = std::mismatch(expectation.parameters(), expectation.parametersEnd(),
                                       exprType.parameters(), [this](const Type &a, const Type &b) {

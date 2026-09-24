@@ -110,6 +110,7 @@ std::unique_ptr<ASTType> AbstractParser::parseMultiProtocol() {
 }
 
 std::unique_ptr<ASTType> AbstractParser::parseCallableType() {
+    bool c = stream_.consumeTokenIf(E_WATER_WAVE, TokenType::Decorator);
     std::vector<std::unique_ptr<ASTType>> params;
     while (stream_.nextTokenIsEverythingBut(TokenType::BlockEnd) &&
             stream_.nextTokenIsEverythingBut(TokenType::RightProductionOperator)) {
@@ -119,8 +120,12 @@ std::unique_ptr<ASTType> AbstractParser::parseCallableType() {
                                                                                  : nullptr;
     auto errorType = stream_.consumeTokenIf(E_CONSTRUCTION_SIGN) ? parseType() : nullptr;
     auto pos = stream_.consumeToken(TokenType::BlockEnd).position();
-    return std::make_unique<ASTCallableType>(std::move(returnType), std::move(params), std::move(errorType),
-                                             pos, package_);
+    auto type = std::make_unique<ASTCallableType>(std::move(returnType), std::move(params), std::move(errorType),
+                                                  pos, package_);
+    if (c) {
+        type->setC();
+    }
+    return type;
 }
 
 std::unique_ptr<ASTType> AbstractParser::parseGenericVariable() {

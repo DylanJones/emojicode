@@ -7,6 +7,7 @@
 //
 
 #include "ASTStatements.hpp"
+#include "ASTUnsafeBlock.hpp"
 #include "Analysis/FunctionAnalyser.hpp"
 #include "Compiler.hpp"
 #include "Functions/FunctionType.hpp"
@@ -47,7 +48,12 @@ void ASTBlock::analyseMemoryFlow(MFFunctionAnalyser *analyser) {
 
 ASTReturn* ASTBlock::getReturn() const {
     if (returnedCertainly()) {
-        return dynamic_cast<ASTReturn*>(stmts_[stop_ - 1].get());
+        auto last = stmts_[stop_ - 1].get();
+        // A ☣️ block does not open a scope, so a return at its end is the return of this block.
+        if (auto unsafeBlock = dynamic_cast<ASTUnsafeBlock*>(last)) {
+            return unsafeBlock->block().getReturn();
+        }
+        return dynamic_cast<ASTReturn*>(last);
     }
     return nullptr;
 }

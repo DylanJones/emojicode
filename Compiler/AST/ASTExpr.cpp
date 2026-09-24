@@ -7,6 +7,7 @@
 //
 
 #include "ASTExpr.hpp"
+#include "Compiler.hpp"
 #include "Analysis/ExpressionAnalyser.hpp"
 #include "MemoryFlowAnalysis/MFFunctionAnalyser.hpp"
 #include "Types/TypeExpectation.hpp"
@@ -32,6 +33,9 @@ Type ASTCallableCall::analyse(ExpressionAnalyser *analyser) {
     if (args_.args().size() != type.parametersCount()) {
         throw CompilerError(position(), "Callable expects ", type.parametersCount(),
                             " arguments but ", args_.args().size(), " were supplied.");
+    }
+    if (type.isCCallable() && !analyser->isInUnsafeBlock()) {
+        analyser->compiler()->error(CompilerError(position(), "Calling a C function pointer requires a ☣️ block."));
     }
     for (size_t i = 0; i < type.parametersCount(); i++) {
         analyser->expectType(type.parameters()[i], &args_.args()[i]);

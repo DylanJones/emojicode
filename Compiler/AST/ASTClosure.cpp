@@ -56,6 +56,14 @@ Type ASTClosure::comply(ExpressionAnalyser *analyser, const TypeExpectation &exp
 
         capture_.self = analyser->typeContext().calleeType();
     }
+    if (closure_->isC()) {
+        if (!capture_.captures.empty() || capture_.capturesSelf()) {
+            throw CompilerError(position(), "A closure with 🎍🌊 cannot capture variables or 👇.");
+        }
+        if (isEscaping_) {
+            throw CompilerError(position(), "A closure with 🎍🌊 is a C function and cannot be 🎍🥡.");
+        }
+    }
     return Type(closure_.get());
 }
 

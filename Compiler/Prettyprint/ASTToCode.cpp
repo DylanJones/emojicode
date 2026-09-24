@@ -378,7 +378,7 @@ void ASTTypeId::toCodeType(PrettyStream &pretty) const {
 }
 
 void ASTCallableType::toCodeType(PrettyStream &pretty) const {
-    pretty << "🍇";
+    pretty << (c_ ? "🍇🎍🌊" : "🍇");
     for (auto &type : params_) {
         pretty << type;
     }

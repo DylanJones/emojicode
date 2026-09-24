@@ -99,6 +99,8 @@ compilation_tests = [
     "ffiPointers",
     "ffiStructByValue",
     "ffiStructPointer",
+    "ffiCallbacks",
+    "unsafeBlockReturnRelease",
     "threadUnjoined",
     "mutexTryLock",
     "inferLiteralFromExpec",

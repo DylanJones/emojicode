@@ -201,7 +201,7 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
         fn->addFnAttr(llvm::Attribute::InlineHint);
     }
 
-    size_t i = function->isClosure() ? 1 : 0;
+    size_t i = function->isClosure() && !function->isC() ? 1 : 0;
     if (hasThisArgument(function) && !function->isClosure()) {
         addParamDereferenceable(function->typeContext().calleeType(), i, fn, false);
         if (function->functionType() == FunctionType::ObjectInitializer ||
@@ -292,9 +292,7 @@ llvm::Function* CodeGenerator::reuseCFunction(Function *function, llvm::Function
     return existing;
 }
 
-/// Returns the attribute C compilers put on an integer argument or return value of the type: Integers narrower than
-/// 32 bits are sign or zero extended.
-static llvm::Attribute::AttrKind cExtensionAttribute(const Type &type) {
+llvm::Attribute::AttrKind cExtensionAttribute(const Type &type) {
     if (type.type() != TypeType::ValueType || !type.valueType()->cRepresentation()) {
         return llvm::Attribute::None;
     }

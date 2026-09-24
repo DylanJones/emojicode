@@ -16,6 +16,13 @@
 namespace EmojicodeCompiler {
 
 Value* ASTClosure::generate(FunctionCodeGenerator *fg) const {
+    if (closure_->isC()) {
+        // A C function pointer: the closure captures nothing, so the function itself is the value.
+        closure_->createUnspecificReification();
+        fg->generator()->declareLlvmFunction(closure_.get());
+        ClosureCodeGenerator(capture_, closure_.get(), fg->generator(), false).generate();
+        return closure_->unspecificReification().function;
+    }
     if (!allocatesOnStack() && !isEscaping_) {
         auto ce = CompilerError(position(), "Using non-escaping closure as escaping value.");
         ce.addNotes(position(), "Add 🎍🥡 after 🍇 to make closure escaping.");

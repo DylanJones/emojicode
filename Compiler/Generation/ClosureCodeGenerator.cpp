@@ -24,6 +24,14 @@ ClosureCodeGenerator::ClosureCodeGenerator(Function *f, CodeGenerator *generator
 void ClosureCodeGenerator::declareArguments(llvm::Function *llvmFunction) {
     unsigned int i = 0;
     auto it = llvmFunction->args().begin();
+    if (function()->isC()) {  // C callables have no captures.
+        for (auto &arg : function()->parameters()) {
+            auto &llvmArg = *(it++);
+            setVariable(i++, &llvmArg);
+            llvmArg.setName(utf8(arg.name));
+        }
+        return;
+    }
     (it++)->setName("captures");
     for (auto &arg : function()->parameters()) {
         auto &llvmArg = *(it++);
