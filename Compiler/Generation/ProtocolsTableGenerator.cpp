@@ -23,7 +23,7 @@ llvm::Constant* ProtocolsTableGenerator::createProtocolTable(TypeDefinition *typ
     entries.reserve(typeDef->protocolTables().size());
     for (auto &entry : typeDef->protocolTables()) {
         entries.emplace_back(llvm::ConstantStruct::get(generator_->typeHelper().protocolConformanceEntry(), {
-            entry.first.protocol()->rtti(), entry.second
+            entry.first->rtti(), entry.second
         }));
     }
 
@@ -36,25 +36,25 @@ llvm::Constant* ProtocolsTableGenerator::createProtocolTable(TypeDefinition *typ
 }
 
 void ProtocolsTableGenerator::generate(const Type &type) {
-    std::map<Type, llvm::Constant *> tables;
+    std::map<Protocol *, llvm::Constant *> tables;
     auto boxInfo = generator_->boxInfoFor(type);
 
     for (auto &protocol : type.typeDefinition()->protocols()) {
         auto conformance = createDispatchTable(type, protocol, boxInfo);
-        tables.emplace(protocol.type->type().unboxed(), conformance);
+        tables.emplace(protocol.type->type().protocol(), conformance);
     }
 
     type.typeDefinition()->setProtocolTables(std::move(tables));
 }
 
 void ProtocolsTableGenerator::declareImported(const Type &type) {
-    std::map<Type, llvm::Constant *> tables;
+    std::map<Protocol *, llvm::Constant *> tables;
     if (type.type() != TypeType::Class) {
         type.unboxed().valueType()->setBoxInfo(generator_->runTime().declareBoxInfo(mangleBoxInfoName(type)));
     }
 
     for (auto &protocol : type.typeDefinition()->protocols()) {
-        tables.emplace(protocol.type->type().unboxed(), getConformanceVariable(type, protocol.type->type(), nullptr));
+        tables.emplace(protocol.type->type().protocol(), getConformanceVariable(type, protocol.type->type(), nullptr));
     }
 
     type.typeDefinition()->setProtocolTables(std::move(tables));
