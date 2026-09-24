@@ -57,8 +57,13 @@ public:
     /// @param file Path to the source file.
     SourceFile* read(std::string file);
 
+    /// Makes read() return @p content for the file at @p path instead of reading it from disk. Editors use this to
+    /// check files with unsaved changes. Paths are compared after being made absolute and canonical.
+    void setOverlay(const std::string &path, std::u32string content);
+
 private:
     std::map<std::string, std::unique_ptr<SourceFile>> cache_;
+    std::map<std::string, std::u32string> overlays_;
 };
 
 }  // namespace EmojicodeCompiler
