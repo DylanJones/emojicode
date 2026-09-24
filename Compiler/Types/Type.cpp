@@ -361,6 +361,10 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
             to.typeDefinition()->canInitFrom(*this)) {
         return true;
     }
+    if (is<TypeType::RealLiteral>() && to.is<TypeType::ValueType>() && to.valueType()->cRepresentation() &&
+            to.valueType()->cRepresentation()->isFloat()) {
+        return true;
+    }
     if ((is<TypeType::ListLiteral>() || is<TypeType::DictionaryLiteral>()) &&
             to.is<TypeType::ValueType>() && to.typeDefinition()->canInitFrom(*this)) {
         return std::equal(genericArguments().begin(), genericArguments().end(),

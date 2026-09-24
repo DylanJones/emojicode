@@ -7,6 +7,7 @@
 //
 
 #include "CodeGenerator.hpp"
+#include "CTrampolineGenerator.hpp"
 #include "Compiler.hpp"
 #include "CompilerError.hpp"
 #include "RunTimeHelper.hpp"
@@ -184,6 +185,10 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
     auto name = function->externalName().empty() ? mangleFunction(function, reificationContext.arguments())
     : function->externalName();
 
+    if (needsCTrampoline(function)) {
+        ft = cTrampolineFunctionType(function);
+        name = cTrampolineName(function);
+    }
     if (function->isC()) {
         if (auto existing = module()->getFunction(name)) {
             return reuseCFunction(function, existing, ft);
@@ -258,6 +263,20 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
     return fn;
 }
 
+llvm::FunctionType* CodeGenerator::cTrampolineFunctionType(Function *function) {
+    std::vector<llvm::Type *> params;
+    for (auto &param : function->parameters()) {
+        params.emplace_back(isCStructValue(param.type->type()) ? typeHelper().pointer()
+                                                               : typeHelper().llvmTypeFor(param.type->type()));
+    }
+    auto &returnType = function->returnType()->type();
+    if (isCStructValue(returnType)) {
+        params.emplace_back(typeHelper().pointer());
+        return llvm::FunctionType::get(llvm::Type::getVoidTy(context()), params, false);
+    }
+    return llvm::FunctionType::get(typeHelper().llvmTypeFor(returnType), params, false);
+}
+
 llvm::Function* CodeGenerator::reuseCFunction(Function *function, llvm::Function *existing, llvm::FunctionType *ft) {
     // Several 🎍🌊 declarations, or the run-time library, can declare the same C function, e.g. malloc.
     if (existing->getFunctionType() != ft) {
@@ -294,7 +313,7 @@ void CodeGenerator::addCExtensionAttributes(Function *function, llvm::Function *
         }
     }
     auto attribute = cExtensionAttribute(function->returnType()->type());
-    if (attribute != llvm::Attribute::None) {
+    if (attribute != llvm::Attribute::None && !fn->getReturnType()->isVoidTy()) {
         fn->addRetAttr(attribute);
     }
 }

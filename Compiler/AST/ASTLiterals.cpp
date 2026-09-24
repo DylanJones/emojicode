@@ -44,7 +44,7 @@ Type ASTNumberLiteral::analyse(ExpressionAnalyser *analyser) {
     if (type_ == NumberType::Integer) {
         return Type::integerLiteral();
     }
-    return analyser->real();
+    return Type::realLiteral();
 }
 
 Type ASTNumberLiteral::comply(ExpressionAnalyser *analyser, const TypeExpectation &expectation) {

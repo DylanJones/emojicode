@@ -10,6 +10,7 @@
 #include "Analysis/SemanticAnalyser.hpp"
 #include "Compiler.hpp"
 #include "Generation/CodeGenerator.hpp"
+#include "Generation/CTrampolineGenerator.hpp"
 #include "Package/RecordingPackage.hpp"
 #include "Parsing/AbstractParser.hpp"
 #include "Prettyprint/PrettyPrinter.hpp"
@@ -19,6 +20,7 @@
 #include <llvm/Support/Path.h>
 #include <llvm/Support/Program.h>
 #include <llvm/Support/StringSaver.h>
+#include <llvm/Support/raw_ostream.h>
 #include "MemoryFlowAnalysis/MFAnalyser.hpp"
 #include "Types/ValueType.hpp"
 #include "Functions/Function.hpp"
@@ -131,6 +133,21 @@ void Compiler::NativeCompilationPhase::perform(Compiler *compiler) {
     auto package = compiler->mainPackage();
     llvm::StringRef base = objectFilePath_;
     base.consume_back(".o");
+
+    auto trampolines = generateCTrampolines(package);
+    if (!trampolines.empty()) {
+        auto source = (base + "_trampolines.c").str();
+        auto object = (base + "_trampolines.o").str();
+        std::error_code error;
+        llvm::raw_fd_ostream stream(source, error);
+        if (error) {
+            throw CompilerError(SourcePosition(), "Could not write ", source, ": ", error.message());
+        }
+        stream << trampolines;
+        stream.close();
+        runTool(cc_, { "-c", "-O2", "-w", source, "-o", object });
+        compiler->nativeObjects_.emplace_back(object);
+    }
 
     for (auto &hint : package->linkHints()) {
         if (!Package::isNativeSourceHint(hint)) {

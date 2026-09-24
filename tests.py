@@ -96,6 +96,8 @@ compilation_tests = [
     "linkHintSource",
     "ffiScalars",
     "ffiPointers",
+    "ffiStructByValue",
+    "ffiStructPointer",
     "threadUnjoined",
     "mutexTryLock",
     "inferLiteralFromExpec",
