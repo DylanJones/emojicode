@@ -86,7 +86,8 @@ void Index::recordScope(const Location &begin, const Location &end, const Scope 
     for (auto &pair : scope.map()) {
         auto &variable = pair.second;
         auto &p = variable.position();
-        if (p.isUnknown()) {
+        // A closure's copy of a variable it captures is at the captured variable, whose scope contains the closure.
+        if (p.isUnknown() || variable.isCaptured()) {
             continue;
         }
         variables_.push_back(IndexedVariable{variable.name(), variable.type(), variable.constant(),

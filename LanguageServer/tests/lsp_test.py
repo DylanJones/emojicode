@@ -472,6 +472,25 @@ class NavigationTests(ServerTestCase):
         self.assertEqual(self.definition("item", 2)[1], position(FISH, "item"))
         self.assertEqual(self.definition("depth", 2)[1], position(FISH, "depth"))
 
+    def test_definition_of_captured_variables(self):
+        text = ("🏁 🍇\n  5 ➡️ x\n  0 ➡️ 🖍🆕 y\n  🍇\n    😀 🔡 x❗️❗️\n    😀 🔡 x❗️❗️\n    6 ➡️ 🖍y\n"
+                "    🍇\n      😀 🔡 x❗️❗️\n    🍉 ➡️ g\n  🍉 ➡️ f\n🍉\n")
+        path = self.write("closure.emojic", text)
+        self.client.open(path)
+        # The closure mutates its copy of y, so the warning that y is never mutated is right.
+        self.assertEqual([d for d in self.client.diagnostics(path) if d["severity"] == 1], [])
+        for occurrence in (2, 3, 4):
+            result = self.client.request("textDocument/definition", {"textDocument": {"uri": uri(path)},
+                                                                     "position": position(text, "x", occurrence)})
+            self.assertEqual(result["range"]["start"], position(text, "x"), occurrence)
+        hover = self.client.request("textDocument/hover", {"textDocument": {"uri": uri(path)},
+                                                           "position": position(text, "x")})
+        self.assertEqual(hover["contents"]["value"], "```emojicode\nx 🔢\n```")
+        # Assigning to a captured variable does not declare it.
+        hover = self.client.request("textDocument/hover", {"textDocument": {"uri": uri(path)},
+                                                           "position": position(text, "y", 2)})
+        self.assertIsNone(hover)
+
     def test_definition_in_standard_library(self):
         path, start = self.definition("😀")
         self.assertTrue(path.endswith("🏛"), path)
