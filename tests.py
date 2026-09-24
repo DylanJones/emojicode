@@ -87,6 +87,7 @@ compilation_tests = [
     "errorInitializer",
     "errorReraiseMem",
     "errorReraiseMem2",
+    "errorHandlerDiscardMem",
     "valueTypeCopySelf",
     "valueTypeBoxCopySelf",
     "includer",
