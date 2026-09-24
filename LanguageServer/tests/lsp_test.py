@@ -257,6 +257,33 @@ class DiagnosticsTests(ServerTestCase):
             pass
         self.assertEqual(last, [])
 
+    def test_include_from_another_directory(self):
+        self.write("app/main.🍇", "📜 🔤../lib/util.🍇🔤\n🏁 🍇\n  🆕🐠❗️ ➡️ x\n🍉\n")
+        util = self.write("lib/util.🍇", "🐇 🐠 🍇\n  🆕 🍇🍉\n🍉\n")
+        client = self.start()
+        client.open(util)
+        self.assertEqual(client.diagnostics(util), [])
+        hover = client.request("textDocument/hover", {"textDocument": {"uri": uri(util)},
+                                                      "position": {"line": 0, "character": 3}})
+        self.assertIn("🐇 🐠", hover["contents"]["value"])
+
+    def test_scroll_in_code_is_not_an_include(self):
+        data = self.write("data.🍇", TYPE_ERROR)
+        self.write("reader.🍇", "📦 files 🏠\n🏁 🍇\n  🍺🆕📄▶️📜 🔤data.🍇🔤❗️ ➡️ file\n🍉\n")
+        client = self.start()
+        client.open(data)
+        self.assertEqual(len(client.diagnostics(data)), 1)
+
+    def test_packages_and_programs(self):
+        client = self.start()
+        # A package is a program unless it exports types and has no 🏁 block, whatever its file is named.
+        for name, text, diagnostics in (("hello/hello.🍇", "🐇 🐠 🍇\n  🆕 🍇🍉\n🍉\n", ["No 🏁 block was found."]),
+                                        ("lib/other.🍇", "🌍 🐇 🐠 🍇\n  🆕 🍇🍉\n🍉\n", []),
+                                        ("lib/lib.🍇", "📜 🔤other.🍇🔤\n", [])):
+            path = self.write(name, text)
+            client.open(path)
+            self.assertEqual([d["message"] for d in client.diagnostics(path)], diagnostics, name)
+
     def test_debounce_checks_only_last_change(self):
         path = self.write("main.emojic", HELLO)
         client = self.start()
@@ -410,6 +437,10 @@ class NavigationTests(ServerTestCase):
     def test_definition_in_standard_library(self):
         path, start = self.definition("😀")
         self.assertTrue(path.endswith("🏛"), path)
+        # The interface of the package is checked as that package.
+        path = urllib.parse.urlparse(path).path
+        self.client.open(path)
+        self.assertEqual(self.client.diagnostics(path, timeout=60), [])
 
     def test_semantic_tokens(self):
         legend = self.client.capabilities["semanticTokensProvider"]["legend"]
@@ -638,6 +669,7 @@ class RobustnessTests(ServerTestCase):
         b = self.write("b.emojic", "📜 🔤a.emojic🔤\n")
         self.start()
         self.client.open(a)
+        # b includes a, so it is the root, and its include of a is circular when a includes it again.
         self.assertIn("circular", self.client.diagnostics(a)[0]["message"])
         self.client.open(b)
         self.use_every_feature(b, "📜 🔤a.emojic🔤\n")

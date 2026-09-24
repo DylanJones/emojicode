@@ -76,7 +76,15 @@ public:
     Analysis check(const std::string &rootPath) const;
 
 private:
+    /// The most directory entries that are looked at to find the file that includes a file.
+    static constexpr size_t kMaxIncluderSearchEntries = 5000;
+
+    /// Returns the canonical paths of the files that the file at @p path includes with 📜.
+    std::vector<std::string> includes(const std::string &path) const;
+    /// Returns a file that includes the file at the canonical @p path, or an empty string.
     std::string includer(const std::string &path) const;
+    /// Whether the file at @p rootPath is the main file of a package that is not a program.
+    bool isLibrary(const std::string &rootPath) const;
 
     std::vector<std::string> searchPaths_;
     const std::map<std::string, std::u32string> &overlays_;
