@@ -13,7 +13,10 @@
 #include "Package/RecordingPackage.hpp"
 #include "Parsing/AbstractParser.hpp"
 #include "Prettyprint/PrettyPrinter.hpp"
+#include <llvm/Support/CommandLine.h>
 #include <llvm/Support/FileSystem.h>
+#include <llvm/Support/Program.h>
+#include <llvm/Support/StringSaver.h>
 #include "MemoryFlowAnalysis/MFAnalyser.hpp"
 #include "Types/ValueType.hpp"
 #include "Functions/Function.hpp"
@@ -76,33 +79,60 @@ void Compiler::LLVMIREmissionPhase::perform(Compiler *compiler) {
     compiler->generator_->emit(true, path_);
 }
 
-void Compiler::LinkPhase::perform(Compiler *compiler) {
-    std::stringstream cmd;
+/// Runs @p tool with @p arguments and waits for it to finish.
+/// @param tool The program to run. As it is usually taken from an environment variable like $CXX, it may contain
+///             arguments of its own, e.g. "ccache c++".
+/// @throws CompilerError if the tool could not be run or did not exit successfully.
+static void runTool(const std::string &tool, const std::vector<std::string> &arguments) {
+    llvm::BumpPtrAllocator allocator;
+    llvm::StringSaver saver(allocator);
+    llvm::SmallVector<const char *, 4> toolArgs;
+    llvm::cl::TokenizeGNUCommandLine(tool, saver, toolArgs);
+    if (toolArgs.empty()) {
+        throw CompilerError(SourcePosition(), "No program to run was specified.");
+    }
 
-    cmd << linker_ << " " << objectFilePath_;
+    std::vector<llvm::StringRef> args(toolArgs.begin(), toolArgs.end());
+    args.insert(args.end(), arguments.begin(), arguments.end());
+
+    auto program = llvm::sys::findProgramByName(args.front());
+    if (!program) {
+        throw CompilerError(SourcePosition(), "Could not find ", args.front().str(), ": ",
+                            program.getError().message(), ".");
+    }
+    std::string errorMessage;
+    auto status = llvm::sys::ExecuteAndWait(*program, args, std::nullopt, {}, 0, 0, &errorMessage);
+    if (status < 0) {
+        throw CompilerError(SourcePosition(), "Could not run ", tool, ": ", errorMessage, ".");
+    }
+    if (status > 0) {
+        throw CompilerError(SourcePosition(), tool, " failed with exit code ", status, ".");
+    }
+}
+
+void Compiler::LinkPhase::perform(Compiler *compiler) {
+    std::vector<std::string> args { objectFilePath_ };
+
+    for (auto &hint : compiler->mainPackage()->linkHints()) {
+        args.emplace_back("-l" + hint);
+    }
 
     for (auto it = compiler->packageImportOrder_.rbegin(); it != compiler->packageImportOrder_.rend(); it++) {
         auto package = *it;
-        auto path = compiler->findBinaryPathPackage(package->path(), package->name());
-        cmd << " " << path;
+        args.emplace_back(compiler->findBinaryPathPackage(package->path(), package->name()));
         for (auto &hint : package->linkHints()) {
-            cmd << " -l" << hint;
+            args.emplace_back("-l" + hint);
         }
     }
 
     auto runtimeLib = compiler->findBinaryPathPackage(compiler->searchPackage("runtime", SourcePosition()), "runtime");
-    cmd << " " << runtimeLib << " -o " << outPath_;
+    args.insert(args.end(), { runtimeLib, "-o", outPath_ });
 
-    system(cmd.str().c_str());
+    runTool(linker_, args);
 }
 
 void Compiler::ArchivePhase::perform(Compiler *compiler) {
-    std::string cmd = ar_;
-    cmd.append(" cr ");
-    cmd.append(outPath_);
-    cmd.append(" ");
-    cmd.append(objectFilePath_);
-    system(cmd.c_str());
+    runTool(ar_, { "cr", outPath_, objectFilePath_ });
 }
 
 std::string Compiler::searchPackage(const std::string &name, const SourcePosition &p) {
