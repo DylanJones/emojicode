@@ -46,8 +46,8 @@ std::unique_ptr<ASTType> AbstractParser::parseType() {
         return parseTypeAsValueType();
     }
 
-    if (stream_.consumeTokenIf(E_BLACK_MEDIUM_SQUARE)) {
-        return std::make_unique<ASTLiteralType>(Type::noReturn());
+    if (stream_.nextTokenIs(E_BLACK_MEDIUM_SQUARE)) {
+        return std::make_unique<ASTLiteralType>(Type::noReturn(), stream_.consumeToken().position());
     }
 
     bool optional = stream_.consumeTokenIf(E_CANDY);
@@ -58,7 +58,7 @@ std::unique_ptr<ASTType> AbstractParser::parseType() {
         if (optional) {
             package_->compiler()->error(CompilerError(token.position(), "🍬⚪️ is invalid."));
         }
-        return std::make_unique<ASTLiteralType>(Type::something());
+        return std::make_unique<ASTLiteralType>(Type::something(), token.position());
     }
     auto type = parseTypeMain();
     type->setOptional(optional);
@@ -83,8 +83,8 @@ std::unique_ptr<ASTType> AbstractParser::parseTypeMain() {
     if (stream_.nextTokenIs(E_BENTO_BOX)) {
         return parseMultiProtocol();
     }
-    if (stream_.consumeTokenIf(E_LARGE_BLUE_CIRCLE)) {
-        return std::make_unique<ASTLiteralType>(Type::someobject());
+    if (stream_.nextTokenIs(E_LARGE_BLUE_CIRCLE)) {
+        return std::make_unique<ASTLiteralType>(Type::someobject(), stream_.consumeToken().position());
     }
 
     return paresTypeId();

@@ -109,7 +109,8 @@ compilation_tests = [
     "errorReraisePrefix",
     "weak",
     "superMemoryFlow",
-    "interpolationDereference"
+    "interpolationDereference",
+    "genericDynDisableLiteralConstraint"
 ]
 
 if not (quick or valgrind):

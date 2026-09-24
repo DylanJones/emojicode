@@ -25,7 +25,8 @@ Class::Class(std::u32string name, Package *pkg, SourcePosition p, const std::u32
                                          final_(final), foreign_(foreign) {}
 
 std::vector<Type> Class::superGenericArguments() const {
-    if (superType_ != nullptr && superType_->wasAnalysed()) {
+    // The super type may be analysed but invalid, which analyseSuperType() reports.
+    if (superType_ != nullptr && superType_->wasAnalysed() && superType_->type().type() == TypeType::Class) {
         return superType_->type().genericArguments();
     }
     return std::vector<Type>();
