@@ -78,6 +78,7 @@ CORPUS_PATTERNS = [
     'sockets/*.🍇',
     'testtube/*.🍇',
     'c/*.🍇',
+    'tests/host/*.emojic',
 ]
 REJECT_PATTERN = 'tests/reject/*.emojic'
 

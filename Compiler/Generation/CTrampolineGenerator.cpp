@@ -19,7 +19,7 @@ bool isCStructValue(const Type &type) {
 }
 
 bool needsCTrampoline(Function *function) {
-    if (!function->isC() || function->externalName().empty()) {
+    if (!function->isC() || function->externalName().empty() || !function->isExternal()) {
         return false;
     }
     if (isCStructValue(function->returnType()->type())) {

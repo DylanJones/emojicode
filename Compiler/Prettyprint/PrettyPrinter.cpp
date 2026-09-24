@@ -399,7 +399,8 @@ void PrettyPrinter::printBody(Function *function) {
     if (!function->externalName().empty()) {
         prettyStream_ << " 📻 🔤" << function->externalName() << "🔤";
     }
-    else {
+    // Importers call a function exported to C like any other C function, so interfaces only need its name.
+    if (function->externalName().empty() || (function->isExported() && !interface_)) {
         if (interface_) {
             if (function->isInline()) {
                 auto str = function->position().file->file();

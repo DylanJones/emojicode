@@ -1,0 +1,20 @@
+📦 c 🌊
+
+💭 C functions written in Emojicode, called by the C program ffiHostLib.c.
+🕊 🧩 🍇
+  🎍🌊 🐇☣️❗️ 🧮 a 🔶🌊🔢 b 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤ejcTestAdd🔤 🍇
+    ↩️ a ➕ b
+  🍉
+
+  🎍🌊 🐇☣️❗️ 👋 name 🔶🌊📍🐚🔶🌊🔠🍆 📻 🔤ejcTestGreet🔤 🍇
+    😀 🔤Hello, 🧲🔡🕊🔶🌊🧶 name❗️🧲!🔤❗️
+  🍉
+
+  🎍🌊 🐇☣️❗️ 🔄 value 🔶🌊🐁 ➡️ 🔶🌊🐁 📻 🔤ejcTestNegate🔤 🍇
+    ↩️ 🔋value❗️
+  🍉
+
+  🎍🌊 🐇☣️❗️ 🎯 function 🍇🎍🌊🔶🌊🔢➡️🔶🌊🔢🍉 value 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤ejcTestApply🔤 🍇
+    ↩️ ⁉️ function value❗️ ➕ 1
+  🍉
+🍉

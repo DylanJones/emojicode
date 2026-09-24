@@ -3,6 +3,7 @@
 //
 
 #include "SemanticAnalyser.hpp"
+#include <algorithm>
 #include "Compiler.hpp"
 #include "FunctionAnalyser.hpp"
 #include "AST/ASTExpr.hpp"
@@ -160,6 +161,17 @@ void SemanticAnalyser::checkCFunctionDeclaration(Function *function) const {
     if (returnType.type() != TypeType::NoReturn && !returnType.isCRepresentable()) {
         throw CompilerError(function->returnType()->position(), returnType.toString(context),
                             " cannot be returned from a function with 🎍🌊.");
+    }
+    // C structs are passed by value through trampolines, which only exist for calls from Emojicode into C.
+    if (!function->isExternal()) {
+        auto byValue = [](const Type &type) {
+            return type.type() == TypeType::ValueType && type.valueType()->isCStruct();
+        };
+        if (byValue(returnType) || std::any_of(function->parameters().begin(), function->parameters().end(),
+                                               [&](auto &param) { return byValue(param.type->type()); })) {
+            throw CompilerError(function->position(), "C functions written in Emojicode cannot take or return C "
+                                "structs by value. Pass a 📍 to the struct instead.");
+        }
     }
 }
 

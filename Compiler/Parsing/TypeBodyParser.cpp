@@ -25,8 +25,15 @@ void TypeBodyParser<TypeDef>::parseFunctionBody(Function *function) {
         if (token.value().empty()) {
             throw CompilerError(token.position(), "The external name must not be empty.");
         }
-        function->setExternalName(utf8(token.value()));
-        return;
+        if (!stream_.nextTokenIs(TokenType::BlockBegin)) {
+            function->setExternalName(utf8(token.value()));
+            return;
+        }
+        // A body after the name defines a function that C code can call under that name.
+        if (!function->isC()) {
+            throw CompilerError(token.position(), "Only functions with 🎍🌊 can be exported to C.");
+        }
+        function->setExportName(utf8(token.value()));
     }
 
     if (interface_) {
