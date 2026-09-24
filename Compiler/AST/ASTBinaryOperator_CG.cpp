@@ -78,6 +78,20 @@ Value* ASTBinaryOperator::generate(FunctionCodeGenerator *fg) const {
                 return fg->builder().CreateSRem(left, right);
             case BuiltInType::IntegerAnd:
                 return fg->builder().CreateAnd(left, right);
+            case BuiltInType::UnsignedDivide:
+                return fg->builder().CreateUDiv(left, right);
+            case BuiltInType::UnsignedRemainder:
+                return fg->builder().CreateURem(left, right);
+            case BuiltInType::UnsignedLess:
+                return fg->builder().CreateICmpULT(left, right);
+            case BuiltInType::UnsignedLessOrEqual:
+                return fg->builder().CreateICmpULE(left, right);
+            case BuiltInType::UnsignedGreater:
+                return fg->builder().CreateICmpUGT(left, right);
+            case BuiltInType::UnsignedGreaterOrEqual:
+                return fg->builder().CreateICmpUGE(left, right);
+            case BuiltInType::SignedRightShift:
+                return fg->builder().CreateAShr(left, right);
             case BuiltInType::Equal:
                 return fg->builder().CreateICmpEQ(left, right);
             default:

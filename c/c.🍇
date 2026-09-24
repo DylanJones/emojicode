@@ -1,0 +1,527 @@
+📘
+  The c package makes C types available to Emojicode for use with functions
+  and structs marked 🎍🌊. Import it into the namespace 🌊:
+
+  ```
+  📦 c 🌊
+  ```
+
+  s already provides C's `double` (💯), `bool` (👌), `int64_t` (🔢) and
+  `int8_t` (💧). This package adds the other C types, the pointer types
+  📍 and 🕳, and helpers to convert between 🔡 and C strings.
+📘
+
+💭 The types are defined in the namespace 🌊 so that they do not collide with the types of s, which is imported into
+💭 🏠. Importers choose the namespace themselves; 🌊 is the convention.
+
+📗 C `int`. 📗
+🌍 📻 🔤int🔤 🕊 🔶🌊🔢 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊🔢 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊🔢 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 🔢👇❗️ 10❗️
+  🍉
+🍉
+
+📗 C `unsigned int`. 📗
+🌍 📻 🔤unsigned int🔤 🕊 🔶🌊🔢🔸🔼 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊🔢🔸🔼 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊🔢🔸🔼 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 🔢👇❗️ 10❗️
+  🍉
+🍉
+
+📗 C `short`. 📗
+🌍 📻 🔤short🔤 🕊 🔶🌊🐁 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊🐁 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊🐁 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 🔢👇❗️ 10❗️
+  🍉
+🍉
+
+📗 C `unsigned short`. 📗
+🌍 📻 🔤unsigned short🔤 🕊 🔶🌊🐁🔸🔼 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊🐁🔸🔼 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊🐁🔸🔼 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 🔢👇❗️ 10❗️
+  🍉
+🍉
+
+📗 C `long`. 📗
+🌍 📻 🔤long🔤 🕊 🔶🌊🐘 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊🐘 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊🐘 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 🔢👇❗️ 10❗️
+  🍉
+🍉
+
+📗 C `unsigned long`. 📗
+🌍 📻 🔤unsigned long🔤 🕊 🔶🌊🐘🔸🔼 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊🐘🔸🔼 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊🐘🔸🔼 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    🔢👇❗️ ➡️ signed
+    ↪️ signed ◀️ 0 🍇
+      💭 At least 2^63, which 🔢 cannot hold: the value without its last digit, then the last digit.
+      ↩️ 🔤🧲🔡 🔢👇 ➗ 10❗️ 10❗️🧲🧲🔡 🔢👇 🚮 10❗️ 10❗️🧲🔤
+    🍉
+    ↩️ 🔡 signed 10❗️
+  🍉
+🍉
+
+📗 C `long long`. 📗
+🌍 📻 🔤long long🔤 🕊 🔶🌊🦕 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊🦕 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊🦕 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 🔢👇❗️ 10❗️
+  🍉
+🍉
+
+📗 C `unsigned long long`. 📗
+🌍 📻 🔤unsigned long long🔤 🕊 🔶🌊🦕🔸🔼 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊🦕🔸🔼 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊🦕🔸🔼 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    🔢👇❗️ ➡️ signed
+    ↪️ signed ◀️ 0 🍇
+      💭 At least 2^63, which 🔢 cannot hold: the value without its last digit, then the last digit.
+      ↩️ 🔤🧲🔡 🔢👇 ➗ 10❗️ 10❗️🧲🧲🔡 🔢👇 🚮 10❗️ 10❗️🧲🔤
+    🍉
+    ↩️ 🔡 signed 10❗️
+  🍉
+🍉
+
+📗 C `char`. Whether it is signed depends on the platform, as in C. 📗
+🌍 📻 🔤char🔤 🕊 🔶🌊🔠 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊🔠 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊🔠 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 🔢👇❗️ 10❗️
+  🍉
+🍉
+
+📗 C `unsigned char`. 📗
+🌍 📻 🔤unsigned char🔤 🕊 🔶🌊🔠🔸🔼 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊🔠🔸🔼 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊🔠🔸🔼 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 🔢👇❗️ 10❗️
+  🍉
+🍉
+
+📗 C `signed char`. 📗
+🌍 📻 🔤signed char🔤 🕊 🔶🌊🔠🔸🔽 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊🔠🔸🔽 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊🔠🔸🔽 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 🔢👇❗️ 10❗️
+  🍉
+🍉
+
+📗 C `size_t`. 📗
+🌍 📻 🔤size_t🔤 🕊 🔶🌊📏 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊📏 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊📏 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    🔢👇❗️ ➡️ signed
+    ↪️ signed ◀️ 0 🍇
+      💭 At least 2^63, which 🔢 cannot hold: the value without its last digit, then the last digit.
+      ↩️ 🔤🧲🔡 🔢👇 ➗ 10❗️ 10❗️🧲🧲🔡 🔢👇 🚮 10❗️ 10❗️🧲🔤
+    🍉
+    ↩️ 🔡 signed 10❗️
+  🍉
+🍉
+
+📗 C `ssize_t`. 📗
+🌍 📻 🔤ssize_t🔤 🕊 🔶🌊📐 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊📐 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊📐 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 🔢👇❗️ 10❗️
+  🍉
+🍉
+
+📗 C `time_t`. 📗
+🌍 📻 🔤time_t🔤 🕊 🔶🌊⏰ 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to this type as C would. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the bitwise complement. 📗
+  ❗️ ❎ ➡️ 🔶🌊⏰ 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊⏰ 📻 🔤ejcBuiltIn🔤
+
+  📗 The value in base 10. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 🔢👇❗️ 10❗️
+  🍉
+🍉
+
+📗 C `float`. 📗
+🌍 📻 🔤float🔤 🕊 🔶🌊🎈 🍇
+  🐊 ↘️🔸🔡
+
+  📗 Converts *value* to a float. 📗
+  🆕 ▶️🔢 value 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts *value* to a float. 📗
+  🆕 ▶️💯 value 💯 📻 🔤ejcBuiltIn🔤
+
+  📗 Converts this value to 🔢, rounding toward zero. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 Converts this value to 💯. 📗
+  ❗️ 💯 ➡️ 💯 📻 🔤ejcBuiltIn🔤
+  📗 Returns the negation. 📗
+  ❗️ 🔋 ➡️ 🔶🌊🎈 📻 🔤ejcBuiltIn🔤
+
+  📗 The value as a decimal. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 💯👇❗️ 6❗️
+  🍉
+🍉
+
+📗
+  C `void *`, an address without a type.
+
+  🕳 is not managed: Neither the memory it points to nor the objects stored
+  there are retained or released.
+
+  Use 🍬🕳 for pointers that can be `NULL`.
+📗
+🌍 📻 🔤void *🔤 🕊 🔶🌊🕳 🍇
+  📗 Creates a pointer from the numeric address *address*. 📗
+  ☣️ 🆕 ▶️🔢 address 🔢 📻 🔤ejcBuiltIn🔤
+  📗
+    The address of the first byte of *memory*.
+
+    >!H The pointer is only valid for as long as *memory* is alive.
+  📗
+  ☣️ 🆕 ▶️🧠 memory 🧠 📻 🔤ejcBuiltIn🔤
+  📗
+    Retains *object* and returns its address, to pass it to C code as user data.
+
+    Balance every call with 📥 on the pointer, or the object is leaked.
+  📗
+  ☣️ 🆕 ▶️📤 🎍🥡 object 🔵 📻 🔤ejcBuiltIn🔤
+
+  📗 The numeric address. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 This pointer as a pointer to T. 📗
+  ❗️ 📍🐚☣️T⚪️🍆 ➡️ 🔶🌊📍🐚T🍆 📻 🔤ejcBuiltIn🔤
+
+  📗
+    Takes back the object passed to C with ▶️📤, releasing the reference ▶️📤
+    retained.
+
+    >!H The pointer must have been created with ▶️📤 from an object of type T
+    >!H and must not be used afterwards.
+  📗
+  ☣️ ❗️ 📥🐚☣️T🔵🍆 ➡️ T 📻 🔤ejcBuiltIn🔤
+  📗
+    Returns the object passed to C with ▶️📤 without taking over the
+    reference, e.g. in a callback that may run several times.
+
+    >!H The pointer must have been created with ▶️📤 from an object of type T,
+    >!H and 📥 must not have been called on it yet.
+  📗
+  ☣️ ❗️ 👀🐚☣️T🔵🍆 ➡️ T 📻 🔤ejcBuiltIn🔤
+🍉
+
+📗
+  C `T *`, the address of a value of type T.
+
+  📍 is not managed: Neither the memory it points to nor the values stored
+  there are retained or released. Use 🍬📍 for pointers that can be `NULL`.
+📗
+🌍 🎍🛢 📻 🔤void *🔤 🕊 🔶🌊📍🐚☣️T⚪️🍆 🍇
+  📗 Creates a pointer from the numeric address *address*. 📗
+  ☣️ 🆕 ▶️🔢 address 🔢 📻 🔤ejcBuiltIn🔤
+  📗
+    The address of the first byte of *memory*.
+
+    >!H The pointer is only valid for as long as *memory* is alive.
+  📗
+  ☣️ 🆕 ▶️🧠 memory 🧠 📻 🔤ejcBuiltIn🔤
+
+  📗 The value this pointer points to. 📗
+  ☣️ ❗️ 🐽 ➡️ T 📻 🔤ejcBuiltIn🔤
+  📗 Stores *value* where this pointer points. 📗
+  ☣️ ➡️ 🐽 🎍🥡 value T 📻 🔤ejcBuiltIn🔤
+  📗
+    The pointer *count* values of type T further, like `pointer + count` in
+    C.
+  📗
+  ☣️ ❗️ ⏭ count 🔢 ➡️ 🔶🌊📍🐚T🍆 📻 🔤ejcBuiltIn🔤
+
+  📗 The numeric address. 📗
+  ❗️ 🔢 ➡️ 🔢 📻 🔤ejcBuiltIn🔤
+  📗 This pointer as 🕳. 📗
+  ❗️ 🕳 ➡️ 🔶🌊🕳 📻 🔤ejcBuiltIn🔤
+  📗 This pointer as a pointer to U. 📗
+  ❗️ 🎭🐚☣️U⚪️🍆 ➡️ 🔶🌊📍🐚U🍆 📻 🔤ejcBuiltIn🔤
+🍉
+
+📗
+  Functions of the C standard library that the rest of this package needs.
+📗
+🌍 🕊 🔶🌊🔧 🍇
+  📗 `malloc`: Allocates *size* bytes. 📗
+  🎍🌊 🐇☣️❗️ 🛒 size 🔶🌊📏 ➡️ 🍬🔶🌊🕳 📻 🔤malloc🔤
+  📗 `free`: Frees memory allocated with 🛒. 📗
+  🎍🌊 🐇☣️❗️ 🗑 pointer 🍬🔶🌊🕳 📻 🔤free🔤
+  📗 `memcpy`: Copies *size* bytes from *source* to *destination*. 📗
+  🎍🌊 🐇☣️❗️ 📋 destination 🔶🌊🕳 source 🔶🌊🕳 size 🔶🌊📏 ➡️ 🔶🌊🕳 📻 🔤memcpy🔤
+  📗 `strlen`: The number of bytes before the first 0 byte. 📗
+  🎍🌊 🐇☣️❗️ 📏 string 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🔶🌊📏 📻 🔤strlen🔤
+🍉
+
+📗
+  Converts between 🔡 and C strings, which are pointers to 🔠 that end with a
+  0 byte.
+📗
+🌍 🕊 🔶🌊🧶 🍇
+  📗
+    Copies the NUL-terminated C string at *string* into a new 🔡.
+
+    >!H *string* must point to a NUL-terminated string. It is interpreted as
+    >!H UTF-8.
+  📗
+  🐇☣️❗️ 🔡 string 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🔡 🍇
+    🔢 📏🕊🔶🌊🔧 string❗️❗️ ➡️ count
+    ↩️ 🔡🕊🔶🌊🧶 string count❗️
+  🍉
+
+  📗
+    Copies *count* bytes at *string* into a new 🔡.
+
+    >!H *string* must point to at least *count* bytes of UTF-8.
+  📗
+  🐇☣️❗️ 🔡 string 🔶🌊📍🐚🔶🌊🔠🍆 count 🔢 ➡️ 🔡 🍇
+    🆕🧠 count❗️ ➡️ memory
+    📋🕊🔶🌊🔧 🆕🔶🌊🕳▶️🧠 memory❗️ 🕳string❗️ 🆕🔶🌊📏▶️🔢 count❗️❗️
+    ↩️ 🆕🔡 memory count❗️
+  🍉
+
+  📗
+    Calls *body* with a NUL-terminated copy of *string* and returns what
+    *body* returns.
+
+    >!H The pointer is only valid while *body* runs.
+  📗
+  🐇❗️ 🧶🐚R⚪️🍆 string 🔡 body 🍇🔶🌊📍🐚🔶🌊🔠🍆➡️R🍉 ➡️ R 🍇
+    📐string❗️ ➡️ count
+    ☣️ 🍇
+      🆕🧠 count ➕ 1❗️ ➡️ buffer
+      🚜 buffer 0 🧠string❗️ 0 count❗️
+      ✍️ buffer 0 count 1❗️
+      ↩️ ⁉️ body 🆕🔶🌊📍🐚🔶🌊🔠🍆▶️🧠 buffer❗️❗️
+    🍉
+  🍉
+🍉

@@ -37,6 +37,10 @@ Type ASTClosure::comply(ExpressionAnalyser *analyser, const TypeExpectation &exp
     auto scoper = std::make_unique<CapturingSemanticScoper>(analyser, isEscaping_);
     auto scoperPtr = scoper.get();
     FunctionAnalyser closureAnaly(closure_.get(), std::move(scoper), analyser->semanticAnalyser());
+    // A closure written in a ☣️ block or ☣️ function may use unsafe functions, just like the code around it.
+    if (analyser->isInUnsafeBlock()) {
+        closureAnaly.inheritUnsafety();
+    }
     scoperPtr->setPathAnalyser(&closureAnaly.pathAnalyser());
     closureAnaly.analyse();
     capture_.captures = dynamic_cast<CapturingSemanticScoper &>(closureAnaly.scoper()).captures();
@@ -51,6 +55,14 @@ Type ASTClosure::comply(ExpressionAnalyser *analyser, const TypeExpectation &exp
         }
 
         capture_.self = analyser->typeContext().calleeType();
+    }
+    if (closure_->isC()) {
+        if (!capture_.captures.empty() || capture_.capturesSelf()) {
+            throw CompilerError(position(), "A closure with 🎍🌊 cannot capture variables or 👇.");
+        }
+        if (isEscaping_) {
+            throw CompilerError(position(), "A closure with 🎍🌊 is a C function and cannot be 🎍🥡.");
+        }
     }
     return Type(closure_.get());
 }

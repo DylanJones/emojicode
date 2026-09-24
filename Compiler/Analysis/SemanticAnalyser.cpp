@@ -3,6 +3,8 @@
 //
 
 #include "SemanticAnalyser.hpp"
+#include <algorithm>
+#include <set>
 #include "Compiler.hpp"
 #include "FunctionAnalyser.hpp"
 #include "AST/ASTExpr.hpp"
@@ -45,6 +47,13 @@ void SemanticAnalyser::analyse(bool executable) {
         enqueueFunctionsOfTypeDefinition(vt.get());
         checkProtocolConformance(Type(vt.get()));
         declareInstanceVariables(Type(vt.get()));
+    }
+    for (auto &vt : package_->valueTypes()) {
+        std::set<ValueType *> visited;
+        if (storesInline(vt.get(), vt.get(), visited)) {
+            throw CompilerError(vt->position(), Type(vt.get()).toString(TypeContext()), " contains itself through its "
+                                "instance variables, so it would be infinitely large.");
+        }
     }
     for (auto &klass : package_->classes()) {
         for (auto init : klass->inits().list()) {
@@ -129,12 +138,66 @@ void SemanticAnalyser::analyseFunctionDeclaration(Function *function) const {
     function->analyseConstraints(context);
     for (auto &param : function->parameters()) {
         param.type->analyseType(context);
-        if (!function->externalName().empty() && param.type->type().type() == TypeType::ValueType &&
-            !param.type->type().valueType()->isPrimitive()) {
+        if (!function->externalName().empty() && !function->isC() &&
+            param.type->type().type() == TypeType::ValueType && !param.type->type().valueType()->isPrimitive()) {
             param.type->type().setReference();
         }
     }
     function->returnType()->analyseType(context, true);
+
+    if (function->isC()) {
+        checkCFunctionDeclaration(function);
+    }
+}
+
+void SemanticAnalyser::checkCFunctionDeclaration(Function *function) const {
+    if (function->errorProne()) {
+        throw CompilerError(function->position(), "Functions with 🎍🌊 cannot raise errors.");
+    }
+    if (!function->genericParameters().empty() ||
+        (function->owner() != nullptr && function->owner()->storesGenericArgs())) {
+        throw CompilerError(function->position(), "Functions with 🎍🌊 cannot be generic.");
+    }
+    auto context = function->typeContext();
+    for (auto &param : function->parameters()) {
+        if (!param.type->type().isCRepresentable()) {
+            throw CompilerError(param.type->position(), param.type->type().toString(context),
+                                " cannot be used in a function with 🎍🌊.");
+        }
+    }
+    auto &returnType = function->returnType()->type();
+    if (returnType.type() != TypeType::NoReturn && !returnType.isCRepresentable()) {
+        throw CompilerError(function->returnType()->position(), returnType.toString(context),
+                            " cannot be returned from a function with 🎍🌊.");
+    }
+    // C structs are passed by value through trampolines, which only exist for calls from Emojicode into C.
+    if (!function->isExternal()) {
+        auto byValue = [](const Type &type) {
+            return type.type() == TypeType::ValueType && type.valueType()->isCStruct();
+        };
+        if (byValue(returnType) || std::any_of(function->parameters().begin(), function->parameters().end(),
+                                               [&](auto &param) { return byValue(param.type->type()); })) {
+            throw CompilerError(function->position(), "C functions written in Emojicode cannot take or return C "
+                                "structs by value. Pass a 📍 to the struct instead.");
+        }
+    }
+}
+
+bool SemanticAnalyser::storesInline(TypeDefinition *container, ValueType *target, std::set<ValueType *> &visited) {
+    for (auto &ivar : container->instanceVariables()) {
+        auto type = ivar.type->type();
+        if (type.type() == TypeType::Optional) {
+            type = type.optionalType();  // Optionals of value types store the value inline.
+        }
+        if (type.type() != TypeType::ValueType || type.isReference()) {
+            continue;
+        }
+        auto valueType = type.valueType();
+        if (valueType == target || (visited.insert(valueType).second && storesInline(valueType, target, visited))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void SemanticAnalyser::declareInstanceVariables(const Type &type) {
@@ -145,16 +208,26 @@ void SemanticAnalyser::declareInstanceVariables(const Type &type) {
     scoper->pushScope();  // For closure analysis
     ExpressionAnalyser analyser(this, context, package_, std::move(scoper));
 
+    auto cStruct = type.type() == TypeType::ValueType && type.valueType()->isCStruct();
+    if (cStruct && !typeDef->genericParameters().empty()) {
+        throw CompilerError(typeDef->position(), "A C struct (🎍🌊) cannot be generic.");
+    }
+
     for (auto &var : typeDef->instanceVariablesMut()) {
         typeDef->instanceScope().declareVariable(var.name, var.type->analyseType(context), false,
                                                  var.position);
 
+        if (cStruct && !var.type->type().isCRepresentable()) {
+            throw CompilerError(var.position, var.type->type().toString(context),
+                                " cannot be a field of a C struct (🎍🌊).");
+        }
         if (var.expr != nullptr) {
             analyser.expectType(var.type->type(), &var.expr);
         }
     }
 
-    if (!typeDef->instanceVariables().empty() && typeDef->inits().list().empty()) {
+    // C structs are often only read from memory C wrote.
+    if (!cStruct && !typeDef->instanceVariables().empty() && typeDef->inits().list().empty()) {
         package_->compiler()->warn(typeDef->position(), "Type defines ", typeDef->instanceVariables().size(),
                                    " instances variables but has no initializers.");
     }
@@ -264,7 +337,8 @@ void SemanticAnalyser::checkProtocolConformance(const Type &type) {
 }
 
 void SemanticAnalyser::finalizeProtocols(const Type &type) {
-    std::set<Type> protocols;
+    // A type can conform to a protocol only once, even with different generic arguments.
+    std::set<Protocol *> protocols;
 
     for (auto &protocol : type.typeDefinition()->protocols()) {
         auto &protocolType = protocol.type->analyseType(TypeContext(type));
@@ -273,18 +347,21 @@ void SemanticAnalyser::finalizeProtocols(const Type &type) {
             package_->compiler()->error(CompilerError(protocol.type->position(), "Type is not a protocol."));
             continue;
         }
-        if (protocols.find(unboxed) != protocols.end()) {
+        if (protocols.find(unboxed.protocol()) != protocols.end()) {
             package_->compiler()->error(CompilerError(protocol.type->position(),
                                                       "Conformance to protocol was already declared."));
             continue;
         }
-        protocols.emplace(unboxed);
+        protocols.emplace(unboxed.protocol());
     }
 }
 
 Type SemanticAnalyser::defaultLiteralType(const Type &type) const {
     if (type.is<TypeType::IntegerLiteral>()) {
         return compiler()->sInteger->type();
+    }
+    if (type.is<TypeType::RealLiteral>()) {
+        return compiler()->sReal->type();
     }
     if (type.is<TypeType::ListLiteral>()) {
         Type dtype = compiler()->sList->type();

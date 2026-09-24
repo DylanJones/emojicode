@@ -64,6 +64,9 @@ protected:
                                                llvm::Value *conformance);
     llvm::Value* buildFindProtocolConformance(const std::vector<llvm::Value *> &args, const Type &protocol);
 private:
+    /// Calls the trampoline of a 🎍🌊 function that takes or returns C structs by value. @see needsCTrampoline()
+    llvm::Value* generateCTrampolineCall(Function *function, llvm::Function *trampoline,
+                                         std::vector<llvm::Value *> args);
     llvm::Value *createDynamicDispatch(Function *function, const std::vector<llvm::Value *> &args,
                                        const std::vector<Type> &genericArgs);
     llvm::Value *dispatchFromVirtualTable(Function *function, llvm::Value *virtualTable,

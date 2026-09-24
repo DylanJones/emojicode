@@ -30,7 +30,28 @@ Value* ASTInitialization::generate(FunctionCodeGenerator *fg) const {
             return generateInitValueType(fg);
         case InitType::MemoryAllocation:
             return generateMemoryAllocation(fg);
+        case InitType::CConversion:
+        case InitType::CRetainObject:
+            return generateCInit(fg);
     }
+}
+
+Value* ASTInitialization::generateCInit(FunctionCodeGenerator *fg) const {
+    auto &arg = args_.args().front();
+    auto value = arg->generate(fg);
+    Value *result;
+    if (initType_ == InitType::CRetainObject) {
+        fg->retain(value, arg->expressionType());
+        result = value;
+    }
+    else {
+        result = fg->buildCConversion(value, arg->expressionType(), typeExpr_->expressionType());
+    }
+    if (vtDestination_ != nullptr) {
+        fg->builder().CreateStore(result, vtDestination_);
+        return nullptr;
+    }
+    return result;
 }
 
 Value* ASTInitialization::genericArgs(FunctionCodeGenerator *fg) const {

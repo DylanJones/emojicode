@@ -188,6 +188,10 @@ private:
     runtime::internal::Capture *capture_;
 };
 
+/// Initializes the runtime. The main function of Emojicode programs calls it; C and C++ programs that call Emojicode
+/// functions, e.g. functions exported with 🎍🌊, must call it before any Emojicode code runs.
+extern "C" void ejcInit(int argc, char **argv);
+
 extern "C" void ejcRetain(runtime::Object<void> *object);
 extern "C" void ejcRelease(runtime::Object<void> *object);
 extern "C" void ejcReleaseCapture(runtime::internal::Capture *capture);

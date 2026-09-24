@@ -1,0 +1,4 @@
+gmtime_r filled the struct
+2001-9-9 1:46:40, weekday 0
+Sunday, 09 September 2001
+timegm after midnight: 999996400

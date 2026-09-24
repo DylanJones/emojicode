@@ -5,7 +5,7 @@ import sys
 import subprocess
 
 version = "1.0-beta.2"
-packages = ["s", "files", "sockets", "testtube", "json"]
+packages = ["s", "files", "sockets", "testtube", "json", "c"]
 
 source = os.path.dirname(os.path.realpath(__file__))
 dist_name = "Emojicode-{0}-{1}-{2}".format(version, platform.system(),
@@ -39,6 +39,7 @@ if __name__ == "__main__":
     copy_header("runtime", "Runtime.h")
     copy_header("s", "Data.h")
     copy_header("s", "String.h")
+    copy_header("s", "Error.h")
 
     dir_path = os.path.join(path, "packages", "runtime")
     make_dir(dir_path)

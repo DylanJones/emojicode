@@ -29,10 +29,15 @@ const MFFlowCategory MFFlowCategory::Return = MFFlowCategory::Category::Return;
 MFFunctionAnalyser::MFFunctionAnalyser(Function *function) : scope_(function->variableCount()), function_(function) {}
 
 void MFFunctionAnalyser::analyse() {
-    if (!function_->memoryFlowTypeForThis().isUnknown()) {
+    // Functions without a body (external functions) have their categories declared.
+    if (function_->isMemoryFlowAnalysed() || function_->ast() == nullptr) {
         return;
     }
+    function_->setMemoryFlowAnalysed();
 
+    // 🎍🥡 on the function, e.g. in an interface, declares that this escapes. The body must be analysed anyway.
+    auto declaredEscaping = !function_->memoryFlowTypeForThis().isUnknown() &&
+        function_->memoryFlowTypeForThis().isEscaping();
     function_->setMemoryFlowTypeForThis(MFFlowCategory::Escaping);
 
     for (size_t i = 0; i < function_->parameters().size(); i++) {
@@ -43,7 +48,8 @@ void MFFunctionAnalyser::analyse() {
     }
 
     function_->ast()->analyseMemoryFlow(this);
-    function_->setMemoryFlowTypeForThis(thisEscapes_ ? MFFlowCategory::Escaping : MFFlowCategory::Borrowing);
+    function_->setMemoryFlowTypeForThis(thisEscapes_ || declaredEscaping ? MFFlowCategory::Escaping
+                                                                        : MFFlowCategory::Borrowing);
 
     popScope(function_->ast());
 
@@ -78,7 +84,7 @@ void MFFunctionAnalyser::checkMFPromises() const {
 }
 
 void MFFunctionAnalyser::analyseIfNecessary(Function *function) const {
-    if (function->memoryFlowTypeForThis().isUnknown()) {
+    if (!function->isMemoryFlowAnalysed() && function->ast() != nullptr) {
         MFFunctionAnalyser(function).analyse();
     }
 }

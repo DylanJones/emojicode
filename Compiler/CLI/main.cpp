@@ -90,6 +90,8 @@ bool start(const Options &options) {
     }
     else {
         compiler.add<Compiler::ObjectFileEmissionPhase>(options.objectPath());
+        compiler.add<Compiler::NativeCompilationPhase>(options.objectPath(), options.cc(), options.cxx(),
+                                                       !options.pack());
     }
     if (options.pack()) {
         if (options.standalone()) {

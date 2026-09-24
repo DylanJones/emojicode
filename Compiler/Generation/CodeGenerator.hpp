@@ -15,6 +15,8 @@
 #include <memory>
 #include <string>
 #include <map>
+#include <set>
+#include <llvm/TargetParser/Triple.h>
 
 namespace llvm {
 class TargetMachine;
@@ -31,6 +33,10 @@ class StringPool;
 class RunTimeHelper;
 class OptimizationManager;
 struct Parameter;
+
+/// Returns the attribute C compilers put on an integer argument or return value of the type on the target @p triple,
+/// e.g. llvm::Attribute::SExt for a short on x86-64. Returns llvm::Attribute::None for all other types.
+llvm::Attribute::AttrKind cExtensionAttribute(const Type &type, const llvm::Triple &triple);
 
 /// Manages code generation.
 ///
@@ -75,6 +81,8 @@ public:
     ~CodeGenerator();
 
 private:
+    /// The C symbols of the functions exported with 🎍🌊, to detect duplicate exports.
+    std::set<std::string> exportedCSymbols_;
     Compiler *const compiler_;
     llvm::LLVMContext context_;
     std::unique_ptr<llvm::Module> module_;
@@ -90,6 +98,12 @@ private:
     void generateFunction(Function *function);
 
     void addParamAttrs(const Parameter &param, size_t index, llvm::Function *function);
+    /// Adds the sign and zero extension attributes C requires to the parameters and return value of a 🎍🌊 function.
+    void addCExtensionAttributes(Function *function, llvm::Function *fn);
+    /// Returns @p existing, a function already declared under the name of the 🎍🌊 function @p function.
+    llvm::Function* reuseCFunction(Function *function, llvm::Function *existing, llvm::FunctionType *ft);
+    /// The type of the trampoline of @p function. @see needsCTrampoline()
+    llvm::FunctionType* cTrampolineFunctionType(Function *function);
     void addParamDereferenceable(const Type &type, size_t index, llvm::Function *function, bool ret);
 
     llvm::Function::LinkageTypes linkageForFunction(Function *function) const;

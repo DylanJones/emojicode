@@ -403,7 +403,7 @@ void FunctionCodeGenerator::release(llvm::Value *value, const Type &otype) {
             manageBox(false, boxInfo, value, type);
         }
     }
-    else if (type.type() == TypeType::Callable) {
+    else if (type.type() == TypeType::Callable && !type.isCCallable()) {
         builder().CreateCall(generator()->runTime().releaseCapture(), builder().CreateExtractValue(value, 1));
     }
 }
@@ -416,7 +416,7 @@ void FunctionCodeGenerator::retain(llvm::Value *value, const Type &otype) {
     else if (type.type() == TypeType::ValueType && type.valueType() == compiler()->sMemory) {
         builder().CreateCall(generator()->runTime().retainMemory(), value);
     }
-    else if (type.type() == TypeType::Callable) {
+    else if (type.type() == TypeType::Callable && !type.isCCallable()) {
         builder().CreateCall(generator()->runTime().retain(), builder().CreateExtractValue(value, 1));
     }
     else if (type.type() == TypeType::ValueType) {
@@ -524,5 +524,44 @@ llvm::Type* FunctionCodeGenerator::genericArgsType() {
 }
 
 FunctionCodeGenerator::~FunctionCodeGenerator() = default;
+
+llvm::Value* FunctionCodeGenerator::buildCConversion(llvm::Value *value, const Type &from, const Type &to) {
+    auto &target = *to.valueType()->cRepresentation();
+    auto targetType = typeHelper().llvmTypeFor(to);
+
+    if (from.type() == TypeType::ValueType && from.valueType() == compiler()->sMemory) {
+        assert(target.isPointer());
+        return builder().CreateConstInBoundsGEP1_64(llvm::Type::getInt8Ty(ctx()), value,
+                                                    generator()->querySize(typeHelper().pointer()));
+    }
+
+    auto &source = *from.valueType()->cRepresentation();
+    if (source.isPointer()) {
+        if (target.isPointer()) {
+            return value;
+        }
+        return builder().CreatePtrToInt(value, targetType);
+    }
+    if (target.isPointer()) {
+        return builder().CreateIntToPtr(value, targetType);
+    }
+    if (source.isFloat()) {
+        if (target.isFloat()) {
+            return builder().CreateFPCast(value, targetType);
+        }
+        if (target.bits == 1) {
+            return builder().CreateFCmpUNE(value, llvm::ConstantFP::get(value->getType(), 0));
+        }
+        return target.isSigned ? builder().CreateFPToSI(value, targetType) : builder().CreateFPToUI(value, targetType);
+    }
+    if (target.isFloat()) {
+        return source.isSigned && source.bits > 1 ? builder().CreateSIToFP(value, targetType)
+                                                  : builder().CreateUIToFP(value, targetType);
+    }
+    if (target.bits == 1) {
+        return builder().CreateICmpNE(value, llvm::ConstantInt::get(value->getType(), 0));
+    }
+    return builder().CreateIntCast(value, targetType, source.isSigned && source.bits > 1);
+}
 
 }  // namespace EmojicodeCompiler

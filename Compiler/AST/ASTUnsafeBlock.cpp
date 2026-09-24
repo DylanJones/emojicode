@@ -9,15 +9,16 @@
 namespace EmojicodeCompiler {
 
 void ASTUnsafeBlock::analyse(FunctionAnalyser *analyser) {
-    if (analyser->isInUnsafeBlock()) {
+    if (analyser->isInUnsafeBlock() && !analyser->isUnsafetyInherited()) {
         analyser->error(CompilerError(position(), "Already in a ☣️ block."));
         block_.analyse(analyser);
         return;
     }
 
+    auto wasInUnsafeBlock = analyser->isInUnsafeBlock();
     analyser->setInUnsafeBlock(true);
     block_.analyse(analyser);
-    analyser->setInUnsafeBlock(false);
+    analyser->setInUnsafeBlock(wasInUnsafeBlock);
 }
 
 }  // namespace EmojicodeCompiler

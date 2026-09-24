@@ -1,0 +1,78 @@
+📦 c 🌊
+
+🕊 📚 🍇
+  🎍🌊 🐇☣️❗️ 🌳 name 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🍬🔶🌊📍🐚🔶🌊🔠🍆 📻 🔤getenv🔤
+  🎍🌊 🐇☣️❗️ 📝 name 🔶🌊📍🐚🔶🌊🔠🍆 value 🔶🌊📍🐚🔶🌊🔠🍆 overwrite 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤setenv🔤
+  🎍🌊 🐇☣️❗️ 🔍 string 🔶🌊📍🐚🔶🌊🔠🍆 character 🔶🌊🔢 ➡️ 🍬🔶🌊📍🐚🔶🌊🔠🍆 📻 🔤strchr🔤
+  🎍🌊 🐇☣️❗️ 🧽 destination 🔶🌊🕳 value 🔶🌊🔢 size 🔶🌊📏 ➡️ 🔶🌊🕳 📻 🔤memset🔤
+🍉
+
+🐇 🐕 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ❗️ 🏷 ➡️ 🔡 🍇
+    ↩️ name
+  🍉
+
+  ♻️ 🍇
+    😀 🔤🧲name🧲 was released🔤❗️
+  🍉
+🍉
+
+🏁 🍇
+  ☣️ 🍇
+    💭 A C string made from 🔡 and one read back from C
+    🧶🕊🔶🌊🧶 🔤hello🔤 🍇 string 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🔶🌊📏
+      ↩️ 📏🕊🔶🌊🔧 string❗️
+    🍉❗️ ➡️ length
+    😀 🔤strlen: 🧲length🧲🔤❗️
+
+    🧶🕊🔶🌊🧶 🔤EMOJICODE_FFI🔤 🍇 name 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🔶🌊🔢
+      ↩️ 🧶🕊🔶🌊🧶 🔤🌊 works🔤 🍇 value 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🔶🌊🔢
+        ↩️ 📝🕊📚 name value 1❗️
+      🍉❗️
+    🍉❗️ ➡️ result
+    😀 🔤setenv: 🧲result🧲🔤❗️
+
+    🧶🕊🔶🌊🧶 🔤EMOJICODE_FFI🔤 🍇 name 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🔡
+      ↪️ 🌳🕊📚 name❗️ ➡️ value 🍇
+        ↩️ 🔡🕊🔶🌊🧶 value❗️
+      🍉
+      ↩️ 🔤unset🔤
+    🍉❗️ ➡️ variable
+    😀 variable❗️
+
+    💭 A NULL result
+    🧶🕊🔶🌊🧶 🔤EMOJICODE_UNSET_VARIABLE🔤 🍇 name 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 👌
+      ↩️ 🌳🕊📚 name❗️ 🙌 🤷‍♀️
+    🍉❗️ ➡️ isUnset
+    ↪️ isUnset 🍇
+      😀 🔤getenv returned NULL🔤❗️
+    🍉
+
+    💭 A pointer into the middle of a C string
+    🧶🕊🔶🌊🧶 🔤key=value🔤 🍇 string 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🔡
+      🍺🔍🕊📚 string 61❗️ ➡️ equals
+      ↩️ 🔡🕊🔶🌊🧶 ⏭equals 1❗️❗️
+    🍉❗️ ➡️ afterEquals
+    😀 afterEquals❗️
+
+    💭 Heap memory from malloc, written and read through 📍
+    🍺🛒🕊🔶🌊🔧 🆕🔶🌊📏▶️🔢 4 ✖️ ⚖️🔶🌊🔢❗️❗️ ➡️ memory
+    🧽🕊📚 memory 0 🆕🔶🌊📏▶️🔢 4 ✖️ ⚖️🔶🌊🔢❗️❗️
+    📍🐚🔶🌊🔢🍆memory❗️ ➡️ numbers
+    100 ➡️🐽 ⏭numbers 1❗️❗️
+    -7 ➡️🐽 ⏭numbers 3❗️❗️
+    😀 🔤🧲🐽numbers❗️🧲 🧲🐽⏭numbers 1❗️❗️🧲 🧲🐽⏭numbers 3❗️❗️🧲🔤❗️
+    🗑🕊🔶🌊🔧 memory❗️
+
+    💭 An object passed to C as user data and taken back
+    🆕🔶🌊🕳▶️📤 🆕🐕 🔤Rex🔤❗️❗️ ➡️ userData
+    😀 🔤borrowed: 🧲🏷👀🐚🐕🍆userData❗️❗️🧲🔤❗️
+    📥🐚🐕🍆userData❗️ ➡️ dog
+    😀 🔤taken: 🧲🏷dog❗️🧲🔤❗️
+  🍉
+  😀 🔤done🔤❗️
+🍉

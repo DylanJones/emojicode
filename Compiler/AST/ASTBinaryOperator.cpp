@@ -9,6 +9,7 @@
 #include "ASTBinaryOperator.hpp"
 #include "ASTLiterals.hpp"
 #include "Analysis/FunctionAnalyser.hpp"
+#include "Analysis/SemanticAnalyser.hpp"
 #include "Compiler.hpp"
 #include "MemoryFlowAnalysis/MFFunctionAnalyser.hpp"
 #include "Types/TypeExpectation.hpp"
@@ -51,14 +52,19 @@ Type ASTBinaryOperator::analyseIsNoValue(ExpressionAnalyser *analyser, std::shar
 
 std::pair<bool, ASTBinaryOperator::BuiltIn> ASTBinaryOperator::builtInPrimitiveOperator(ExpressionAnalyser *analyser,
                                                                                         const Type &btype) {
-    auto type = btype.unboxed();
+    // A literal on the left, e.g. `1.5 🤝 x`, stands for a value of its default type.
+    auto type = analyser->semanticAnalyser()->defaultLiteralType(btype).unboxed();
     if ((type.type() == TypeType::ValueType || type.type() == TypeType::Enum) &&
         type.valueType()->isPrimitive()) {
-        if (type.valueType() == analyser->compiler()->sReal) {
+        auto &representation = type.valueType()->cRepresentation();
+        auto returnType = type.unboxed();
+        returnType.setReference(false);
+        returnType.setMutable(false);
+        if (representation && representation->isFloat()) {
             switch (operator_) {
                 case OperatorType::Multiplication:
                     builtIn_ = BuiltInType::DoubleMultiply;
-                    return std::make_pair(true, BuiltIn(analyser->real()));
+                    return std::make_pair(true, BuiltIn(returnType));
                 case OperatorType::Less:
                     builtIn_ = BuiltInType::DoubleLess;
                     return std::make_pair(true, BuiltIn(analyser->boolean()));
@@ -73,16 +79,16 @@ std::pair<bool, ASTBinaryOperator::BuiltIn> ASTBinaryOperator::builtInPrimitiveO
                     return std::make_pair(true, BuiltIn(analyser->boolean()));
                 case OperatorType::Division:
                     builtIn_ = BuiltInType::DoubleDivide;
-                    return std::make_pair(true, BuiltIn(analyser->real()));
+                    return std::make_pair(true, BuiltIn(returnType));
                 case OperatorType::Plus:
                     builtIn_ = BuiltInType::DoubleAdd;
-                    return std::make_pair(true, BuiltIn(analyser->real()));
+                    return std::make_pair(true, BuiltIn(returnType));
                 case OperatorType::Minus:
                     builtIn_ = BuiltInType::DoubleSubstract;
-                    return std::make_pair(true, BuiltIn(analyser->real()));
+                    return std::make_pair(true, BuiltIn(returnType));
                 case OperatorType::Remainder:
                     builtIn_ = BuiltInType::DoubleRemainder;
-                    return std::make_pair(true, BuiltIn(analyser->real()));
+                    return std::make_pair(true, BuiltIn(returnType));
                 case OperatorType::Equal:
                     builtIn_ = BuiltInType::DoubleEqual;
                     return std::make_pair(true, BuiltIn(analyser->boolean()));
@@ -90,10 +96,10 @@ std::pair<bool, ASTBinaryOperator::BuiltIn> ASTBinaryOperator::builtInPrimitiveO
                     break;
             }
         }
-        else if (type.valueType() == analyser->compiler()->sInteger ||
-                 type.valueType() == analyser->compiler()->sByte) {
-            auto returnType = type.unboxed();
-            returnType.setReference(false);
+        else if (representation && representation->isInteger() && representation->bits > 1) {
+            // C types are signed or unsigned as declared. 🔢 and 💧 keep their logical right shift.
+            bool isUnsigned = !representation->isSigned;
+            bool arithmeticShift = representation->isSigned && type.valueType()->declaresCRepresentation();
             switch (operator_) {
                 case OperatorType::Multiplication:
                     builtIn_ = BuiltInType::IntegerMultiply;
@@ -108,25 +114,25 @@ std::pair<bool, ASTBinaryOperator::BuiltIn> ASTBinaryOperator::builtInPrimitiveO
                     builtIn_ = BuiltInType::IntegerXor;
                     return std::make_pair(true, BuiltIn(returnType));
                 case OperatorType::Less:
-                    builtIn_ = BuiltInType::IntegerLess;
+                    builtIn_ = isUnsigned ? BuiltInType::UnsignedLess : BuiltInType::IntegerLess;
                     return std::make_pair(true, BuiltIn(analyser->boolean()));
                 case OperatorType::Greater:
-                    builtIn_ = BuiltInType::IntegerGreater;
+                    builtIn_ = isUnsigned ? BuiltInType::UnsignedGreater : BuiltInType::IntegerGreater;
                     return std::make_pair(true, BuiltIn(analyser->boolean()));
                 case OperatorType::LessOrEqual:
-                    builtIn_ = BuiltInType::IntegerLessOrEqual;
+                    builtIn_ = isUnsigned ? BuiltInType::UnsignedLessOrEqual : BuiltInType::IntegerLessOrEqual;
                     return std::make_pair(true, BuiltIn(analyser->boolean()));
                 case OperatorType::GreaterOrEqual:
-                    builtIn_ = BuiltInType::IntegerGreaterOrEqual;
+                    builtIn_ = isUnsigned ? BuiltInType::UnsignedGreaterOrEqual : BuiltInType::IntegerGreaterOrEqual;
                     return std::make_pair(true, BuiltIn(analyser->boolean()));
                 case OperatorType::ShiftLeft:
                     builtIn_ = BuiltInType::IntegerLeftShift;
                     return std::make_pair(true, BuiltIn(returnType));
                 case OperatorType::ShiftRight:
-                    builtIn_ = BuiltInType::IntegerRightShift;
+                    builtIn_ = arithmeticShift ? BuiltInType::SignedRightShift : BuiltInType::IntegerRightShift;
                     return std::make_pair(true, BuiltIn(returnType));
                 case OperatorType::Division:
-                    builtIn_ = BuiltInType::IntegerDivide;
+                    builtIn_ = isUnsigned ? BuiltInType::UnsignedDivide : BuiltInType::IntegerDivide;
                     return std::make_pair(true, BuiltIn(returnType));
                 case OperatorType::Plus:
                     builtIn_ = BuiltInType::IntegerAdd;
@@ -135,7 +141,7 @@ std::pair<bool, ASTBinaryOperator::BuiltIn> ASTBinaryOperator::builtInPrimitiveO
                     builtIn_ = BuiltInType::IntegerSubstract;
                     return std::make_pair(true, BuiltIn(returnType));
                 case OperatorType::Remainder:
-                    builtIn_ = BuiltInType::IntegerRemainder;
+                    builtIn_ = isUnsigned ? BuiltInType::UnsignedRemainder : BuiltInType::IntegerRemainder;
                     return std::make_pair(true, BuiltIn(returnType));
                 default:
                     break;

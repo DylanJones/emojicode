@@ -7,6 +7,7 @@
 
 #include <queue>
 #include <memory>
+#include <set>
 
 namespace EmojicodeCompiler {
 
@@ -21,6 +22,8 @@ struct ProtocolConformance;
 struct SourcePosition;
 
 /// Manages the semantic analysis of a package.
+class ValueType;
+
 class SemanticAnalyser {
 public:
     explicit SemanticAnalyser(Package *package, bool imported) : package_(package), imported_(imported) {}
@@ -46,8 +49,12 @@ public:
                                               const TypeContext &subContext, const TypeContext &superContext);
 
     void analyseFunctionDeclaration(Function *function) const;
+    /// Checks that a 🎍🌊 function only uses C types, cannot raise and is not generic.
+    void checkCFunctionDeclaration(Function *function) const;
 
     void declareInstanceVariables(const Type &type);
+    /// Whether @p container stores a @p target directly, or inside another value type it stores.
+    static bool storesInline(TypeDefinition *container, ValueType *target, std::set<ValueType *> &visited);
 
 private:
     void analyseQueue();

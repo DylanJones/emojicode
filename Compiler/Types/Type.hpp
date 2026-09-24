@@ -57,6 +57,8 @@ enum class TypeType {
     /// May only be used for overload resolution, i.e. returned by ASTExpr::analysed and must be replaced by ASTExpr::comply.
     IntegerLiteral,
     /// May only be used for overload resolution, i.e. returned by ASTExpr::analysed and must be replaced by ASTExpr::comply.
+    RealLiteral,
+    /// May only be used for overload resolution, i.e. returned by ASTExpr::analysed and must be replaced by ASTExpr::comply.
     ListLiteral,
     /// May only be used for overload resolution, i.e. returned by ASTExpr::analysed and must be replaced by ASTExpr::comply.
     DictionaryLiteral,
@@ -103,6 +105,8 @@ public:
     static Type noReturn() { return Type(TypeType::NoReturn); }
     static Type someobject() { return Type(TypeType::Someobject); }
     static Type integerLiteral() { return Type(TypeType::IntegerLiteral); }
+    /// @param real The type of the literal when it is not a C float, 💯.
+    static Type realLiteral(Type real) { return Type(TypeType::RealLiteral, { std::move(real) }); }
     static Type listLiteral(Type element) { return Type(TypeType::ListLiteral, { std::move(element) }); }
     static Type dictionaryLiteral(Type element) {
         return Type(TypeType::DictionaryLiteral, { std::move(element) });
@@ -302,23 +306,36 @@ public:
     void setExact(bool b) { forceExact_ = b; }
 
     inline bool operator<(const Type &rhs) const {
-        return std::tie(typeContent_, typeDefinition_, rhs.genericArguments_, genericArgumentIndex_,
-                        localResolutionConstraint_) < std::tie(rhs.typeContent_, rhs.typeDefinition_,
-                                                               rhs.genericArguments_, rhs.genericArgumentIndex_,
-                                                               rhs.localResolutionConstraint_);
+        return std::tie(typeContent_, typeDefinition_, genericArguments_, genericArgumentIndex_,
+                        localResolutionConstraint_, cCallable_) < std::tie(rhs.typeContent_, rhs.typeDefinition_,
+                                                                           rhs.genericArguments_,
+                                                                           rhs.genericArgumentIndex_,
+                                                                           rhs.localResolutionConstraint_,
+                                                                           rhs.cCallable_);
     }
 
     inline bool operator==(const Type &rhs) const {
-        return std::tie(typeContent_, typeDefinition_, rhs.genericArguments_, genericArgumentIndex_,
-                        localResolutionConstraint_) == std::tie(rhs.typeContent_, rhs.typeDefinition_,
-                                                                rhs.genericArguments_, rhs.genericArgumentIndex_,
-                                                                rhs.localResolutionConstraint_);
+        return std::tie(typeContent_, typeDefinition_, genericArguments_, genericArgumentIndex_,
+                        localResolutionConstraint_, cCallable_) == std::tie(rhs.typeContent_, rhs.typeDefinition_,
+                                                                            rhs.genericArguments_,
+                                                                            rhs.genericArgumentIndex_,
+                                                                            rhs.localResolutionConstraint_,
+                                                                            rhs.cCallable_);
     }
 
     inline bool operator!=(const Type &rhs) const { return !(*this == rhs); }
 
     /// Returns true iff a value of the given type requires memory management.
     bool isManaged() const;
+    /// Whether this is a value type whose C representation is a pointer, like 📍 and 🕳 of the c package.
+    bool isCPointer() const;
+    /// Whether this is a C function pointer type, 🍇🎍🌊 … 🍉. Values of such types are plain function pointers
+    /// without a capture.
+    bool isCCallable() const { return type() == TypeType::Callable && cCallable_; }
+    /// Makes this callable type a C function pointer type.
+    void setCCallable() { cCallable_ = true; }
+    /// Whether values of this type can be passed to and returned from C functions (🎍🌊).
+    bool isCRepresentable() const;
 
     TypeDefinition* resolutionConstraint() const;
 
@@ -359,6 +376,7 @@ private:
     bool isReference_ = false;
     bool mutable_ = false;
     bool forceExact_ = false;
+    bool cCallable_ = false;
 
     void typeName(Type type, const TypeContext &typeContext, std::string &string, Package *package) const;
     bool identicalGenericArguments(Type to, const TypeContext &typeContext, GenericInferer *inf) const;

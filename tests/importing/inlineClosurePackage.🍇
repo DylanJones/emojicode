@@ -1,0 +1,20 @@
+💭 Methods short enough to be inlined into importers, whose bodies contain closures.
+🌍 🐇 🐟 🍇
+  🖍🆕 offset 🔢
+
+  🆕 🍼 offset 🔢 🍇🍉
+
+  💭 👇 escapes into the closure, so the interface marks this method 🎍🥡.
+  ❗️ 🔢 value 🔢 ➡️ 🔢 🍇
+    ↩️ 🎰👇 🍇 x 🔢 ➡️ 🔢 ↩️ x ➕ offset 🍉 value❗️
+  🍉
+
+  ❗️ 🎰 function 🍇🔢➡️🔢🍉 value 🔢 ➡️ 🔢 🍇
+    ↩️ ⁉️ function value❗️
+  🍉
+
+  💭 Escaping closure created in an inlined method.
+  ❗️ 🍭 ➡️ 🍇🔢➡️🔢🍉 🍇
+    ↩️ 🍇🎍🥡 x 🔢 ➡️ 🔢 ↩️ x ✖️ 2 🍉
+  🍉
+🍉

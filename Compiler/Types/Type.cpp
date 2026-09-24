@@ -7,6 +7,7 @@
 //
 
 #include "Type.hpp"
+#include <algorithm>
 #include "Class.hpp"
 #include "CommonTypeFinder.hpp"
 #include "Emojis.h"
@@ -67,7 +68,7 @@ Type::Type(Class *klass) : typeContent_(TypeType::Class), typeDefinition_(klass)
     }
 }
 
-Type::Type(Function *function) : typeContent_(TypeType::Callable) {
+Type::Type(Function *function) : typeContent_(TypeType::Callable), cCallable_(function->isC()) {
     genericArguments_.reserve(function->parameters().size() + 2);
     genericArguments_.emplace_back(function->returnType()->type());
     genericArguments_.emplace_back(function->errorType()->type());
@@ -361,6 +362,13 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
             to.typeDefinition()->canInitFrom(*this)) {
         return true;
     }
+    if (is<TypeType::RealLiteral>()) {
+        if (to.is<TypeType::ValueType>() && to.valueType()->cRepresentation() &&
+            to.valueType()->cRepresentation()->isFloat()) {
+            return true;
+        }
+        return genericArguments_.front().compatibleTo(to, tc, inf);  // Otherwise the literal is a 💯.
+    }
     if ((is<TypeType::ListLiteral>() || is<TypeType::DictionaryLiteral>()) &&
             to.is<TypeType::ValueType>() && to.typeDefinition()->canInitFrom(*this)) {
         return std::equal(genericArguments().begin(), genericArguments().end(),
@@ -476,7 +484,7 @@ bool Type::isCompatibleToProtocol(const Type &to, const TypeContext &ct, Generic
 }
 
 bool Type::isCompatibleToCallable(const Type &to, const TypeContext &ct, GenericInferer *inf) const {
-    if (type() == TypeType::Callable) {
+    if (type() == TypeType::Callable && cCallable_ == to.cCallable_) {
         if (returnType().compatibleTo(to.returnType(), ct, inf) &&
             errorType().compatibleTo(to.errorType(), ct, inf) && to.parametersCount() == parametersCount()) {
             for (size_t i = 0; i < to.parametersCount(); i++) {
@@ -514,7 +522,7 @@ bool Type::identicalTo(Type to, const TypeContext &tc, GenericInferer *inf) cons
             case TypeType::ValueType:
                 return typeDefinition() == to.typeDefinition() && identicalGenericArguments(to, tc, inf);
             case TypeType::Callable:
-                return std::equal(to.genericArguments_.begin(), to.genericArguments_.end(),
+                return cCallable_ == to.cCallable_ && std::equal(to.genericArguments_.begin(), to.genericArguments_.end(),
                                   genericArguments_.begin(), genericArguments_.end(),
                                   [&tc, inf](const Type &a, const Type &b) { return a.identicalTo(b, tc, inf); });
             case TypeType::Optional:
@@ -545,12 +553,44 @@ StorageType Type::storageType() const {
         case TypeType::Box:
             return StorageType::Box;
         case TypeType::Optional:
-            if (optionalType().type() == TypeType::Class || optionalType().type() == TypeType::Someobject) {
+            if (optionalType().type() == TypeType::Class || optionalType().type() == TypeType::Someobject ||
+                optionalType().isCPointer() || optionalType().isCCallable()) {
                 return StorageType::PointerOptional;
             }
             return StorageType::SimpleOptional;
         default:
             return StorageType::Simple;
+    }
+}
+
+bool Type::isCPointer() const {
+    if (type() != TypeType::ValueType || isReference()) {
+        return false;
+    }
+    auto &representation = valueType()->cRepresentation();
+    return representation && representation->isPointer();
+}
+
+bool Type::isCRepresentable() const {
+    if (isReference()) {
+        return false;
+    }
+    switch (type()) {
+        case TypeType::ValueType:
+            return valueType()->cRepresentation().has_value() || valueType()->isCStruct();
+        case TypeType::Callable: {
+            // Calls through C function pointers have no trampolines, so structs cannot be passed by value.
+            auto passable = [](const Type &type) {
+                return type.isCRepresentable() && !(type.type() == TypeType::ValueType && type.valueType()->isCStruct());
+            };
+            return cCallable_ && errorType().type() == TypeType::NoReturn &&
+                (returnType().type() == TypeType::NoReturn || passable(returnType())) &&
+                std::all_of(parameters(), parametersEnd(), passable);
+        }
+        case TypeType::Optional:
+            return optionalType().isCPointer() || optionalType().isCCallable();
+        default:
+            return false;
     }
 }
 
@@ -576,7 +616,7 @@ std::string Type::typePackage() const {
 
 bool Type::isManaged() const {
     return type() == TypeType::Class || type() == TypeType::Someobject || type() == TypeType::Box ||
-        type() == TypeType::Callable ||
+        (type() == TypeType::Callable && !cCallable_) ||
         (type() == TypeType::ValueType && valueType()->isManaged()) ||
         (type() == TypeType::Optional && optionalType().isManaged());
 }
@@ -643,7 +683,7 @@ void Type::typeName(Type type, const TypeContext &typeContext, std::string &stri
             string.append("🔵");
             return;
         case TypeType::Callable:
-            string.append("🍇");
+            string.append(type.cCallable_ ? "🍇🎍🌊" : "🍇");
 
             for (auto it = type.parameters(); it < type.parametersEnd(); it++) {
                 typeName(*it, typeContext, string, package);

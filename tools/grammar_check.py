@@ -62,11 +62,12 @@ CONTEXT_ERRORS = [
     'overload is declared twice',
     'initialized with 🍼 more than once',
     's package',
+    'is not a known C type',
 ]
 
 # Directories whose sources are packages. A mutated file from one of them is parsed together with the rest of its
 # package, as the s package in particular cannot be parsed one file at a time.
-PACKAGES = ['s', 'files', 'json', 'sockets', 'testtube']
+PACKAGES = ['s', 'files', 'json', 'sockets', 'testtube', 'c']
 
 CORPUS_PATTERNS = [
     'tests/compilation/*.emojic',
@@ -76,6 +77,8 @@ CORPUS_PATTERNS = [
     'json/*.🍇',
     'sockets/*.🍇',
     'testtube/*.🍇',
+    'c/*.🍇',
+    'tests/host/*.emojic',
 ]
 REJECT_PATTERN = 'tests/reject/*.emojic'
 

@@ -146,6 +146,17 @@ std::string Options::linker() const {
     return "c++";
 }
 
+std::string Options::cc() const {
+    if (auto var = getenv("CC")) {
+        return var;
+    }
+    return "cc";
+}
+
+std::string Options::cxx() const {
+    return linker();
+}
+
 std::string Options::ar() const {
     if (auto var = getenv("AR")) {
         return var;

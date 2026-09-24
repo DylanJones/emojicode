@@ -1,0 +1,66 @@
+📦 c 🌊
+
+💭 The fields of struct tm that macOS and glibc share, in the same order, and the two that follow them on both.
+🎍🌊 🕊 🗓 🍇
+  🖍🆕 second 🔶🌊🔢
+  🖍🆕 minute 🔶🌊🔢
+  🖍🆕 hour 🔶🌊🔢
+  🖍🆕 day 🔶🌊🔢
+  🖍🆕 month 🔶🌊🔢
+  🖍🆕 year 🔶🌊🔢
+  🖍🆕 weekday 🔶🌊🔢
+  🖍🆕 yearday 🔶🌊🔢
+  🖍🆕 isDaylightSavingTime 🔶🌊🔢
+  🖍🆕 offset 🔶🌊🐘
+  🖍🆕 zone 🍬🔶🌊📍🐚🔶🌊🔠🍆
+
+  ❗️ 📅 ➡️ 🔡 🍇
+    ↩️ 🔤🧲year ➕ 1900🧲-🧲month ➕ 1🧲-🧲day🧲 🧲hour🧲:🧲minute🧲:🧲second🧲, weekday 🧲weekday🧲🔤
+  🍉
+
+  🖍❗️ 🌅 🍇
+    0 ➡️ 🖍hour
+  🍉
+🍉
+
+🕊 ⌚️ 🍇
+  🎍🌊 🐇☣️❗️ 🌍 time 🔶🌊📍🐚🔶🌊⏰🍆 result 🔶🌊📍🐚🗓🍆 ➡️ 🍬🔶🌊📍🐚🗓🍆 📻 🔤gmtime_r🔤
+  🎍🌊 🐇☣️❗️ 🔙 time 🔶🌊📍🐚🗓🍆 ➡️ 🔶🌊⏰ 📻 🔤timegm🔤
+  🎍🌊 🐇☣️❗️ 🖨 buffer 🔶🌊📍🐚🔶🌊🔠🍆 size 🔶🌊📏 format 🔶🌊📍🐚🔶🌊🔠🍆 time 🔶🌊📍🐚🗓🍆
+    ➡️ 🔶🌊📏 📻 🔤strftime🔤
+🍉
+
+🏁 🍇
+  ☣️ 🍇
+    🍺🛒🕊🔶🌊🔧 🆕🔶🌊📏▶️🔢 ⚖️🔶🌊⏰❗️❗️ ➡️ timeMemory
+    📍🐚🔶🌊⏰🍆timeMemory❗️ ➡️ time
+    1000000000 ➡️🐽 time❗️
+
+    🍺🛒🕊🔶🌊🔧 🆕🔶🌊📏▶️🔢 ⚖️🗓❗️❗️ ➡️ tmMemory
+    📍🐚🗓🍆tmMemory❗️ ➡️ tm
+
+    ↪️ 🌍🕊⌚️ time tm❗️ ➡️ result 🍇
+      ↪️ 🔢result❗️ 🙌 🔢tm❗️ 🍇
+        😀 🔤gmtime_r filled the struct🔤❗️
+      🍉
+    🍉
+
+    🐽tm❗️ ➡️ 🖍🆕 date
+    😀 📅date❗️❗️
+
+    🍺🛒🕊🔶🌊🔧 64❗️ ➡️ buffer
+    📍🐚🔶🌊🔠🍆buffer❗️ ➡️ characters
+    🧶🕊🔶🌊🧶 🔤%A, %d %B %Y🔤 🍇 format 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🔶🌊📏
+      ↩️ 🖨🕊⌚️ characters 64 format tm❗️
+    🍉❗️ ➡️ length
+    😀 🔡🕊🔶🌊🧶 characters 🔢length❗️❗️❗️
+
+    🌅date❗️
+    date ➡️🐽 tm❗️
+    😀 🔤timegm after midnight: 🧲🔙🕊⌚️ tm❗️🧲🔤❗️
+
+    🗑🕊🔶🌊🔧 buffer❗️
+    🗑🕊🔶🌊🔧 tmMemory❗️
+    🗑🕊🔶🌊🔧 timeMemory❗️
+  🍉
+🍉

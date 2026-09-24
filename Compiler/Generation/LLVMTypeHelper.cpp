@@ -150,7 +150,9 @@ llvm::Type* LLVMTypeHelper::typeForFunction(const Type &type, Function *function
 llvm::FunctionType* LLVMTypeHelper::functionTypeFor(Function *function) {
     std::vector<llvm::Type *> args;
     if (function->isClosure()) {
-        args.emplace_back(pointer());
+        if (!function->isC()) {
+            args.emplace_back(pointer());
+        }
     }
     else if (hasThisArgument(function)) {
         args.emplace_back(typeForFunction(function->typeContext().calleeType(), function));
@@ -241,7 +243,7 @@ llvm::Type* LLVMTypeHelper::typeForOrdinaryType(const Type &type) {
 llvm::Type* LLVMTypeHelper::getSimpleType(const Type &type) {
     switch (type.type()) {
         case TypeType::Callable:
-            return callable_;
+            return type.isCCallable() ? static_cast<llvm::Type *>(pointer()) : callable_;
         case TypeType::TypeAsValue:
             if (type.typeOfTypeValue().type() == TypeType::Class) {
                 return pointer();
@@ -265,6 +267,11 @@ llvm::Type* LLVMTypeHelper::getSimpleType(const Type &type) {
 llvm::Type* LLVMTypeHelper::llvmTypeForTypeDefinition(const Type &type) {
     auto &reification = type.typeDefinition()->reificationFor(type.genericArguments());
     if (reification.type != nullptr) {
+        return reification.type;
+    }
+
+    if (type.type() == TypeType::ValueType && type.valueType()->cRepresentation()) {
+        reification.type = type.valueType()->cRepresentation()->llvmType(context_);
         return reification.type;
     }
 

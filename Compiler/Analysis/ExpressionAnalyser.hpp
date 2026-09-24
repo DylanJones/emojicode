@@ -85,6 +85,9 @@ public:
     /// - Issues a warning if the function is deprecated.
     /// - Ensures that access control allows this function to be called.
     /// - Checks that the function is safe or ensures that we are in an unsafe block.
+    /// Whether the methods of @p typeDef take and return values of generic types unboxed. True for the memory
+    /// and pointer types 🧠, 📍 and 🕳, whose built-in methods work on the values directly.
+    bool storesGenericValuesUnboxed(TypeDefinition *typeDef) const;
     Type analyseFunctionCall(ASTArguments *node, const Type &type, Function *function);
 
     Type integer() const;

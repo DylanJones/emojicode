@@ -7,6 +7,7 @@
 //
 
 #include "ASTMethod.hpp"
+#include <algorithm>
 #include "ASTVariables.hpp"
 #include "Analysis/FunctionAnalyser.hpp"
 #include "Analysis/SemanticAnalyser.hpp"
@@ -50,7 +51,7 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
     checkMutation(analyser, callee);
     ensureErrorIsHandled(analyser);
     auto rt = analyser->analyseFunctionCall(&args_, calleeType_, method_);
-    if (method_->owner() != analyser->compiler()->sMemory &&
+    if (!analyser->storesGenericValuesUnboxed(method_->owner()) &&
         (method_->returnType()->type().is<TypeType::GenericVariable>() ||
          method_->returnType()->type().is<TypeType::LocalGenericVariable>() ||
          method_->returnType()->type().unoptionalized().is<TypeType::GenericVariable>() ||
@@ -202,6 +203,10 @@ bool ASTMethodable::builtIn(ExpressionAnalyser *analyser, const Type &btype, con
         return true;
     }
 
+    if (type.valueType()->declaresCRepresentation() && builtInC(analyser, type, name)) {
+        return true;
+    }
+
     prepareBuiltIns(analyser->compiler());
     auto it = kBuiltIns.find(std::make_pair(type.valueType(), name.front()));
     if (it != kBuiltIns.end()) {
@@ -210,6 +215,83 @@ bool ASTMethodable::builtIn(ExpressionAnalyser *analyser, const Type &btype, con
     }
 
     return false;
+}
+
+bool ASTMethodable::builtInC(ExpressionAnalyser *analyser, const Type &type, const std::u32string &name) {
+    auto compiler = analyser->compiler();
+    auto valueType = type.valueType();
+    auto &representation = *valueType->cRepresentation();
+    // Only the methods the type declares as built-ins are built-ins; methods with bodies are called normally.
+    auto &methods = valueType->methods().list();
+    if (name.size() != 1 || std::none_of(methods.begin(), methods.end(), [&](Function *method) {
+        return method->name() == name && method->mood() == args_.mood() && method->externalName() == "ejcBuiltIn";
+    })) {
+        return false;
+    }
+    auto first = name.front();
+
+    if (valueType == compiler->cPointer) {
+        auto &pointee = type.genericArguments().front();
+        auto accessesPointee = first == E_PIG_NOSE || first == E_NEXT_TRACK;
+        if (accessesPointee && (pointee.is<TypeType::GenericVariable>() ||
+                                pointee.is<TypeType::LocalGenericVariable>() || pointee.storageType() == StorageType::Box ||
+                                pointee.unboxedType() == TypeType::Something ||
+                                pointee.unboxedType() == TypeType::Protocol ||
+                                pointee.unboxedType() == TypeType::MultiProtocol)) {
+            throw CompilerError(position(), "Cannot access a ", type.toString(analyser->typeContext()),
+                                " because its values are not stored as C values. Use a concrete pointee type.");
+        }
+        switch (first) {
+            case E_PIG_NOSE:
+                builtIn_ = args_.mood() == Mood::Assignment ? BuiltInType::CPointerStore : BuiltInType::CPointerLoad;
+                return true;
+            case E_NEXT_TRACK:
+                builtIn_ = BuiltInType::CPointerAdvance;
+                return true;
+            case E_PERFORMING_ARTS:
+            case E_HOLE:
+                builtIn_ = BuiltInType::CReinterpret;
+                return true;
+            default:
+                break;
+        }
+    }
+    if (valueType == compiler->cVoidPointer) {
+        switch (first) {
+            case E_ROUND_PUSHPIN:
+            case E_INBOX_TRAY:
+                builtIn_ = BuiltInType::CReinterpret;
+                return true;
+            case E_EYES:
+                builtIn_ = BuiltInType::CBorrowObject;
+                return true;
+            default:
+                break;
+        }
+    }
+    if (args_.mood() != Mood::Imperative || !args_.args().empty()) {
+        return false;
+    }
+    switch (first) {
+        case E_INPUT_SYMBOL_FOR_NUMBERS:
+        case E_HUNDRED_POINTS_SYMBOL:
+            builtIn_ = BuiltInType::CConvert;
+            return true;
+        case E_NEGATIVE_SQUARED_CROSS_MARK:
+            if (representation.isInteger()) {
+                builtIn_ = BuiltInType::IntegerNot;
+                return true;
+            }
+            return false;
+        case E_BATTERY:
+            if (representation.isPointer()) {
+                return false;
+            }
+            builtIn_ = representation.isFloat() ? BuiltInType::DoubleInverse : BuiltInType::IntegerInverse;
+            return true;
+        default:
+            return false;
+    }
 }
 
 Type ASTMethod::analyse(ExpressionAnalyser *analyser) {

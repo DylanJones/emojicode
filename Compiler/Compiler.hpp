@@ -117,6 +117,26 @@ public:
         std::string path_;
     };
 
+    /// Compiles the native sources that the main package lists in its link hints, and any C code the compiler
+    /// generated, to object files next to the main object file. LinkPhase and ArchivePhase include them.
+    class NativeCompilationPhase final : public Phase {
+    public:
+        /// @param objectFilePath Where the object file of the main package is located.
+        /// @param cc Name of or path to the C compiler to use.
+        /// @param cxx Name of or path to the C++ compiler to use.
+        /// @param mergeIntoObject Whether to merge the native objects into the main object file, because the object
+        ///                        file is the result and neither LinkPhase nor ArchivePhase will run.
+        NativeCompilationPhase(std::string objectFilePath, std::string cc, std::string cxx, bool mergeIntoObject)
+            : objectFilePath_(std::move(objectFilePath)), cc_(std::move(cc)), cxx_(std::move(cxx)),
+              mergeIntoObject_(mergeIntoObject) {}
+        void perform(Compiler *compiler) override;
+    private:
+        std::string objectFilePath_;
+        std::string cc_;
+        std::string cxx_;
+        bool mergeIntoObject_;
+    };
+
     /// Links an object file with the archives of the imported packages of the Compiler.
     class LinkPhase final : public Phase {
     public:
@@ -165,6 +185,9 @@ public:
 
     std::vector<Package *> importedPackages() const { return packageImportOrder_; }
 
+    /// Object files produced by NativeCompilationPhase that must be linked or archived with the main object file.
+    const std::vector<std::string>& nativeObjects() const { return nativeObjects_; }
+
     SourceManager &sourceManager() { return sourceManager_; }
 
     /// Issues a compiler warning. The compilation is continued normally.
@@ -187,6 +210,8 @@ public:
     Package *loadPackage(const std::string &name, const SourcePosition &p, Package *requestor);
 
     void assignSTypes(Package *s);
+    /// Looks up the pointer types 📍 and 🕳 of the c package, which are defined in the namespace 🌊.
+    void assignCTypes(Package *c);
 
     Class *sString = nullptr;
     Class *sError = nullptr;
@@ -200,6 +225,10 @@ public:
     ValueType *sMemory = nullptr;
     ValueType *sByte = nullptr;
     ValueType *sWeak = nullptr;
+    /// 📍🐚T🍆 of the c package, a C pointer to T. nullptr if the c package is not loaded.
+    ValueType *cPointer = nullptr;
+    /// 🕳 of the c package, a C void pointer. nullptr if the c package is not loaded.
+    ValueType *cVoidPointer = nullptr;
 
     ~Compiler();
 
@@ -215,6 +244,7 @@ private:
 
     std::map<std::string, std::unique_ptr<Package>> packages_;
     std::vector<Package *> packageImportOrder_;
+    std::vector<std::string> nativeObjects_;
 
     bool hasError_ = false;
     std::string mainFile_;

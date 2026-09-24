@@ -9,6 +9,7 @@
 #include <utility>
 #include "ASTInitialization.hpp"
 #include "ASTLiterals.hpp"
+#include "Types/ValueType.hpp"
 #include "Generation/TypeDescriptionGenerator.hpp"
 #include "Compiler.hpp"
 #include "Generation/CallCodeGenerator.hpp"
@@ -43,6 +44,13 @@ Value* ASTNumberLiteral::generate(FunctionCodeGenerator *fg) const {
             return fg->int64(integerValue_);
         case NumberType::Double:
             return llvm::ConstantFP::get(llvm::Type::getDoubleTy(fg->ctx()), doubleValue_);
+        case NumberType::C: {
+            auto type = fg->typeHelper().llvmTypeFor(cType_);
+            if (cType_.valueType()->cRepresentation()->isFloat()) {
+                return llvm::ConstantFP::get(type, doubleValue_);
+            }
+            return llvm::ConstantInt::get(type, integerValue_, cType_.valueType()->cRepresentation()->isSigned);
+        }
     }
 }
 

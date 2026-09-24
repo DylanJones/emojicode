@@ -1,0 +1,22 @@
+💭 Variables declared in a ☣️ block are released when the function returns from the end of that block.
+🐇 🐕 🍇
+  🆕 🍇🍉
+
+  ♻️ 🍇
+    😀 🔤released🔤❗️
+  🍉
+🍉
+
+🕊 🧪 🍇
+  🐇❗️ 🅰️ ➡️ 🔢 🍇
+    ☣️ 🍇
+      🆕🐕❗️ ➡️ dog
+      ↩️ 1
+    🍉
+  🍉
+🍉
+
+🏁 🍇
+  🅰️🕊🧪❗️ ➡️ a
+  😀 🔤after🔤❗️
+🍉

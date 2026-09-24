@@ -48,7 +48,7 @@ void mangleTypeName(std::stringstream &stream, const Type &typeb) {
             stream << "protocol_";
             break;
         case TypeType::Callable:
-            stream << "callable_";
+            stream << (type.isCCallable() ? "ccallable_" : "callable_");
             for (auto it = type.parameters(); it < type.parametersEnd(); it++) {
                 mangleTypeName(stream, *it);
             }

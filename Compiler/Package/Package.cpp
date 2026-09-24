@@ -48,6 +48,19 @@ Package::Package(std::string name, std::string path, Compiler *app, bool importe
     : name_(std::move(name)), path_(std::move(path)), imported_(imported), compiler_(app) {}
 Package::~Package() = default;
 
+bool Package::isNativeSourceHint(const std::string &hint) {
+    if (hint.empty() || hint.front() == '-' || hint.find_first_of(" \t\n") != std::string::npos) {
+        return false;
+    }
+    for (auto extension : { ".c", ".cc", ".cpp", ".cxx", ".m", ".o" }) {
+        auto length = std::strlen(extension);
+        if (hint.size() > length && hint.compare(hint.size() - length, length, extension) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void Package::importPackage(const std::string &name, const std::u32string &ns, const SourcePosition &p) {
     auto import = compiler_->loadPackage(name, p, this);
     for (auto exported : import->exportedTypes_) {
@@ -98,6 +111,9 @@ void Package::parse(const std::string &mainFilePath) {
     if (name() == "s") {
         compiler()->assignSTypes(this);
     }
+    if (name() == "c") {
+        compiler()->assignCTypes(this);
+    }
     finishedLoading_ = true;
 }
 
@@ -146,7 +162,7 @@ std::u32string Package::findNamespace(const Type &type) {
     }
     auto key = kDefaultNamespace + type.typeDefinition()->name();
     auto it = types_.find(key);
-    if (it != types_.end()) {
+    if (it != types_.end() && it->second.typeDefinition() == type.typeDefinition()) {
         return std::u32string();
     }
     for (auto &pair : types_) {

@@ -7,6 +7,7 @@
 //
 
 #include "CodeGenerator.hpp"
+#include "CTrampolineGenerator.hpp"
 #include "Compiler.hpp"
 #include "CompilerError.hpp"
 #include "RunTimeHelper.hpp"
@@ -82,6 +83,10 @@ uint64_t CodeGenerator::querySize(llvm::Type *type) const {
 llvm::Constant *CodeGenerator::boxInfoFor(const Type &type) {
     if (type.type() == TypeType::Class) {
         return runTime_->boxInfoForObjects();
+    }
+    if (type.isCCallable()) {
+        // A C function pointer is an unmanaged word, which boxes like an integer.
+        return compiler()->sInteger->boxInfo();
     }
     if (type.type() == TypeType::Callable) {
         return runTime_->boxInfoForCallables();
@@ -184,13 +189,28 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
     auto name = function->externalName().empty() ? mangleFunction(function, reificationContext.arguments())
     : function->externalName();
 
+    if (needsCTrampoline(function)) {
+        ft = cTrampolineFunctionType(function);
+        name = cTrampolineName(function);
+    }
+    // Several 🎍🌊 declarations, or the run-time library, can declare the same C symbol. C closures are not C symbols
+    // (their mangled names are not unique) and each export must be the only definition of its symbol.
+    if (function->isC() && !function->isClosure()) {
+        if (function->isExported() && !exportedCSymbols_.insert(name).second) {
+            throw CompilerError(function->position(), "A C function named ", name, " was already exported.");
+        }
+        if (auto existing = module()->getFunction(name)) {
+            return reuseCFunction(function, existing, ft);
+        }
+    }
+
     auto fn = llvm::Function::Create(ft, linkageForFunction(function), name, module());
     fn->addFnAttr(llvm::Attribute::NoUnwind);
     if (function->isInline()) {
         fn->addFnAttr(llvm::Attribute::InlineHint);
     }
 
-    size_t i = function->isClosure() ? 1 : 0;
+    size_t i = function->isClosure() && !function->isC() ? 1 : 0;
     if (hasThisArgument(function) && !function->isClosure()) {
         addParamDereferenceable(function->typeContext().calleeType(), i, fn, false);
         if (function->functionType() == FunctionType::ObjectInitializer ||
@@ -246,7 +266,97 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
     }
 
     addParamDereferenceable(function->returnType()->type(), 0, fn, true);
+    if (function->isC()) {
+        addCExtensionAttributes(function, fn);
+    }
     return fn;
+}
+
+llvm::FunctionType* CodeGenerator::cTrampolineFunctionType(Function *function) {
+    std::vector<llvm::Type *> params;
+    for (auto &param : function->parameters()) {
+        params.emplace_back(isCStructValue(param.type->type()) ? typeHelper().pointer()
+                                                               : typeHelper().llvmTypeFor(param.type->type()));
+    }
+    auto &returnType = function->returnType()->type();
+    if (isCStructValue(returnType)) {
+        params.emplace_back(typeHelper().pointer());
+        return llvm::FunctionType::get(llvm::Type::getVoidTy(context()), params, false);
+    }
+    return llvm::FunctionType::get(typeHelper().llvmTypeFor(returnType), params, false);
+}
+
+llvm::Function* CodeGenerator::reuseCFunction(Function *function, llvm::Function *existing, llvm::FunctionType *ft) {
+    // Several 🎍🌊 declarations, or the run-time library, can declare the same C function, e.g. malloc.
+    if (existing->getFunctionType() != ft) {
+        throw CompilerError(function->position(), "The C function ", existing->getName().str(),
+                            " was already declared with a different signature.");
+    }
+    auto triple = llvm::Triple(module()->getTargetTriple());
+    auto conflicts = [](llvm::Attribute::AttrKind kind, auto hasAttribute) {
+        return (kind == llvm::Attribute::SExt && hasAttribute(llvm::Attribute::ZExt)) ||
+            (kind == llvm::Attribute::ZExt && hasAttribute(llvm::Attribute::SExt));
+    };
+    bool signednessDiffers = conflicts(cExtensionAttribute(function->returnType()->type(), triple),
+                                       [&](auto kind) { return existing->hasRetAttribute(kind); });
+    for (unsigned i = 0; i < function->parameters().size(); i++) {
+        signednessDiffers |= conflicts(cExtensionAttribute(function->parameters()[i].type->type(), triple),
+                                       [&](auto kind) { return existing->hasParamAttribute(i, kind); });
+    }
+    if (signednessDiffers) {
+        throw CompilerError(function->position(), "The C function ", existing->getName().str(),
+                            " was already declared with integers of different signedness.");
+    }
+    // Do not let the optimizer assume more than the C declaration promises.
+    existing->removeRetAttr(llvm::Attribute::NonNull);
+    for (unsigned i = 0; i < existing->arg_size(); i++) {
+        existing->removeParamAttr(i, llvm::Attribute::NonNull);
+    }
+    addCExtensionAttributes(function, existing);
+    return existing;
+}
+
+llvm::Attribute::AttrKind cExtensionAttribute(const Type &type, const llvm::Triple &triple) {
+    if (type.type() != TypeType::ValueType || !type.valueType()->cRepresentation()) {
+        return llvm::Attribute::None;
+    }
+    auto &representation = *type.valueType()->cRepresentation();
+    if (!representation.isInteger()) {
+        return llvm::Attribute::None;
+    }
+    auto extension = representation.isSigned ? llvm::Attribute::SExt : llvm::Attribute::ZExt;
+    if (triple.isAArch64() && !triple.isOSDarwin()) {
+        return llvm::Attribute::None;  // AAPCS64 leaves the upper bits unspecified.
+    }
+    if (triple.isOSWindows()) {
+        return representation.bits == 1 ? llvm::Attribute::ZExt : llvm::Attribute::None;
+    }
+    if (representation.bits < 32) {
+        return extension;
+    }
+    if (representation.bits == 32) {
+        if (triple.isRISCV64()) {
+            return llvm::Attribute::SExt;  // RV64 sign extends all 32-bit integers.
+        }
+        if (triple.isPPC64()) {
+            return extension;
+        }
+    }
+    return llvm::Attribute::None;
+}
+
+void CodeGenerator::addCExtensionAttributes(Function *function, llvm::Function *fn) {
+    auto triple = llvm::Triple(module()->getTargetTriple());
+    for (size_t i = 0; i < function->parameters().size(); i++) {
+        auto attribute = cExtensionAttribute(function->parameters()[i].type->type(), triple);
+        if (attribute != llvm::Attribute::None) {
+            fn->addParamAttr(i, attribute);
+        }
+    }
+    auto attribute = cExtensionAttribute(function->returnType()->type(), triple);
+    if (attribute != llvm::Attribute::None && !fn->getReturnType()->isVoidTy()) {
+        fn->addRetAttr(attribute);
+    }
 }
 
 void CodeGenerator::declareLlvmFunction(Function *function) {
@@ -280,6 +390,10 @@ void CodeGenerator::addParamDereferenceable(const Type &type, size_t index, llvm
 }
 
 llvm::Function::LinkageTypes CodeGenerator::linkageForFunction(Function *function) const {
+    // Closures, even those in imported inline functions, are generated in every module that uses them.
+    if (function->isClosure()) {
+        return llvm::Function::PrivateLinkage;
+    }
     if (function->isInline() && function->package()->isImported()) {
         return llvm::Function::AvailableExternallyLinkage;
     }

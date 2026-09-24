@@ -10,13 +10,17 @@
 #include "Analysis/SemanticAnalyser.hpp"
 #include "Compiler.hpp"
 #include "Generation/CodeGenerator.hpp"
+#include "Generation/CTrampolineGenerator.hpp"
 #include "Package/RecordingPackage.hpp"
 #include "Parsing/AbstractParser.hpp"
 #include "Prettyprint/PrettyPrinter.hpp"
 #include <llvm/Support/CommandLine.h>
+#include <llvm/ADT/SmallString.h>
 #include <llvm/Support/FileSystem.h>
+#include <llvm/Support/Path.h>
 #include <llvm/Support/Program.h>
 #include <llvm/Support/StringSaver.h>
+#include <llvm/Support/raw_ostream.h>
 #include "MemoryFlowAnalysis/MFAnalyser.hpp"
 #include "Types/ValueType.hpp"
 #include "Functions/Function.hpp"
@@ -104,17 +108,89 @@ static void runTool(const std::string &tool, const std::vector<std::string> &arg
 }
 
 /// Appends the linker arguments for a link hint. A hint is split at whitespace like a command line, so that hints
-/// such as "ssl -lcrypto", which used to be split by the shell, keep working.
+/// such as "ssl -lcrypto", which used to be split by the shell, keep working. The first word names a library
+/// unless it starts with "-", so that flags like "-framework Foundation" or "-L/opt/lib" can be passed as well.
+/// Native source hints are skipped: NativeCompilationPhase compiles them.
 static void appendLinkHint(std::vector<std::string> &args, const std::string &hint) {
+    if (Package::isNativeSourceHint(hint)) {
+        return;
+    }
     llvm::BumpPtrAllocator allocator;
     llvm::StringSaver saver(allocator);
     llvm::SmallVector<const char *, 4> tokens;
-    llvm::cl::TokenizeGNUCommandLine("-l" + hint, saver, tokens);
-    args.insert(args.end(), tokens.begin(), tokens.end());
+    llvm::cl::TokenizeGNUCommandLine(hint, saver, tokens);
+    for (size_t i = 0; i < tokens.size(); i++) {
+        if (i == 0 && tokens[i][0] != '-') {
+            args.emplace_back(std::string("-l") + tokens[i]);
+        }
+        else {
+            args.emplace_back(tokens[i]);
+        }
+    }
+}
+
+void Compiler::NativeCompilationPhase::perform(Compiler *compiler) {
+    auto package = compiler->mainPackage();
+    llvm::StringRef base = objectFilePath_;
+    base.consume_back(".o");
+
+    auto trampolines = generateCTrampolines(package);
+    if (!trampolines.empty()) {
+        auto source = (base + "_trampolines.c").str();
+        auto object = (base + "_trampolines.o").str();
+        std::error_code error;
+        llvm::raw_fd_ostream stream(source, error);
+        if (error) {
+            throw CompilerError(SourcePosition(), "Could not write ", source, ": ", error.message());
+        }
+        stream << trampolines;
+        stream.close();
+        runTool(cc_, { "-c", "-O2", "-w", source, "-o", object });
+        compiler->nativeObjects_.emplace_back(object);
+    }
+
+    size_t sourceIndex = 0;
+    for (auto &hint : package->linkHints()) {
+        if (!Package::isNativeSourceHint(hint)) {
+            continue;
+        }
+        llvm::SmallString<128> source;
+        if (!llvm::sys::path::is_absolute(hint)) {
+            source = package->linkHintsDirectory();
+        }
+        llvm::sys::path::append(source, hint);
+        if (!llvm::sys::fs::exists(source)) {
+            throw CompilerError(SourcePosition(), "Native source ", std::string(source), " does not exist.");
+        }
+
+        auto extension = llvm::sys::path::extension(source);
+        if (extension == ".o") {
+            compiler->nativeObjects_.emplace_back(source.str());
+            continue;
+        }
+        // The index keeps sources with the same name in different directories (or x.c and x.cpp) apart.
+        auto object = (base + "_" + std::to_string(sourceIndex++) + "_" + llvm::sys::path::stem(source) + ".o").str();
+        auto tool = extension == ".c" || extension == ".m" ? cc_ : cxx_;
+        runTool(tool, { "-c", "-O2", std::string(source), "-o", object });
+        compiler->nativeObjects_.emplace_back(object);
+    }
+
+    // Only LinkPhase and ArchivePhase add the native objects. Otherwise the requested object file must contain them.
+    if (mergeIntoObject_ && !compiler->nativeObjects_.empty()) {
+        auto merged = (base + "_merged.o").str();
+        std::vector<std::string> args { "-r", "-nostdlib", "-o", merged, objectFilePath_ };
+        args.insert(args.end(), compiler->nativeObjects_.begin(), compiler->nativeObjects_.end());
+        runTool(cxx_, args);
+        if (auto error = llvm::sys::fs::rename(merged, objectFilePath_)) {
+            throw CompilerError(SourcePosition(), "Could not write ", objectFilePath_, ": ", error.message());
+        }
+        compiler->nativeObjects_.clear();
+    }
 }
 
 void Compiler::LinkPhase::perform(Compiler *compiler) {
     std::vector<std::string> args { objectFilePath_ };
+    args.insert(args.end(), compiler->nativeObjects_.begin(), compiler->nativeObjects_.end());
 
     for (auto &hint : compiler->mainPackage()->linkHints()) {
         appendLinkHint(args, hint);
@@ -135,7 +211,9 @@ void Compiler::LinkPhase::perform(Compiler *compiler) {
 }
 
 void Compiler::ArchivePhase::perform(Compiler *compiler) {
-    runTool(ar_, { "cr", outPath_, objectFilePath_ });
+    std::vector<std::string> args { "cr", outPath_, objectFilePath_ };
+    args.insert(args.end(), compiler->nativeObjects_.begin(), compiler->nativeObjects_.end());
+    runTool(ar_, args);
 }
 
 std::string Compiler::searchPackage(const std::string &name, const SourcePosition &p) {
@@ -241,6 +319,10 @@ void Compiler::assignSTypes(Package *s) {
     sMemory = getStandardValueType(U"🧠", s);
     sByte = getStandardValueType(U"💧", s);
     sByte->constructibleFrom_ = TypeType::IntegerLiteral;
+    sInteger->setCRepresentation(CRepresentation(CRepresentation::Kind::Integer, 64, true));
+    sReal->setCRepresentation(CRepresentation(CRepresentation::Kind::Float, 64, true));
+    sByte->setCRepresentation(CRepresentation(CRepresentation::Kind::Integer, 8, true));
+    sBoolean->setCRepresentation(CRepresentation(CRepresentation::Kind::Integer, 1, false));
     sWeak = getStandardValueType(U"📶", s);
     sString = getStandardClass(U"🔡", s);
     sError = getStandardClass(U"🚧", s);
@@ -252,6 +334,18 @@ void Compiler::assignSTypes(Package *s) {
     sInterpolateable = getStandardProtocol(U"↘🔸🔡", s);
     sEnumerable = getStandardProtocol(
             std::u32string(1, E_CLOCKWISE_RIGHTWARDS_AND_LEFTWARDS_OPEN_CIRCLE_ARROWS_WITH_CIRCLED_ONE_OVERLAY), s);
+}
+
+void Compiler::assignCTypes(Package *c) {
+    Type type = Type::noReturn();
+    if (c->lookupRawType(TypeIdentifier(U"📍", U"🌊", SourcePosition()), &type) &&
+        type.type() == TypeType::ValueType) {
+        cPointer = type.valueType();
+    }
+    if (c->lookupRawType(TypeIdentifier(U"🕳", U"🌊", SourcePosition()), &type) &&
+        type.type() == TypeType::ValueType) {
+        cVoidPointer = type.valueType();
+    }
 }
 
 } // namespace EmojicodeCompiler

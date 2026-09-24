@@ -43,6 +43,21 @@ Type ASTInitialization::analyse(ExpressionAnalyser *analyser) {
 
     analyser->analyseFunctionCall(&args_, type, init);
     ensureErrorIsHandled(analyser);
+    if (type.type() == TypeType::ValueType && type.valueType()->declaresCRepresentation() &&
+        init->externalName() == "ejcBuiltIn") {
+        auto parameter = init->parameters().size() == 1 ? init->parameters().front().type->type() : Type::noReturn();
+        if (name_ == U"📤" && (parameter.type() == TypeType::Class || parameter.type() == TypeType::Someobject)) {
+            initType_ = InitType::CRetainObject;
+        }
+        else if (name_ != U"📤" && parameter.type() == TypeType::ValueType && !parameter.isReference() &&
+                 (parameter.valueType()->cRepresentation() || parameter.valueType() == analyser->compiler()->sMemory)) {
+            initType_ = InitType::CConversion;
+        }
+        else {
+            throw CompilerError(init->position(), "A built-in initializer of a C type must take one object (▶️📤) or "
+                                "one value of a type with a C representation or 🧠.");
+        }
+    }
     return init->constructedType(type);
 }
 

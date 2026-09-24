@@ -136,7 +136,15 @@ Type ASTGenericVariable::getType(const TypeContext &typeContext, bool allowGener
 Type ASTCallableType::getType(const TypeContext &typeContext, bool allowGenericInference) const {
     auto returnType = return_ == nullptr ? Type::noReturn() : return_->analyseType(typeContext);
     auto errorType = errorType_ == nullptr ? Type::noReturn() : errorType_->analyseType(typeContext);
-    return Type(returnType, transformTypeAstVector(params_, typeContext), errorType);
+    auto type = Type(returnType, transformTypeAstVector(params_, typeContext), errorType);
+    if (c_) {
+        type.setCCallable();
+        if (!type.isCRepresentable()) {
+            throw CompilerError(position(), "A C function pointer (🍇🎍🌊) can only take and return C types, and C "
+                                "structs only by 📍, and cannot raise errors.");
+        }
+    }
+    return type;
 }
 
 }  // namespace EmojicodeCompiler

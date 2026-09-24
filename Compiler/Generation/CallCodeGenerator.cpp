@@ -7,6 +7,7 @@
 //
 
 #include "CallCodeGenerator.hpp"
+#include "CTrampolineGenerator.hpp"
 #include "AST/ASTExpr.hpp"
 #include "FunctionCodeGenerator.hpp"
 #include "Functions/Initializer.hpp"
@@ -31,7 +32,14 @@ llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, 
         case CallType::StaticContextfreeDispatch:
         case CallType::StaticDispatch: {
             auto llvmFn = function->reificationFor(astArgs.genericArgumentTypes()).function;
-            return fg_->builder().CreateCall(llvmFn, args);
+            if (needsCTrampoline(function)) {
+                return generateCTrampolineCall(function, llvmFn, args);
+            }
+            auto call = fg_->builder().CreateCall(llvmFn, args);
+            if (function->isC()) {
+                call->setAttributes(llvmFn->getAttributes());
+            }
+            return call;
         }
         case CallType::DynamicDispatch:
         case CallType::DynamicDispatchOnType:
@@ -56,6 +64,29 @@ llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, 
     if (tdg_ != nullptr) {
         tdg_->restoreStack();
     }
+}
+
+llvm::Value* CallCodeGenerator::generateCTrampolineCall(Function *function, llvm::Function *trampoline,
+                                                       std::vector<llvm::Value *> args) {
+    for (size_t i = 0; i < args.size(); i++) {
+        if (isCStructValue(function->parameters()[i].type->type())) {
+            auto slot = fg_->createEntryAlloca(args[i]->getType());
+            fg_->builder().CreateStore(args[i], slot);
+            args[i] = slot;
+        }
+    }
+    auto &returnType = function->returnType()->type();
+    llvm::Value *result = nullptr;
+    if (isCStructValue(returnType)) {
+        result = fg_->createEntryAlloca(fg_->typeHelper().llvmTypeFor(returnType));
+        args.emplace_back(result);
+    }
+    auto call = fg_->builder().CreateCall(trampoline, args);
+    call->setAttributes(trampoline->getAttributes());
+    if (result != nullptr) {
+        return fg_->builder().CreateLoad(fg_->typeHelper().llvmTypeFor(returnType), result);
+    }
+    return call;
 }
 
 llvm::Value* CallCodeGenerator::buildFindProtocolConformance(const std::vector<llvm::Value *> &args,

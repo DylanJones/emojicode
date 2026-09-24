@@ -93,6 +93,14 @@ compilation_tests = [
     "includer",
     "threads",
     "linkHints",
+    "linkHintFlag",
+    "linkHintSource",
+    "ffiScalars",
+    "ffiPointers",
+    "ffiStructByValue",
+    "ffiStructPointer",
+    "ffiCallbacks",
+    "unsafeBlockReturnRelease",
     "threadUnjoined",
     "mutexTryLock",
     "inferLiteralFromExpec",
@@ -139,6 +147,15 @@ library_tests = [
     "jsonTest",
     "fileTest"
 ]
+# Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
+host_tests = [
+    "ffiHostLib",
+]
+# Programs that import a package of the same name with "Package" appended, which is compiled first. They test code
+# that is only generated in importers, like the bodies of inlined methods.
+importing_tests = [
+    "inlineClosure",
+]
 reject_tests = glob.glob(os.path.join(dist.source, "tests", "reject",
                                       "*.emojic"))
 parse_tests = glob.glob(os.path.join(dist.source, "tests", "parse",
@@ -179,6 +196,43 @@ def compilation_test(name):
     exp_path = os.path.join(dist.source, "tests", "compilation", name + ".txt")
     output = completed.stdout.decode('utf-8')
     if output != open(exp_path, "r", encoding='utf-8').read() or completed.returncode != 0:
+        print(output)
+        fail_test(name)
+
+
+def host_test(name):
+    directory = os.path.join(dist.source, "tests", "host")
+    source_path = os.path.join(directory, name + ".emojic")
+    object_path = os.path.join(directory, name + ".o")
+    host_object_path = os.path.join(directory, name + "_host.o")
+    binary_path = os.path.join(directory, name)
+    run([emojicodec, '-p', name, '-o', object_path, '-c', source_path, '-O'], check=True)
+    run([os.environ.get("CC", "cc"), '-c', os.path.join(directory, name + ".c"), '-o', host_object_path],
+        check=True)
+    libraries = [os.path.abspath(path) for path in ["c/libc.a", "s/libs.a", "runtime/libruntime.a"]]
+    run([os.environ.get("CXX", "c++"), host_object_path, object_path] + libraries +
+        ['-lm', '-lpthread', '-o', binary_path], check=True)
+    completed = run([binary_path], stdout=PIPE)
+    output = completed.stdout.decode('utf-8')
+    if output != open(os.path.join(directory, name + ".txt"), "r", encoding='utf-8').read() or \
+            completed.returncode != 0:
+        print(output)
+        fail_test(name)
+
+
+def importing_test(name):
+    directory = os.path.join(dist.source, "tests", "importing")
+    package = name + "Package"
+    package_directory = os.path.join(directory, "packages", package)
+    os.makedirs(package_directory, exist_ok=True)
+    run([emojicodec, '-p', package, '-o', os.path.join(package_directory, "lib" + package + ".a"),
+         os.path.join(directory, package + ".🍇"), '-O'], check=True)
+    run([emojicodec, '-S', os.path.join(directory, "packages"), os.path.join(directory, name + ".emojic"), '-O'],
+        check=True)
+    completed = run([os.path.join(directory, name)], stdout=PIPE)
+    output = completed.stdout.decode('utf-8')
+    if output != open(os.path.join(directory, name + ".txt"), "r", encoding='utf-8').read() or \
+            completed.returncode != 0:
         print(output)
         fail_test(name)
 
@@ -239,6 +293,10 @@ def test():
         compilation_test('includer')
         os.rename(source_path + '_original', source_path)
 
+    for test in host_tests:
+        host_test(test)
+    for test in importing_tests:
+        importing_test(test)
     for test in reject_tests:
         reject_test(test)
     for test in parse_tests:

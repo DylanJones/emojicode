@@ -25,8 +25,15 @@ void TypeBodyParser<TypeDef>::parseFunctionBody(Function *function) {
         if (token.value().empty()) {
             throw CompilerError(token.position(), "The external name must not be empty.");
         }
-        function->setExternalName(utf8(token.value()));
-        return;
+        if (!stream_.nextTokenIs(TokenType::BlockBegin)) {
+            function->setExternalName(utf8(token.value()));
+            return;
+        }
+        // A body after the name defines a function that C code can call under that name.
+        if (!function->isC()) {
+            throw CompilerError(token.position(), "Only functions with 🎍🌊 can be exported to C.");
+        }
+        function->setExportName(utf8(token.value()));
     }
 
     if (interface_) {
@@ -97,7 +104,19 @@ void TypeBodyParser<TypeDef>::doParseMethod(const std::u32string &name, TypeBody
                                  const Documentation &documentation, AccessLevel access, Mood mood,
                                  const SourcePosition &p) {
     attributes.allow(Attribute::Deprecated).allow(Attribute::StaticOnType).allow(Attribute::Unsafe)
-            .allow(Attribute::Escaping).allow(Attribute::Inline).check(p, package_->compiler());
+            .allow(Attribute::Escaping).allow(Attribute::Inline).allow(Attribute::C).check(p, package_->compiler());
+
+    if (attributes.has(Attribute::C)) {
+        if (!attributes.has(Attribute::StaticOnType)) {
+            throw CompilerError(p, "🎍🌊 can only be applied to type methods.");
+        }
+        if (!std::is_same<TypeDef, ValueType>::value && !std::is_same<TypeDef, Enum>::value) {
+            throw CompilerError(p, "Functions with 🎍🌊 must be declared in a value type or an enumeration.");
+        }
+        if (!attributes.has(Attribute::Unsafe)) {
+            throw CompilerError(p, "Functions with 🎍🌊 must be marked with ☣️.");
+        }
+    }
 
     if (attributes.has(Attribute::StaticOnType)) {
         auto typeMethod = std::make_unique<Function>(name, access, attributes.has(Attribute::Final), typeDef_,
@@ -107,6 +126,9 @@ void TypeBodyParser<TypeDef>::doParseMethod(const std::u32string &name, TypeBody
                                                      std::is_same<TypeDef, Class>::value ?
                                                      FunctionType::ClassMethod : FunctionType::Function,
                                                      attributes.has(Attribute::Inline));
+        if (attributes.has(Attribute::C)) {
+            typeMethod->setC();
+        }
         parseFunction(typeMethod.get(), false, attributes.has(Attribute::Escaping));
         typeDef_->typeMethods().add(std::move(typeMethod));
     }

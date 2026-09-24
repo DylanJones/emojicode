@@ -51,9 +51,16 @@ void PrettyPrinter::printInterface(const std::string &out) {
 }
 
 void PrettyPrinter::printLinkHints() {
-    if (!package_->linkHints().empty()) {
+    std::vector<std::string> hints;
+    for (auto &hint : package_->linkHints()) {
+        // Native sources are compiled into the package's archive, so importers do not need them.
+        if (!interface_ || !Package::isNativeSourceHint(hint)) {
+            hints.emplace_back(hint);
+        }
+    }
+    if (!hints.empty()) {
         prettyStream_.indent() << "🔗 ";
-        for (auto &hint : package_->linkHints()) {
+        for (auto &hint : hints) {
             prettyStream_ << "🔤" << hint << "🔤 ";
         }
         prettyStream_ << "🔗\n";
@@ -124,6 +131,7 @@ void PrettyPrinter::printArguments(Function *function) {
 void PrettyPrinter::printClosure(Function *function, bool escaping) {
     prettyStream_ << "🍇";
     if (escaping) prettyStream_ << "🎍🥡 ";
+    if (function->isC()) prettyStream_ << "🎍🌊 ";
     printArguments(function);
     printReturnType(function);
     printErrorType(function);
@@ -166,8 +174,14 @@ void PrettyPrinter::printTypeDef(const Type &type) {
         }
     }
     if (auto valueType = type.valueType()) {
+        if (valueType->isCStruct()) {
+            prettyStream_ << "🎍🌊 ";
+        }
         if (valueType->isPrimitive() && type.type() != TypeType::Enum) {
             prettyStream_ << "📻 ";
+            if (valueType->declaresCRepresentation()) {
+                prettyStream_ << "🔤" << valueType->cRepresentationName() << "🔤 ";
+            }
         }
     }
 
@@ -293,6 +307,9 @@ void PrettyPrinter::printFunctionAttributes(Function *function, bool noMutate) {
     if (function->overriding()) {
         prettyStream_ << "✒️ ";
     }
+    if (function->isC()) {
+        prettyStream_ << "🎍🌊 ";
+    }
     if (function->functionType() == FunctionType::ClassMethod ||
         (function->functionType() == FunctionType::Function &&
          dynamic_cast<ValueType*>(function->owner()) != nullptr)) {
@@ -301,6 +318,7 @@ void PrettyPrinter::printFunctionAttributes(Function *function, bool noMutate) {
     if (function->unsafe()) {
         prettyStream_ << "☣️ ";
     }
+
     if (function->owner()->type().type() == TypeType::ValueType && function->mutating() && !noMutate) {
         prettyStream_ << "🖍 ";
     }
@@ -381,7 +399,8 @@ void PrettyPrinter::printBody(Function *function) {
     if (!function->externalName().empty()) {
         prettyStream_ << " 📻 🔤" << function->externalName() << "🔤";
     }
-    else {
+    // Importers call a function exported to C like any other C function, so interfaces only need its name.
+    if (function->externalName().empty() || (function->isExported() && !interface_)) {
         if (interface_) {
             if (function->isInline()) {
                 auto str = function->position().file->file();
