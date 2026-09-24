@@ -156,13 +156,15 @@ extern "C" runtime::SimpleOptional<void*> ejcAcquireStrong(WeakReference *ref) {
         return runtime::NoValue;
     }
     // The object must not be resurrected if another thread has released the last strong reference in the meantime.
+    // The reference itself is not modified, as it may be shared by threads acquiring from it concurrently; it keeps
+    // its weak count until it is released.
     auto count = ref->block->strongCount.load(std::memory_order_relaxed);
     do {
         if (count == 0) {
-            releaseWeakReference(ref);
             return runtime::NoValue;
         }
-    } while (!ref->block->strongCount.compare_exchange_weak(count, count + 1, std::memory_order_relaxed));
+    } while (!ref->block->strongCount.compare_exchange_weak(count, count + 1, std::memory_order_acquire,
+                                                           std::memory_order_relaxed));
     return ref->object;
 }
 
