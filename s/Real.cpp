@@ -31,7 +31,7 @@ extern "C" double sRealACos(double *real) {
 }
 
 extern "C" double sRealATan(double *real) {
-    return std::tan(*real);
+    return std::atan(*real);
 }
 
 extern "C" double sRealSqrt(double *real) {
