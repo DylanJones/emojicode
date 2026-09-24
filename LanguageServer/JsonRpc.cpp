@@ -42,7 +42,7 @@ bool Transport::takeMessage(std::string *content) {
     return true;
 }
 
-std::optional<rapidjson::Document> Transport::read(int timeoutMilliseconds) {
+std::optional<rapidjson::Document> Transport::read(int timeoutMilliseconds, bool *parseError) {
     std::string content;
     while (!takeMessage(&content)) {
         pollfd fd{input_, POLLIN, 0};
@@ -65,9 +65,7 @@ std::optional<rapidjson::Document> Transport::read(int timeoutMilliseconds) {
     }
     rapidjson::Document document;
     document.Parse(content.c_str(), content.size());
-    if (document.HasParseError()) {
-        document.SetNull();
-    }
+    *parseError = document.HasParseError();
     return document;
 }
 

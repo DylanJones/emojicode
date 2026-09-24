@@ -127,22 +127,16 @@ std::optional<Classification> classify(const TokenSpan &token, const Navigator &
         case TokenType::Mutable:
             return Classification{Modifier};
         case TokenType::Identifier:
-            if (auto symbol = navigator.symbol(token)) {
-                if (auto classification = classify(*symbol)) {
-                    return classification;
-                }
-            }
-            if (!token.value.empty()) {
-                return contextualKeyword(token.value.front());
-            }
-            return std::nullopt;
         case TokenType::Variable:
             if (auto symbol = navigator.symbol(token)) {
                 if (auto classification = classify(*symbol)) {
                     return classification;
                 }
             }
-            return Classification{Variable};
+            if (token.type == TokenType::Variable) {
+                return Classification{Variable};
+            }
+            return token.value.empty() ? std::nullopt : contextualKeyword(token.value.front());
         default:
             // Punctuation like 🍇 🍉 ❗️ is left to the client's syntax highlighting.
             return std::nullopt;

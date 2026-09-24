@@ -39,11 +39,15 @@ class Client:
         self.buffer = b""
         self.notifications = []
         self.versions = {}
-        result = self.request("initialize", {
-            "processId": os.getpid(), "rootUri": None,
-            "capabilities": {"general": {"positionEncodings": list(encodings)}, **(capabilities or {})},
-            "initializationOptions": options or {},
-        })
+        try:
+            result = self.request("initialize", {
+                "processId": os.getpid(), "rootUri": None,
+                "capabilities": {"general": {"positionEncodings": list(encodings)}, **(capabilities or {})},
+                "initializationOptions": options or {},
+            })
+        except BaseException:
+            self.kill()
+            raise
         self.capabilities = result["capabilities"]
         self.notify("initialized", {})
 
@@ -131,14 +135,11 @@ class Client:
 
 
 class ServerTestCase(unittest.TestCase):
+    # Cleanups instead of tearDown, which does not run when setUp fails.
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
         self.client = None
-
-    def tearDown(self):
-        if self.client:
-            self.client.kill()
-        self.directory.cleanup()
 
     def write(self, name, text):
         path = os.path.join(os.path.realpath(self.directory.name), name)
@@ -149,6 +150,7 @@ class ServerTestCase(unittest.TestCase):
 
     def start(self, **kwargs):
         self.client = Client(**kwargs)
+        self.addCleanup(self.client.kill)
         return self.client
 
 
@@ -282,6 +284,25 @@ class DiagnosticsTests(ServerTestCase):
             client.request("textDocument/unknownThing", {})
         self.assertEqual(client.shutdown(), 0)
 
+    def test_invalid_text_does_not_crash_the_server(self):
+        path = self.write("main.emojic", HELLO)
+        client = self.start()
+        # A stray Latin-1 byte, which is not UTF-8, and a lone surrogate.
+        for text in (b'"\xe9\xff ' + "😀".encode() + b'"', b'"\\udc00"'):
+            body = (b'{"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": {"textDocument": {"uri": "' +
+                    uri(path).encode() + b'", "languageId": "emojicode", "version": 1, "text": ' + text + b'}}}')
+            client.process.stdin.write(b"Content-Length: %d\r\n\r\n" % len(body) + body)
+            client.process.stdin.flush()
+            self.assertGreaterEqual(len(client.diagnostics(path)), 1)
+        self.assertEqual(client.shutdown(), 0)
+
+    def test_invalid_json_is_a_parse_error(self):
+        client = self.start()
+        client.process.stdin.write(b"Content-Length: 5\r\n\r\n{\"a\":")
+        client.process.stdin.flush()
+        self.assertEqual(client.receive()["error"]["code"], -32700)
+        self.assertEqual(client.shutdown(), 0)
+
     def test_garbage_does_not_crash_the_server(self):
         path = self.write("main.emojic", HELLO)
         client = self.start()
@@ -413,6 +434,20 @@ class NavigationTests(ServerTestCase):
         self.assertEqual(tokens["🔤Depth 🧲"][0], "string")
         self.assertEqual(tokens["🏁"][0], "keyword")
 
+    def test_semantic_tokens_wait_for_the_check_of_a_change(self):
+        # The change adds a line at the top, so 🐟 moves down. The tokens must be those of the changed text.
+        self.client.change(self.path, "💭 A comment.\n" + FISH)
+        data = self.client.request("textDocument/semanticTokens/full",
+                                   {"textDocument": {"uri": uri(self.path)}})["data"]
+        legend = self.client.capabilities["semanticTokensProvider"]["legend"]
+        line = 0
+        classes = []
+        for i in range(0, len(data), 5):
+            line += data[i]
+            if legend["tokenTypes"][data[i + 3]] == "class":
+                classes.append(line)
+        self.assertEqual(classes[0], 2)
+
     def test_document_symbols(self):
         symbols = self.client.request("textDocument/documentSymbol", {"textDocument": {"uri": uri(self.path)}})
         self.assertEqual([s["name"] for s in symbols], ["🐟"])
@@ -458,6 +493,16 @@ class CompletionTests(ServerTestCase):
         items = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
                                                            "position": {"line": 2, "character": 12}})["items"]
         self.assertEqual(items[0]["label"], "count")
+
+    def test_variables_before_better_matches(self):
+        # "sum" starts many emoji names and documentation words, but only a later word of the variable's name.
+        path = self.write("sum.emojic", "🏁 🍇\n  1 ➡️ total_sum\n  sum\n🍉\n")
+        client = self.start()
+        client.open(path)
+        client.diagnostics(path)
+        items = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                           "position": {"line": 2, "character": 5}})["items"]
+        self.assertEqual(items[0]["label"], "total_sum")
 
     def test_method_by_documentation(self):
         items = self.complete("swim")

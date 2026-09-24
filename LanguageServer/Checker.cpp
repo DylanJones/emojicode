@@ -8,6 +8,7 @@
 #include "CompilerError.hpp"
 #include "Lex/SourceManager.hpp"
 #include "Positions.hpp"
+#include "Tokens.hpp"
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -84,16 +85,15 @@ Analysis& Analysis::operator=(Analysis &&) = default;
 Analysis::~Analysis() = default;
 
 std::u32string Checker::read(const std::string &path) const {
-    auto overlay = overlays_.find(path);
+    // Overlays are keyed by canonical path, as in SourceManager.
+    auto overlay = overlays_.find(canonicalPath(path));
     if (overlay != overlays_.end()) {
         return overlay->second;
     }
-    std::ifstream stream(path, std::ios::binary);
-    std::string content((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
     try {
-        return utf32(content);
+        return readSourceFile(path);
     }
-    catch (std::range_error &) {
+    catch (CompilerError &) {
         return U"";
     }
 }
@@ -108,17 +108,17 @@ std::string Checker::includer(const std::string &path) const {
                 continue;
             }
             auto content = read(entry.path().string());
-            for (size_t i = content.find(U'📜'); i != std::u32string::npos; i = content.find(U'📜', i + 1)) {
-                auto begin = content.find(U'🔤', i);
-                auto end = begin == std::u32string::npos ? begin : content.find(U'🔤', begin + 1);
-                if (end == std::u32string::npos) {
-                    break;
-                }
-                // Only whitespace may come between 📜 and the string.
-                if (content.find_first_not_of(U" \t️", i + 1) != begin) {
+            if (content.find(U'📜') == std::u32string::npos) {
+                continue;
+            }
+            // The lexer's tokens leave out 📜 in comments and strings.
+            auto tokens = lex(content);
+            for (size_t i = 0; i + 1 < tokens.size(); i++) {
+                if (tokens[i].type != TokenType::Identifier || tokens[i].value.front() != U'📜' ||
+                    tokens[i + 1].type != TokenType::String) {
                     continue;
                 }
-                auto included = directory / utf8(content.substr(begin + 1, end - begin - 1));
+                auto included = directory / utf8(tokens[i + 1].value);
                 if (canonicalPath(included.string()) == path) {
                     return entry.path().string();
                 }
@@ -162,6 +162,7 @@ Analysis Checker::check(const std::string &rootPath) const {
     for (auto &overlay : overlays_) {
         analysis.compiler->sourceManager().setOverlay(overlay.first, overlay.second);
     }
+    analysis.texts = overlays_;
     analysis.index = std::make_unique<Index>();
     analysis.compiler->setAnalysisObserver(analysis.index.get());
     analysis.compiler->add<Compiler::ParsePhase>();

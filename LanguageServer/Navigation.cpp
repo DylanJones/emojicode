@@ -86,11 +86,22 @@ instanceVariables(TypeDefinition *definition) {
     return result;
 }
 
-Navigator::Navigator(const Analysis &analysis, std::string path, SourceProvider sources)
-    : analysis_(analysis), path_(std::move(path)), sources_(std::move(sources)), source_(sources_(path_)) {
-    if (analysis_.compiler != nullptr && analysis_.index != nullptr) {
-        collectDeclarations();
+Navigator::Navigator(const Analysis &analysis, std::string path, SourceProvider sources, bool describe)
+    : analysis_(analysis), path_(std::move(path)), sources_(std::move(sources)), source_(sources_(path_)),
+      describe_(describe) {
+    if (analysis_.compiler == nullptr || analysis_.index == nullptr) {
+        return;
     }
+    collectDeclarations();
+    for (auto &variable : analysis_.index->variables()) {
+        if (variable.declaration.path == path_) {
+            variablesByLine_.emplace(variable.declaration.line, &variable);
+        }
+    }
+}
+
+bool Navigator::isInFile(const SourcePosition &position) const {
+    return !position.isUnknown() && canonicalPath(position.file->path()) == path_;
 }
 
 std::string Navigator::typeString(const Type &type, const TypeContext &context) const {
@@ -99,16 +110,15 @@ std::string Navigator::typeString(const Type &type, const TypeContext &context) 
 
 std::optional<Location> Navigator::nameLocation(const Location &location, const std::u32string &name) const {
     auto &source = sources_(location.path);
-    auto line = location.line - 1;
-    auto start = source.lines.offset(line, location.character - 1);
-    auto end = source.lines.offset(line, SIZE_MAX);
+    auto start = source.lines.compilerOffset(location.line, location.character);
+    auto end = source.lines.compilerLineEnd(location.line);
     auto wanted = withoutVariationSelectors(name);
     auto it = std::lower_bound(source.tokens.begin(), source.tokens.end(), start,
                                [](const TokenSpan &token, size_t offset) { return token.start < offset; });
     for (; it != source.tokens.end() && it->start < end; ++it) {
         if (withoutVariationSelectors(it->value) == wanted) {
-            auto position = source.lines.lineAndCharacter(it->start);
-            return Location{location.path, position.first + 1, position.second + 1};
+            auto position = source.lines.compilerPosition(it->start);
+            return Location{location.path, position.first, position.second};
         }
     }
     return location;
@@ -129,12 +139,14 @@ Symbol Navigator::functionSymbol(Function *function) const {
     else if (isTypeMethod(function)) {
         symbol.kind = Symbol::Kind::TypeMethod;
     }
-    auto declaration = PrettyPrinter(analysis_.compiler->mainPackage()).declaration(function);
-    std::string hover = codeBlock(declaration);
-    if (function->owner() != nullptr) {
-        hover += "\n\nin `" + typeString(function->owner()->type(), TypeContext()) + "`";
+    if (describe_) {
+        auto declaration = PrettyPrinter(analysis_.compiler->mainPackage()).declaration(function);
+        std::string hover = codeBlock(declaration);
+        if (function->owner() != nullptr) {
+            hover += "\n\nin `" + typeString(function->owner()->type(), TypeContext()) + "`";
+        }
+        symbol.hover = withDocumentation(hover, function->documentation());
     }
-    symbol.hover = withDocumentation(hover, function->documentation());
     symbol.declaration = nameLocation(function->position(), function->name());
     symbol.isImported = function->package() != analysis_.compiler->mainPackage();
     return symbol;
@@ -164,10 +176,14 @@ Symbol Navigator::typeSymbol(const Type &type, const TypeContext &context) const
         default:
             break;
     }
-    symbol.hover = codeBlock(keyword + typeString(unboxed, context));
+    if (describe_) {
+        symbol.hover = codeBlock(keyword + typeString(unboxed, context));
+    }
     if (symbol.kind != Symbol::Kind::OtherType) {
         auto definition = unboxed.typeDefinition();
-        symbol.hover = withDocumentation(symbol.hover, definition->documentation());
+        if (describe_) {
+            symbol.hover = withDocumentation(symbol.hover, definition->documentation());
+        }
         symbol.declaration = nameLocation(definition->position(), definition->name());
         symbol.isImported = definition->package() != analysis_.compiler->mainPackage();
     }
@@ -176,9 +192,11 @@ Symbol Navigator::typeSymbol(const Type &type, const TypeContext &context) const
 
 Symbol Navigator::instanceVariableSymbol(const InstanceVariableDeclaration &variable, TypeDefinition *owner) const {
     Symbol symbol{Symbol::Kind::InstanceVariable};
-    auto type = variable.type->wasAnalysed() ? typeString(variable.type->type(), TypeContext(owner->type())) : "";
-    symbol.hover = codeBlock("🖍🆕 " + utf8(variable.name) + " " + type) + "\n\nin `" +
-                   typeString(owner->type(), TypeContext()) + "`";
+    if (describe_) {
+        auto type = variable.type->wasAnalysed() ? typeString(variable.type->type(), TypeContext(owner->type())) : "";
+        symbol.hover = codeBlock("🖍🆕 " + utf8(variable.name) + " " + type) + "\n\nin `" +
+                       typeString(owner->type(), TypeContext()) + "`";
+    }
     symbol.declaration = nameLocation(variable.position, variable.name);
     return symbol;
 }
@@ -192,16 +210,19 @@ void Navigator::collectDeclarations() {
         outline->push_back(OutlineEntry{name, symbol.kind, *location, {}});
         symbol.isDeclaration = true;
         symbol.declaration = location;
-        declarations_.emplace(source_.lines.offset(location->line - 1, location->character - 1), std::move(symbol));
+        declarations_.emplace(source_.lines.compilerOffset(location->line, location->character), std::move(symbol));
     };
     auto addFunction = [&](Function *function, std::vector<OutlineEntry> *outline) {
-        if (function->isThunk()) {
+        if (function->isThunk() || !isInFile(function->position())) {
             return;
         }
         add(function->name(), nameLocation(function->position(), function->name()), functionSymbol(function),
             outline);
     };
     auto addTypeDefinition = [&](TypeDefinition *definition) {
+        if (!isInFile(definition->position())) {
+            return;
+        }
         auto size = outline_.size();
         add(definition->name(), nameLocation(definition->position(), definition->name()),
             typeSymbol(definition->type(), TypeContext()), &outline_);
@@ -210,7 +231,7 @@ void Navigator::collectDeclarations() {
         }
         auto members = &outline_.back().children;
         for (auto &pair : instanceVariables(definition)) {
-            if (pair.second == definition) {
+            if (pair.second == definition && isInFile(pair.first->position)) {
                 auto &variable = *pair.first;
                 add(variable.name, nameLocation(variable.position, variable.name),
                     instanceVariableSymbol(variable, definition), members);
@@ -266,7 +287,9 @@ std::optional<Symbol> Navigator::nodeSymbol(const IndexedNode &node, const Token
             return std::nullopt;
         }
         Symbol symbol{variable->inInstanceScope() ? Symbol::Kind::InstanceVariable : Symbol::Kind::Variable};
-        symbol.hover = codeBlock(utf8(variable->name()) + " " + typeString(expr->expressionType(), node.context));
+        if (describe_) {
+            symbol.hover = codeBlock(utf8(variable->name()) + " " + typeString(expr->expressionType(), node.context));
+        }
         symbol.declaration = nameLocation(variable->declarationPosition(), variable->name());
         return symbol;
     }
@@ -274,7 +297,9 @@ std::optional<Symbol> Navigator::nodeSymbol(const IndexedNode &node, const Token
         return std::nullopt;
     }
     Symbol symbol{Symbol::Kind::Expression};
-    symbol.hover = codeBlock(typeString(expr->expressionType(), node.context));
+    if (describe_) {
+        symbol.hover = codeBlock(typeString(expr->expressionType(), node.context));
+    }
     return symbol;
 }
 
@@ -282,9 +307,11 @@ std::optional<Symbol> Navigator::variableDeclaration(const TokenSpan &token, siz
     // A variable is declared at the start of the statement that declares it, or at its function for parameters,
     // which is before its name on the same line. The closest such declaration with the name is taken.
     const IndexedVariable *best = nullptr;
-    for (auto &variable : analysis_.index->variables()) {
+    auto range = variablesByLine_.equal_range(line);
+    for (auto it = range.first; it != range.second; ++it) {
+        auto &variable = *it->second;
         auto &d = variable.declaration;
-        if (variable.name == token.value && d.path == path_ && d.line == line && d.character <= character &&
+        if (variable.name == token.value && d.character <= character &&
             (best == nullptr || best->declaration.character < d.character)) {
             best = &variable;
         }
@@ -293,8 +320,10 @@ std::optional<Symbol> Navigator::variableDeclaration(const TokenSpan &token, siz
         return std::nullopt;
     }
     Symbol symbol{Symbol::Kind::Variable};
-    symbol.hover = codeBlock((best->constant ? "" : "🖍 ") + utf8(best->name) + " " +
-                             typeString(best->type, best->context));
+    if (describe_) {
+        symbol.hover = codeBlock((best->constant ? "" : "🖍 ") + utf8(best->name) + " " +
+                                 typeString(best->type, best->context));
+    }
     symbol.declaration = Location{path_, line, character};
     symbol.isDeclaration = true;
     symbol.isConstant = best->constant;
@@ -310,9 +339,9 @@ std::optional<Symbol> Navigator::symbol(const TokenSpan &token) const {
         return declaration->second;
     }
 
-    auto position = source_.lines.lineAndCharacter(token.start);
-    auto line = position.first + 1;
-    auto character = position.second + 1;
+    auto position = source_.lines.compilerPosition(token.start);
+    auto line = position.first;
+    auto character = position.second;
     std::optional<Symbol> fallback;
     for (auto node : analysis_.index->nodesAt(path_, line, character)) {
         auto symbol = nodeSymbol(*node, token);

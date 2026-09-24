@@ -6,18 +6,44 @@
 #include "Positions.hpp"
 #include "Lex/SourceManager.hpp"
 #include <algorithm>
-#include <codecvt>
-#include <locale>
 
 namespace EmojicodeLanguageServer {
 
 LineIndex::LineIndex(const std::u32string &text) : text_(text) {
     lineStarts_.push_back(0);
+    compilerLineStarts_.push_back(0);
     for (size_t i = 0; i < text.size(); i++) {
         if (text[i] == U'\n') {
             lineStarts_.push_back(i + 1);
         }
+        if (text[i] == U'\n' || text[i] == 0x2028 || text[i] == 0x2029) {
+            compilerLineStarts_.push_back(i + 1);
+        }
     }
+}
+
+size_t LineIndex::compilerLineEnd(size_t line) const {
+    if (line == 0 || line > compilerLineStarts_.size()) {
+        return text_.size();
+    }
+    return line < compilerLineStarts_.size() ? compilerLineStarts_[line] - 1 : text_.size();
+}
+
+size_t LineIndex::compilerOffset(size_t line, size_t character) const {
+    if (line == 0) {
+        return 0;
+    }
+    if (line > compilerLineStarts_.size()) {
+        return text_.size();
+    }
+    auto start = compilerLineStarts_[line - 1];
+    return std::min(start + (character > 0 ? character - 1 : 0), compilerLineEnd(line));
+}
+
+std::pair<size_t, size_t> LineIndex::compilerPosition(size_t offset) const {
+    auto it = std::upper_bound(compilerLineStarts_.begin(), compilerLineStarts_.end(), offset);
+    auto line = static_cast<size_t>(it - compilerLineStarts_.begin());
+    return {line, offset - compilerLineStarts_[line - 1] + 1};
 }
 
 std::u32string_view LineIndex::line(size_t line) const {
@@ -122,16 +148,6 @@ std::string pathToUri(const std::string &path) {
         }
     }
     return uri;
-}
-
-std::u32string utf32(const std::string &utf8) {
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv;
-    return conv.from_bytes(utf8);
-}
-
-std::string utf8(std::u32string_view utf32) {
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv;
-    return conv.to_bytes(utf32.data(), utf32.data() + utf32.size());
 }
 
 }  // namespace EmojicodeLanguageServer

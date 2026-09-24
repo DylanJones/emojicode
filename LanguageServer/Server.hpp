@@ -25,8 +25,14 @@ using Clock = std::chrono::steady_clock;
 /// A file open in the editor.
 struct Document {
     std::string uri;
-    std::string path;
     int version = 0;
+};
+
+/// A request that is answered once the package it is about was checked.
+struct DeferredRequest {
+    std::string method;
+    std::unique_ptr<rapidjson::Document> id;
+    std::unique_ptr<rapidjson::Document> params;
 };
 
 /// The language server: answers the client's requests and publishes diagnostics.
@@ -57,11 +63,13 @@ private:
     void completion(const rapidjson::Value &id, const rapidjson::Value &params);
 
     /// Returns the canonical path of the document in @p params and the code point offset of the position in it.
-    /// Checks the document's package first if it has pending changes.
-    std::optional<std::pair<std::string, size_t>> documentPosition(const rapidjson::Value &params);
-    Navigator navigator(const Analysis &analysis, const std::string &path);
-    /// Returns the latest analysis of the package that contains the open document at @p path, or nullptr.
-    const Analysis* analysisFor(const std::string &path);
+    /// If @p checkPending is true, the document's package is checked first if it has pending changes.
+    std::optional<std::pair<std::string, size_t>> documentPosition(const rapidjson::Value &params,
+                                                                   bool checkPending = true);
+    Navigator navigator(const Analysis &analysis, const std::string &path, bool describe = true);
+    /// Returns the latest analysis of the package that contains the open document at @p path, or nullptr. If
+    /// @p checkPending is true, the package is checked first if it has pending changes.
+    const Analysis* analysisFor(const std::string &path, bool checkPending = true);
 
     void respond(const rapidjson::Value &id, rapidjson::Value &result, rapidjson::Document &document);
     void respondError(const rapidjson::Value &id, int code, const std::string &message);
@@ -69,17 +77,28 @@ private:
 
     /// Checks the package with the main file @p root in @p delay, or earlier if it was already scheduled.
     void schedule(const std::string &root, std::chrono::milliseconds delay);
-    /// Checks the packages whose time has come, or all scheduled packages if @p all is true.
-    void runChecks(bool all);
+    /// Checks the packages whose time has come.
+    void runChecks();
     /// Returns how long until the next scheduled check, or -1 if none is scheduled.
     int millisecondsToNextCheck() const;
     void check(const std::string &root);
     void publishDiagnostics(const Analysis &analysis);
 
-    /// Returns the root file of the open document at @p path and schedules a check of it if the root changed.
-    std::string updateRoot(const std::string &path);
+    /// Finds the root file of every open document again, e.g. after an include was added. Roots that changed are
+    /// checked, and roots that no open document belongs to anymore are dropped.
+    void updateRoots();
+    bool isRootOpen(const std::string &root) const;
+    /// Forgets the analyses of @p root and removes its diagnostics.
+    void dropRoot(const std::string &root);
 
-    /// Returns the text of the file at @p path. The result is cached until the next call of clearSourceTexts().
+    /// If the package of the document in @p params has a pending check, stores the request to be answered after
+    /// the check and returns true.
+    bool defer(const std::string &method, const rapidjson::Value &id, const rapidjson::Value &params);
+    /// Answers the requests deferred until @p root was checked.
+    void answerDeferred(const std::string &root);
+
+    /// Returns the text of the file at @p path. The result is cached until the file changes in the editor or
+    /// diagnostics are published, which reads files from disk again.
     const SourceText& sourceText(const std::string &path);
     /// Returns the LSP range of the token at @p location.
     rapidjson::Value range(const Location &location, rapidjson::Document::AllocatorType &allocator);
@@ -112,6 +131,8 @@ private:
     /// When each root file with pending changes is to be checked.
     std::map<std::string, Clock::time_point> scheduled_;
     std::map<std::string, std::unique_ptr<SourceText>> sourceTexts_;
+    /// Requests waiting for the check of a root file.
+    std::map<std::string, std::vector<DeferredRequest>> deferred_;
 };
 
 }  // namespace EmojicodeLanguageServer

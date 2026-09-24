@@ -166,6 +166,25 @@ bool isOperator(const std::u32string &name) {
 
 }  // namespace
 
+size_t mapOffset(const std::u32string &now, const std::u32string &before, size_t offset) {
+    auto limit = std::min(now.size(), before.size());
+    size_t prefix = 0;
+    while (prefix < limit && now[prefix] == before[prefix]) {
+        prefix++;
+    }
+    size_t suffix = 0;
+    while (suffix < limit - prefix && now[now.size() - 1 - suffix] == before[before.size() - 1 - suffix]) {
+        suffix++;
+    }
+    if (offset <= prefix) {
+        return offset;
+    }
+    if (offset >= now.size() - suffix) {
+        return offset - now.size() + before.size();
+    }
+    return prefix;  // In the changed part, which did not exist before.
+}
+
 size_t Completer::wordStart(size_t offset) const {
     auto &text = source_.text;
     auto start = std::min(offset, text.size());
@@ -204,8 +223,10 @@ void Completer::addVariables(size_t offset, const std::string &word, std::vector
     if (analysis_ == nullptr || analysis_->index == nullptr) {
         return;
     }
-    auto position = source_.lines.lineAndCharacter(offset);
-    auto here = std::make_pair(position.first + 1, position.second + 1);
+    // The analysis may be of the text before the latest changes, so the position is mapped to that text.
+    auto analysed = analysis_->texts.find(path_);
+    auto &text = analysed != analysis_->texts.end() ? analysed->second : source_.text;
+    auto here = LineIndex(text).compilerPosition(mapOffset(source_.text, text, offset));
     auto contains = [&](const Location &begin, const Location &end) {
         return begin.path == path_ && std::make_pair(begin.line, begin.character) <= here &&
                here <= std::make_pair(end.line, end.character);
@@ -348,8 +369,13 @@ std::vector<CompletionItem> Completer::complete(size_t start, size_t offset, siz
     addKeywords(word, &items);
     addTypesAndMethods(word, &items);
     addEmoji(word, &items);
-    std::stable_sort(items.begin(), items.end(), [](const CompletionItem &a, const CompletionItem &b) {
-        return std::tie(a.quality, a.rank, a.label) < std::tie(b.quality, b.rank, b.label);
+    // Variables in scope are what is most likely meant, and there are few of them, so they come first and are never
+    // cut off by the limit.
+    auto key = [](const CompletionItem &item) {
+        return std::make_tuple(item.rank == 0 ? 0 : 1, item.quality, item.rank, std::cref(item.label));
+    };
+    std::stable_sort(items.begin(), items.end(), [&](const CompletionItem &a, const CompletionItem &b) {
+        return key(a) < key(b);
     });
     if (items.size() > limit) {
         items.resize(limit);

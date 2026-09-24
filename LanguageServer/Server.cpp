@@ -7,6 +7,7 @@
 #include "Completion.hpp"
 #include "SemanticTokens.hpp"
 #include <algorithm>
+#include <iostream>
 
 namespace EmojicodeLanguageServer {
 
@@ -17,7 +18,9 @@ using namespace std::chrono_literals;
 static const auto kCheckDelay = 250ms;
 
 namespace ErrorCodes {
+const int ParseError = -32700;
 const int InvalidRequest = -32600;
+const int InternalError = -32603;
 const int MethodNotFound = -32601;
 }  // namespace ErrorCodes
 
@@ -49,20 +52,38 @@ static Value jsonString(const std::string &string, rapidjson::Document::Allocato
 int Server::run() {
     while (true) {
         std::optional<rapidjson::Document> message;
+        bool parseError = false;
         try {
-            message = transport_->read(millisecondsToNextCheck());
+            message = transport_->read(millisecondsToNextCheck(), &parseError);
         }
         catch (EndOfInput &) {
             return shutdown_ ? 0 : 1;
         }
         if (!message) {
-            runChecks(false);
+            runChecks();
+            continue;
+        }
+        if (parseError) {
+            respondError(Value(), ErrorCodes::ParseError, "The message is not valid JSON.");
             continue;
         }
         if (string(*message, "method") == "exit") {
             return shutdown_ ? 0 : 1;
         }
-        handle(*message);
+        try {
+            handle(*message);
+        }
+        catch (EndOfInput &) {
+            return shutdown_ ? 0 : 1;
+        }
+        catch (std::exception &e) {
+            // A bug in handling one message should not end the session. Requests get an error response.
+            std::cerr << "emojicode-lsp: " << string(*message, "method") << " failed: " << e.what() << std::endl;
+            auto &id = member(*message, "id");
+            if (!id.IsNull()) {
+                respondError(id, ErrorCodes::InternalError, e.what());
+            }
+        }
     }
 }
 
@@ -198,10 +219,11 @@ void Server::didOpen(const Value &params) {
         return;
     }
     auto &version = member(item, "version");
-    documents_[path] = Document{uri, path, version.IsInt() ? version.GetInt() : 0};
+    documents_[path] = Document{uri, version.IsInt() ? version.GetInt() : 0};
     overlays_[path] = utf32(string(item, "text"));
-    roots_.erase(path);
-    schedule(updateRoot(path), 0ms);
+    sourceTexts_.erase(path);
+    updateRoots();
+    schedule(roots_[path], 0ms);
 }
 
 void Server::didChange(const Value &params) {
@@ -213,6 +235,7 @@ void Server::didChange(const Value &params) {
     }
     // Full synchronization: the last change contains the whole document.
     overlays_[path] = utf32(string(changes[changes.Size() - 1], "text"));
+    sourceTexts_.erase(path);
     auto &version = member(member(params, "textDocument"), "version");
     if (version.IsInt()) {
         document->second.version = version.GetInt();
@@ -225,8 +248,9 @@ void Server::didSave(const Value &params) {
     if (documents_.count(path) == 0) {
         return;
     }
-    // An include may have been added or removed, which changes the root. Other packages may import this one.
-    schedule(updateRoot(path), 0ms);
+    // An include may have been added or removed, which changes the roots of other open files too.
+    updateRoots();
+    schedule(roots_[path], 0ms);
 }
 
 void Server::didClose(const Value &params) {
@@ -234,14 +258,48 @@ void Server::didClose(const Value &params) {
     auto root = roots_[path];
     documents_.erase(path);
     overlays_.erase(path);
+    sourceTexts_.erase(path);
     roots_.erase(path);
-
-    bool rootStillOpen = std::any_of(roots_.begin(), roots_.end(), [&](auto &pair) { return pair.second == root; });
-    if (rootStillOpen) {
-        schedule(root, 0ms);  // The closed file is read from disk now, which may differ from what was open.
-        return;
+    // The closed file is read from disk now, which may differ from what was open and include other files.
+    updateRoots();
+    if (isRootOpen(root)) {
+        schedule(root, 0ms);
     }
-    // Nothing of this package is open anymore: its diagnostics are removed.
+    else {
+        dropRoot(root);
+    }
+}
+
+bool Server::isRootOpen(const std::string &root) const {
+    return std::any_of(roots_.begin(), roots_.end(), [&](auto &pair) { return pair.second == root; });
+}
+
+void Server::updateRoots() {
+    auto checker = this->checker();
+    std::set<std::string> previous;
+    for (auto &pair : documents_) {
+        auto root = checker.rootFile(pair.first);
+        auto &current = roots_[pair.first];
+        if (current != root) {
+            if (!current.empty()) {
+                previous.insert(current);
+            }
+            current = root;
+            schedule(root, 0ms);
+        }
+    }
+    // A root that no open file belongs to anymore is not checked again, and its diagnostics are removed.
+    for (auto &root : previous) {
+        if (isRootOpen(root)) {
+            schedule(root, 0ms);
+        }
+        else {
+            dropRoot(root);
+        }
+    }
+}
+
+void Server::dropRoot(const std::string &root) {
     scheduled_.erase(root);
     analyses_.erase(root);
     parsedAnalyses_.erase(root);
@@ -249,16 +307,7 @@ void Server::didClose(const Value &params) {
     empty.rootPath = root;
     publishDiagnostics(empty);
     published_.erase(root);
-}
-
-std::string Server::updateRoot(const std::string &path) {
-    auto root = checker().rootFile(path);
-    auto &current = roots_[path];
-    if (!current.empty() && current != root) {
-        schedule(current, 0ms);
-    }
-    current = root;
-    return root;
+    answerDeferred(root);
 }
 
 Checker Server::checker() const {
@@ -271,11 +320,13 @@ void Server::schedule(const std::string &root, std::chrono::milliseconds delay) 
     }
     auto time = Clock::now() + delay;
     auto it = scheduled_.find(root);
-    if (it == scheduled_.end() || delay == 0ms) {
+    if (it == scheduled_.end()) {
         scheduled_[root] = time;
     }
     else {
-        it->second = time;  // Postponed with every change until the user pauses typing.
+        // The earlier time is kept, so that a package is checked at the latest kCheckDelay after its first
+        // change, however fast the user keeps typing.
+        it->second = std::min(it->second, time);
     }
 }
 
@@ -289,11 +340,11 @@ int Server::millisecondsToNextCheck() const {
     return static_cast<int>(std::max<long long>(0, wait));
 }
 
-void Server::runChecks(bool all) {
+void Server::runChecks() {
     auto now = Clock::now();
     std::vector<std::string> due;
     for (auto &pair : scheduled_) {
-        if (all || pair.second <= now) {
+        if (pair.second <= now) {
             due.push_back(pair.first);
         }
     }
@@ -313,6 +364,32 @@ void Server::check(const std::string &root) {
         parsedAnalyses_[root] = std::move(analyses_[root]);
     }
     analyses_[root] = std::move(analysis);
+    answerDeferred(root);
+}
+
+bool Server::defer(const std::string &method, const Value &id, const Value &params) {
+    auto path = uriToPath(string(member(params, "textDocument"), "uri"));
+    auto root = roots_.find(path);
+    if (root == roots_.end() || scheduled_.count(root->second) == 0) {
+        return false;
+    }
+    DeferredRequest request{method, std::make_unique<rapidjson::Document>(), std::make_unique<rapidjson::Document>()};
+    request.id->CopyFrom(id, request.id->GetAllocator());
+    request.params->CopyFrom(params, request.params->GetAllocator());
+    deferred_[root->second].push_back(std::move(request));
+    return true;
+}
+
+void Server::answerDeferred(const std::string &root) {
+    auto it = deferred_.find(root);
+    if (it == deferred_.end()) {
+        return;
+    }
+    auto requests = std::move(it->second);
+    deferred_.erase(it);
+    for (auto &request : requests) {
+        handleRequest(request.method, *request.id, *request.params);
+    }
 }
 
 std::string Server::uriForPath(const std::string &path) const {
@@ -330,12 +407,10 @@ const SourceText& Server::sourceText(const std::string &path) {
 
 rapidjson::Value Server::range(const Location &location, rapidjson::Document::AllocatorType &allocator) {
     auto &source = sourceText(location.path);
-    auto &lines = source.lines;
-    auto line = location.line > 0 ? location.line - 1 : 0;
-    auto character = location.character > 0 ? location.character - 1 : 0;
-    auto startOffset = lines.offset(line, character);
+    auto startOffset = source.lines.compilerOffset(location.line, location.character);
     auto token = tokenStartingAt(source.tokens, startOffset);
-    auto endOffset = token != nullptr ? token->end : std::min(startOffset + 1, lines.offset(line, SIZE_MAX));
+    auto endOffset = token != nullptr ? token->end
+                                      : std::min(startOffset + 1, source.lines.compilerLineEnd(location.line));
     if (endOffset == startOffset && startOffset > 0) {
         startOffset--;  // E.g. an unexpected end of file: the range covers the last character so that it is visible.
     }
@@ -365,7 +440,7 @@ rapidjson::Value Server::locationJson(const Location &location, rapidjson::Docum
     return json;
 }
 
-std::optional<std::pair<std::string, size_t>> Server::documentPosition(const Value &params) {
+std::optional<std::pair<std::string, size_t>> Server::documentPosition(const Value &params, bool checkPending) {
     auto path = uriToPath(string(member(params, "textDocument"), "uri"));
     auto &position = member(params, "position");
     auto &line = member(position, "line");
@@ -373,18 +448,18 @@ std::optional<std::pair<std::string, size_t>> Server::documentPosition(const Val
     if (documents_.count(path) == 0 || !line.IsUint() || !character.IsUint()) {
         return std::nullopt;
     }
-    analysisFor(path);  // Checks pending changes, so that the text and the analysis match.
+    analysisFor(path, checkPending);  // Checks pending changes, so that the text and the analysis match.
     auto &source = sourceText(path);
     auto codePoint = source.lines.toCodePoint(ClientPosition{line.GetUint(), character.GetUint()}, encoding_);
     return std::make_pair(path, source.lines.offset(line.GetUint(), codePoint));
 }
 
-const Analysis* Server::analysisFor(const std::string &path) {
+const Analysis* Server::analysisFor(const std::string &path, bool checkPending) {
     auto root = roots_.find(path);
     if (root == roots_.end()) {
         return nullptr;
     }
-    if (scheduled_.count(root->second) > 0) {
+    if (checkPending && scheduled_.count(root->second) > 0) {
         scheduled_.erase(root->second);
         check(root->second);
     }
@@ -392,8 +467,9 @@ const Analysis* Server::analysisFor(const std::string &path) {
     return analysis == analyses_.end() ? nullptr : &analysis->second;
 }
 
-Navigator Server::navigator(const Analysis &analysis, const std::string &path) {
-    return Navigator(analysis, path, [this](const std::string &path) -> const SourceText& { return sourceText(path); });
+Navigator Server::navigator(const Analysis &analysis, const std::string &path, bool describe) {
+    return Navigator(analysis, path, [this](const std::string &path) -> const SourceText& { return sourceText(path); },
+                     describe);
 }
 
 void Server::hover(const Value &id, const Value &params) {
@@ -492,6 +568,10 @@ void Server::publishDiagnostics(const Analysis &analysis) {
 }
 
 void Server::semanticTokens(const Value &id, const Value &params) {
+    // Clients ask after every change. The answer waits for the check that follows the change instead of forcing one.
+    if (defer("textDocument/semanticTokens/full", id, params)) {
+        return;
+    }
     rapidjson::Document document;
     auto &allocator = document.GetAllocator();
     Value result(rapidjson::kObjectType);
@@ -499,7 +579,7 @@ void Server::semanticTokens(const Value &id, const Value &params) {
     auto path = uriToPath(string(member(params, "textDocument"), "uri"));
     auto analysis = documents_.count(path) > 0 ? analysisFor(path) : nullptr;
     if (analysis != nullptr) {
-        for (auto value : EmojicodeLanguageServer::semanticTokens(navigator(*analysis, path), encoding_)) {
+        for (auto value : EmojicodeLanguageServer::semanticTokens(navigator(*analysis, path, false), encoding_)) {
             data.PushBack(value, allocator);
         }
     }
@@ -526,6 +606,9 @@ static int symbolKind(Symbol::Kind kind) {
 }
 
 void Server::documentSymbols(const Value &id, const Value &params) {
+    if (defer("textDocument/documentSymbol", id, params)) {
+        return;
+    }
     rapidjson::Document document;
     auto &allocator = document.GetAllocator();
     Value result(rapidjson::kArrayType);
@@ -557,10 +640,12 @@ void Server::completion(const Value &id, const Value &params) {
     rapidjson::Document document;
     auto &allocator = document.GetAllocator();
     Value items(rapidjson::kArrayType);
-    auto position = documentPosition(params);
+    // Clients ask for completion after every key press, so it is answered from the last analysis rather than
+    // waiting for or forcing a check of the latest text.
+    auto position = documentPosition(params, false);
     if (position) {
         auto &path = position->first;
-        auto analysis = analysisFor(path);
+        auto analysis = analysisFor(path, false);
         if (analysis != nullptr && !analysis->analysed) {
             auto parsed = parsedAnalyses_.find(roots_[path]);
             if (parsed != parsedAnalyses_.end()) {
@@ -571,7 +656,7 @@ void Server::completion(const Value &id, const Value &params) {
         Completer completer(analysis, path, source, snippetSupport_);
         if (completer.canComplete(position->second)) {
             auto start = completer.wordStart(position->second);
-            auto word = utf8(std::u32string_view(source.text).substr(start, position->second - start));
+            auto word = utf8(source.text.substr(start, position->second - start));
             size_t index = 0;
             for (auto &item : completer.complete(start, position->second, 200)) {
                 Value json(rapidjson::kObjectType);

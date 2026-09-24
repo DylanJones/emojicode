@@ -74,7 +74,8 @@ using SourceProvider = std::function<const SourceText& (const std::string &path)
 class Navigator {
 public:
     /// @param path The canonical path of the file.
-    Navigator(const Analysis &analysis, std::string path, SourceProvider sources);
+    /// @param describe Whether symbols get their hover text. Classifying tokens does not need it.
+    Navigator(const Analysis &analysis, std::string path, SourceProvider sources, bool describe = true);
 
     /// Returns what the token at the code point @p offset of the file refers to, and the token.
     std::optional<std::pair<Symbol, const TokenSpan*>> symbolAt(size_t offset) const;
@@ -98,8 +99,10 @@ private:
     std::optional<Location> nameLocation(const EmojicodeCompiler::SourcePosition &position,
                                          const std::u32string &name) const;
     std::optional<Location> nameLocation(const Location &location, const std::u32string &name) const;
-    /// Records the declarations of the types, methods and instance variables of the analysed package.
+    /// Records the declarations of the types, methods and instance variables in this file.
     void collectDeclarations();
+    /// Whether @p position is in this file.
+    bool isInFile(const EmojicodeCompiler::SourcePosition &position) const;
 
     std::string typeString(const EmojicodeCompiler::Type &type, const EmojicodeCompiler::TypeContext &context) const;
 
@@ -110,6 +113,9 @@ private:
     /// The symbols declared in this file by the code point offset of their name.
     std::map<size_t, Symbol> declarations_;
     std::vector<OutlineEntry> outline_;
+    /// The local variables declared in this file by the line of their declaration.
+    std::multimap<size_t, const IndexedVariable *> variablesByLine_;
+    bool describe_;
 };
 
 }  // namespace EmojicodeLanguageServer

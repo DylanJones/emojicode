@@ -25,10 +25,9 @@ public:
     Transport(int input, int output) : input_(input), output_(output) {}
 
     /// Waits at most @p timeoutMilliseconds (forever if negative) for the next message and returns it, or returns
-    /// std::nullopt if none arrived in time. A message that is not valid JSON is returned as a document that is not
-    /// an object.
+    /// std::nullopt if none arrived in time. If the message is not valid JSON, @p parseError is set to true.
     /// @throws EndOfInput if the client closed the input.
-    std::optional<rapidjson::Document> read(int timeoutMilliseconds);
+    std::optional<rapidjson::Document> read(int timeoutMilliseconds, bool *parseError);
     void write(const rapidjson::Value &message);
 
 private:

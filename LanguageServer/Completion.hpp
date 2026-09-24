@@ -22,17 +22,24 @@ struct CompletionItem {
     std::string documentation;
     std::string insertText;
     bool isSnippet = false;
-    /// Items are sorted by rank, then by quality, then by label.
+    /// Variables (rank 0) come first. The other items are sorted by quality (0 if the word starts the item's name or
+    /// description, 1 if it starts a later word), then by rank, then by label.
     int rank = 0;
     int quality = 0;
 };
+
+/// Returns the offset in @p before that corresponds to @p offset in @p now, assuming the texts differ in one range,
+/// as they do between two versions of a document while the user types. An offset in the changed range is mapped to
+/// its start.
+size_t mapOffset(const std::u32string &now, const std::u32string &before, size_t offset);
 
 /// Completes code. As Emojicode is written with emoji, the word typed before the cursor is not the start of what is
 /// inserted, but a description of it: a variable name, a word in the name of an emoji ("grapes" for 🍇), a word in
 /// the documentation of a method or type, or a keyword like "class" or "if".
 class Completer {
 public:
-    /// @param analysis The analysis of the file's package, or nullptr if there is none.
+    /// @param analysis The analysis of the file's package, or nullptr if there is none. It may be of an older
+    /// version of the text.
     Completer(const Analysis *analysis, std::string path, const SourceText &source, bool snippets)
         : analysis_(analysis), path_(std::move(path)), source_(source), snippets_(snippets) {}
 

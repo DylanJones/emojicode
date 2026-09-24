@@ -24,10 +24,11 @@ static bool isSkipped(char32_t c) {
 std::vector<TokenSpan> lex(const std::u32string &text) {
     std::vector<TokenSpan> tokens;
     EmojicodeCompiler::SourceFile file(text, "");
+    size_t start = 0;
     try {
         EmojicodeCompiler::Lexer lexer(&file, false);
         while (lexer.continues()) {
-            auto start = lexer.index();
+            start = lexer.index();
             auto token = lexer.lex();
             if (!tokens.empty()) {
                 tokens.back().end = start;
@@ -35,7 +36,22 @@ std::vector<TokenSpan> lex(const std::u32string &text) {
             tokens.push_back(TokenSpan{start, text.size(), token.type(), token.value()});
         }
     }
-    catch (EmojicodeCompiler::CompilerError &) {}
+    catch (EmojicodeCompiler::CompilerError &) {
+        // The token that failed starts at start, so the one before ends there.
+        if (!tokens.empty()) {
+            tokens.back().end = std::min(tokens.back().end, start);
+        }
+        // An unterminated string or comment, e.g. while it is being typed, extends to the end of the text.
+        if (start < text.size()) {
+            auto first = text[start];
+            if (first == U'🔤' || first == U'🧲') {
+                tokens.push_back(TokenSpan{start, text.size(), TokenType::String, U""});
+            }
+            else if (first == U'💭' || first == U'📗' || first == U'📘') {
+                tokens.push_back(TokenSpan{start, text.size(), TokenType::MultilineComment, U""});
+            }
+        }
+    }
 
     // Each token was ended where the next one starts, so the whitespace in between is removed.
     for (auto &token : tokens) {

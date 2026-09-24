@@ -48,6 +48,8 @@ struct Analysis {
     /// compiler crashed.
     std::unique_ptr<EmojicodeCompiler::Compiler> compiler;
     std::vector<Diagnostic> diagnostics;
+    /// The text of the open files, by canonical path, when they were checked.
+    std::map<std::string, std::u32string> texts;
     /// Whether the package was analysed, i.e. whether it had no syntax errors. Analysis continues after errors in a
     /// function, so the other functions are analysed even if there are errors.
     bool analysed = false;
