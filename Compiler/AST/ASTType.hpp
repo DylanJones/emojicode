@@ -30,7 +30,8 @@ public:
     virtual ~ASTType() = default;
 protected:
     ASTType(SourcePosition p, Package *package) : ASTNode(std::move(p)), package_(package) {}
-    ASTType(Type type) : ASTNode(SourcePosition()), type_(type.applyMinimalBoxing()), package_(nullptr) {}
+    ASTType(Type type, SourcePosition p = SourcePosition())
+            : ASTNode(std::move(p)), type_(type.applyMinimalBoxing()), package_(nullptr) {}
     virtual Type getType(const TypeContext &typeContext, bool allowGenericInference) const = 0;
     Package* package() const { return package_; }
     virtual void toCodeType(PrettyStream &pretty) const = 0;
@@ -86,7 +87,8 @@ private:
 
 class ASTLiteralType : public ASTType {
 public:
-    explicit ASTLiteralType(Type type) : ASTType(std::move(type)) {}
+    explicit ASTLiteralType(Type type, SourcePosition p = SourcePosition())
+            : ASTType(std::move(type), std::move(p)) {}
 
     void toCode(PrettyStream &pretty) const override;
     Type getType(const TypeContext &typeContext, bool allowGenericInference) const override { return Type::noReturn(); }

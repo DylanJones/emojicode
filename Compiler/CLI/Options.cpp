@@ -35,6 +35,8 @@ Options::Options(int argc, char *argv[]) {
     args::Flag object(parser, "object", "Produce object file, do not link", {'c'});
     args::Flag json(parser, "json", "Show compiler messages as JSON", {"json"});
     args::Flag format(parser, "format", "Format source code", {"format"});
+    args::Flag dumpTokens(parser, "dump-tokens", "Print the tokens of the file and exit", {"dump-tokens"});
+    args::Flag parseOnly(parser, "parse-only", "Only parse the file and report syntax errors", {"parse-only"});
     args::Flag color(parser, "color", "Always show compiler messages in color", {"color"});
     args::Flag optimize(parser, "optimize", "Compile with optimizations", {'O'});
     args::Flag printIr(parser, "emit-llvm", "Print the IR to the standard output", {"emit-llvm"});
@@ -51,6 +53,8 @@ Options::Options(int argc, char *argv[]) {
         mainFile_ = file.Get();
         jsonOutput_ = json.Get();
         format_ = format.Get();
+        dumpTokens_ = dumpTokens.Get();
+        parseOnly_ = parseOnly.Get();
         forceColor_ = color.Get();
         optimize_ = optimize.Get();
         printIr_ = printIr.Get();

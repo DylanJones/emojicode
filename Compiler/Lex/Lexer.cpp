@@ -106,7 +106,9 @@ void Lexer::nextCharOrEnd() {
 Token Lexer::lex() {
     Token token = readToken();
     skipWhitespace();
-    if (minimalMode_ && (token.type() == TokenType::MultilineComment || token.type() == TokenType::SinglelineComment)) {
+    // A comment at the end of the file is returned, as lex() must not be called once the source code has ended.
+    if (minimalMode_ && continue_ &&
+        (token.type() == TokenType::MultilineComment || token.type() == TokenType::SinglelineComment)) {
         return lex();
     }
     return token;
@@ -119,6 +121,12 @@ Token Lexer::readToken() {
     TokenState state = beginToken(&token, &constState) ? TokenState::Continues : TokenState::Ended;
     while (true) {
         if (state == TokenState::Ended) {
+            token.validate();
+            nextCharOrEnd();
+            return token;
+        }
+        if (!hasMoreChars()) {
+            endTokenAtEndOfFile(&token);
             token.validate();
             nextCharOrEnd();
             return token;
@@ -190,7 +198,24 @@ bool Lexer::beginToken(Token *token, TokenConstructionState *constState) const {
         token->type_ = TokenType::Variable;
     }
     token->value_.push_back(codePoint());
-    return hasMoreChars();
+    return true;
+}
+
+void Lexer::endTokenAtEndOfFile(Token *token) const {
+    switch (token->type()) {
+        case TokenType::Identifier:
+            endIdentifierToken(token);
+            break;
+        case TokenType::Variable:
+        case TokenType::Integer:
+        case TokenType::Double:
+        case TokenType::Operator:
+        case TokenType::SinglelineComment:
+        case TokenType::LineBreak:
+            break;
+        default:
+            throw CompilerError(sourcePosition_, "Unexpected end of file.");
+    }
 }
 
 Lexer::TokenState Lexer::continueToken(Token *token, TokenConstructionState *constState) const {
@@ -248,7 +273,9 @@ Lexer::TokenState Lexer::continueToken(Token *token, TokenConstructionState *con
 Lexer::TokenState Lexer::continueMultilineComment(Token *token, TokenConstructionState *constState) const {
     if (!constState->commentDetermined_) {
         if (codePoint() == E_THOUGHT_BALLOON) {
-            token->value_.pop_back();
+            if (!minimalMode_) {  // In minimal mode the value is empty as no code points were added
+                token->value_.pop_back();
+            }
             return TokenState::Ended;
         }
         constState->commentDetermined_ = true;
@@ -395,17 +422,21 @@ Lexer::TokenState Lexer::continueIdentifierToken(Token *token, Lexer::TokenConst
     if (codePoint() == 0xFE0F) {  // Emojicode ignores the Emoji modifier behind an emoji character
         return TokenState::Continues;
     }
-    if (token->value_.front() == E_PERSON_SHRUGGING) {
+    if (token->value().front() == E_NO_GESTURE && codePoint() == E_LEFT_ARROW_CURVING_RIGHT) {
+        token->type_ = TokenType::ElseIf;
+        return TokenState::Ended;
+    }
+    endIdentifierToken(token);
+    return TokenState::NextBegun;
+}
+
+void Lexer::endIdentifierToken(Token *token) const {
+    if (token->value().front() == E_PERSON_SHRUGGING) {
         token->type_ = TokenType::NoValue;
     }
     if (token->value().front() == E_NO_GESTURE) {
-        if (codePoint() == E_LEFT_ARROW_CURVING_RIGHT) {
-            token->type_ = TokenType::ElseIf;
-            return TokenState::Ended;
-        }
         token->type_ = TokenType::Else;
     }
-    return TokenState::NextBegun;
 }
 
 Lexer::TokenState Lexer::continueOperator(Token *token) const {

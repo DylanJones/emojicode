@@ -56,6 +56,12 @@ public:
     /// This method returns true if prettyprint was explicitely requested or if a file is being migrated.
     bool prettyprint() const { return format_; }
 
+    /// Whether to print the tokens of the main file instead of compiling it. Used by tools/grammar_check.py.
+    bool dumpTokens() const { return dumpTokens_; }
+
+    /// Whether to stop after parsing the main file (and loading the packages it imports).
+    bool parseOnly() const { return parseOnly_; }
+
     std::string objectPath() const;
 private:
     std::string outPath_;
@@ -68,6 +74,8 @@ private:
     /// Path to the directory where the output files will be placed.
     std::string outDir_;
     bool format_ = false;
+    bool dumpTokens_ = false;
+    bool parseOnly_ = false;
     bool jsonOutput_ = false;
     bool pack_ = true;
     bool report_ = false;

@@ -46,31 +46,51 @@ bool TokenStream::consumeTokenIf(TokenType type) {
 }
 
 Token TokenStream::advanceLexer() {
-    skippedBlankLine_ = false;
     auto temp = std::move(nextToken_);
-    while (true) {
-        if (lexer_.continues()) {
-            index_ = lexer_.index();
-            nextToken_ = lexer_.lex();
-            if (nextToken_.type() == TokenType::BlankLine) {
-                skippedBlankLine_ = true;
-                continue;
-            }
-            else if (nextToken_.type() == TokenType::SinglelineComment ||
-                     nextToken_.type() == TokenType::MultilineComment) {
-                nextToken_.position().file->addComment(std::move(nextToken_));
-                continue;
-            }
-            else if (nextToken_.type() == TokenType::LineBreak) {
-                continue;
-            }
-        }
-        else {
-            moreTokens_ = false;
-        }
-        break;
+    ReadToken next = hasAfterNext_ ? std::move(afterNext_) : read();
+    hasAfterNext_ = false;
+    skippedBlankLine_ = next.skippedBlankLine;
+    if (next.exists) {
+        index_ = next.index;
+        nextToken_ = std::move(next.token);
+    }
+    else {
+        moreTokens_ = false;
     }
     return temp;
+}
+
+TokenStream::ReadToken TokenStream::read() {
+    ReadToken result;
+    while (true) {
+        if (!lexer_.continues()) {
+            result.exists = false;
+            return result;
+        }
+        result.index = lexer_.index();
+        result.token = lexer_.lex();
+        if (result.token.type() == TokenType::BlankLine) {
+            result.skippedBlankLine = true;
+        }
+        else if (result.token.type() == TokenType::SinglelineComment ||
+                 result.token.type() == TokenType::MultilineComment) {
+            result.token.position().file->addComment(std::move(result.token));
+        }
+        else if (result.token.type() != TokenType::LineBreak) {
+            return result;
+        }
+    }
+}
+
+const Token* TokenStream::tokenAfterNext() {
+    if (!hasMoreTokens()) {
+        return nullptr;
+    }
+    if (!hasAfterNext_) {
+        afterNext_ = read();
+        hasAfterNext_ = true;
+    }
+    return afterNext_.exists ? &afterNext_.token : nullptr;
 }
 
 }  // namespace EmojicodeCompiler

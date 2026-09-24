@@ -114,6 +114,11 @@ private:
     const bool minimalMode_;
 
     TokenState continueIdentifierToken(Token *token, TokenConstructionState *constState) const;
+    /// Called when an identifier token has ended. Turns it into a NoValue or Else token if appropriate.
+    void endIdentifierToken(Token *token) const;
+    /// Called if the source code ends while a token is being read.
+    /// @throws CompilerError if the token cannot end at this point.
+    void endTokenAtEndOfFile(Token *token) const;
 
     TokenState continueStringToken(Token *token, TokenConstructionState *constState) const;
 

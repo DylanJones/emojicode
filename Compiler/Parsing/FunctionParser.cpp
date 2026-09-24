@@ -295,6 +295,11 @@ std::shared_ptr<ASTExpr> FunctionParser::parseExprLeft(const EmojicodeCompiler::
         case TokenType::This:
             return std::make_shared<ASTThis>(token.position());
         case TokenType::Super: {
+            if (!stream_.nextTokenIs(TokenType::New) && !stream_.nextTokenIs(TokenType::Identifier) &&
+                !stream_.nextTokenIs(TokenType::Operator)) {
+                throw CompilerError(stream_.consumeToken().position(),
+                                    "Expected an initializer, method or operator name after ⤴️.");
+            }
             auto initializerToken = stream_.consumeToken();
             auto arguments = parseArgumentsWithoutCallee(token.position());
             return std::make_shared<ASTSuper>(initializerToken.value(), arguments, token.position());
@@ -391,6 +396,9 @@ std::shared_ptr<ASTExpr> FunctionParser::parseListingLiteral(const SourcePositio
     auto literal = std::make_shared<ASTCollectionLiteral>(position);
     if (stream_.consumeTokenIf(TokenType::RightProductionOperator)) {
         literal->setPairs();
+        if (!stream_.nextTokenIs(E_AUBERGINE)) {
+            throw CompilerError(stream_.consumeToken().position(), "Expected 🍆.");
+        }
     }
     else if (stream_.nextTokenIsEverythingBut(E_AUBERGINE)) {
         literal->addValue(parseExpr(0));

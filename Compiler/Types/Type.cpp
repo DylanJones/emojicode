@@ -26,6 +26,15 @@ namespace EmojicodeCompiler {
 
 const std::u32string kDefaultNamespace = std::u32string(1, E_HOUSE_BUILDING);
 
+/// Literal constraints (e.g. ⚪️) are analysed when parsed, so all constraints must be checked, not only the first.
+template <typename T>
+static bool constraintsAnalysed(const T *generic) {
+    auto &params = generic->genericParameters();
+    return !params.empty() && std::all_of(params.begin(), params.end(), [](auto &param) {
+        return param.constraint->wasAnalysed();
+    });
+}
+
 Type::Type(Protocol *protocol) : typeContent_(TypeType::Protocol), typeDefinition_(protocol) {}
 
 Type::Type(std::vector<Type> protocols)
@@ -38,7 +47,7 @@ Type::Type(Enum *enumeration)
 
 Type::Type(ValueType *valueType)
 : typeContent_(TypeType::ValueType), typeDefinition_(valueType), mutable_(false) {
-    if (valueType->genericParameters().empty() || !valueType->genericParameters().front().constraint->wasAnalysed()) {
+    if (!constraintsAnalysed(valueType)) {
         return;
     }
     for (size_t i = 0; i < valueType->genericParameters().size(); i++) {
@@ -48,7 +57,7 @@ Type::Type(ValueType *valueType)
 
 Type::Type(Class *klass) : typeContent_(TypeType::Class), typeDefinition_(klass) {
     if ((klass->superType() != nullptr && !klass->superType()->wasAnalysed()) ||
-        klass->genericParameters().empty() || !klass->genericParameters().front().constraint->wasAnalysed()) {
+        !constraintsAnalysed(klass)) {
         return;
     }
     genericArguments_ = klass->superGenericArguments();

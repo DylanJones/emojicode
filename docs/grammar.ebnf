@@ -1,0 +1,479 @@
+/*
+ * Emojicode grammar (1.0 beta 2)
+ *
+ * The compiler (Compiler/Lex and Compiler/Parsing) is the authoritative definition of Emojicode's syntax. This file
+ * describes exactly the documents that the compiler's lexer and parser accept, with the exceptions listed under
+ * "SCOPE" below. tools/grammar_check.py checks it against the compiler; see that file for what is checked.
+ *
+ * Notation: W3C EBNF, as used in the XML specification.
+ *
+ *   rule ::= ...        definition
+ *   A B                 sequence
+ *   A | B               alternatives
+ *   A?  A*  A+          optional, zero or more, one or more
+ *   ( ... )             grouping
+ *   A - B               the strings matched by A that are not matched by B
+ *   '🍇'  "x"            terminal string
+ *   #x200D              code point
+ *   [a-z#x2000-#x200A]  code point set; [^...] is its complement
+ *
+ *
+ * STRUCTURE
+ *
+ * The grammar has two levels. The lexical grammar (section 1) describes characters and tokens. The syntactic
+ * grammar (sections 2 to 7) describes sequences of tokens. The section headings are marked @lexical and @syntax.
+ *
+ * A source document is divided into tokens as follows, starting at the first character:
+ *
+ *   1. If `ignorable` matches at the current position, the longest match is skipped.
+ *   2. Otherwise the longest match of `token-shape` is taken. The lexer reads each kind of token greedily and
+ *      only afterwards checks that it is well-formed, so this string must match `token`. Exactly one alternative
+ *      of `token` matches it; that alternative is the kind of the token.
+ *
+ * The document is syntactically valid if its tokens match `document`. In the syntactic grammar:
+ *
+ *   - A rule name from the lexical grammar matches one token whose text matches that rule. (`token` matches any
+ *     token.)
+ *   - A quoted terminal matches one token whose text, with every U+FE0F removed, is that string. In addition, a
+ *     quoted terminal consisting of a single emoji matches any `identifier` token that begins with that emoji.
+ *     The parser recognizes most emoji with special meaning by the first code point of an identifier, so
+ *     `🍺🔸🐟` is the unwrap operator 🍺 and `🔗️` closes a list of link hints.
+ *
+ * U+FE0F (VARIATION SELECTOR-16) is whitespace, and it is ignored inside identifiers and operators. Terminals are
+ * written without it: '❗' matches both ❗ and ❗️.
+ *
+ *
+ * SCOPE
+ *
+ * Some errors that the compiler reports while parsing depend on more than the sequence of tokens. This grammar
+ * does not describe them:
+ *
+ *   - a name declared twice: a type already defined in the package (including imported types) or already
+ *     exported, and a duplicate enum value, generic parameter, instance variable, method overload or 🍼
+ *     parameter,
+ *   - more than one 🏁 or more than one list of link hints in a package (these may be in different documents),
+ *   - 📦 and 📜: whether the package can be found and loaded, and whether the included file has a valid name and
+ *     can be read.
+ *
+ * Interface documents (🏛, interface.emojii), which the compiler generates, are also not described. They differ
+ * from source documents in one respect: a `function-body` may be omitted, and only functions with the 🥯
+ * attribute may have a `block`.
+ */
+
+
+/* ================================================================================================================
+ * 1. Lexical grammar                                                                                    @lexical
+ * ================================================================================================================ */
+
+char                ::= [#x0-#x10FFFF]
+newline             ::= #xA | #x2028 | #x2029
+whitespace          ::= [#x9-#xD#x20#x85#xA0#x1680#x2000-#x200A#x2028#x2029#x202F#x205F#x3000#xFE0F]
+fe                  ::= #xFE0F
+
+/* ---- Tokenization ---- */
+
+ignorable           ::= whitespace | single-line-comment | multi-line-comment
+
+token-shape         ::= keyword
+                      | identifier-shape
+                      | variable
+                      | number-shape
+                      | triangle-operator
+                      | '🎍' char                                  /* decorator */
+                      | symbol-literal
+                      | ( '🔤' | '🧲' ) ( ( char - ( '🔤' | '❌' | '🧲' ) ) | '❌' char )* ( '🔤' | '🧲' )
+                      | documentation-comment
+                      | package-documentation-comment
+
+token               ::= keyword
+                      | triangle-operator
+                      | identifier
+                      | no-value
+                      | else
+                      | else-if
+                      | variable
+                      | integer-literal
+                      | float-literal
+                      | string-literal
+                      | interpolation-begin
+                      | interpolation-middle
+                      | interpolation-end
+                      | decorator
+                      | symbol-literal
+                      | documentation-comment
+                      | package-documentation-comment
+
+/* ---- Comments ---- */
+
+single-line-comment ::= '💭' ( ( char - ( newline | '🔜' ) ) ( char - newline )* )? newline?       /* none at the end */
+
+/* A multi-line comment ends at the first 💭 that directly follows 🔜 or 🔚. */
+multi-line-comment  ::= '💭' '🔜' ( '🔚' | ( char - ( '💭' | '🔚' ) ) ( char - '🔚' )* '🔚' )* '💭'
+
+documentation-comment         ::= '📗' ( char - '📗' )* '📗'
+package-documentation-comment ::= '📘' ( char - '📘' )* '📘'
+
+/* ---- Keywords ----
+ * Each of these code points is a token on its own. (Lexer::Lexer and Lexer::loadOperatorSingleTokens)
+ */
+keyword             ::= '❗' | '❓' | '⁉' | '🤜' | '🤛' | '↩' | '🔁' | '🔂' | '👍' | '👎' | '🚨' | '↪' | '🆗' | '🍇'
+                      | '🍉' | '🆕' | '👇' | '☣' | '⤴' | '➡' | '⬅' | '🖍' | '🐚' | '🐊' | '🕊' | '🐇' | '🔘' | '📣'
+                      | '🍿' | '➕' | '➖' | '➗' | '✖' | '👐' | '🤝' | '⭕' | '💢' | '❌' | '👈' | '👉' | '🚮' | '🙌'
+                      | '😜'
+
+/* ---- Emoji ----
+ * These sets are the tables in Compiler/Lex/EmojiTokenization.cpp.
+ */
+emoji-char          ::= [#xA9#xAE#x203C#x2049#x2122#x2139#x2194-#x2199#x21A9-#x21AA#x231A-#x231B#x2328#x23CF#x23E9-#x23F3]
+                      | [#x23F8-#x23FA#x24C2#x25AA-#x25AB#x25B6#x25C0#x25FB-#x25FE#x2600-#x2604#x260E#x2611#x2614-#x2615]
+                      | [#x2618#x261D#x2620#x2622-#x2623#x2626#x262A#x262E-#x262F#x2638-#x263A#x2640#x2642#x2648-#x2653]
+                      | [#x265F-#x2660#x2663#x2665-#x2666#x2668#x267B#x267E-#x267F#x2692-#x2697#x2699#x269B-#x269C]
+                      | [#x26A0-#x26A1#x26AA-#x26AB#x26B0-#x26B1#x26BD-#x26BE#x26C4-#x26C5#x26C8#x26CE-#x26CF#x26D1]
+                      | [#x26D3-#x26D4#x26E9-#x26EA#x26F0-#x26F5#x26F7-#x26FA#x26FD#x2702#x2705#x2708-#x270D#x270F#x2712]
+                      | [#x2714#x2716#x271D#x2721#x2728#x2733-#x2734#x2744#x2747#x274C#x274E#x2753-#x2755#x2757#x2763-#x2764]
+                      | [#x2795-#x2797#x27A1#x27B0#x27BF#x2934-#x2935#x2B05-#x2B07#x2B1B-#x2B1C#x2B50#x2B55#x3030#x303D#x3297]
+                      | [#x3299#x1F004#x1F0CF#x1F170-#x1F171#x1F17E-#x1F17F#x1F18E#x1F191-#x1F19A#x1F1E6-#x1F1FF]
+                      | [#x1F201-#x1F202#x1F21A#x1F22F#x1F232-#x1F23A#x1F250-#x1F251#x1F300-#x1F321#x1F324-#x1F393]
+                      | [#x1F396-#x1F397#x1F399-#x1F39B#x1F39E-#x1F3F0#x1F3F3-#x1F3F5#x1F3F7-#x1F4FD#x1F4FF-#x1F53D]
+                      | [#x1F549-#x1F54E#x1F550-#x1F567#x1F56F-#x1F570#x1F573-#x1F57A#x1F587#x1F58A-#x1F58D#x1F590]
+                      | [#x1F595-#x1F596#x1F5A4-#x1F5A5#x1F5A8#x1F5B1-#x1F5B2#x1F5BC#x1F5C2-#x1F5C4#x1F5D1-#x1F5D3]
+                      | [#x1F5DC-#x1F5DE#x1F5E1#x1F5E3#x1F5E8#x1F5EF#x1F5F3#x1F5FA-#x1F64F#x1F680-#x1F6C5#x1F6CB-#x1F6D2]
+                      | [#x1F6E0-#x1F6E5#x1F6E9#x1F6EB-#x1F6EC#x1F6F0#x1F6F3-#x1F6F9#x1F910-#x1F93A#x1F93C-#x1F93E]
+                      | [#x1F940-#x1F945#x1F947-#x1F970#x1F973-#x1F976#x1F97A#x1F97C-#x1F9A2#x1F9B0-#x1F9B9#x1F9C0-#x1F9C2]
+                      | [#x1F9D0-#x1F9FF]
+
+emoji-modifier-base ::= [#x261D#x26F9#x270A-#x270D#x1F385#x1F3C2-#x1F3C4#x1F3C7#x1F3CA-#x1F3CC#x1F442-#x1F443#x1F446-#x1F450]
+                      | [#x1F466-#x1F469#x1F46E#x1F470-#x1F478#x1F47C#x1F481-#x1F483#x1F485-#x1F487#x1F4AA#x1F574-#x1F575]
+                      | [#x1F57A#x1F590#x1F595-#x1F596#x1F645-#x1F647#x1F64B-#x1F64F#x1F6A3#x1F6B4-#x1F6B6#x1F6C0#x1F6CC]
+                      | [#x1F918-#x1F91C#x1F91E-#x1F91F#x1F926#x1F930-#x1F939#x1F93D-#x1F93E#x1F9B5-#x1F9B6#x1F9B8-#x1F9B9]
+                      | [#x1F9D1-#x1F9DD]
+
+emoji-modifier      ::= [#x1F3FB-#x1F3FF]
+regional-indicator  ::= [#x1F1E6-#x1F1FF]
+
+/* ---- Identifiers ----
+ * An identifier starts with an emoji and continues with emoji modifiers and joined emoji. Emoji are joined with
+ * U+200D (ZERO WIDTH JOINER) or 🔸. A second regional indicator is joined to a first one directly, to form a
+ * flag.
+ */
+raw-identifier      ::= ( regional-indicator fe* ( regional-indicator fe* )?
+                        | emoji-modifier-base fe* ( emoji-modifier fe* )?
+                        | ( emoji-char - ( regional-indicator | emoji-modifier-base ) ) fe* )
+                        ( joiner fe* joined-emoji? )*
+joiner              ::= #x200D | '🔸'
+joined-emoji        ::= emoji-modifier-base fe* ( emoji-modifier fe* )?
+                      | ( emoji-char - emoji-modifier-base ) fe*
+
+/* Code points that start a token other than an identifier. */
+not-identifier-start ::= keyword | '🔤' | '🧲' | '💭' | '📗' | '📘' | '🔟' | '◀' | '▶' | '🎍'
+
+identifier-shape    ::= ( raw-identifier - ( not-identifier-start char* ) ) | else-if
+
+/* An identifier cannot be a single regional indicator or end with U+200D. */
+identifier          ::= raw-identifier - ( ( not-identifier-start | '🤷' | '🙅' ) char*
+                                         | regional-indicator fe*
+                                         | char* #x200D fe* )
+
+/* Identifiers that start with 🤷 or 🙅 are the no-value and else tokens instead. 🙅 followed directly by ↪
+ * is the else-if token. */
+no-value            ::= raw-identifier - ( ( char - '🤷' ) char* )
+else                ::= raw-identifier - ( ( char - '🙅' ) char* )
+else-if             ::= '🙅' fe* ( emoji-modifier fe* )? ( ( joiner fe* )+ joined-emoji )* '↪'
+
+/* ---- Variables ----
+ * A variable name is a sequence of characters that are neither whitespace nor emoji and that does not start
+ * like a number. Operators are emoji, so "a-b" is a single variable name.
+ */
+variable            ::= ( variable-char - ( [0-9] | '+' | '-' ) ) variable-char*
+variable-char       ::= char - ( whitespace | emoji-char )
+
+/* ---- Numbers ----
+ * Commas in the integer part are ignored: 1,000,000 is 1000000.
+ */
+number-shape        ::= ( '0' ','* ( 'x' | 'X' ) [0-9a-fA-F,]* | ( [0-9] | '+' | '-' ) [0-9,]* ) ( '.' [0-9]* )?
+integer-literal     ::= [0-9] [0-9,]*
+                      | ( '+' | '-' ) ','* [0-9] [0-9,]*
+                      | '0' ','* ( 'x' | 'X' ) ','* [0-9a-fA-F] [0-9a-fA-F,]*
+float-literal       ::= ( '0' ','* ( 'x' | 'X' ) [0-9a-fA-F,]* | ( [0-9] | '+' | '-' ) [0-9,]* ) '.' [0-9]+
+
+/* ---- Strings ----
+ * An interpolated string is lexed as three kinds of tokens: 🔤…🧲, then any number of 🧲…🧲, then 🧲…🔤, with
+ * the interpolated expressions between them.
+ */
+string-char         ::= ( char - ( '🔤' | '❌' | '🧲' ) ) | '❌' ( 'n' | 't' | 'r' | '❌' | '🔤' | '🧲' )
+string-literal      ::= '🔤' string-char* '🔤'
+non-empty-string-literal ::= '🔤' string-char+ '🔤'
+interpolation-begin ::= '🔤' string-char* '🧲'
+interpolation-middle ::= '🧲' string-char* '🧲'
+interpolation-end   ::= '🧲' string-char* '🔤'
+
+/* ---- Operators ---- */
+
+triangle-operator   ::= ( '◀' | '▶' ) fe* '🙌'?
+operator            ::= '➕' | '➖' | '➗' | '✖' | '🚮' | '👈' | '👉' | '⭕' | '💢' | '❌' | '🙌' | '😜' | '🤝' | '👐'
+                      | triangle-operator
+definable-operator  ::= operator - ( '🤝' | '👐' | '😜' )
+
+/* ---- Other tokens ---- */
+
+decorator           ::= '🎍' emoji-char
+symbol-literal      ::= '🔟' char                                  /* no longer valid in any expression */
+
+
+/* ================================================================================================================
+ * 2. Documents                                                                                            @syntax
+ * ================================================================================================================ */
+
+document            ::= document-statement*
+document-statement  ::= package-import
+                      | include
+                      | package-documentation-comment
+                      | start-flag
+                      | link-hints
+                      | type-definition
+
+package-import      ::= '📦' variable identifier                  /* package name, namespace (🏠 is the default) */
+include             ::= '📜' string-literal                       /* path relative to this document */
+start-flag          ::= documentation-comment? '🏁' return-type? block
+link-hints          ::= documentation-comment? '🔗' string-literal+ '🔗'
+
+
+/* ================================================================================================================
+ * 3. Type definitions
+ *
+ * Attributes must appear in the order in which they are written here.
+ *
+ *   🌍 exported    🎍🛢 no generic dynamism    🔏 final    📻 foreign (classes), primitive (value types)
+ * ================================================================================================================ */
+
+type-definition     ::= class-definition | value-type-definition | enum-definition | protocol-definition
+
+/* A class with 🎍🛢 must be 🔏, must have generic parameters and cannot have a superclass. Foreign classes and
+ * primitive value types (📻) cannot have instance variables. */
+class-definition    ::= documentation-comment? '🌍'?
+                        ( '🔏'? '🐇' type-identifier generic-parameters? superclass? class-body
+                        | '🔏'? '📻' '🐇' type-identifier generic-parameters? superclass? foreign-class-body
+                        | '🎍🛢' '🔏' '🐇' type-identifier non-empty-generic-parameters class-body
+                        | '🎍🛢' '🔏' '📻' '🐇' type-identifier non-empty-generic-parameters foreign-class-body )
+superclass          ::= type - ( '🍇' tokens )
+
+value-type-definition ::= documentation-comment? '🌍'?
+                        ( '🕊' type-identifier generic-parameters? value-type-body
+                        | '📻' '🕊' type-identifier generic-parameters? primitive-value-type-body
+                        | '🎍🛢' '🕊' type-identifier non-empty-generic-parameters value-type-body
+                        | '🎍🛢' '📻' '🕊' type-identifier non-empty-generic-parameters primitive-value-type-body )
+
+enum-definition     ::= documentation-comment? '🌍'? '🔘' type-identifier enum-body
+protocol-definition ::= documentation-comment? '🌍'? '🐊' type-identifier generic-parameters? protocol-body
+
+generic-parameters  ::= '🐚' generic-parameter* '🍆'
+non-empty-generic-parameters ::= '🐚' generic-parameter+ '🍆'
+generic-parameter   ::= '☣'? variable type                        /* ☣: this parameter rejects boxing */
+
+
+/* ================================================================================================================
+ * 4. Type bodies
+ *
+ * Member attributes must appear in this order, and each kind of member allows only some of them:
+ *
+ *   🥯 inline   ⚠ deprecated   🔏 final   ✒ override   🐇 type method   ☣ unsafe   🖍 mutating   🔑 required
+ *   🎍🥡 escaping
+ * ================================================================================================================ */
+
+class-body          ::= '🍇' class-member* ( deinitializer class-member* )? '🍉'
+foreign-class-body  ::= '🍇' foreign-class-member* ( deinitializer foreign-class-member* )? '🍉'
+class-member        ::= foreign-class-member | instance-variable
+foreign-class-member ::= documentation-comment? '🥯'? '⚠'? '🔏'? '✒'? '🐇'? '☣'? '🎍🥡'? access-level? method
+                      | documentation-comment? '🥯'? '☣'? '🔑'? '🎍🥡'? access-level? initializer error-type?
+                        function-body
+                      | protocol-conformance
+
+value-type-body     ::= '🍇' value-type-member* '🍉'
+primitive-value-type-body ::= '🍇' primitive-value-type-member* '🍉'
+value-type-member   ::= primitive-value-type-member | instance-variable
+primitive-value-type-member ::= documentation-comment? '🥯'? '⚠'? ( '🐇' '☣'? | '☣'? '🖍'? ) '🎍🥡'? access-level?
+                        method
+                      | documentation-comment? '🥯'? '☣'? '🎍🥡'? access-level? initializer function-body
+                      | protocol-conformance
+
+enum-body           ::= '🍇' enum-member* '🍉'
+enum-member         ::= documentation-comment? '🥯'? '⚠'? '🐇'? '☣'? '🎍🥡'? access-level? method
+                      | documentation-comment? '🆕' initializer-name?               /* enum value */
+                      | protocol-conformance
+
+/* Protocol methods accept all member attributes and an access level, but ignore everything except ⚠. As they
+ * have no body, a ➡ after a method without a return type is read as its return type: the next method cannot start
+ * with ➡. */
+protocol-body       ::= '🍇' protocol-methods? '🍉'
+protocol-methods    ::= protocol-method return-type protocol-methods?
+                      | protocol-method ( protocol-methods - ( '➡' tokens ) )?
+protocol-method     ::= documentation-comment? '🥯'? '⚠'? '🔏'? '✒'? '🐇'? '☣'? '🖍'? '🔑'? '🎍🥡'? access-level?
+                        method-name parameters
+
+/* The parser accepts an access level on instance variables, protocol conformances and deinitializers, but
+ * ignores it. */
+instance-variable   ::= '🖍' access-level? '🆕' variable type ( '⬅' expression )?
+protocol-conformance ::= access-level? '🐊' type
+deinitializer       ::= documentation-comment? access-level? '♻' function-body
+
+access-level        ::= '🔓' | '🔒' | '🔐'                          /* public, private, protected */
+
+method              ::= method-name generic-parameters? parameters return-type? error-type? function-body
+method-name         ::= ( '❗' | '❓' | '➡' ) identifier               /* imperative, interrogative, assignment */
+                      | definable-operator
+
+initializer         ::= '🆕' initializer-name? generic-parameters? init-parameters
+initializer-name    ::= '▶' identifier
+
+parameters          ::= ( '🎍🥡'? variable type )*
+init-parameters     ::= ( '🍼'? '🎍🥡'? variable type )*          /* 🍼: assign to the instance variable */
+
+return-type         ::= '➡' type
+error-type          ::= '🚧' type
+function-body       ::= block
+                      | '📻' non-empty-string-literal               /* external symbol name */
+
+
+/* ================================================================================================================
+ * 5. Types
+ * ================================================================================================================ */
+
+type                ::= type-value-type
+                      | '◼'                                        /* no return */
+                      | '✴'? '⚪'                                   /* something */
+                      | ( '🍬' '✴'? | '✴' ) type-main              /* optional, reference */
+                      | type-main - ( '◼' generic-arguments? )
+
+type-value-type     ::= ( '🐇' | '🕊' | '🔘' | '🐊' ) type
+
+type-main           ::= callable-type
+                      | variable                                   /* generic type variable */
+                      | multi-protocol
+                      | '🔵'                                        /* someobject */
+                      | type-identifier generic-arguments?
+
+/* An error type can only follow a return type: in 🍇🔢🚧🔡🍉, 🚧 is parsed as a parameter type. */
+callable-type       ::= '🍇' type* ( '➡' type ( '🚧' type )? )? '🍉'
+multi-protocol      ::= '🍱' ( type - ( '🍱' tokens ) )* '🍱'
+
+type-identifier     ::= ( '🔶' type-name )? type-name                /* optional namespace */
+type-name           ::= identifier - ( '🍬' | '⚫' | '⚪' | '🔵' | '🍱' | '🔶' | '✴' )
+                      | '🔂'
+
+generic-arguments   ::= '🐚' ( type - ( '🍆' tokens ) )* '🍆'
+
+/* Type expressions appear where a type may also be inferred or taken from a value. */
+type-expr           ::= '⬛' prefix-expression                      /* the type of a value */
+                      | '⚫'                                        /* inferred */
+                      | '👇'                                        /* the type of 👇 */
+                      | type - ( '⬛' tokens )
+
+tokens              ::= token*
+
+
+/* ================================================================================================================
+ * 6. Statements
+ * ================================================================================================================ */
+
+block               ::= '🍇' statement* '🍉'
+
+statement           ::= '🖍' '🆕' variable type                     /* variable declaration */
+                      | if
+                      | error-handler
+                      | '🔁' condition block                        /* repeat while */
+                      | '🔂' variable expression block              /* for in */
+                      | '☣' block                                  /* unsafe block */
+                      | '🚨' expression                             /* raise */
+                      | '↩' '↩'                                    /* return without a value */
+                      | '↩' expression
+                      | variable '⬅' operator expression            /* operator assignment, e.g. x ⬅➕ 1 */
+                      | expression ( '➡' assignment-target )?
+
+assignment-target   ::= '🖍' '🆕' variable                          /* declare a mutable variable */
+                      | '🖍' variable                               /* assign to a mutable variable */
+                      | variable                                   /* declare a constant */
+                      | identifier generic-arguments? ( expression argument* )? '❗'
+                                                                   /* call an assignment (➡) method */
+
+if                  ::= '↪' condition branch-hint block ( else-if condition branch-hint block )* ( else block )?
+branch-hint         ::= '🎍🐌'? '🎍🏎'?                                /* unlikely, likely */
+condition           ::= expression ( '➡' variable )?                /* ➡ variable: bind the unwrapped value */
+
+/* If the expression starts with a variable, the parser takes that variable as the name to bind the value to. */
+error-handler       ::= '🆗' ( variable expression | expression - ( variable tokens ) ) block else variable block
+
+
+/* ================================================================================================================
+ * 7. Expressions
+ *
+ * Binary operators are left-associative. The rules below list them from the loosest to the tightest binding,
+ * following operatorPrecedence() in Compiler/Parsing/OperatorHelper.cpp.
+ * ================================================================================================================ */
+
+expression          ::= logical-or
+logical-or          ::= logical-and ( '👐' logical-and )*
+logical-and         ::= bitwise-or ( '🤝' bitwise-or )*
+bitwise-or          ::= bitwise-xor ( '💢' bitwise-xor )*
+bitwise-xor         ::= bitwise-and ( '❌' bitwise-and )*
+bitwise-and         ::= equality ( '⭕' equality )*
+equality            ::= comparison ( ( '🙌' | '😜' ) comparison )*
+comparison          ::= shift ( ( '◀' | '▶' | '◀🙌' | '▶🙌' ) shift )*
+shift               ::= additive ( ( '👈' | '👉' ) additive )*
+additive            ::= multiplicative ( ( '➕' | '➖' ) multiplicative )*
+multiplicative      ::= prefix-expression ( ( '✖' | '➗' | '🚮' ) prefix-expression )*
+
+/* These operators bind tighter than all binary operators: 🍺 a ➕ b is (🍺 a) ➕ b. Everything else that
+ * contains an expression takes a full expression. */
+prefix-expression   ::= '🍺' prefix-expression                      /* unwrap an optional */
+                      | '🔺' prefix-expression                      /* unwrap a result, re-raising the error */
+                      | '🔲' prefix-expression type-expr            /* cast */
+                      | '⁉' prefix-expression argument* mood         /* call a callable */
+                      | primary
+
+primary             ::= integer-literal
+                      | float-literal
+                      | '👍' | '👎'
+                      | no-value
+                      | string-literal
+                      | interpolation
+                      | collection-literal
+                      | variable
+                      | '👇'                                        /* this */
+                      | '🤜' expression '🤛'                        /* group */
+                      | closure
+                      | instantiation
+                      | method-call
+                      | super
+                      | ( '🐇' | '🕊' | '🔘' | '🐊' ) type           /* type value */
+                      | '⚖' type                                   /* size of */
+                      | '🏮' variable                              /* is only reference */
+                      | '📣' expression type-expr                  /* expression with an expected type */
+
+interpolation       ::= interpolation-begin expression ( interpolation-middle expression )* interpolation-end
+
+collection-literal  ::= '🍿' collection-element* '🍆'                              /* list */
+                      | '🍿' ( collection-element '➡' expression )+ '🍆'           /* dictionary */
+                      | '🍿' '➡' '🍆'                                               /* empty dictionary */
+collection-element  ::= expression - ( '🍆' tokens )
+
+/* The parser reads parameters, then a return type, then an error type, for as long as the next token allows.
+ * So when a part is missing, the body cannot start with a token that would begin it. */
+closure             ::= '🍇' '🎍🥡'? ( variable type )*
+                        ( return-type error-type statement*
+                        | return-type ( statement* - ( '🚧' tokens ) )
+                        | error-type statement*
+                        | statement* - ( ( variable | '🍼' | '🚧' ) tokens ) ) '🍉'
+
+instantiation       ::= '🆕' type-expr initializer-name? generic-arguments? argument* mood
+
+/* The callee is 👇 if the mood follows the method name (and generic arguments) directly. Type methods are
+ * called on a type value: 🐽 🐇🍨🐚🔢🍆 ❗. */
+method-call         ::= ( identifier - ( '🍺' | '⚖' | '🔲' | '🏮' | '🔺' ) ) generic-arguments? ( expression argument* )?
+                        mood
+
+/* 🆕 or a name calls an initializer of the superclass, a name or operator in a method calls a superclass method. */
+super               ::= '⤴' ( '🆕' | identifier | operator ) generic-arguments? argument* mood
+
+argument            ::= expression
+mood                ::= '❗'                                         /* imperative */
+                      | '❓'                                         /* interrogative */
