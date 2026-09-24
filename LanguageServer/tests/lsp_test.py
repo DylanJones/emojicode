@@ -504,6 +504,20 @@ class NavigationTests(ServerTestCase):
             self.assertIsNotNone(result, needle)
             self.assertEqual(result["range"]["start"], position(text, *declaration), needle)
 
+    def test_hover_generic_parameters_by_name(self):
+        text = ("🐇 🍞 🐚Element ⚪️🍆 🍇\n  🖍🆕 item Element\n  🆕 e Element 🍇\n    e ➡️ 🖍item\n  🍉\n"
+                "  ❗️ 🥪 🐚Thing ⚪️🍆 thing Thing ➡️ Thing 🍇\n    ↩️ thing\n  🍉\n🍉\n"
+                "🏁 🍇\n  🍿 1 2 🍆 ➡️ 🖍🆕 list\n  🐻 list 4❗️\n🍉\n")
+        path = self.write("generic.emojic", text)
+        self.client.open(path)
+        self.assertEqual(self.client.diagnostics(path), [])
+        for needle, occurrence, expected in (("🐻", 1, "in `🍨🐚Element`"), ("🍞", 1, "🐇 🍞🐚Element"),
+                                             ("Element", 2, "Element"), ("Thing", 3, "Thing")):
+            hover = self.client.request("textDocument/hover", {"textDocument": {"uri": uri(path)},
+                                                               "position": position(text, needle, occurrence)})
+            self.assertIn(expected, hover["contents"]["value"], needle)
+            self.assertNotIn("0?", hover["contents"]["value"], needle)
+
     def test_definition_in_standard_library(self):
         path, start = self.definition("😀")
         self.assertTrue(path.endswith("🏛"), path)
