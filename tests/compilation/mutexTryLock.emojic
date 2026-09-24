@@ -1,0 +1,23 @@
+🏁 🍇
+  🆕🔐❗️ ➡️ mutex
+
+  ↪️ 🔐 mutex❗️ 🍇
+    😀 🔤Locked the unlocked mutex🔤❗️
+  🍉
+  🙅 🍇
+    😀 🔤Failed to lock the unlocked mutex🔤❗️
+  🍉
+
+  💭 A mutex must not be locked again by the thread that owns it, so try from another thread.
+  🆕🧵 🍇🎍🥡
+    ↪️ 🔐 mutex❗️ 🍇
+      😀 🔤Locked the locked mutex🔤❗️
+    🍉
+    🙅 🍇
+      😀 🔤Failed to lock the locked mutex🔤❗️
+    🍉
+  🍉❗️ ➡️ thread
+  🛂 thread❗️
+
+  🔓 mutex❗️
+🍉

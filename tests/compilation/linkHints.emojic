@@ -1,0 +1,12 @@
+💭 zlib is not linked by default, so this only links if the main package's link hints are passed to the linker.
+🔗 🔤z🔤 🔗
+
+🐇 🗜 🍇
+  🐇❗️ 🚩 ➡️ 🔢 📻 🔤zlibCompileFlags🔤
+🍉
+
+🏁 🍇
+  ↪️ 🚩🐇🗜❗️ ▶️🙌 0 🍇
+    😀 🔤Called into zlib🔤❗️
+  🍉
+🍉

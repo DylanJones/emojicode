@@ -42,4 +42,9 @@ void RecordingPackage::setStartFlagFunction(Function *function) {
     Package::setStartFlagFunction(function);
 }
 
+void RecordingPackage::setLinkHints(std::vector<std::string> hints) {
+    files_[currentFile_].recordings_.emplace_back(std::make_unique<LinkHintsRecording>());
+    Package::setLinkHints(std::move(hints));
+}
+
 }  // namespace EmojicodeCompiler

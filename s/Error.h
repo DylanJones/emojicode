@@ -16,7 +16,7 @@ namespace s {
 
 class Error : public runtime::Object<Error>  {
 public:
-    Error(const char *message);
+    Error(const char *text);
 
 private:
     s::String *message;
@@ -25,7 +25,7 @@ private:
 
 class IOError : public runtime::Object<IOError>  {
 public:
-    IOError(const char *message);
+    IOError(const char *text);
     /// Creates an IOError from errno
     IOError();
 

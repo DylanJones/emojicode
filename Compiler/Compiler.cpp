@@ -13,7 +13,10 @@
 #include "Package/RecordingPackage.hpp"
 #include "Parsing/AbstractParser.hpp"
 #include "Prettyprint/PrettyPrinter.hpp"
+#include <llvm/Support/CommandLine.h>
 #include <llvm/Support/FileSystem.h>
+#include <llvm/Support/Program.h>
+#include <llvm/Support/StringSaver.h>
 #include "MemoryFlowAnalysis/MFAnalyser.hpp"
 #include "Types/ValueType.hpp"
 #include "Functions/Function.hpp"
@@ -76,33 +79,63 @@ void Compiler::LLVMIREmissionPhase::perform(Compiler *compiler) {
     compiler->generator_->emit(true, path_);
 }
 
-void Compiler::LinkPhase::perform(Compiler *compiler) {
-    std::stringstream cmd;
+/// Runs @p tool with @p arguments and waits for it to finish.
+/// @param tool The command to run, usually taken from an environment variable like $CXX. It is interpreted by the
+///             shell, so it may contain arguments of its own (e.g. "ccache c++") and shell expansions. The arguments
+///             are passed to it unchanged.
+/// @throws CompilerError if the tool could not be run or did not exit successfully.
+static void runTool(const std::string &tool, const std::vector<std::string> &arguments) {
+    // sh -c 'TOOL "$@"' sh ARGUMENTS... : the arguments become positional parameters and are never re-split.
+    std::string script = tool + " \"$@\"";
+    std::vector<llvm::StringRef> args { "sh", "-c", script, "sh" };
+    args.insert(args.end(), arguments.begin(), arguments.end());
 
-    cmd << linker_ << " " << objectFilePath_;
+    std::string errorMessage;
+    auto status = llvm::sys::ExecuteAndWait("/bin/sh", args, std::nullopt, {}, 0, 0, &errorMessage);
+    if (status == -1) {
+        throw CompilerError(SourcePosition(), "Could not run ", tool, ": ", errorMessage, ".");
+    }
+    if (status < 0) {
+        throw CompilerError(SourcePosition(), tool, " crashed: ", errorMessage, ".");
+    }
+    if (status > 0) {
+        throw CompilerError(SourcePosition(), tool, " failed with exit code ", status, ".");
+    }
+}
+
+/// Appends the linker arguments for a link hint. A hint is split at whitespace like a command line, so that hints
+/// such as "ssl -lcrypto", which used to be split by the shell, keep working.
+static void appendLinkHint(std::vector<std::string> &args, const std::string &hint) {
+    llvm::BumpPtrAllocator allocator;
+    llvm::StringSaver saver(allocator);
+    llvm::SmallVector<const char *, 4> tokens;
+    llvm::cl::TokenizeGNUCommandLine("-l" + hint, saver, tokens);
+    args.insert(args.end(), tokens.begin(), tokens.end());
+}
+
+void Compiler::LinkPhase::perform(Compiler *compiler) {
+    std::vector<std::string> args { objectFilePath_ };
+
+    for (auto &hint : compiler->mainPackage()->linkHints()) {
+        appendLinkHint(args, hint);
+    }
 
     for (auto it = compiler->packageImportOrder_.rbegin(); it != compiler->packageImportOrder_.rend(); it++) {
         auto package = *it;
-        auto path = compiler->findBinaryPathPackage(package->path(), package->name());
-        cmd << " " << path;
+        args.emplace_back(compiler->findBinaryPathPackage(package->path(), package->name()));
         for (auto &hint : package->linkHints()) {
-            cmd << " -l" << hint;
+            appendLinkHint(args, hint);
         }
     }
 
     auto runtimeLib = compiler->findBinaryPathPackage(compiler->searchPackage("runtime", SourcePosition()), "runtime");
-    cmd << " " << runtimeLib << " -o " << outPath_;
+    args.insert(args.end(), { runtimeLib, "-o", outPath_ });
 
-    system(cmd.str().c_str());
+    runTool(linker_, args);
 }
 
 void Compiler::ArchivePhase::perform(Compiler *compiler) {
-    std::string cmd = ar_;
-    cmd.append(" cr ");
-    cmd.append(outPath_);
-    cmd.append(" ");
-    cmd.append(objectFilePath_);
-    system(cmd.c_str());
+    runTool(ar_, { "cr", outPath_, objectFilePath_ });
 }
 
 std::string Compiler::searchPackage(const std::string &name, const SourcePosition &p) {

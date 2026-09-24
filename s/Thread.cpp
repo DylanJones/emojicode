@@ -35,6 +35,11 @@ extern "C" void sThreadJoin(Thread *thread) {
 }
 
 extern "C" void sThreadDestruct(Thread *thread) {
+    if (thread->thread.joinable()) {
+        // The thread was never joined. It cannot be joined here either, as the last reference may have been released
+        // by the thread itself. Destroying a joinable std::thread would call std::terminate.
+        thread->thread.detach();
+    }
     thread->~Thread();
 }
 
@@ -50,8 +55,8 @@ extern "C" void sMutexLock(Mutex *mutex) {
     mutex->mutex.lock();
 }
 
-extern "C" void sMutexTryLock(Mutex *mutex) {
-    mutex->mutex.try_lock();
+extern "C" runtime::Boolean sMutexTryLock(Mutex *mutex) {
+    return mutex->mutex.try_lock();
 }
 
 extern "C" void sMutexUnlock(Mutex *mutex) {

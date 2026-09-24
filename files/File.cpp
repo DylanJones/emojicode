@@ -24,16 +24,18 @@ public:
 };
 
 extern "C" File* filesFileNewWriting(String *path, runtime::Raiser *raiser) {
+    auto stream = std::fstream(path->stdString().c_str(), std::ios_base::out);
+    EJC_COND_RAISE_IO(!stream.fail(), raiser);
     auto file = File::init();
-    file->file_ = std::fstream(path->stdString().c_str(), std::ios_base::out);
-    EJC_COND_RAISE_IO(!file->file_.fail(), raiser);
+    file->file_ = std::move(stream);
     return file;
 }
 
 extern "C" File* filesFileNewReading(String *path, runtime::Raiser *raiser) {
+    auto stream = std::fstream(path->stdString().c_str(), std::ios_base::in);
+    EJC_COND_RAISE_IO(!stream.fail(), raiser);
     auto file = File::init();
-    file->file_ = std::fstream(path->stdString().c_str(), std::ios_base::in);
-    EJC_COND_RAISE_IO(!file->file_.fail(), raiser);
+    file->file_ = std::move(stream);
     return file;
 }
 
@@ -49,14 +51,22 @@ extern "C" void filesFileFlush(File *file) {
     file->file_.flush();
 }
 
+extern "C" void filesFileDestruct(File *file) {
+    file->~File();
+}
+
 extern "C" Data* filesFileReadBytes(File *file, runtime::Integer count, runtime::Raiser *raiser) {
     auto bytes = runtime::allocate<runtime::Byte>(count);
     file->file_.read(reinterpret_cast<char *>(bytes.get()), count);
+    if (file->file_.fail()) {
+        auto error = s::IOError::init();
+        bytes.release();
+        EJC_RAISE(raiser, error);
+    }
 
     auto data = Data::init();
     data->data = bytes;
     data->count = file->file_.gcount();
-    EJC_COND_RAISE_IO(!file->file_.fail(), raiser);
     return data;
 }
 
@@ -71,15 +81,20 @@ extern "C" void filesFileSeekTo(File *file, runtime::Integer pos) {
 extern "C" Data* filesFileReadFile(runtime::ClassInfo*, String *path, runtime::Raiser *raiser) {
     auto file = std::ifstream(path->stdString().c_str(), std::ios_base::ate);
     std::streamsize size = file.tellg();
+    EJC_COND_RAISE_IO(!file.fail(), raiser);
     file.seekg(0, std::ios::beg);
 
     auto bytes = runtime::allocate<runtime::Byte>(size);
     file.read(reinterpret_cast<char *>(bytes.get()), size);
+    if (file.fail()) {
+        auto error = s::IOError::init();
+        bytes.release();
+        EJC_RAISE(raiser, error);
+    }
 
     auto data = Data::init();
     data->data = bytes;
     data->count = size;
-    EJC_COND_RAISE_IO(!file.fail(), raiser);
     return data;
 }
 

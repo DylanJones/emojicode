@@ -1,0 +1,2 @@
+Deinitialized on the thread itself
+Deinitialized on the main thread

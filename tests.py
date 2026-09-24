@@ -91,6 +91,9 @@ compilation_tests = [
     "valueTypeBoxCopySelf",
     "includer",
     "threads",
+    "linkHints",
+    "threadUnjoined",
+    "mutexTryLock",
     "inferLiteralFromExpec",
     "sequenceTypeNames",
     "typeValues",
@@ -173,7 +176,7 @@ def compilation_test(name):
     completed = run([binary_path], stdout=PIPE)
     exp_path = os.path.join(dist.source, "tests", "compilation", name + ".txt")
     output = completed.stdout.decode('utf-8')
-    if output != open(exp_path, "r", encoding='utf-8').read():
+    if output != open(exp_path, "r", encoding='utf-8').read() or completed.returncode != 0:
         print(output)
         fail_test(name)
 
