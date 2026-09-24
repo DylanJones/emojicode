@@ -491,6 +491,19 @@ class NavigationTests(ServerTestCase):
                                                            "position": position(text, "y", 2)})
         self.assertIsNone(hover)
 
+    def test_super_calls(self):
+        text = ("🐇 🐠 🍇\n  🆕 🍇🍉\n  ❗️ 🐽 🍇🍉\n🍉\n"
+                "🐇 🐟 🐠 🍇\n  🆕 🍇\n    ⤴️🆕❗️\n  🍉\n  ✒️❗️ 🐽 🍇\n    ⤴️🐽❗️\n  🍉\n🍉\n🏁 🍇🍉\n")
+        path = self.write("super.emojic", text)
+        self.client.open(path)
+        self.assertEqual(self.client.diagnostics(path), [])
+        for needle, declaration in (("⤴️|🆕", ("🆕", 1)), ("|⤴️🆕", ("🆕", 1)), ("⤴️|🐽", ("🐽", 1)),
+                                    ("|⤴️🐽", ("🐽", 1))):
+            result = self.client.request("textDocument/definition", {"textDocument": {"uri": uri(path)},
+                                                                     "position": position(text, needle)})
+            self.assertIsNotNone(result, needle)
+            self.assertEqual(result["range"]["start"], position(text, *declaration), needle)
+
     def test_definition_in_standard_library(self):
         path, start = self.definition("😀")
         self.assertTrue(path.endswith("🏛"), path)

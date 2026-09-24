@@ -279,6 +279,10 @@ std::optional<Symbol> Navigator::nodeSymbol(const IndexedNode &node, const Token
     }
     else if (auto super = dynamic_cast<ASTSuper *>(expr)) {
         function = super->function();
+        // The call is at ⤴️, which is followed by the name of the function.
+        if (function != nullptr && token.type == TokenType::Super) {
+            return functionSymbol(function);
+        }
     }
     if (function != nullptr) {
         if (!tokenNames(token, function)) {
@@ -348,7 +352,20 @@ std::optional<Symbol> Navigator::symbol(const TokenSpan &token) const {
     auto line = position.first;
     auto character = position.second;
     std::optional<Symbol> fallback;
-    for (auto node : analysis_.index->nodesAt(path_, line, character)) {
+    auto nodes = analysis_.index->nodesAt(path_, line, character);
+    // A ⤴️ call is at the ⤴️ before the name of the function.
+    auto it = std::lower_bound(source_.tokens.begin(), source_.tokens.end(), token.start,
+                               [](const TokenSpan &t, size_t offset) { return t.start < offset; });
+    if (it != source_.tokens.begin() && it != source_.tokens.end() && it->start == token.start &&
+        std::prev(it)->type == TokenType::Super) {
+        auto super = source_.lines.compilerPosition(std::prev(it)->start);
+        for (auto node : analysis_.index->nodesAt(path_, super.first, super.second)) {
+            if (node->expr != nullptr && dynamic_cast<ASTSuper *>(node->expr.get()) != nullptr) {
+                nodes.push_back(node);
+            }
+        }
+    }
+    for (auto node : nodes) {
         auto symbol = nodeSymbol(*node, token);
         if (symbol && symbol->kind != Symbol::Kind::Expression) {
             return symbol;
