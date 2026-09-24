@@ -1,0 +1,7 @@
+💭 Imports packages whose interface files end in a comment without a line break. In imported packages comments
+💭 are skipped by the lexer.
+📦 singleLineCommentAtEnd 🏠
+📦 multilineCommentAtEnd 🏠
+
+🏁 🍇
+🍉

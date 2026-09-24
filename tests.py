@@ -136,6 +136,9 @@ library_tests = [
 ]
 reject_tests = glob.glob(os.path.join(dist.source, "tests", "reject",
                                       "*.emojic"))
+parse_tests = glob.glob(os.path.join(dist.source, "tests", "parse",
+                                     "*.emojic"))
+test_packages = os.path.join(dist.source, "tests", "packages")
 
 failed_tests = []
 
@@ -183,6 +186,14 @@ def reject_test(filename):
         fail_test(filename)
 
 
+def parse_test(filename):
+    completed = run([emojicodec, '--parse-only', '-S', test_packages, filename],
+                    stderr=PIPE)
+    if completed.returncode != 0:
+        print(completed.stderr.decode('utf-8'))
+        fail_test(filename)
+
+
 def available_compilation_tests():
     paths = glob.glob(os.path.join(dist.source, "tests", "compilation",
                                    "*.emojic"))
@@ -225,6 +236,8 @@ def test():
 
     for test in reject_tests:
         reject_test(test)
+    for test in parse_tests:
+        parse_test(test)
     os.chdir(os.path.join(dist.source, "tests", "s"))
     os.environ["TEST_ENV_1"] = "The day starts like the rest I've seen"
     for test in library_tests:

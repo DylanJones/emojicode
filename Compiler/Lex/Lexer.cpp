@@ -106,7 +106,9 @@ void Lexer::nextCharOrEnd() {
 Token Lexer::lex() {
     Token token = readToken();
     skipWhitespace();
-    if (minimalMode_ && (token.type() == TokenType::MultilineComment || token.type() == TokenType::SinglelineComment)) {
+    // A comment at the end of the file is returned, as lex() must not be called once the source code has ended.
+    if (minimalMode_ && continue_ &&
+        (token.type() == TokenType::MultilineComment || token.type() == TokenType::SinglelineComment)) {
         return lex();
     }
     return token;
@@ -271,7 +273,9 @@ Lexer::TokenState Lexer::continueToken(Token *token, TokenConstructionState *con
 Lexer::TokenState Lexer::continueMultilineComment(Token *token, TokenConstructionState *constState) const {
     if (!constState->commentDetermined_) {
         if (codePoint() == E_THOUGHT_BALLOON) {
-            token->value_.pop_back();
+            if (!minimalMode_) {  // In minimal mode the value is empty as no code points were added
+                token->value_.pop_back();
+            }
             return TokenState::Ended;
         }
         constState->commentDetermined_ = true;
