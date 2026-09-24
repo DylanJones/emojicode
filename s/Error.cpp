@@ -10,11 +10,11 @@
 #include <cerrno>
 #include <cstring>
 
-s::Error::Error(const char *message) : message(s::String::init(message)) {
+s::Error::Error(const char *text) : message(s::String::init(text)) {
 
 }
 
-s::IOError::IOError(const char *message) : message(s::String::init(message)) {
+s::IOError::IOError(const char *text) : message(s::String::init(text)) {
 
 }
 
