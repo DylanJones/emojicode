@@ -69,6 +69,9 @@ public:
     /// check files with unsaved changes. Paths are compared after being made absolute and canonical.
     void setOverlay(const std::string &path, std::u32string content);
 
+    /// Returns the paths of the files that were read, as they were passed to read().
+    std::vector<std::string> paths() const;
+
 private:
     std::map<std::string, std::unique_ptr<SourceFile>> cache_;
     std::map<std::string, std::u32string> overlays_;

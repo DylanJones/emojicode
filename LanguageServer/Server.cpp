@@ -8,6 +8,7 @@
 #include "SemanticTokens.hpp"
 #include <algorithm>
 #include <iostream>
+#include <tuple>
 
 namespace EmojicodeLanguageServer {
 
@@ -219,8 +220,8 @@ void Server::didOpen(const Value &params) {
         return;
     }
     auto &version = member(item, "version");
-    documents_[path] = Document{uri, version.IsInt() ? version.GetInt() : 0};
     overlays_[path] = utf32(string(item, "text"));
+    documents_[path] = Document{uri, version.IsInt() ? version.GetInt() : 0, checker().includes(path)};
     sourceTexts_.erase(path);
     updateRoots();
     schedule(roots_[path], 0ms);
@@ -240,7 +241,23 @@ void Server::didChange(const Value &params) {
     if (version.IsInt()) {
         document->second.version = version.GetInt();
     }
-    schedule(roots_[path], kCheckDelay);
+    // The checks compile the unsaved text, so an include that was added or removed changes the roots right away.
+    auto includes = checker().includes(path);
+    if (includes != document->second.includes) {
+        document->second.includes = std::move(includes);
+        updateRoots();
+    }
+    scheduleRootsContaining(path, kCheckDelay);
+}
+
+void Server::scheduleRootsContaining(const std::string &path, std::chrono::milliseconds delay) {
+    schedule(roots_[path], delay);
+    // Other packages may include the file too, e.g. two programs that share a file.
+    for (auto &pair : analyses_) {
+        if (pair.second.files.count(path) > 0 && isRootOpen(pair.first)) {
+            schedule(pair.first, delay);
+        }
+    }
 }
 
 void Server::didSave(const Value &params) {
@@ -250,7 +267,7 @@ void Server::didSave(const Value &params) {
     }
     // An include may have been added or removed, which changes the roots of other open files too.
     updateRoots();
-    schedule(roots_[path], 0ms);
+    scheduleRootsContaining(path, 0ms);
 }
 
 void Server::didClose(const Value &params) {
@@ -303,10 +320,9 @@ void Server::dropRoot(const std::string &root) {
     scheduled_.erase(root);
     analyses_.erase(root);
     parsedAnalyses_.erase(root);
-    Analysis empty;
-    empty.rootPath = root;
-    publishDiagnostics(empty);
+    auto published = published_[root];
     published_.erase(root);
+    publishDiagnostics(published);
     answerDeferred(root);
 }
 
@@ -356,7 +372,6 @@ void Server::runChecks() {
 
 void Server::check(const std::string &root) {
     auto analysis = checker().check(root);
-    publishDiagnostics(analysis);
     if (analysis.analysed) {
         parsedAnalyses_.erase(root);  // The latest analysis is now the last one that parsed.
     }
@@ -364,6 +379,7 @@ void Server::check(const std::string &root) {
         parsedAnalyses_[root] = std::move(analyses_[root]);
     }
     analyses_[root] = std::move(analysis);
+    publishDiagnostics(root);
     answerDeferred(root);
 }
 
@@ -516,30 +532,46 @@ void Server::definition(const Value &id, const Value &params) {
     respond(id, result, document);
 }
 
-void Server::publishDiagnostics(const Analysis &analysis) {
-    sourceTexts_.clear();  // Files may have changed since the last publication.
-    std::map<std::string, std::vector<const Diagnostic *>> byPath;
-    for (auto &diagnostic : analysis.diagnostics) {
-        byPath[diagnostic.location.path].push_back(&diagnostic);
+void Server::publishDiagnostics(const std::string &root) {
+    auto &published = published_[root];
+    auto paths = published;
+    published.clear();
+    for (auto &diagnostic : analyses_[root].diagnostics) {
+        paths.insert(diagnostic.location.path);
+        published.insert(diagnostic.location.path);
     }
-    // Open files of the package and files that had diagnostics before get a list even if it is empty: it tells the
-    // client that the file was checked and clears the old diagnostics.
+    // Open files of the package get a list even if it is empty: it tells the client that the file was checked.
     for (auto &pair : roots_) {
-        if (pair.second == analysis.rootPath) {
-            byPath[pair.first];
+        if (pair.second == root) {
+            paths.insert(pair.first);
         }
     }
-    auto &published = published_[analysis.rootPath];
-    for (auto &path : published) {
-        byPath[path];
-    }
-    published.clear();
+    publishDiagnostics(paths);
+}
 
-    for (auto &pair : byPath) {
+void Server::publishDiagnostics(const std::set<std::string> &paths) {
+    sourceTexts_.clear();  // Files may have changed since the last publication.
+    for (auto &path : paths) {
+        std::vector<const Diagnostic *> list;
+        // A file that several packages include has the same diagnostics in each of them.
+        std::set<std::tuple<size_t, size_t, std::string>> seen;
+        auto root = roots_.find(path);
+        for (auto &pair : analyses_) {
+            if (root != roots_.end() && pair.first != root->second) {
+                continue;
+            }
+            for (auto &diagnostic : pair.second.diagnostics) {
+                auto &location = diagnostic.location;
+                if (location.path == path && seen.emplace(location.line, location.character, diagnostic.message).second) {
+                    list.push_back(&diagnostic);
+                }
+            }
+        }
+
         rapidjson::Document document;
         auto &allocator = document.GetAllocator();
         Value diagnostics(rapidjson::kArrayType);
-        for (auto diagnostic : pair.second) {
+        for (auto diagnostic : list) {
             Value json(rapidjson::kObjectType);
             json.AddMember("range", range(diagnostic->location, allocator), allocator);
             json.AddMember("severity", static_cast<int>(diagnostic->severity), allocator);
@@ -560,13 +592,9 @@ void Server::publishDiagnostics(const Analysis &analysis) {
             }
             diagnostics.PushBack(json, allocator);
         }
-        if (!pair.second.empty()) {
-            published.insert(pair.first);
-        }
-
         Value params(rapidjson::kObjectType);
-        params.AddMember("uri", jsonString(uriForPath(pair.first), allocator), allocator);
-        auto open = documents_.find(pair.first);
+        params.AddMember("uri", jsonString(uriForPath(path), allocator), allocator);
+        auto open = documents_.find(path);
         if (open != documents_.end()) {
             params.AddMember("version", open->second.version, allocator);
         }

@@ -255,6 +255,9 @@ Analysis Checker::check(const std::string &rootPath) const {
     analysis.compiler->add<Compiler::AnalysisPhase>(standalone);
     try {
         analysis.compiler->compile();
+        for (auto &path : analysis.compiler->sourceManager().paths()) {
+            analysis.files.insert(canonicalPath(path));
+        }
         analysis.index->finish();
         analysis.analysed = analysis.index->analysedFunctionsOf(analysis.compiler->mainPackage());
     }

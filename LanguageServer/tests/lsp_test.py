@@ -104,6 +104,14 @@ class Client:
                     return message["params"]["diagnostics"]
             self.notifications.append(self.receive(max(0.01, deadline - time.time())))
 
+    def diagnostics_until(self, path, condition, timeout=20):
+        """Waits for diagnostics for the file at path that fulfill condition and returns them."""
+        deadline = time.time() + timeout
+        while True:
+            diagnostics = self.diagnostics(path, max(0.01, deadline - time.time()))
+            if condition(diagnostics):
+                return diagnostics
+
     def open(self, path, text=None):
         if text is None:
             with open(path, encoding="utf-8") as f:
@@ -283,6 +291,36 @@ class DiagnosticsTests(ServerTestCase):
             path = self.write(name, text)
             client.open(path)
             self.assertEqual([d["message"] for d in client.diagnostics(path)], diagnostics, name)
+
+    def test_file_included_by_two_programs(self):
+        util = self.write("util.🍇", "🐇 🐠 🍇\n  🆕 🍇\n    😀 🔤a🔤 ➕ 1❗️\n  🍉\n🍉\n")
+        a = self.write("a.🍇", "📜 🔤util.🍇🔤\n🏁 🍇🍉\n")
+        b = self.write("b.🍇", "📜 🔤util.🍇🔤\n🏁 🍇\n  🆕🐠❗️ ➡️ x\n🍉\n")
+        client = self.start()
+        client.open(util)
+        self.assertEqual(len(client.diagnostics(util)), 1)
+        client.open(a)
+        client.open(b)
+        # The checks of both programs must not clear the error in util, whose root is one of them.
+        for _ in range(2):
+            self.assertEqual(len(client.diagnostics(util)), 1)
+        # An edit of util checks both programs.
+        client.change(util, "🐇 🐠 🍇\n  🆕 🍇🍉\n🍉\n")
+        self.assertEqual(client.diagnostics(util), [])
+        client.change(b, "📜 🔤util.🍇🔤\n🏁 🍇\n  🆕🐠❗️ ➡️ x\n  🐽 x❗️\n🍉\n")
+        self.assertEqual(len(client.diagnostics_until(b, bool)), 1)
+
+    def test_include_removed_without_saving(self):
+        main = self.write("main.🍇", "📜 🔤b.🍇🔤\n🏁 🍇🍉\n")
+        b = self.write("b.🍇", "🐇 🐠 🍇\n  🆕 🍇🍉\n🍉\n")
+        client = self.start()
+        client.open(main)
+        client.open(b)
+        client.diagnostics(b)
+        client.change(main, "🏁 🍇🍉\n")
+        # b is its own root now, as main no longer includes it, so its errors are published.
+        client.change(b, "🐇 🐠 🍇\n  🆕 🍇\n    😀 🔤a🔤 ➕ 1❗️\n  🍉\n🍉\n")
+        self.assertIn("➕", client.diagnostics_until(b, bool)[0]["message"])
 
     def test_debounce_checks_only_last_change(self):
         path = self.write("main.emojic", HELLO)
