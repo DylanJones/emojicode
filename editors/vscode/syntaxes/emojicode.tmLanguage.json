@@ -1,0 +1,345 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Emojicode",
+  "scopeName": "source.emojicode",
+  "patterns": [
+    {
+      "include": "#code"
+    }
+  ],
+  "repository": {
+    "code": {
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#strings"
+        },
+        {
+          "include": "#declarations"
+        },
+        {
+          "include": "#keywords"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "include": "#variables"
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.emojicode",
+          "begin": "💭🔜",
+          "end": "🔚💭",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.begin.emojicode"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.end.emojicode"
+            }
+          }
+        },
+        {
+          "name": "comment.line.emojicode",
+          "match": "(💭).*$",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.comment.emojicode"
+            }
+          }
+        },
+        {
+          "name": "comment.block.documentation.emojicode",
+          "begin": "📗",
+          "end": "📗",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.begin.emojicode"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.end.emojicode"
+            }
+          }
+        },
+        {
+          "name": "comment.block.documentation.package.emojicode",
+          "begin": "📘",
+          "end": "📘",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.begin.emojicode"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.end.emojicode"
+            }
+          }
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.emojicode",
+          "begin": "🔤",
+          "end": "🔤",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.emojicode"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.emojicode"
+            }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.emojicode",
+              "match": "❌[ntr❌🔤🧲]"
+            },
+            {
+              "name": "invalid.illegal.escape.emojicode",
+              "match": "❌."
+            },
+            {
+              "name": "meta.interpolation.emojicode",
+              "contentName": "source.emojicode.embedded",
+              "begin": "🧲",
+              "end": "🧲",
+              "beginCaptures": {
+                "0": {
+                  "name": "punctuation.section.interpolation.begin.emojicode"
+                }
+              },
+              "endCaptures": {
+                "0": {
+                  "name": "punctuation.section.interpolation.end.emojicode"
+                }
+              },
+              "patterns": [
+                {
+                  "include": "#code"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "constant.other.symbol.emojicode",
+          "match": "🔟."
+        }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "comment": "Method definitions start a line, after their attributes: ❗ 🐽, ❓ 🐽 or ➡ 🐽.",
+          "match": "^\\s*((?:(?:🌍|🔏|✒|🥯|⚠|🔑|☣|🖍|🔓|🔒|🔐|📻|🍼|🐇|🎍.)\\x{FE0F}?\\s*)*)((?:❗|❓|➡)\\x{FE0F}?)\\s*((?![❗❓⁉🤜🤛↩🔁🔂👍👎🚨↪🆗🍇🍉🆕👇☣⤴➡⬅🖍🐚🐊🕊🐇🔘📣🍿➕➖➗✖👐🤝⭕💢❌👈👉🚮🙌😜🔤🧲💭📗📘🔟◀▶🎍🍆🔶🍬✴🍱🚧🍺🔺🔲⚖🏮🙅🤷◼⚪🔵⚫⬛🌍🔏✒🥯⚠🔑🔓🔒🔐📻🍼♻📦📜🔗🏁])(?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])[\\x{FE0F}\\x{1F3FB}-\\x{1F3FF}\\x{1F1E6}-\\x{1F1FF}]*(?:[\\x{200D}🔸]\\x{FE0F}?(?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])[\\x{FE0F}\\x{1F3FB}-\\x{1F3FF}]*)*)",
+          "captures": {
+            "1": {
+              "patterns": [
+                {
+                  "name": "storage.modifier.static.emojicode",
+                  "match": "(?:🐇)\\x{FE0F}?"
+                },
+                {
+                  "include": "#keywords"
+                }
+              ]
+            },
+            "2": {
+              "name": "storage.type.function.emojicode"
+            },
+            "3": {
+              "name": "entity.name.function.emojicode"
+            }
+          }
+        },
+        {
+          "comment": "Type definitions: 🐇 🍨, 🕊 🍨, 🔘 🍨, 🐊 🍨. Also matches type values, which are types too.",
+          "match": "((?:🐇|🕊|🔘|🐊)\\x{FE0F}?)\\s*(?:(🔶\\x{FE0F}?)\\s*((?![❗❓⁉🤜🤛↩🔁🔂👍👎🚨↪🆗🍇🍉🆕👇☣⤴➡⬅🖍🐚🐊🕊🐇🔘📣🍿➕➖➗✖👐🤝⭕💢❌👈👉🚮🙌😜🔤🧲💭📗📘🔟◀▶🎍🍆🔶🍬✴🍱🚧🍺🔺🔲⚖🏮🙅🤷◼⚪🔵⚫⬛🌍🔏✒🥯⚠🔑🔓🔒🔐📻🍼♻📦📜🔗🏁])(?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])[\\x{FE0F}\\x{1F3FB}-\\x{1F3FF}\\x{1F1E6}-\\x{1F1FF}]*(?:[\\x{200D}🔸]\\x{FE0F}?(?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])[\\x{FE0F}\\x{1F3FB}-\\x{1F3FF}]*)*)\\s*)?((?![❗❓⁉🤜🤛↩🔁🔂👍👎🚨↪🆗🍇🍉🆕👇☣⤴➡⬅🖍🐚🐊🕊🐇🔘📣🍿➕➖➗✖👐🤝⭕💢❌👈👉🚮🙌😜🔤🧲💭📗📘🔟◀▶🎍🍆🔶🍬✴🍱🚧🍺🔺🔲⚖🏮🙅🤷◼⚪🔵⚫⬛🌍🔏✒🥯⚠🔑🔓🔒🔐📻🍼♻📦📜🔗🏁])(?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])[\\x{FE0F}\\x{1F3FB}-\\x{1F3FF}\\x{1F1E6}-\\x{1F1FF}]*(?:[\\x{200D}🔸]\\x{FE0F}?(?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])[\\x{FE0F}\\x{1F3FB}-\\x{1F3FF}]*)*)",
+          "captures": {
+            "1": {
+              "name": "storage.type.emojicode"
+            },
+            "2": {
+              "name": "punctuation.accessor.namespace.emojicode"
+            },
+            "3": {
+              "name": "entity.name.namespace.emojicode"
+            },
+            "4": {
+              "name": "entity.name.type.emojicode"
+            }
+          }
+        },
+        {
+          "comment": "Named initializers: 🆕 ▶ 🐽.",
+          "match": "(🆕\\x{FE0F}?)\\s*(▶\\x{FE0F}?)\\s*((?![❗❓⁉🤜🤛↩🔁🔂👍👎🚨↪🆗🍇🍉🆕👇☣⤴➡⬅🖍🐚🐊🕊🐇🔘📣🍿➕➖➗✖👐🤝⭕💢❌👈👉🚮🙌😜🔤🧲💭📗📘🔟◀▶🎍🍆🔶🍬✴🍱🚧🍺🔺🔲⚖🏮🙅🤷◼⚪🔵⚫⬛🌍🔏✒🥯⚠🔑🔓🔒🔐📻🍼♻📦📜🔗🏁])(?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])[\\x{FE0F}\\x{1F3FB}-\\x{1F3FF}\\x{1F1E6}-\\x{1F1FF}]*(?:[\\x{200D}🔸]\\x{FE0F}?(?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])[\\x{FE0F}\\x{1F3FB}-\\x{1F3FF}]*)*)",
+          "captures": {
+            "1": {
+              "name": "keyword.other.new.emojicode"
+            },
+            "2": {
+              "name": "storage.type.function.emojicode"
+            },
+            "3": {
+              "name": "entity.name.function.emojicode"
+            }
+          }
+        },
+        {
+          "comment": "A type in a namespace: 🔶🌊🔢.",
+          "match": "(🔶\\x{FE0F}?)\\s*((?![❗❓⁉🤜🤛↩🔁🔂👍👎🚨↪🆗🍇🍉🆕👇☣⤴➡⬅🖍🐚🐊🕊🐇🔘📣🍿➕➖➗✖👐🤝⭕💢❌👈👉🚮🙌😜🔤🧲💭📗📘🔟◀▶🎍🍆🔶🍬✴🍱🚧🍺🔺🔲⚖🏮🙅🤷◼⚪🔵⚫⬛🌍🔏✒🥯⚠🔑🔓🔒🔐📻🍼♻📦📜🔗🏁])(?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])[\\x{FE0F}\\x{1F3FB}-\\x{1F3FF}\\x{1F1E6}-\\x{1F1FF}]*(?:[\\x{200D}🔸]\\x{FE0F}?(?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])[\\x{FE0F}\\x{1F3FB}-\\x{1F3FF}]*)*)\\s*((?![❗❓⁉🤜🤛↩🔁🔂👍👎🚨↪🆗🍇🍉🆕👇☣⤴➡⬅🖍🐚🐊🕊🐇🔘📣🍿➕➖➗✖👐🤝⭕💢❌👈👉🚮🙌😜🔤🧲💭📗📘🔟◀▶🎍🍆🔶🍬✴🍱🚧🍺🔺🔲⚖🏮🙅🤷◼⚪🔵⚫⬛🌍🔏✒🥯⚠🔑🔓🔒🔐📻🍼♻📦📜🔗🏁])(?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])[\\x{FE0F}\\x{1F3FB}-\\x{1F3FF}\\x{1F1E6}-\\x{1F1FF}]*(?:[\\x{200D}🔸]\\x{FE0F}?(?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])[\\x{FE0F}\\x{1F3FB}-\\x{1F3FF}]*)*)",
+          "captures": {
+            "1": {
+              "name": "punctuation.accessor.namespace.emojicode"
+            },
+            "2": {
+              "name": "entity.name.namespace.emojicode"
+            },
+            "3": {
+              "name": "entity.name.type.emojicode"
+            }
+          }
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "meta.decorator.emojicode",
+          "match": "(🎍)((?:\\p{Extended_Pictographic}|[\\x{1F1E6}-\\x{1F1FF}])\\x{FE0F}?)",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.decorator.emojicode"
+            },
+            "2": {
+              "name": "storage.modifier.decorator.emojicode"
+            }
+          }
+        },
+        {
+          "name": "keyword.control.emojicode",
+          "match": "🙅\\x{FE0F}?↪\\x{FE0F}?|(?:↩|🔁|🔂|↪|🙅|🆗|🚨)\\x{FE0F}?"
+        },
+        {
+          "name": "keyword.other.import.emojicode",
+          "match": "(?:📦|📜|🔗)\\x{FE0F}?"
+        },
+        {
+          "name": "keyword.other.start.emojicode",
+          "match": "(?:🏁)\\x{FE0F}?"
+        },
+        {
+          "name": "keyword.other.new.emojicode",
+          "match": "(?:🆕)\\x{FE0F}?"
+        },
+        {
+          "name": "keyword.other.deinitializer.emojicode",
+          "match": "(?:♻)\\x{FE0F}?"
+        },
+        {
+          "name": "storage.type.emojicode",
+          "match": "(?:🐇|🕊|🔘|🐊)\\x{FE0F}?"
+        },
+        {
+          "name": "storage.modifier.emojicode",
+          "match": "(?:🌍|🔏|✒|🥯|⚠|🔑|☣|🖍|🔓|🔒|🔐|📻|🍼)\\x{FE0F}?"
+        },
+        {
+          "name": "variable.language.this.emojicode",
+          "match": "(?:👇)\\x{FE0F}?"
+        },
+        {
+          "name": "variable.language.super.emojicode",
+          "match": "(?:⤴)\\x{FE0F}?"
+        },
+        {
+          "name": "constant.language.boolean.emojicode",
+          "match": "(?:👍|👎)\\x{FE0F}?"
+        },
+        {
+          "name": "constant.language.novalue.emojicode",
+          "match": "(?:🤷)\\x{FE0F}?"
+        },
+        {
+          "name": "support.type.builtin.emojicode",
+          "match": "(?:◼|⚪|🔵|⚫)\\x{FE0F}?"
+        },
+        {
+          "name": "keyword.operator.type.emojicode",
+          "match": "(?:🍬|✴|⬛|🚧|🍱)\\x{FE0F}?"
+        },
+        {
+          "name": "keyword.operator.emojicode",
+          "match": "[◀▶]\\x{FE0F}?(?:🙌\\x{FE0F}?)?|(?:➕|➖|➗|✖|👐|🤝|⭕|💢|❌|👈|👉|🚮|🙌|😜|🍺|🔺|🔲|⚖|🏮|📣|⁉)\\x{FE0F}?"
+        },
+        {
+          "name": "keyword.operator.assignment.emojicode",
+          "match": "(?:➡|⬅)\\x{FE0F}?"
+        },
+        {
+          "name": "punctuation.terminator.mood.emojicode",
+          "match": "(?:❗|❓)\\x{FE0F}?"
+        },
+        {
+          "name": "punctuation.section.block.begin.emojicode",
+          "match": "🍇"
+        },
+        {
+          "name": "punctuation.section.block.end.emojicode",
+          "match": "🍉"
+        },
+        {
+          "name": "punctuation.section.group.begin.emojicode",
+          "match": "🤜"
+        },
+        {
+          "name": "punctuation.section.group.end.emojicode",
+          "match": "🤛"
+        },
+        {
+          "name": "punctuation.definition.generic.begin.emojicode",
+          "match": "🐚"
+        },
+        {
+          "name": "punctuation.definition.collection.begin.emojicode",
+          "match": "🍿"
+        },
+        {
+          "name": "punctuation.definition.generic.end.emojicode",
+          "match": "🍆"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.emojicode",
+          "match": "(?<![^\\s\\p{Extended_Pictographic}\\x{FE0F}\\x{200D}])(?:0,*[xX][0-9a-fA-F,]*|[+\\-]?,*[0-9][0-9,]*)(?:\\.[0-9]+)?(?![^\\s\\p{Extended_Pictographic}\\x{FE0F}\\x{200D}])"
+        }
+      ]
+    },
+    "variables": {
+      "patterns": [
+        {
+          "name": "variable.other.emojicode",
+          "match": "[^\\s\\p{Extended_Pictographic}\\x{FE0F}\\x{200D}0-9+\\-][^\\s\\p{Extended_Pictographic}\\x{FE0F}\\x{200D}]*"
+        }
+      ]
+    }
+  }
+}
