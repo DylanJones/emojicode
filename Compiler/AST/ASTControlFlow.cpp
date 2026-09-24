@@ -118,9 +118,13 @@ void ASTErrorHandler::analyse(FunctionAnalyser *analyser) {
 }
 
 void ASTErrorHandler::analyseMemoryFlow(MFFunctionAnalyser *analyser) {
-    analyser->take(value_.get());
     if (!valueVarName_.empty()) {
+        analyser->take(value_.get());
         analyser->recordVariableSet(valueVar_, value_.get(), valueType_);
+    }
+    else {
+        // The value is discarded and remains temporary, so it is released at the start of the value block.
+        value_->analyseMemoryFlow(analyser, MFFlowCategory::Borrowing);
     }
     valueBlock_.analyseMemoryFlow(analyser);
     analyser->popScope(&valueBlock_);
