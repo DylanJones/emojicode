@@ -107,6 +107,9 @@ public:
     const std::vector<std::unique_ptr<ValueType>>& valueTypes() const { return valueTypes_; }
     const std::vector<std::unique_ptr<Protocol>>& protocols() const { return protocols_; }
     const std::vector<ExportedType>& exportedTypes() const { return exportedTypes_; }
+    /// All types that can be used in this package, including imported ones, keyed by their namespace followed by
+    /// their name.
+    const std::map<std::u32string, Type>& types() const { return types_; }
 
     /// Tries to fetch a type by its name and namespace from the namespace and types available in this package and
     /// stores it into @c type.

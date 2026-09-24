@@ -7,6 +7,7 @@
 //
 
 #include "ASTStatements.hpp"
+#include "Analysis/AnalysisObserver.hpp"
 #include "ASTUnsafeBlock.hpp"
 #include "Analysis/FunctionAnalyser.hpp"
 #include "Compiler.hpp"
@@ -62,6 +63,9 @@ void ASTBlock::popScope(FunctionAnalyser *analyser) {
     if (!hasStats_) {
         scopeStats_ = analyser->scoper().createStats();
         hasStats_ = true;
+    }
+    if (auto observer = analyser->compiler()->analysisObserver()) {
+        observer->leavingScope(*this, analyser->scoper().currentScope(), analyser);
     }
     analyser->scoper().popScope(&analyser->pathAnalyser(), analyser->compiler());
 }

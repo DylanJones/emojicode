@@ -3,6 +3,7 @@
 //
 
 #include "ASTType.hpp"
+#include "Analysis/AnalysisObserver.hpp"
 #include "Compiler.hpp"
 #include "Functions/Function.hpp"
 #include "Lex/Token.hpp"
@@ -29,6 +30,9 @@ Type& ASTType::analyseType(const TypeContext &typeContext, bool allowReference, 
         }
         if (type_.type() == TypeType::Optional && type_.isReference()) {
             package()->compiler()->error(CompilerError(position(), "Optional references are not supported."));
+        }
+        if (auto observer = package()->compiler()->analysisObserver()) {
+            observer->analysedType(this);
         }
         package_ = nullptr;
     }

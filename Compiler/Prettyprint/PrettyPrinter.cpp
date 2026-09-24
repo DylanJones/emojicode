@@ -105,6 +105,17 @@ std::string PrettyPrinter::filePath(const std::string &path) {
     return path;
 }
 
+std::string PrettyPrinter::declaration(Function *function) {
+    if (function->owner() == nullptr) {
+        return "";
+    }
+    prettyStream_.setOutString();
+    auto initializer = dynamic_cast<Initializer *>(function) != nullptr;
+    print(initializer ? "🆕" : moodEmoji(function->mood()), function, false,
+          initializer || isTypeMethod(function), false);
+    return prettyStream_.takeString();
+}
+
 void PrettyPrinter::printArguments(Function *function) {
     if (auto initializer = dynamic_cast<Initializer *>(function)) {
         auto it = initializer->argumentsToVariables().begin();
@@ -355,11 +366,13 @@ void PrettyPrinter::printErrorType(Function *function) {
     }
 }
 
-void PrettyPrinter::print(const char *key, Function *function, bool body, bool noMutate) {
+void PrettyPrinter::print(const char *key, Function *function, bool body, bool noMutate, bool documentation) {
     if (function->isThunk() || function->functionType() == FunctionType::Deinitializer) {
         return;
     }
-    printDocumentation(function->documentation());
+    if (documentation) {
+        printDocumentation(function->documentation());
+    }
 
     auto initializer = dynamic_cast<Initializer *>(function);
     prettyStream_.withTypeContext(function->typeContext(), [&]() {

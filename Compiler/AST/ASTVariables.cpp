@@ -24,6 +24,7 @@ void AccessesAnyVariable::setVariableAccess(const ResolvedVariable &var, Express
     id_ = var.variable.id();
     inInstanceScope_ = var.inInstanceScope;
     variableType_ = var.variable.type();
+    declarationPosition_ = var.variable.position();
     if (inInstanceScope_) {
         analyser->pathAnalyser().record(PathAnalyserIncident::UsedSelf);
     }

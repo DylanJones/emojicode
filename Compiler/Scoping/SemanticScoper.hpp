@@ -63,6 +63,9 @@ public:
     /// Returns the instance scope or @c nullptr
     Scope* instanceScope() const { return instanceScope_; }
 
+    /// The scopes that have not been popped, innermost first.
+    const std::list<Scope>& scopes() const { return scopes_; }
+
     /// The number of variable ids that were assigned.
     size_t variableIdCount() const { return maxVariableId_; }
 

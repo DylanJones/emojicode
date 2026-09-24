@@ -21,24 +21,34 @@ void PrettyStream::printComments(const SourcePosition &p) {
     p.file->findComments(lastCommentQuery_, p, [this, &p](const Token &comment) {
         if (whitespaceOffer_ == '\n') {
             if (comment.position().line >= p.line) {
-                stream_ << whitespaceOffer_;
+                *stream_ << whitespaceOffer_;
                 whitespaceOffer_ = 0;
                 indent();
             }
             else {
-                stream_ << "  ";
+                *stream_ << "  ";
             }
         }
 
         *this << (comment.type() == TokenType::MultilineComment ? "💭🔜" : "💭") << comment.value();
-        if (comment.type() == TokenType::MultilineComment) stream_ << "🔚💭";
+        if (comment.type() == TokenType::MultilineComment) *stream_ << "🔚💭";
         else offerNewLine();
     });
     lastCommentQuery_ = p;
 }
 
 void PrettyStream::setOutPath(const std::string &path) {
-    stream_ = std::fstream(path, std::ios_base::out);
+    stream_ = std::make_unique<std::fstream>(path, std::ios_base::out);
+}
+
+void PrettyStream::setOutString() {
+    stream_ = std::make_unique<std::ostringstream>();
+}
+
+std::string PrettyStream::takeString() {
+    auto string = static_cast<std::ostringstream *>(stream_.get())->str();
+    stream_ = std::make_unique<std::ostringstream>();
+    return string;
 }
 
 void PrettyStream::printClosure(Function *function, bool escaping) {
@@ -67,10 +77,10 @@ PrettyStream& PrettyStream::operator<<(const Type &type) {
 
 PrettyStream& PrettyStream::operator<<(const std::string &rhs) {
     if (whitespaceOffer_ != 0) {
-        stream_ << whitespaceOffer_;
+        *stream_ << whitespaceOffer_;
         whitespaceOffer_ = 0;
     }
-    stream_ << rhs;
+    *stream_ << rhs;
     return *this;
 }
 

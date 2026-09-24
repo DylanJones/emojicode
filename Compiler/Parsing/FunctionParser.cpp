@@ -45,7 +45,7 @@ ASTBlock FunctionParser::parseBlockToEnd(const SourcePosition &pos) {
         block.appendNode(parseStatement());
     }
     block.setEndIndex(stream_.index());
-    stream_.consumeToken();
+    block.setEndPosition(stream_.consumeToken().position());
     return block;
 }
 

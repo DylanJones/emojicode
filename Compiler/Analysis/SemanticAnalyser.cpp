@@ -3,6 +3,7 @@
 //
 
 #include "SemanticAnalyser.hpp"
+#include "AnalysisObserver.hpp"
 #include <algorithm>
 #include <set>
 #include "Compiler.hpp"
@@ -97,11 +98,17 @@ void SemanticAnalyser::checkStartFlagFunction(bool executable) {
 
 void SemanticAnalyser::analyseQueue() {
     while (!queue_.empty()) {
+        std::unique_ptr<FunctionAnalyser> analyser;
         try {
-            FunctionAnalyser(queue_.front(), this).analyse();
+            analyser = std::make_unique<FunctionAnalyser>(queue_.front(), this);
+            analyser->analyse();
         }
         catch (CompilerError &ce) {
             package_->compiler()->error(ce);
+            auto observer = package_->compiler()->analysisObserver();
+            if (observer != nullptr && analyser != nullptr) {
+                observer->analysisFailed(analyser.get());
+            }
         }
         queue_.pop();
     }
