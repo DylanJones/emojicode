@@ -53,6 +53,10 @@ private:
 /// the same path compare equal. The path does not need to exist.
 std::string canonicalPath(const std::string &path);
 
+/// Returns the content of the file at @p path, decoded from UTF-8.
+/// @throws CompilerError if the file cannot be read.
+std::u32string readSourceFile(const std::string &path);
+
 /// The SourceManager is responsible for reading source files. It caches their content and can provide lines from
 /// source files.
 class SourceManager {

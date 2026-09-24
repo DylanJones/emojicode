@@ -30,8 +30,9 @@ public:
     virtual void analysedType(ASTType *type) = 0;
     /// Called when the scope of @p block is left, with the variables declared in it.
     virtual void leavingScope(const ASTBlock &block, const Scope &scope, FunctionAnalyser *analyser) = 0;
-    /// Called when the analysis of a function stopped because of an error. The scopes that were not left yet are
-    /// still available from the analyser's scoper().
+    /// Called when the analysis of a function or closure stopped because of an error. The scopes that were not left
+    /// yet are still available from the analyser's scoper(). For an error in a closure, this is called for the
+    /// closure and then for each function or closure around it.
     virtual void analysisFailed(FunctionAnalyser *analyser) = 0;
 
     virtual ~AnalysisObserver() = default;

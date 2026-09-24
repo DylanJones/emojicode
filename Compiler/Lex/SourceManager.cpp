@@ -6,10 +6,8 @@
 #include "SourceManager.hpp"
 #include "SourcePosition.hpp"
 #include <algorithm>
-#include <codecvt>
 #include <filesystem>
 #include <fstream>
-#include <locale>
 
 namespace EmojicodeCompiler {
 
@@ -17,6 +15,14 @@ std::string canonicalPath(const std::string &path) {
     std::error_code error;
     auto canonical = std::filesystem::weakly_canonical(std::filesystem::absolute(path, error), error);
     return error ? path : canonical.string();
+}
+
+std::u32string readSourceFile(const std::string &path) {
+    std::ifstream f(path, std::ios_base::binary | std::ios_base::in);
+    if (f.fail()) {
+        throw CompilerError(SourcePosition(), "Couldn't read input file ", path, ".");
+    }
+    return utf32(std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>()));
 }
 
 void SourceManager::setOverlay(const std::string &path, std::u32string content) {
@@ -35,14 +41,7 @@ SourceFile* SourceManager::read(std::string file) {
         content = overlay->second;
     }
     else {
-        std::ifstream f(file, std::ios_base::binary | std::ios_base::in);
-        if (f.fail()) {
-            throw CompilerError(SourcePosition(), "Couldn't read input file ", file, ".");
-        }
-
-        auto string = std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
-        std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv;
-        content = conv.from_bytes(string);
+        content = readSourceFile(file);
     }
 
     if (find != cache_.end()) {

@@ -216,6 +216,45 @@ class DiagnosticsTests(ServerTestCase):
         # main.🍇 is not open, but its own error is still reported.
         self.assertTrue(len(client.diagnostics(main)) >= 1)
 
+    def test_line_separator_in_string(self):
+        # The compiler also ends lines at U+2028, clients do not. The error on the last line must stay there.
+        text = "🏁 🍇\n  😀 🔤a\u2028b🔤❗️\n  😀 🔤a🔤 ➕ 1❗️\n🍉\n"
+        path = self.write("main.emojic", text)
+        client = self.start()
+        client.open(path)
+        diagnostic = client.diagnostics(path)[0]
+        self.assertEqual(diagnostic["range"]["start"], {"line": 2, "character": position(text, "➕")["character"]})
+
+    def test_include_in_comment_is_ignored(self):
+        self.write("app/old.🍇", "💭 📜 🔤b.🍇🔤\n🏁 🍇🍉\n")
+        b = self.write("app/b.🍇", "🏁 🍇\n  😀 🔤a🔤 ➕ 1❗️\n🍉\n")
+        client = self.start()
+        client.open(b)
+        # b is checked on its own, so its error is found.
+        self.assertEqual(len(client.diagnostics(b)), 1)
+
+    def test_include_added_on_save(self):
+        a = self.write("app/a.🍇", "🐇 🐠 🍇 🆕 🍇🍉 🍉\n🏁 🍇🍉\n")
+        b = self.write("app/b.🍇", "🐇 🐟 🍇\n  ❗️ 🐽 🍇\n    🆕🐠❗️ ➡️ x\n  🍉\n🍉\n")
+        client = self.start()
+        client.open(b)
+        self.assertGreater(len(client.diagnostics(b)), 0)  # 🐠 is unknown and there is no 🏁 on its own.
+        client.open(a)
+        client.diagnostics(a)
+        included = "📜 🔤b.🍇🔤\n🐇 🐠 🍇 🆕 🍇🍉 🍉\n🏁 🍇🍉\n"
+        client.change(a, included)
+        with open(a, "w", encoding="utf-8") as f:
+            f.write(included)
+        client.notify("textDocument/didSave", {"textDocument": {"uri": uri(a)}})
+        # b is now checked as part of a. Whatever is published for b last must be the result of that.
+        last = None
+        try:
+            while True:
+                last = client.diagnostics(b, timeout=2)
+        except TimeoutError:
+            pass
+        self.assertEqual(last, [])
+
     def test_debounce_checks_only_last_change(self):
         path = self.write("main.emojic", HELLO)
         client = self.start()
@@ -409,6 +448,17 @@ class CompletionTests(ServerTestCase):
         self.assertEqual(items[0]["label"], "total")
         self.assertEqual(items[0]["detail"], "🔢")
 
+    def test_parameters_of_closure_with_errors(self):
+        # The typed word is an undefined variable inside a closure, which stops the analysis of the closure.
+        # A closure's body cannot start with a variable, which would be read as a parameter.
+        path = self.write("closure.emojic", "🏁 🍇\n  🍇 count 🔢\n    😀 🔡 co❗️❗️\n  🍉 ➡️ f\n🍉\n")
+        client = self.start()
+        client.open(path)
+        client.diagnostics(path)
+        items = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                           "position": {"line": 2, "character": 12}})["items"]
+        self.assertEqual(items[0]["label"], "count")
+
     def test_method_by_documentation(self):
         items = self.complete("swim")
         self.assertEqual(items[0]["textEdit"]["newText"], "🏊")
@@ -426,6 +476,16 @@ class CompletionTests(ServerTestCase):
         items = self.complete("class")
         self.assertEqual(items[0]["textEdit"]["newText"], "🐇")
         self.assertNotIn("insertTextFormat", items[0])
+
+    def test_no_completion_in_unterminated_string(self):
+        # While a string is typed, it runs to the end of the file, which the lexer rejects.
+        path = self.write("typing.emojic", "🏁 🍇\n  😀 🔤grap\n🍉\n")
+        client = self.start()
+        client.open(path)
+        client.diagnostics(path)
+        result = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                            "position": {"line": 1, "character": 11}})
+        self.assertEqual(result["items"], [])
 
     def test_no_completion_in_strings_and_comments(self):
         path = self.write("strings.emojic", "🏁 🍇\n  😀 🔤grap🔤❗️ 💭 grap\n🍉\n")
