@@ -121,6 +121,13 @@ public:
 
     virtual void setLinkHints(std::vector<std::string> hints) { linkHints_ = std::move(hints); }
     const std::vector<std::string>& linkHints() { return linkHints_; }
+    /// The directory of the document that provided the link hints. Native source hints are relative to it.
+    void setLinkHintsDirectory(std::string directory) { linkHintsDirectory_ = std::move(directory); }
+    const std::string& linkHintsDirectory() const { return linkHintsDirectory_; }
+
+    /// Returns true if @p hint names a C, C++ or Objective-C source file or an object file that is compiled (if
+    /// necessary) and linked into the package, rather than a library to link against.
+    static bool isNativeSourceHint(const std::string &hint);
 
     virtual ~Package();
     
@@ -143,6 +150,7 @@ private:
     std::vector<std::unique_ptr<Function>> functions_;
     std::vector<std::unique_ptr<Protocol>> protocols_;
     std::vector<std::string> linkHints_;
+    std::string linkHintsDirectory_;
 
     std::u32string documentation_;
     Compiler *compiler_;

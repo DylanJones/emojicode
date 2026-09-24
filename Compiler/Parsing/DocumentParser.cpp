@@ -7,6 +7,8 @@
 //
 
 #include "DocumentParser.hpp"
+#include "Lex/SourceManager.hpp"
+#include <llvm/Support/Path.h>
 #include "FunctionParser.hpp"
 #include "Functions/Function.hpp"
 #include "Functions/Initializer.hpp"
@@ -159,6 +161,9 @@ void DocumentParser::parseLinkHints(const SourcePosition &p) {
         hints.emplace_back(utf8(stream_.consumeToken(TokenType::String).value()));
     } while (stream_.nextTokenIsEverythingBut(E_LINK_SYMBOL));
     stream_.consumeToken();
+    if (p.file != nullptr) {
+        package_->setLinkHintsDirectory(llvm::sys::path::parent_path(p.file->path()).str());
+    }
     package_->setLinkHints(std::move(hints));
 }
 

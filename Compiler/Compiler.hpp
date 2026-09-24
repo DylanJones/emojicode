@@ -117,6 +117,22 @@ public:
         std::string path_;
     };
 
+    /// Compiles the native sources that the main package lists in its link hints, and any C code the compiler
+    /// generated, to object files next to the main object file. LinkPhase and ArchivePhase include them.
+    class NativeCompilationPhase final : public Phase {
+    public:
+        /// @param objectFilePath Where the object file of the main package is located.
+        /// @param cc Name of or path to the C compiler to use.
+        /// @param cxx Name of or path to the C++ compiler to use.
+        NativeCompilationPhase(std::string objectFilePath, std::string cc, std::string cxx)
+            : objectFilePath_(std::move(objectFilePath)), cc_(std::move(cc)), cxx_(std::move(cxx)) {}
+        void perform(Compiler *compiler) override;
+    private:
+        std::string objectFilePath_;
+        std::string cc_;
+        std::string cxx_;
+    };
+
     /// Links an object file with the archives of the imported packages of the Compiler.
     class LinkPhase final : public Phase {
     public:
@@ -164,6 +180,9 @@ public:
     RecordingPackage* mainPackage() const { return mainPackage_.get(); }
 
     std::vector<Package *> importedPackages() const { return packageImportOrder_; }
+
+    /// Object files produced by NativeCompilationPhase that must be linked or archived with the main object file.
+    const std::vector<std::string>& nativeObjects() const { return nativeObjects_; }
 
     SourceManager &sourceManager() { return sourceManager_; }
 
@@ -215,6 +234,7 @@ private:
 
     std::map<std::string, std::unique_ptr<Package>> packages_;
     std::vector<Package *> packageImportOrder_;
+    std::vector<std::string> nativeObjects_;
 
     bool hasError_ = false;
     std::string mainFile_;

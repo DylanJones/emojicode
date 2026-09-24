@@ -51,9 +51,16 @@ void PrettyPrinter::printInterface(const std::string &out) {
 }
 
 void PrettyPrinter::printLinkHints() {
-    if (!package_->linkHints().empty()) {
+    std::vector<std::string> hints;
+    for (auto &hint : package_->linkHints()) {
+        // Native sources are compiled into the package's archive, so importers do not need them.
+        if (!interface_ || !Package::isNativeSourceHint(hint)) {
+            hints.emplace_back(hint);
+        }
+    }
+    if (!hints.empty()) {
         prettyStream_.indent() << "🔗 ";
-        for (auto &hint : package_->linkHints()) {
+        for (auto &hint : hints) {
             prettyStream_ << "🔤" << hint << "🔤 ";
         }
         prettyStream_ << "🔗\n";
