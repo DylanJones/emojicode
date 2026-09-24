@@ -27,7 +27,9 @@ struct SourcePosition {
     /// Returns true iff the position is not known.
     bool isUnknown() const { return file == nullptr; }
 
+    /// The line, starting at 1.
     unsigned int line;
+    /// The code point on the line, starting at 1.
     unsigned int character;
     /// The file into which the this position points. nullptr if the position is unknown.
     SourceFile *file;

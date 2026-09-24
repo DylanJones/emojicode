@@ -14,7 +14,7 @@
 namespace EmojicodeCompiler {
 
 Lexer::Lexer(SourceFile *source, bool minimalMode)
-        : sourcePosition_(1, 0, source), source_(source), minimalMode_(minimalMode) {
+        : sourcePosition_(1, 1, source), source_(source), minimalMode_(minimalMode) {
     skipWhitespace();
 
     loadOperatorSingleTokens();
