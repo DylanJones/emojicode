@@ -44,6 +44,9 @@ TypeContext Function::typeContext() {
 }
 
 bool Function::isInline() const {
+    if (exported_) {
+        return false;  // Importers call the exported C symbol.
+    }
     return forceInline_ || (ast() != nullptr && ast()->stmtsSize() <= 2 &&
                             functionType() != FunctionType::Deinitializer &&
                             functionType() != FunctionType::CopyRetainer);

@@ -85,6 +85,14 @@ public:
         external_ = true;
         externalName_ = name;
     }
+    /// Makes the function available to C under the name @p name. The function has a body and is generated as usual,
+    /// but externalName() returns @p name, which is used as its symbol. @see isExported()
+    void setExportName(const std::string &name) {
+        externalName_ = name;
+        exported_ = true;
+    }
+    /// Whether the function is a 🎍🌊 function defined in Emojicode and exported to C.
+    bool isExported() const { return exported_; }
 
     /// The type definition in which this function was defined.
     /// @returns nullptr if the function does not belong to a type (is not a method or initializer).
@@ -182,6 +190,7 @@ private:
     bool external_ = false;
     bool closure_ = false;
     bool c_ = false;
+    bool exported_ = false;
 
     Function *virtualTableThunk_ = nullptr;
     Function *superFunction_ = nullptr;

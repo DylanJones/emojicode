@@ -298,13 +298,14 @@ foreign-class-member ::= documentation-comment? '🥯'? '⚠'? '🔏'? '✒'? '�
 value-type-body     ::= '🍇' value-type-member* '🍉'
 primitive-value-type-body ::= '🍇' primitive-value-type-member* '🍉'
 value-type-member   ::= primitive-value-type-member | instance-variable
-primitive-value-type-member ::= documentation-comment? '🥯'? '⚠'? ( '🎍🌊' '🐇' '☣' | '🐇' '☣'? | '☣'? '🖍'? ) '🎍🥡'?
-                        access-level? method
+primitive-value-type-member ::= documentation-comment? '🥯'? '⚠'? ( '🐇' '☣'? | '☣'? '🖍'? ) '🎍🥡'? access-level? method
+                      | documentation-comment? '🥯'? '⚠'? '🎍🌊' '🐇' '☣' '🎍🥡'? access-level? c-method
                       | documentation-comment? '🥯'? '☣'? '🎍🥡'? access-level? initializer function-body
                       | protocol-conformance
 
 enum-body           ::= '🍇' enum-member* '🍉'
-enum-member         ::= documentation-comment? '🥯'? '⚠'? ( '🎍🌊' '🐇' '☣' | '🐇'? '☣'? ) '🎍🥡'? access-level? method
+enum-member         ::= documentation-comment? '🥯'? '⚠'? '🐇'? '☣'? '🎍🥡'? access-level? method
+                      | documentation-comment? '🥯'? '⚠'? '🎍🌊' '🐇' '☣' '🎍🥡'? access-level? c-method
                       | documentation-comment? '🆕' initializer-name?               /* enum value */
                       | protocol-conformance
 
@@ -339,6 +340,11 @@ return-type         ::= '➡' type
 error-type          ::= '🚧' type
 function-body       ::= block
                       | '📻' non-empty-string-literal               /* external symbol name */
+
+/* A C function (🎍🌊) can also be defined in Emojicode and exported to C under a symbol name. */
+c-method            ::= method-name generic-parameters? parameters return-type? error-type? c-function-body
+c-function-body     ::= function-body
+                      | '📻' non-empty-string-literal block
 
 
 /* ================================================================================================================

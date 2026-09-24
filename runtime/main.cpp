@@ -24,8 +24,6 @@ runtime::internal::ControlBlock* runtime::internal::newControlBlock() {
     return new runtime::internal::ControlBlock;
 }
 
-extern "C" runtime::Integer fn_1f3c1();
-
 extern "C" int8_t* ejcAlloc(runtime::Integer size) {
     auto ptr = malloc(size);
     *static_cast<runtime::internal::ControlBlock**>(ptr) = new runtime::internal::ControlBlock;
@@ -255,11 +253,8 @@ extern "C" [[noreturn]] void ejcPanic(const char *message) {
     abort();
 }
 
-int main(int largc, char **largv) {
-    runtime::internal::argc = largc;
-    runtime::internal::argv = largv;
+extern "C" void ejcInit(int argc, char **argv) {
+    runtime::internal::argc = argc;
+    runtime::internal::argv = argv;
     runtime::internal::seed = std::random_device()();
-
-    auto code = fn_1f3c1();
-    return static_cast<int>(code);
 }
