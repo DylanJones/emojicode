@@ -37,4 +37,29 @@ function M.indent(lnum)
   return math.max(indent, 0)
 end
 
+--- Re-indents the current line in insert mode if 🍉 or 🍆 was just typed as its first character. indentkeys cannot
+--- do this, as Neovim compares only the last byte of a multibyte key with it.
+function M.reindent_closing()
+  local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+  local line = vim.api.nvim_get_current_line()
+  -- The text before the cursor, without a U+FE0F after the emoji.
+  local before = line:sub(1, col):gsub('\239\184\143$', '')
+  if not (before:match('^%s*🍉$') or before:match('^%s*🍆$')) then
+    return
+  end
+  local current = line:match('^%s*')
+  local width = M.indent(row)
+  local indent
+  if vim.bo.expandtab then
+    indent = string.rep(' ', width)
+  else
+    local tabstop = vim.bo.tabstop
+    indent = string.rep('\t', math.floor(width / tabstop)) .. string.rep(' ', width % tabstop)
+  end
+  if indent ~= current then
+    vim.api.nvim_set_current_line(indent .. line:sub(#current + 1))
+    vim.api.nvim_win_set_cursor(0, { row, col - #current + #indent })
+  end
+end
+
 return M

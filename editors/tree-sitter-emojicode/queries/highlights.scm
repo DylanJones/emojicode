@@ -1,3 +1,6 @@
+; Neovim gives the pattern that comes later precedence when captures overlap, so general captures come first and the
+; more specific ones follow.
+
 ; Comments and literals
 
 (comment) @comment @spell
@@ -10,11 +13,32 @@
 (boolean) @boolean
 (no_value) @constant.builtin
 
+; General captures
+
+(variable) @variable
+(operator) @operator
+(mood) @punctuation.delimiter
+
+["🐇" "🕊" "🔘" "🐊"] @keyword.type
+["↪" "🙅" "🙅↪"] @keyword.conditional
+["🔁" "🔂"] @keyword.repeat
+"↩" @keyword.return
+["🚨" "🆗"] @keyword.exception
+["📦" "📜"] @keyword.import
+["🏁" "🔗" "🆕" "♻" "🖍"] @keyword
+["☣" "🔏" "🌍" "🥯" "⚠" "✒" "🔑" "🍼" "📻"] @keyword.modifier
+(access_level) @keyword.modifier
+(decorator) @attribute
+(branch_hint) @attribute
+
+["🍺" "🔺" "🔲" "⚖" "🏮" "📣" "⁉" "➡" "⬅" "🍬" "✴" "⬛" "⚫" "🚧" "🍱" "▶"] @operator
+["🍇" "🍉" "🤜" "🤛" "🍿" "🍆" "🐚"] @punctuation.bracket
+"🔶" @punctuation.delimiter
+
 ; Types
 
 (type_identifier name: (identifier) @type)
 (type_identifier namespace: (identifier) @module)
-"🔶" @punctuation.delimiter
 (type_variable) @type
 [(someobject_type) (no_return_type) (something_type)] @type.builtin
 
@@ -34,33 +58,11 @@
 (instantiation name: (identifier) @constructor)
 (method_call name: (identifier) @function.method.call)
 (super_call name: (identifier) @function.method.call)
-(mood) @punctuation.delimiter
 
 ; Variables
 
-(variable) @variable
 (parameter name: (variable) @variable.parameter)
 (instance_variable name: (variable) @variable.member)
 (this) @variable.builtin
 "⤴" @variable.builtin
 (package_import package: (variable) @module namespace: (identifier) @module)
-
-; Keywords
-
-["🐇" "🕊" "🔘" "🐊"] @keyword.type
-["↪" "🙅" "🙅↪"] @keyword.conditional
-["🔁" "🔂"] @keyword.repeat
-"↩" @keyword.return
-["🚨" "🆗"] @keyword.exception
-["📦" "📜"] @keyword.import
-["🏁" "🔗" "🆕" "♻" "🖍"] @keyword
-["☣" "🔏" "🌍" "🥯" "⚠" "✒" "🔑" "🍼" "📻"] @keyword.modifier
-(access_level) @keyword.modifier
-(decorator) @attribute
-(branch_hint) @attribute
-
-; Operators and punctuation
-
-(operator) @operator
-["🍺" "🔺" "🔲" "⚖" "🏮" "📣" "⁉" "➡" "⬅" "🍬" "✴" "⬛" "⚫" "🚧" "🍱" "▶"] @operator
-["🍇" "🍉" "🤜" "🤛" "🍿" "🍆" "🐚"] @punctuation.bracket

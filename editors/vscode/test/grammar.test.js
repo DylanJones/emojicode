@@ -32,6 +32,8 @@ const cases = [
     ['x-1 ➡️ 🖍🆕 a2', { 'x-1': 'variable.other', 'a2': 'variable.other', '🖍': 'storage.modifier' }],
     ['↩️ 👇', { '↩️': 'keyword.control', '👇': 'variable.language.this' }],
     ['📦 sqlite 🏠', { '📦': 'keyword.other.import', 'sqlite': 'variable.other' }],
+    // Flags and skin tones are emoji, not variables.
+    ['🇩🇪❗️ 👂🏼❗️', { '🇩🇪': 'source.emojicode', '👂🏼': 'source.emojicode' }],
 ];
 
 async function main() {

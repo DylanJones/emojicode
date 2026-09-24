@@ -329,7 +329,7 @@
       "patterns": [
         {
           "name": "constant.numeric.emojicode",
-          "match": "(?<![^\\s\\p{Extended_Pictographic}\\x{FE0F}\\x{200D}])(?:0,*[xX][0-9a-fA-F,]*|[+\\-]?,*[0-9][0-9,]*)(?:\\.[0-9]+)?(?![^\\s\\p{Extended_Pictographic}\\x{FE0F}\\x{200D}])"
+          "match": "(?<![^\\s\\p{Extended_Pictographic}\\x{FE0F}\\x{200D}\\x{1F1E6}-\\x{1F1FF}\\x{1F3FB}-\\x{1F3FF}])(?:0,*[xX][0-9a-fA-F,]*|[+\\-]?,*[0-9][0-9,]*)(?:\\.[0-9]+)?(?![^\\s\\p{Extended_Pictographic}\\x{FE0F}\\x{200D}\\x{1F1E6}-\\x{1F1FF}\\x{1F3FB}-\\x{1F3FF}])"
         }
       ]
     },
@@ -337,7 +337,7 @@
       "patterns": [
         {
           "name": "variable.other.emojicode",
-          "match": "[^\\s\\p{Extended_Pictographic}\\x{FE0F}\\x{200D}0-9+\\-][^\\s\\p{Extended_Pictographic}\\x{FE0F}\\x{200D}]*"
+          "match": "[^\\s\\p{Extended_Pictographic}\\x{FE0F}\\x{200D}\\x{1F1E6}-\\x{1F1FF}\\x{1F3FB}-\\x{1F3FF}0-9+\\-][^\\s\\p{Extended_Pictographic}\\x{FE0F}\\x{200D}\\x{1F1E6}-\\x{1F1FF}\\x{1F3FB}-\\x{1F3FF}]*"
         }
       ]
     }

@@ -28,6 +28,7 @@ Check 5 tests both. Check 1 and 2 need only the source tree. The others need a b
 """
 
 import argparse
+import atexit
 import bisect
 import concurrent.futures
 import glob
@@ -919,21 +920,37 @@ def describe_failure(tokens, index):
     return 'near token {} ({!r}) in: {}'.format(index, tokens[index].text, around)
 
 
+class TreeSitterError(Exception):
+    pass
+
+
 class TreeSitter:
     """Parses documents with the tree-sitter grammar that editors use."""
 
+    # A document the parser must reject. If tree-sitter does not report it, the parser is not working.
+    BROKEN = '🍉 🍉 🍉\n'
+
     def __init__(self, directory):
-        self.directory = directory
-        subprocess.run(['tree-sitter', 'generate'], cwd=directory, check=True, stdout=subprocess.DEVNULL,
-                       stderr=subprocess.DEVNULL)
+        # The parser is generated in a copy, so that the check does not write to the source tree. grammar.js reads
+        # docs/grammar.ebnf from two directories up.
+        self.root = tempfile.mkdtemp(prefix='grammar_tree_sitter_')
+        atexit.register(shutil.rmtree, self.root, True)
+        self.directory = os.path.join(self.root, 'editors', 'tree-sitter-emojicode')
+        shutil.copytree(directory, self.directory, ignore=shutil.ignore_patterns('src', 'node_modules'))
+        os.mkdir(os.path.join(self.root, 'docs'))
+        shutil.copy(os.path.join(ROOT, 'docs', 'grammar.ebnf'), os.path.join(self.root, 'docs'))
+        completed = subprocess.run(['tree-sitter', 'generate'], cwd=self.directory, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        if completed.returncode != 0:
+            raise SystemExit('tree-sitter generate failed:\n' + completed.stderr.decode('utf-8', 'replace'))
 
     def rejected(self, sources):
         """Returns the indices of the sources that the tree-sitter parser cannot parse without errors."""
         if not sources:
             return []
-        directory = tempfile.mkdtemp(prefix='grammar_tree_sitter_')
+        directory = tempfile.mkdtemp(prefix='grammar_tree_sitter_documents_')
         paths = []
-        for i, source in enumerate(sources):
+        for i, source in enumerate(list(sources) + [self.BROKEN]):
             paths.append(os.path.join(directory, '{}.emojic'.format(i)))
             with open(paths[-1], 'w', encoding='utf-8') as f:
                 f.write(source)
@@ -944,11 +961,18 @@ class TreeSitter:
         output = completed.stdout.decode('utf-8', 'replace')
         failing = {line.split('\t')[0].strip() for line in output.splitlines() if '(ERROR' in line or '(MISSING' in line}
         shutil.rmtree(directory)
-        return [i for i, path in enumerate(paths) if path in failing]
+        if paths[-1] not in failing:
+            raise TreeSitterError('tree-sitter did not parse the documents: ' +
+                                  completed.stderr.decode('utf-8', 'replace').strip()[-1000:])
+        return [i for i, path in enumerate(paths[:-1]) if path in failing]
 
     def check(self, report, cases, what):
         """cases: (label, source) of documents the compiler accepts."""
-        failed = self.rejected([source for _, source in cases])
+        try:
+            failed = self.rejected([source for _, source in cases])
+        except TreeSitterError as e:
+            report.fail(str(e))
+            return
         for i in failed:
             report.fail('{}: accepted by the compiler, not parsed by the tree-sitter grammar'.format(cases[i][0]))
         if not failed:
