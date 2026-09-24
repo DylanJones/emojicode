@@ -240,10 +240,10 @@ static bool tokenNames(const TokenSpan &token, Function *function) {
 }
 
 std::optional<Symbol> Navigator::nodeSymbol(const IndexedNode &node, const TokenSpan &token) const {
-    if (node.type != nullptr) {
-        return typeSymbol(node.type->type(), node.context);
+    if (node.expr == nullptr) {
+        return typeSymbol(node.type, node.context);
     }
-    auto expr = node.expr;
+    auto expr = node.expr.get();
     Function *function = nullptr;
     if (auto method = dynamic_cast<ASTMethodable *>(expr)) {
         function = method->method();

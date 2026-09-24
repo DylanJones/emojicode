@@ -40,7 +40,7 @@ struct Keyword {
 const Keyword kKeywords[] = {
     {"class", "🐇", "Defines a class.", "🐇 ${1:🐟} 🍇\n\t$0\n🍉"},
     {"value type struct", "🕊", "Defines a value type.", "🕊 ${1:🐟} 🍇\n\t$0\n🍉"},
-    {"enumeration enum", "🔘", "Defines an enumeration.", "🔘 ${1:🚦} 🍇\n\t🆕 ${2:🔴}\n🍉"},
+    {"enumeration enum", "🔘", "Defines an enumeration.", "🔘 ${1:🚦} 🍇\n\t🆕▶️${2:🔴}\n🍉"},
     {"protocol interface", "🐊", "Defines a protocol.", "🐊 ${1:🐟} 🍇\n\t$0\n🍉"},
     {"method function func def", "❗️", "Defines a method.", "❗️ ${1:🐽} ${2:value} ${3:🔢} 🍇\n\t$0\n🍉"},
     {"initializer init constructor", "🆕", "Defines an initializer, or creates an instance.", "🆕 🍇\n\t$0\n🍉"},

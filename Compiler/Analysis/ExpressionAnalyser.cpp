@@ -77,7 +77,7 @@ Type ExpressionAnalyser::analyse(const std::shared_ptr<ASTExpr> &ptr) {
     Type type = ptr->analyse(this);
     ptr->setExpressionType(type);
     if (auto observer = compiler()->analysisObserver()) {
-        observer->analysedExpression(ptr.get(), this);
+        observer->analysedExpression(ptr, this);
     }
     return type;
 }

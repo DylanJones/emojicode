@@ -24,9 +24,10 @@ namespace EmojicodeLanguageServer {
 struct IndexedNode {
     size_t line;
     size_t character;
-    /// Exactly one of expr and type is set.
-    EmojicodeCompiler::ASTExpr *expr = nullptr;
-    EmojicodeCompiler::ASTType *type = nullptr;
+    /// The expression, or nullptr if this is a type.
+    std::shared_ptr<EmojicodeCompiler::ASTExpr> expr;
+    /// The type, if this is a type.
+    EmojicodeCompiler::Type type = EmojicodeCompiler::Type::noReturn();
     EmojicodeCompiler::TypeContext context;
 };
 
@@ -54,7 +55,8 @@ struct IndexedScope {
 /// looked up by their position.
 class Index : public EmojicodeCompiler::AnalysisObserver {
 public:
-    void analysedExpression(EmojicodeCompiler::ASTExpr *expr, EmojicodeCompiler::ExpressionAnalyser *analyser) override;
+    void analysedExpression(const std::shared_ptr<EmojicodeCompiler::ASTExpr> &expr,
+                            EmojicodeCompiler::ExpressionAnalyser *analyser) override;
     void analysedType(EmojicodeCompiler::ASTType *type) override;
     void leavingScope(const EmojicodeCompiler::ASTBlock &block, const EmojicodeCompiler::Scope &scope,
                       EmojicodeCompiler::FunctionAnalyser *analyser) override;

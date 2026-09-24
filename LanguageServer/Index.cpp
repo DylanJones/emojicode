@@ -32,7 +32,7 @@ static TypeContext storableContext(const TypeContext &context) {
     return TypeContext(context.calleeType(), context.function());
 }
 
-void Index::analysedExpression(ASTExpr *expr, ExpressionAnalyser *analyser) {
+void Index::analysedExpression(const std::shared_ptr<ASTExpr> &expr, ExpressionAnalyser *analyser) {
     auto &p = expr->position();
     if (p.isUnknown()) {
         return;
@@ -49,7 +49,7 @@ void Index::analysedType(ASTType *type) {
         return;
     }
     IndexedNode node{p.line, p.character};
-    node.type = type;
+    node.type = type->type();
     nodes_[path(p.file)].push_back(node);
 }
 

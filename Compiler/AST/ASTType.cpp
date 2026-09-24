@@ -31,10 +31,11 @@ Type& ASTType::analyseType(const TypeContext &typeContext, bool allowReference, 
         if (type_.type() == TypeType::Optional && type_.isReference()) {
             package()->compiler()->error(CompilerError(position(), "Optional references are not supported."));
         }
-        if (auto observer = package()->compiler()->analysisObserver()) {
+        auto observer = package()->compiler()->analysisObserver();
+        package_ = nullptr;
+        if (observer != nullptr) {
             observer->analysedType(this);
         }
-        package_ = nullptr;
     }
     return type_;
 }
