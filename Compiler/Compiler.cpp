@@ -80,48 +80,51 @@ void Compiler::LLVMIREmissionPhase::perform(Compiler *compiler) {
 }
 
 /// Runs @p tool with @p arguments and waits for it to finish.
-/// @param tool The program to run. As it is usually taken from an environment variable like $CXX, it may contain
-///             arguments of its own, e.g. "ccache c++".
+/// @param tool The command to run, usually taken from an environment variable like $CXX. It is interpreted by the
+///             shell, so it may contain arguments of its own (e.g. "ccache c++") and shell expansions. The arguments
+///             are passed to it unchanged.
 /// @throws CompilerError if the tool could not be run or did not exit successfully.
 static void runTool(const std::string &tool, const std::vector<std::string> &arguments) {
-    llvm::BumpPtrAllocator allocator;
-    llvm::StringSaver saver(allocator);
-    llvm::SmallVector<const char *, 4> toolArgs;
-    llvm::cl::TokenizeGNUCommandLine(tool, saver, toolArgs);
-    if (toolArgs.empty()) {
-        throw CompilerError(SourcePosition(), "No program to run was specified.");
-    }
-
-    std::vector<llvm::StringRef> args(toolArgs.begin(), toolArgs.end());
+    // sh -c 'TOOL "$@"' sh ARGUMENTS... : the arguments become positional parameters and are never re-split.
+    std::string script = tool + " \"$@\"";
+    std::vector<llvm::StringRef> args { "sh", "-c", script, "sh" };
     args.insert(args.end(), arguments.begin(), arguments.end());
 
-    auto program = llvm::sys::findProgramByName(args.front());
-    if (!program) {
-        throw CompilerError(SourcePosition(), "Could not find ", args.front().str(), ": ",
-                            program.getError().message(), ".");
-    }
     std::string errorMessage;
-    auto status = llvm::sys::ExecuteAndWait(*program, args, std::nullopt, {}, 0, 0, &errorMessage);
-    if (status < 0) {
+    auto status = llvm::sys::ExecuteAndWait("/bin/sh", args, std::nullopt, {}, 0, 0, &errorMessage);
+    if (status == -1) {
         throw CompilerError(SourcePosition(), "Could not run ", tool, ": ", errorMessage, ".");
+    }
+    if (status < 0) {
+        throw CompilerError(SourcePosition(), tool, " crashed: ", errorMessage, ".");
     }
     if (status > 0) {
         throw CompilerError(SourcePosition(), tool, " failed with exit code ", status, ".");
     }
 }
 
+/// Appends the linker arguments for a link hint. A hint is split at whitespace like a command line, so that hints
+/// such as "ssl -lcrypto", which used to be split by the shell, keep working.
+static void appendLinkHint(std::vector<std::string> &args, const std::string &hint) {
+    llvm::BumpPtrAllocator allocator;
+    llvm::StringSaver saver(allocator);
+    llvm::SmallVector<const char *, 4> tokens;
+    llvm::cl::TokenizeGNUCommandLine("-l" + hint, saver, tokens);
+    args.insert(args.end(), tokens.begin(), tokens.end());
+}
+
 void Compiler::LinkPhase::perform(Compiler *compiler) {
     std::vector<std::string> args { objectFilePath_ };
 
     for (auto &hint : compiler->mainPackage()->linkHints()) {
-        args.emplace_back("-l" + hint);
+        appendLinkHint(args, hint);
     }
 
     for (auto it = compiler->packageImportOrder_.rbegin(); it != compiler->packageImportOrder_.rend(); it++) {
         auto package = *it;
         args.emplace_back(compiler->findBinaryPathPackage(package->path(), package->name()));
         for (auto &hint : package->linkHints()) {
-            args.emplace_back("-l" + hint);
+            appendLinkHint(args, hint);
         }
     }
 
