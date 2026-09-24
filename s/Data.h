@@ -5,9 +5,9 @@
 #ifndef EMOJICODE_DATA_HPP
 #define EMOJICODE_DATA_HPP
 
-namespace s {
-
 #include "../runtime/Runtime.h"
+
+namespace s {
 
 class Data : public runtime::Object<Data>  {
 public:

@@ -10,6 +10,14 @@
 #include <cerrno>
 #include <cstring>
 
+s::Error::Error(const char *message) : message(s::String::init(message)) {
+
+}
+
+s::IOError::IOError(const char *message) : message(s::String::init(message)) {
+
+}
+
 s::IOError::IOError() : message(s::String::init(std::strerror(errno))) {
 
 }
