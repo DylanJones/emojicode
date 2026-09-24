@@ -20,6 +20,8 @@ Contributing is as easy as
 
 - All code should be platform independent and in conformance with ISO C++14.
 - Before submitting any pull request, make sure all tests pass. If you add a feature, add tests too.
+- `docs/grammar.ebnf` describes exactly the syntax that the compiler accepts. If you change the lexer or the parser,
+  update the grammar and run `ninja grammar`, which checks the grammar against the compiler.
 - Try to follow the coding style established in the file you're editing.
 
 ## Commit message

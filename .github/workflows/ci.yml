@@ -44,6 +44,9 @@ jobs:
       - name: Test
         run: ninja -C build tests
 
+      - name: Check grammar
+        run: ninja -C build grammar
+
       - name: Package
         if: startsWith(github.ref, 'refs/tags/') && matrix.llvm == 23
         working-directory: build
