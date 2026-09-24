@@ -1,5 +1,10 @@
 📗
   Execution thread of the program.
+
+  A thread that is deinitialized without having been joined with 🛂 keeps
+  running in the background. Such threads are terminated when the program
+  exits, even if they have not finished their work, so join a thread if its
+  work must be completed.
 📗
 🌍 📻 🐇 🧵 🍇
   📗
