@@ -4,6 +4,7 @@
 
 #include "SemanticAnalyser.hpp"
 #include <algorithm>
+#include <set>
 #include "Compiler.hpp"
 #include "FunctionAnalyser.hpp"
 #include "AST/ASTExpr.hpp"
@@ -46,6 +47,13 @@ void SemanticAnalyser::analyse(bool executable) {
         enqueueFunctionsOfTypeDefinition(vt.get());
         checkProtocolConformance(Type(vt.get()));
         declareInstanceVariables(Type(vt.get()));
+    }
+    for (auto &vt : package_->valueTypes()) {
+        std::set<ValueType *> visited;
+        if (storesInline(vt.get(), vt.get(), visited)) {
+            throw CompilerError(vt->position(), Type(vt.get()).toString(TypeContext()), " contains itself through its "
+                                "instance variables, so it would be infinitely large.");
+        }
     }
     for (auto &klass : package_->classes()) {
         for (auto init : klass->inits().list()) {
@@ -173,6 +181,23 @@ void SemanticAnalyser::checkCFunctionDeclaration(Function *function) const {
                                 "structs by value. Pass a 📍 to the struct instead.");
         }
     }
+}
+
+bool SemanticAnalyser::storesInline(TypeDefinition *container, ValueType *target, std::set<ValueType *> &visited) {
+    for (auto &ivar : container->instanceVariables()) {
+        auto type = ivar.type->type();
+        if (type.type() == TypeType::Optional) {
+            type = type.optionalType();  // Optionals of value types store the value inline.
+        }
+        if (type.type() != TypeType::ValueType || type.isReference()) {
+            continue;
+        }
+        auto valueType = type.valueType();
+        if (valueType == target || (visited.insert(valueType).second && storesInline(valueType, target, visited))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void SemanticAnalyser::declareInstanceVariables(const Type &type) {

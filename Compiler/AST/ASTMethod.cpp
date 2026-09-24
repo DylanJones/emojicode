@@ -232,7 +232,7 @@ bool ASTMethodable::builtInC(ExpressionAnalyser *analyser, const Type &type, con
 
     if (valueType == compiler->cPointer) {
         auto &pointee = type.genericArguments().front();
-        auto accessesPointee = first == 0x1F43D || first == 0x23ED;  // 🐽, ⏭
+        auto accessesPointee = first == E_PIG_NOSE || first == E_NEXT_TRACK;
         if (accessesPointee && (pointee.is<TypeType::GenericVariable>() ||
                                 pointee.is<TypeType::LocalGenericVariable>() || pointee.storageType() == StorageType::Box ||
                                 pointee.unboxedType() == TypeType::Something ||
@@ -242,14 +242,14 @@ bool ASTMethodable::builtInC(ExpressionAnalyser *analyser, const Type &type, con
                                 " because its values are not stored as C values. Use a concrete pointee type.");
         }
         switch (first) {
-            case 0x1F43D:  // 🐽
+            case E_PIG_NOSE:
                 builtIn_ = args_.mood() == Mood::Assignment ? BuiltInType::CPointerStore : BuiltInType::CPointerLoad;
                 return true;
-            case 0x23ED:  // ⏭
+            case E_NEXT_TRACK:
                 builtIn_ = BuiltInType::CPointerAdvance;
                 return true;
-            case 0x1F3AD:  // 🎭
-            case 0x1F573:  // 🕳
+            case E_PERFORMING_ARTS:
+            case E_HOLE:
                 builtIn_ = BuiltInType::CReinterpret;
                 return true;
             default:
@@ -258,11 +258,11 @@ bool ASTMethodable::builtInC(ExpressionAnalyser *analyser, const Type &type, con
     }
     if (valueType == compiler->cVoidPointer) {
         switch (first) {
-            case 0x1F4CD:  // 📍
-            case 0x1F4E5:  // 📥
+            case E_ROUND_PUSHPIN:
+            case E_INBOX_TRAY:
                 builtIn_ = BuiltInType::CReinterpret;
                 return true;
-            case 0x1F440:  // 👀
+            case E_EYES:
                 builtIn_ = BuiltInType::CBorrowObject;
                 return true;
             default:
@@ -273,7 +273,7 @@ bool ASTMethodable::builtInC(ExpressionAnalyser *analyser, const Type &type, con
         return false;
     }
     switch (first) {
-        case 0x1F522:  // 🔢
+        case E_INPUT_SYMBOL_FOR_NUMBERS:
         case E_HUNDRED_POINTS_SYMBOL:
             builtIn_ = BuiltInType::CConvert;
             return true;
