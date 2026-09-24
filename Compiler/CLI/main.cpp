@@ -7,6 +7,9 @@
 //
 
 #include "Compiler.hpp"
+#include "CompilerError.hpp"
+#include "Lex/Lexer.hpp"
+#include "Lex/SourceManager.hpp"
 #include "Options.hpp"
 #include "Package/RecordingPackage.hpp"
 #include "PackageReporter.hpp"
@@ -35,13 +38,44 @@ private:
     std::string path_;
 };
 
+/// Prints one line per token of the main file: the code point index at which the token starts, the token type and
+/// the code points of the token value in hexadecimal.
+bool dumpTokens(const Options &options) {
+    SourceManager sourceManager;
+    try {
+        Lexer lexer(sourceManager.read(options.mainFile()), false);
+        while (lexer.continues()) {
+            auto start = lexer.index();
+            auto token = lexer.lex();
+            std::cout << start << "\t" << Token::stringNameForType(token.type()) << "\t" << std::hex;
+            for (auto c : token.value()) {
+                std::cout << static_cast<uint32_t>(c) << " ";
+            }
+            std::cout << std::dec << "\n";
+        }
+    }
+    catch (CompilerError &ce) {
+        std::cout << "error\t" << ce.position().line << ":" << ce.position().character << "\t" << ce.message()
+                  << "\n";
+        return false;
+    }
+    return true;
+}
+
 /// The compiler CLI main function
 /// @returns True if the requested operation was successful.
 bool start(const Options &options) {
+    if (options.dumpTokens()) {
+        return dumpTokens(options);
+    }
+
     Compiler compiler(options.mainPackageName(), options.mainFile(), options.packageSearchPaths(),
                       options.compilerDelegate());
 
     compiler.add<Compiler::ParsePhase>();
+    if (options.parseOnly()) {
+        return compiler.compile();
+    }
     if (options.prettyprint()) {
         compiler.add<FormatPhase>();
         return compiler.compile();
