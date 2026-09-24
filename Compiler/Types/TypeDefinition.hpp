@@ -14,6 +14,7 @@
 #include "Package/Definition.hpp"
 #include "Type.hpp"
 #include "Functions/FunctionResolver.hpp"
+#include <cassert>
 #include <functional>
 #include <map>
 #include <utility>
@@ -121,9 +122,15 @@ public:
     const std::vector<InstanceVariableDeclaration>& instanceVariables() const { return instanceVariables_; }
     std::vector<InstanceVariableDeclaration>& instanceVariablesMut() { return instanceVariables_; }
 
-    void setProtocolTables(std::map<Type, llvm::Constant*> &&tables) { protocolTables_ = std::move(tables); }
-    llvm::Constant* protocolTableFor(const Type &type) { return protocolTables_.find(type)->second; }
-    const std::map<Type, llvm::Constant*>& protocolTables() { return protocolTables_; }
+    /// A type can conform to a protocol only once, regardless of generic arguments, so the conformance tables are
+    /// keyed on the protocol definition.
+    void setProtocolTables(std::map<Protocol*, llvm::Constant*> &&tables) { protocolTables_ = std::move(tables); }
+    llvm::Constant* protocolTableFor(const Type &protocol) {
+        auto it = protocolTables_.find(protocol.protocol());
+        assert(it != protocolTables_.end());
+        return it->second;
+    }
+    const std::map<Protocol*, llvm::Constant*>& protocolTables() { return protocolTables_; }
 
 protected:
     TypeDefinition(std::u32string name, Package *p, SourcePosition pos, std::u32string documentation, bool exported);
@@ -144,7 +151,7 @@ private:
     bool exported_;
     bool genericDynamismDisabled_ = false;
 
-    std::map<Type, llvm::Constant*> protocolTables_;
+    std::map<Protocol*, llvm::Constant*> protocolTables_;
 
     std::vector<InstanceVariableDeclaration> instanceVariables_;
 

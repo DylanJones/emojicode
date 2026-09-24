@@ -305,9 +305,7 @@ public:
     void setExact(bool b) { forceExact_ = b; }
 
     inline bool operator<(const Type &rhs) const {
-        // Generic arguments are deliberately compared with themselves, i.e. ignored: maps keyed on types rely on
-        // types that differ only in their generic arguments being equivalent.
-        return std::tie(typeContent_, typeDefinition_, rhs.genericArguments_, genericArgumentIndex_,
+        return std::tie(typeContent_, typeDefinition_, genericArguments_, genericArgumentIndex_,
                         localResolutionConstraint_, cCallable_) < std::tie(rhs.typeContent_, rhs.typeDefinition_,
                                                                            rhs.genericArguments_,
                                                                            rhs.genericArgumentIndex_,
@@ -316,7 +314,7 @@ public:
     }
 
     inline bool operator==(const Type &rhs) const {
-        return std::tie(typeContent_, typeDefinition_, rhs.genericArguments_, genericArgumentIndex_,
+        return std::tie(typeContent_, typeDefinition_, genericArguments_, genericArgumentIndex_,
                         localResolutionConstraint_, cCallable_) == std::tie(rhs.typeContent_, rhs.typeDefinition_,
                                                                             rhs.genericArguments_,
                                                                             rhs.genericArgumentIndex_,

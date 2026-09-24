@@ -312,7 +312,8 @@ void SemanticAnalyser::checkProtocolConformance(const Type &type) {
 }
 
 void SemanticAnalyser::finalizeProtocols(const Type &type) {
-    std::set<Type> protocols;
+    // A type can conform to a protocol only once, even with different generic arguments.
+    std::set<Protocol *> protocols;
 
     for (auto &protocol : type.typeDefinition()->protocols()) {
         auto &protocolType = protocol.type->analyseType(TypeContext(type));
@@ -321,12 +322,12 @@ void SemanticAnalyser::finalizeProtocols(const Type &type) {
             package_->compiler()->error(CompilerError(protocol.type->position(), "Type is not a protocol."));
             continue;
         }
-        if (protocols.find(unboxed) != protocols.end()) {
+        if (protocols.find(unboxed.protocol()) != protocols.end()) {
             package_->compiler()->error(CompilerError(protocol.type->position(),
                                                       "Conformance to protocol was already declared."));
             continue;
         }
-        protocols.emplace(unboxed);
+        protocols.emplace(unboxed.protocol());
     }
 }
 
