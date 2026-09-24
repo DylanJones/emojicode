@@ -20,10 +20,14 @@ struct TokenSpan {
     size_t end;
     EmojicodeCompiler::TokenType type;
     std::u32string value;
+    /// Whether the token is a string or comment that is not closed, e.g. while it is typed. It runs to the end of the
+    /// text.
+    bool unterminated = false;
 };
 
-/// Lexes @p text with the compiler's lexer. If the text contains an invalid token, the tokens before it are
-/// returned. Line breaks are left out.
+/// Lexes @p text with the compiler's lexer. A string that the lexer rejects, e.g. because of an invalid escape
+/// sequence, is a string token without a value. If the text contains another invalid token, the tokens before it
+/// are returned. Line breaks are left out.
 std::vector<TokenSpan> lex(const std::u32string &text);
 
 /// The text of a file with its lines and tokens.

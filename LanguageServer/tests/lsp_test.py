@@ -675,6 +675,33 @@ class CompletionTests(ServerTestCase):
                                                             "position": {"line": 1, "character": 11}})
         self.assertEqual(result["items"], [])
 
+    def test_no_completion_in_unterminated_string_at_the_end(self):
+        path = self.write("end.emojic", "🏁 🍇\n  😀 🔤hello wor")
+        client = self.start()
+        client.open(path)
+        client.diagnostics(path)
+        result = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                            "position": {"line": 1, "character": 16}})
+        self.assertEqual(result["items"], [])
+
+    def test_completion_after_string_with_invalid_escape(self):
+        text = "🏁 🍇\n  😀 🔤Done ❌ now🔤❗️\n  grap\n🍉\n"
+        path = self.write("escape.emojic", text)
+        client = self.start()
+        client.open(path)
+        client.diagnostics(path)
+        items = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                           "position": {"line": 2, "character": 6}})["items"]
+        self.assertEqual(items[0]["textEdit"]["newText"], "🍇")
+        data = client.request("textDocument/semanticTokens/full", {"textDocument": {"uri": uri(path)}})["data"]
+        legend = client.capabilities["semanticTokensProvider"]["legend"]["tokenTypes"]
+        line, lines = 0, []
+        for i in range(0, len(data), 5):
+            line += data[i]
+            if legend[data[i + 3]] == "string":
+                lines.append(line)
+        self.assertEqual(lines, [1])
+
     def test_no_completion_in_strings_and_comments(self):
         path = self.write("strings.emojic", "🏁 🍇\n  😀 🔤grap🔤❗️ 💭 grap\n🍉\n")
         client = self.start()
