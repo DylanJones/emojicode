@@ -53,11 +53,12 @@ A development build of the server finds the packages in its build directory by i
 ## Tree-sitter
 
 Without tree-sitter, highlighting comes from the language server alone. For highlighting as soon as a file opens,
-folding, and text objects, build the tree-sitter parser into this directory (needs the tree-sitter CLI or a C
+folding, and text objects, build the tree-sitter parser into this directory (needs the tree-sitter CLI and a C
 compiler):
 
 ```bash
 cd editors/tree-sitter-emojicode
+tree-sitter generate
 tree-sitter build -o ../nvim/parser/emojicode.so
 ```
 
