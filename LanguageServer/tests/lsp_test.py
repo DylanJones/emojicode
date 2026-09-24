@@ -549,5 +549,30 @@ class CompletionTests(ServerTestCase):
         self.assertTrue(items[0]["textEdit"]["newText"].startswith("🐇 ${1:🐟} 🍇"))
 
 
+class RobustnessTests(ServerTestCase):
+    def use_every_feature(self, path, text):
+        """Sends every request that works on a position at the start of each line of text."""
+        client = self.client
+        document = {"textDocument": {"uri": uri(path)}}
+        client.request("textDocument/semanticTokens/full", document)
+        client.request("textDocument/documentSymbol", document)
+        for line, content in enumerate(text.split("\n")):
+            for character in range(0, utf16_length(content) + 1, 2):
+                params = {**document, "position": {"line": line, "character": character}}
+                for method in ("textDocument/hover", "textDocument/definition", "textDocument/completion"):
+                    client.request(method, params)
+
+    def test_cyclic_inheritance(self):
+        for text in ("🐇 🐟 🐟 🍇\n  ❗️ 🐽 🍇\n    \n  🍉\n🍉\n",
+                     "🐇 🐟 🐠 🍇\n  🖍🆕 a 🔢 ⬅️ 1\n  ❗️ 🐽 🍇\n    a\n  🍉\n🍉\n🐇 🐠 🐟 🍇🍉\n"):
+            path = self.write("cycle.emojic", text)
+            self.start()
+            self.client.open(path, text)
+            diagnostics = self.client.diagnostics(path)
+            self.assertIn("inherits from itself", " ".join(d["message"] for d in diagnostics))
+            self.use_every_feature(path, text)
+            self.assertEqual(self.client.shutdown(), 0)
+
+
 if __name__ == "__main__":
     unittest.main(argv=sys.argv[:1], verbosity=2)

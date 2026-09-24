@@ -65,22 +65,27 @@ static Class* analysedSuperclass(Class *klass) {
 
 std::vector<std::pair<const InstanceVariableDeclaration *, TypeDefinition *>>
 instanceVariables(TypeDefinition *definition) {
-    std::vector<std::pair<const InstanceVariableDeclaration *, TypeDefinition *>> result;
-    if (auto klass = dynamic_cast<Class *>(definition)) {
-        if (auto superclass = analysedSuperclass(klass)) {
-            result = instanceVariables(superclass);
-        }
+    // The chain from the root class down to definition. The compiler reports cyclic inheritance, but the superclass
+    // links stay cyclic after the error, so the walk stops at the first class it has seen before.
+    std::vector<TypeDefinition *> chain{definition};
+    auto klass = dynamic_cast<Class *>(definition);
+    while (klass != nullptr && (klass = analysedSuperclass(klass)) != nullptr &&
+           std::find(chain.begin(), chain.end(), klass) == chain.end()) {
+        chain.push_back(klass);
     }
-    auto inherited = result.size();
-    for (auto &variable : definition->instanceVariables()) {
-        // A class's list contains copies of the instance variables of its superclass once it inherited them.
-        auto copy = std::find_if(result.begin(), result.begin() + inherited, [&](auto &pair) {
-            auto &p = pair.first->position;
-            return pair.first->name == variable.name && p.file == variable.position.file &&
-                   p.line == variable.position.line && p.character == variable.position.character;
-        });
-        if (copy == result.begin() + inherited) {
-            result.emplace_back(&variable, definition);
+    std::vector<std::pair<const InstanceVariableDeclaration *, TypeDefinition *>> result;
+    for (auto it = chain.rbegin(); it != chain.rend(); it++) {
+        auto inherited = result.size();
+        for (auto &variable : (*it)->instanceVariables()) {
+            // A class's list contains copies of the instance variables of its superclass once it inherited them.
+            auto copy = std::find_if(result.begin(), result.begin() + inherited, [&](auto &pair) {
+                auto &p = pair.first->position;
+                return pair.first->name == variable.name && p.file == variable.position.file &&
+                       p.line == variable.position.line && p.character == variable.position.character;
+            });
+            if (copy == result.begin() + inherited) {
+                result.emplace_back(&variable, *it);
+            }
         }
     }
     return result;
