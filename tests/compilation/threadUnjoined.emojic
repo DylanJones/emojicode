@@ -1,0 +1,14 @@
+💭 Threads that are never joined must not crash the program when they are deinitialized.
+🏁 🍇
+  💭 The thread itself releases the last reference when it finishes.
+  🆕🧵 🍇🎍🥡 🍉❗️
+  ⏲🐇🧵 100000❗️
+  😀 🔤Deinitialized on the thread itself🔤❗️
+
+  💭 The main thread releases the last reference after the thread has finished.
+  🆕🧵 🍇🎍🥡 🍉❗️ ➡️ 🖍🆕thread
+  ⏲🐇🧵 100000❗️
+  🆕🧵 🍇🎍🥡 🍉❗️ ➡️ 🖍thread
+  😀 🔤Deinitialized on the main thread🔤❗️
+  🛂 thread❗️
+🍉

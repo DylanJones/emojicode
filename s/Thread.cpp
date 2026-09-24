@@ -35,6 +35,11 @@ extern "C" void sThreadJoin(Thread *thread) {
 }
 
 extern "C" void sThreadDestruct(Thread *thread) {
+    if (thread->thread.joinable()) {
+        // The thread was never joined. It cannot be joined here either, as the last reference may have been released
+        // by the thread itself. Destroying a joinable std::thread would call std::terminate.
+        thread->thread.detach();
+    }
     thread->~Thread();
 }
 
