@@ -24,16 +24,18 @@ public:
 };
 
 extern "C" File* filesFileNewWriting(String *path, runtime::Raiser *raiser) {
+    auto stream = std::fstream(path->stdString().c_str(), std::ios_base::out);
+    EJC_COND_RAISE_IO(!stream.fail(), raiser);
     auto file = File::init();
-    file->file_ = std::fstream(path->stdString().c_str(), std::ios_base::out);
-    EJC_COND_RAISE_IO(!file->file_.fail(), raiser);
+    file->file_ = std::move(stream);
     return file;
 }
 
 extern "C" File* filesFileNewReading(String *path, runtime::Raiser *raiser) {
+    auto stream = std::fstream(path->stdString().c_str(), std::ios_base::in);
+    EJC_COND_RAISE_IO(!stream.fail(), raiser);
     auto file = File::init();
-    file->file_ = std::fstream(path->stdString().c_str(), std::ios_base::in);
-    EJC_COND_RAISE_IO(!file->file_.fail(), raiser);
+    file->file_ = std::move(stream);
     return file;
 }
 
@@ -47,6 +49,10 @@ extern "C" void filesFileClose(File *file) {
 
 extern "C" void filesFileFlush(File *file) {
     file->file_.flush();
+}
+
+extern "C" void filesFileDestruct(File *file) {
+    file->~File();
 }
 
 extern "C" Data* filesFileReadBytes(File *file, runtime::Integer count, runtime::Raiser *raiser) {
