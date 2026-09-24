@@ -347,6 +347,10 @@ void CodeGenerator::addParamDereferenceable(const Type &type, size_t index, llvm
 }
 
 llvm::Function::LinkageTypes CodeGenerator::linkageForFunction(Function *function) const {
+    // Closures, even those in imported inline functions, are generated in every module that uses them.
+    if (function->isClosure()) {
+        return llvm::Function::PrivateLinkage;
+    }
     if (function->isInline() && function->package()->isImported()) {
         return llvm::Function::AvailableExternallyLinkage;
     }

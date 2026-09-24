@@ -164,6 +164,9 @@ public:
     bool isClosure() const { return closure_; }
 
     MFFlowCategory memoryFlowTypeForThis() const { return memoryFlowTypeThis_; }
+    /// Whether Memory Flow Analysis has been performed on the body of this function.
+    bool isMemoryFlowAnalysed() const { return memoryFlowAnalysed_; }
+    void setMemoryFlowAnalysed() { memoryFlowAnalysed_ = true; }
     void setMemoryFlowTypeForThis(MFFlowCategory type) { memoryFlowTypeThis_ = type; }
 
     /// Whether this initializer might return an error.
@@ -191,6 +194,7 @@ private:
     bool closure_ = false;
     bool c_ = false;
     bool exported_ = false;
+    bool memoryFlowAnalysed_ = false;
 
     Function *virtualTableThunk_ = nullptr;
     Function *superFunction_ = nullptr;
