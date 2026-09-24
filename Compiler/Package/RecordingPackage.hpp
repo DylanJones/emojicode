@@ -46,6 +46,8 @@ public:
 
     class StartFlagFunctionRecording : public Recording {};
 
+    class LinkHintsRecording : public Recording {};
+
     struct File {
         explicit File(std::string path) : path_(std::move(path)) {}
         std::string path_;
@@ -59,6 +61,7 @@ public:
                            const SourcePosition &p) override;
     void includeDocument(const std::string &path, const std::string &relativePath) override;
     void setStartFlagFunction(Function *function) override;
+    void setLinkHints(std::vector<std::string> hints) override;
 private:
     std::vector<File> files_;
     size_t currentFile_ = 0;

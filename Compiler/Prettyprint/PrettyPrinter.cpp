@@ -77,6 +77,11 @@ void PrettyPrinter::print(RecordingPackage::Recording *recording) {
             prettyStream_.offerNewLine();
         }
     }
+    if (dynamic_cast<RecordingPackage::LinkHintsRecording *>(recording) && !interface_) {
+        // Interfaces list the link hints at their end, see printInterface().
+        printLinkHints();
+        prettyStream_.offerNewLine();
+    }
     if (dynamic_cast<RecordingPackage::StartFlagFunctionRecording *>(recording)) {
         prettyStream_ << "🏁 ";
         if (package_->startFlagFunction()->returnType() != nullptr) {

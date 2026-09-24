@@ -119,7 +119,7 @@ public:
     /// @complexity O(n)
     std::u32string findNamespace(const Type &type);
 
-    void setLinkHints(std::vector<std::string> hints) { linkHints_ = std::move(hints); }
+    virtual void setLinkHints(std::vector<std::string> hints) { linkHints_ = std::move(hints); }
     const std::vector<std::string>& linkHints() { return linkHints_; }
 
     virtual ~Package();

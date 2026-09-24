@@ -91,6 +91,7 @@ compilation_tests = [
     "valueTypeBoxCopySelf",
     "includer",
     "threads",
+    "linkHints",
     "threadUnjoined",
     "mutexTryLock",
     "inferLiteralFromExpec",
