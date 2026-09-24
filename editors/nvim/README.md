@@ -49,3 +49,33 @@ vim.lsp.config('emojicode', {
 ```
 
 A development build of the server finds the packages in its build directory by itself.
+
+## Tree-sitter
+
+Without tree-sitter, highlighting comes from the language server alone. For highlighting as soon as a file opens,
+folding, and text objects, build the tree-sitter parser into this directory (needs the tree-sitter CLI or a C
+compiler):
+
+```bash
+cd editors/tree-sitter-emojicode
+tree-sitter build -o ../nvim/parser/emojicode.so
+```
+
+The filetype plugin starts tree-sitter highlighting when the parser is there. The queries in
+`queries/emojicode` are those of `editors/tree-sitter-emojicode`. For folding by syntax:
+
+```lua
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'emojicode',
+  callback = function()
+    vim.wo.foldmethod = 'expr'
+    vim.wo.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+    vim.wo.foldlevel = 99
+  end,
+})
+```
+
+With nvim-treesitter-textobjects, `textobjects.scm` defines `@function`, `@class`, `@conditional`, `@loop`,
+`@parameter`, `@call`, `@comment` and `@block`.
+
+Indentation works without tree-sitter: it follows 🍇 🍉 and 🍿 🍆.

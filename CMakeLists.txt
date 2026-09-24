@@ -33,8 +33,13 @@ add_subdirectory(c)
 add_custom_target(dist python3 ${PROJECT_SOURCE_DIR}/dist.py)
 add_custom_target(tests python3 ${PROJECT_SOURCE_DIR}/tests.py)
 add_custom_target(magicinstall python3 ${PROJECT_SOURCE_DIR}/dist.py install)
+# The tree-sitter grammar that editors use is checked too if the tree-sitter CLI is installed.
+find_program(TREE_SITTER tree-sitter)
+if(TREE_SITTER)
+  set(GRAMMAR_CHECK_TREE_SITTER --tree-sitter)
+endif()
 add_custom_target(grammar python3 ${PROJECT_SOURCE_DIR}/tools/grammar_check.py --build ${CMAKE_BINARY_DIR}
-                  --mutations 5 --generate 1000)
+                  --mutations 5 --generate 1000 ${GRAMMAR_CHECK_TREE_SITTER})
 add_dependencies(grammar emojicodec s files sockets testtube json c)
 add_custom_target(lsptests python3 ${PROJECT_SOURCE_DIR}/LanguageServer/tests/lsp_test.py
                   ${CMAKE_BINARY_DIR}/LanguageServer/emojicode-lsp)

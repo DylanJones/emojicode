@@ -1,0 +1,137 @@
+============================================================
+Conditionals and loops
+============================================================
+
+🏁 🍇
+  ↪️ a ▶️🙌 1 🍇
+    ↩️ 👍
+  🍉
+  🙅↪️ 🤷‍♀️ 🙌 b 🍇🍉
+  🙅 🍇🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇
+    😀 🔡 i❗️❗️
+  🍉
+  🔁 👎 🍇🍉
+🍉
+
+------------------------------------------------------------
+
+(source_file
+  (start_flag
+    body: (block
+      (if_statement
+        (binary_expression
+          left: (primary_variable
+            (variable))
+          operator: (operator)
+          right: (number))
+        consequence: (block
+          (return
+            (boolean)))
+        (else_if
+          (binary_expression
+            left: (no_value)
+            operator: (operator)
+            right: (primary_variable
+              (variable)))
+          consequence: (block))
+        (else
+          body: (block)))
+      (for_in
+        element: (variable)
+        collection: (instantiation
+          type: (type_identifier
+            name: (identifier))
+          (number)
+          (number)
+          (mood))
+        body: (block
+          (expression_statement
+            (method_call
+              name: (identifier)
+              (method_call
+                name: (identifier)
+                (primary_variable
+                  (variable))
+                (mood))
+              (mood)))))
+      (repeat_while
+        (boolean)
+        body: (block)))))
+
+============================================================
+Variables and assignments
+============================================================
+
+🏁 🍇
+  🖍🆕 a 🔢
+  1 ➡️ 🖍a
+  a ⬅️➕ 2
+  🍿 1 2 🍆 ➡️ list
+  🍿 🔤a🔤 ➡️ 1 🍆 ➡️ 🖍🆕 dictionary
+🍉
+
+------------------------------------------------------------
+
+(source_file
+  (start_flag
+    body: (block
+      (variable_declaration
+        name: (variable)
+        type: (type_identifier
+          name: (identifier)))
+      (expression_statement
+        (number)
+        assigns: (variable))
+      (operator_assignment
+        name: (variable)
+        (operator)
+        (number))
+      (expression_statement
+        (collection_literal
+          (number)
+          (number))
+        declares: (variable))
+      (expression_statement
+        (collection_literal
+          (string
+            (string_content))
+          (number))
+        declares: (variable)))))
+
+============================================================
+Errors
+============================================================
+
+🏁 🍇
+  🆗 value 📄 path❗️ 🍇
+    😀 value❗️
+  🍉 🙅 error 🍇
+    🚨 error
+  🍉
+🍉
+
+------------------------------------------------------------
+
+(source_file
+  (start_flag
+    body: (block
+      (error_handler
+        binding: (variable)
+        (method_call
+          name: (identifier)
+          (primary_variable
+            (variable))
+          (mood))
+        body: (block
+          (expression_statement
+            (method_call
+              name: (identifier)
+              (primary_variable
+                (variable))
+              (mood))))
+        error: (variable)
+        error_body: (block
+          (raise
+            (primary_variable
+              (variable))))))))

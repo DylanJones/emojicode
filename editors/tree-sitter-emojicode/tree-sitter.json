@@ -1,0 +1,20 @@
+{
+  "grammars": [
+    {
+      "name": "emojicode",
+      "camelcase": "Emojicode",
+      "scope": "source.emojicode",
+      "path": ".",
+      "file-types": ["emojic", "🍇", "emojii", "🏛"],
+      "highlights": "queries/highlights.scm"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "Artistic-2.0",
+    "description": "Emojicode grammar for tree-sitter",
+    "links": {
+      "repository": "https://github.com/DylanJones/emojicode"
+    }
+  }
+}
