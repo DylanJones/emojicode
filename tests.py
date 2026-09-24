@@ -93,6 +93,8 @@ compilation_tests = [
     "includer",
     "threads",
     "linkHints",
+    "linkHintFlag",
+    "linkHintSource",
     "threadUnjoined",
     "mutexTryLock",
     "inferLiteralFromExpec",

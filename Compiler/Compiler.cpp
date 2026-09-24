@@ -14,7 +14,9 @@
 #include "Parsing/AbstractParser.hpp"
 #include "Prettyprint/PrettyPrinter.hpp"
 #include <llvm/Support/CommandLine.h>
+#include <llvm/ADT/SmallString.h>
 #include <llvm/Support/FileSystem.h>
+#include <llvm/Support/Path.h>
 #include <llvm/Support/Program.h>
 #include <llvm/Support/StringSaver.h>
 #include "MemoryFlowAnalysis/MFAnalyser.hpp"
@@ -104,17 +106,57 @@ static void runTool(const std::string &tool, const std::vector<std::string> &arg
 }
 
 /// Appends the linker arguments for a link hint. A hint is split at whitespace like a command line, so that hints
-/// such as "ssl -lcrypto", which used to be split by the shell, keep working.
+/// such as "ssl -lcrypto", which used to be split by the shell, keep working. The first word names a library
+/// unless it starts with "-", so that flags like "-framework Foundation" or "-L/opt/lib" can be passed as well.
+/// Native source hints are skipped: NativeCompilationPhase compiles them.
 static void appendLinkHint(std::vector<std::string> &args, const std::string &hint) {
+    if (Package::isNativeSourceHint(hint)) {
+        return;
+    }
     llvm::BumpPtrAllocator allocator;
     llvm::StringSaver saver(allocator);
     llvm::SmallVector<const char *, 4> tokens;
-    llvm::cl::TokenizeGNUCommandLine("-l" + hint, saver, tokens);
-    args.insert(args.end(), tokens.begin(), tokens.end());
+    llvm::cl::TokenizeGNUCommandLine(hint, saver, tokens);
+    for (size_t i = 0; i < tokens.size(); i++) {
+        if (i == 0 && tokens[i][0] != '-') {
+            args.emplace_back(std::string("-l") + tokens[i]);
+        }
+        else {
+            args.emplace_back(tokens[i]);
+        }
+    }
+}
+
+void Compiler::NativeCompilationPhase::perform(Compiler *compiler) {
+    auto package = compiler->mainPackage();
+    llvm::StringRef base = objectFilePath_;
+    base.consume_back(".o");
+
+    for (auto &hint : package->linkHints()) {
+        if (!Package::isNativeSourceHint(hint)) {
+            continue;
+        }
+        llvm::SmallString<128> source(package->linkHintsDirectory());
+        llvm::sys::path::append(source, hint);
+        if (!llvm::sys::fs::exists(source)) {
+            throw CompilerError(SourcePosition(), "Native source ", std::string(source), " does not exist.");
+        }
+
+        auto extension = llvm::sys::path::extension(source);
+        if (extension == ".o") {
+            compiler->nativeObjects_.emplace_back(source.str());
+            continue;
+        }
+        auto object = (base + "_" + llvm::sys::path::stem(source) + ".o").str();
+        auto tool = extension == ".c" || extension == ".m" ? cc_ : cxx_;
+        runTool(tool, { "-c", "-O2", std::string(source), "-o", object });
+        compiler->nativeObjects_.emplace_back(object);
+    }
 }
 
 void Compiler::LinkPhase::perform(Compiler *compiler) {
     std::vector<std::string> args { objectFilePath_ };
+    args.insert(args.end(), compiler->nativeObjects_.begin(), compiler->nativeObjects_.end());
 
     for (auto &hint : compiler->mainPackage()->linkHints()) {
         appendLinkHint(args, hint);
@@ -135,7 +177,9 @@ void Compiler::LinkPhase::perform(Compiler *compiler) {
 }
 
 void Compiler::ArchivePhase::perform(Compiler *compiler) {
-    runTool(ar_, { "cr", outPath_, objectFilePath_ });
+    std::vector<std::string> args { "cr", outPath_, objectFilePath_ };
+    args.insert(args.end(), compiler->nativeObjects_.begin(), compiler->nativeObjects_.end());
+    runTool(ar_, args);
 }
 
 std::string Compiler::searchPackage(const std::string &name, const SourcePosition &p) {

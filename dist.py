@@ -39,6 +39,7 @@ if __name__ == "__main__":
     copy_header("runtime", "Runtime.h")
     copy_header("s", "Data.h")
     copy_header("s", "String.h")
+    copy_header("s", "Error.h")
 
     dir_path = os.path.join(path, "packages", "runtime")
     make_dir(dir_path)

@@ -48,6 +48,19 @@ Package::Package(std::string name, std::string path, Compiler *app, bool importe
     : name_(std::move(name)), path_(std::move(path)), imported_(imported), compiler_(app) {}
 Package::~Package() = default;
 
+bool Package::isNativeSourceHint(const std::string &hint) {
+    if (hint.find_first_of(" \t\n") != std::string::npos) {
+        return false;
+    }
+    for (auto extension : { ".c", ".cc", ".cpp", ".cxx", ".m", ".o" }) {
+        auto length = std::strlen(extension);
+        if (hint.size() > length && hint.compare(hint.size() - length, length, extension) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void Package::importPackage(const std::string &name, const std::u32string &ns, const SourcePosition &p) {
     auto import = compiler_->loadPackage(name, p, this);
     for (auto exported : import->exportedTypes_) {

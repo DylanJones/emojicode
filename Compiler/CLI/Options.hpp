@@ -51,6 +51,10 @@ public:
     std::string llvmIrPath() const;
     std::string linker() const;
     std::string ar() const;
+    /// The C compiler, $CC or "cc".
+    std::string cc() const;
+    /// The C++ compiler, which is also the linker: $CXX or "c++".
+    std::string cxx() const;
 
     /// Whether the main purpose of the invocation of the compiler is to prettyprint a file.
     /// This method returns true if prettyprint was explicitely requested or if a file is being migrated.
