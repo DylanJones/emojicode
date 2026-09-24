@@ -155,12 +155,14 @@ regional-indicator  ::= [#x1F1E6-#x1F1FF]
 /* ---- Identifiers ----
  * An identifier starts with an emoji and continues with emoji modifiers and joined emoji. Emoji are joined with
  * U+200D (ZERO WIDTH JOINER) or 🔸. A second regional indicator is joined to a first one directly, to form a
- * flag.
+ * flag. The first emoji after a joiner is always the joined emoji, even if it is 🔸: ↘🔸🔸🔡 is ↘🔸🔸 followed by
+ * 🔡. Only the last joiner can be without one.
  */
 raw-identifier      ::= ( regional-indicator fe* ( regional-indicator fe* )?
                         | emoji-modifier-base fe* ( emoji-modifier fe* )?
                         | ( emoji-char - ( regional-indicator | emoji-modifier-base ) ) fe* )
-                        ( joiner fe* joined-emoji? )*
+                        ( joiner fe* ( #x200D fe* )* joined-emoji )*
+                        ( joiner fe* ( #x200D fe* )* )?
 joiner              ::= #x200D | '🔸'
 joined-emoji        ::= emoji-modifier-base fe* ( emoji-modifier fe* )?
                       | ( emoji-char - emoji-modifier-base ) fe*

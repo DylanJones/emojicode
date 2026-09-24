@@ -14,7 +14,7 @@ EMOJI = r'(?:\p{Extended_Pictographic}|[\x{1F1E6}-\x{1F1FF}])'
 RESERVED = ('❗❓⁉🤜🤛↩🔁🔂👍👎🚨↪🆗🍇🍉🆕👇☣⤴➡⬅🖍🐚🐊🕊🐇🔘📣🍿➕➖➗✖👐🤝⭕💢❌👈👉🚮🙌😜🔤🧲💭📗📘🔟◀▶🎍🍆'
             '🔶🍬✴🍱🚧🍺🔺🔲⚖🏮🙅🤷◼⚪🔵⚫⬛🌍🔏✒🥯⚠🔑🔓🔒🔐📻🍼♻📦📜🔗🏁')
 IDENT = ('(?![' + RESERVED + '])' + EMOJI + r'[\x{FE0F}\x{1F3FB}-\x{1F3FF}\x{1F1E6}-\x{1F1FF}]*'
-         r'(?:[\x{200D}🔸]\x{FE0F}?' + EMOJI + r'[\x{FE0F}\x{1F3FB}-\x{1F3FF}]*)*')
+         r'(?:[\x{200D}🔸][\x{FE0F}\x{200D}]*' + EMOJI + r'[\x{FE0F}\x{1F3FB}-\x{1F3FF}]*)*')
 NOT_VAR = r'\s\p{Extended_Pictographic}\x{FE0F}\x{200D}'
 MODIFIERS = ['🌍', '🔏', '✒', '🥯', '⚠', '🔑', '☣', '🖍', '🔓', '🔒', '🔐', '📻', '🍼']
 

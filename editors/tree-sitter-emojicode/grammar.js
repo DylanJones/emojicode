@@ -55,11 +55,18 @@ const IDENTIFIER_START_CHAR = characterClass(EMOJI_RANGES, NOT_IDENTIFIER_START)
 // is not part of an identifier unless a joiner follows, so that ❗️ is the keyword ❗ followed by whitespace.
 const EMOJI = '([\\u{1F1E6}-\\u{1F1FF}]{1,2}|' + EMOJI_CHAR + '[\\u{1F3FB}-\\u{1F3FF}]?)';
 const IDENTIFIER_START = '([\\u{1F1E6}-\\u{1F1FF}]{1,2}|' + IDENTIFIER_START_CHAR + '[\\u{1F3FB}-\\u{1F3FF}]?)';
-// Emoji joined with U+200D or 🔸.
-const JOINED = '(\\u{FE0F}?[\\u{200D}\\u{1F538}]\\u{FE0F}?' + EMOJI + ')*';
-const IDENTIFIER = re(IDENTIFIER_START + JOINED);
-// Unlike identifiers, 🤷 and 🙅 may end with a joiner.
-const JOINED_OR_TRAILING = '(\\u{FE0F}?[\\u{200D}\\u{1F538}]\\u{FE0F}?(' + EMOJI + ')?)*';
+// Emoji joined with U+200D or 🔸, as the raw-identifier rule of docs/grammar.ebnf describes. The first emoji after a
+// joiner is always the joined one, even if it is 🔸, and only the last joiner can be without one.
+const JOINER = '\\u{FE0F}*[\\u{200D}\\u{1F538}][\\u{FE0F}\\u{200D}]*';
+const JOINED = '(' + JOINER + EMOJI + ')*';
+// An identifier cannot end with U+200D, so it can only end with a 🔸 without an emoji after it.
+const IDENTIFIER = re(IDENTIFIER_START + JOINED + '(\\u{FE0F}*\\u{1F538}\\u{FE0F}*)?');
+// The parser recognizes some emoji by the first code point of an identifier token, so 🍺🔸🐟 is the operator 🍺.
+// These keywords also match the rest of such a token.
+const IDENTIFIER_TAIL = '[\\u{1F3FB}-\\u{1F3FF}]?' + JOINED + '(\\u{FE0F}*\\u{1F538}\\u{FE0F}*)?';
+const kw = text => alias(token(prec(2, seq(text, re(IDENTIFIER_TAIL)))), text);
+// Unlike identifiers, 🤷 and 🙅 may end with any joiner.
+const JOINED_OR_TRAILING = JOINED + '(' + JOINER + ')?';
 // The whitespace rule of docs/grammar.ebnf. U+FE0F is whitespace to the lexer.
 const WHITESPACE = '\\u{9}-\\u{D}\\u{20}\\u{85}\\u{A0}\\u{1680}\\u{2000}-\\u{200A}\\u{2028}\\u{2029}\\u{202F}\\u{205F}\\u{3000}\\u{FE0F}';
 const NOT_VARIABLE = WHITESPACE + EMOJI_CHAR.slice(1, -1);
@@ -92,6 +99,7 @@ module.exports = grammar({
 
   conflicts: $ => [
     [$.method],
+    [$.initializer],
     [$._member_attribute, $.instance_variable],
     [$.error_handler, $.primary_variable],
     [$.parameter, $.primary_variable],
@@ -109,10 +117,10 @@ module.exports = grammar({
       $._type_definition,
     ),
 
-    package_import: $ => seq('📦', field('package', $.variable), field('namespace', $.identifier)),
-    include: $ => seq('📜', field('path', $.string)),
-    start_flag: $ => seq('🏁', optional($.return_type), field('body', $.block)),
-    link_hints: $ => seq('🔗', repeat1($.string), '🔗'),
+    package_import: $ => seq(kw('📦'), field('package', $.variable), field('namespace', $.identifier)),
+    include: $ => seq(kw('📜'), field('path', $.string)),
+    start_flag: $ => seq(kw('🏁'), optional($.return_type), field('body', $.block)),
+    link_hints: $ => seq(kw('🔗'), repeat1($.string), kw('🔗')),
 
     // Comments
 
@@ -128,7 +136,7 @@ module.exports = grammar({
     _type_definition: $ => choice($.class_definition, $.value_type_definition, $.enum_definition,
                                   $.protocol_definition),
 
-    _type_attribute: $ => choice('🌍', '🔏', $.decorator, seq('📻', optional($.string))),
+    _type_attribute: $ => choice(kw('🌍'), kw('🔏'), $.decorator, seq(kw('📻'), optional($.string))),
 
     class_definition: $ => seq(
       repeat($._type_attribute), '🐇', field('name', $.type_identifier),
@@ -144,7 +152,7 @@ module.exports = grammar({
     protocol_definition: $ => seq(repeat($._type_attribute), '🐊', field('name', $.type_identifier),
                                   optional($.generic_parameters), field('body', $.type_body)),
 
-    generic_parameters: $ => seq('🐚', repeat($.generic_parameter), '🍆'),
+    generic_parameters: $ => seq('🐚', repeat($.generic_parameter), kw('🍆')),
     generic_parameter: $ => seq(optional('☣'), field('name', $.variable), field('constraint', $._type)),
 
     type_body: $ => seq('🍇', repeat($._member), '🍉'),
@@ -157,14 +165,14 @@ module.exports = grammar({
       $.protocol_conformance,
     ),
 
-    access_level: _ => choice('🔓', '🔒', '🔐'),
-    _member_attribute: $ => choice('🥯', '⚠', '🔏', '✒', '🐇', '☣', '🖍', '🔑', $.decorator, $.access_level),
+    access_level: _ => choice(kw('🔓'), kw('🔒'), kw('🔐')),
+    _member_attribute: $ => choice(kw('🥯'), kw('⚠'), kw('🔏'), kw('✒'), '🐇', '☣', '🖍', kw('🔑'), $.decorator, $.access_level),
 
     instance_variable: $ => seq('🖍', optional($.access_level), '🆕', field('name', $.variable),
                                 field('type', $._type), optional(seq('⬅', field('value', $._expression)))),
 
     protocol_conformance: $ => seq(optional($.access_level), '🐊', $._type),
-    deinitializer: $ => prec.right(seq(optional($.access_level), '♻', optional(field('body', $._function_body)))),
+    deinitializer: $ => prec.right(seq(optional($.access_level), kw('♻'), optional(field('body', $._function_body)))),
 
     // A method without a body is a protocol method or a method in an interface file.
     // Without a body, a decorator after a method could be a parameter's or the next member's, so both are tried.
@@ -181,8 +189,9 @@ module.exports = grammar({
       optional(field('body', $._function_body)),
     )),
 
-    // Enum values are initializers without parameters and body.
-    initializer: $ => prec.right(seq(
+    // Enum values are initializers without parameters and body. As for methods, a decorator after one could be a
+    // parameter's or the next member's.
+    initializer: $ => prec.dynamic(0, seq(
       repeat($._member_attribute),
       '🆕',
       optional(seq('▶', field('name', $.identifier))),
@@ -192,12 +201,12 @@ module.exports = grammar({
       optional(field('body', $._function_body)),
     )),
 
-    parameter: $ => seq(optional('🍼'), optional($.decorator), field('name', $.variable), field('type', $._type)),
+    parameter: $ => seq(optional(kw('🍼')), optional($.decorator), field('name', $.variable), field('type', $._type)),
     return_type: $ => seq('➡', $._type),
-    error_type: $ => seq('🚧', $._type),
+    error_type: $ => seq(kw('🚧'), $._type),
 
     _function_body: $ => choice($.block, $.external_body),
-    external_body: $ => prec.right(seq('📻', $.string, optional($.block))),
+    external_body: $ => prec.right(seq(kw('📻'), $.string, optional($.block))),
 
     // Types
 
@@ -211,10 +220,10 @@ module.exports = grammar({
       $._type_main,
     ),
     type_value_type: $ => seq(choice('🐇', '🕊', '🔘', '🐊'), $._type),
-    no_return_type: _ => '◼',
-    something_type: _ => seq(optional('✴'), '⚪'),
-    optional_type: $ => seq('🍬', optional('✴'), $._type_main_or_callable),
-    reference_type: $ => seq('✴', $._type_main_or_callable),
+    no_return_type: _ => kw('◼'),
+    something_type: _ => seq(optional(kw('✴')), kw('⚪')),
+    optional_type: $ => seq(kw('🍬'), optional(kw('✴')), $._type_main_or_callable),
+    reference_type: $ => seq(kw('✴'), $._type_main_or_callable),
     _type_main_or_callable: $ => choice($._type_main, $.callable_type),
     _type_main: $ => choice(
       alias($.variable, $.type_variable),
@@ -223,11 +232,11 @@ module.exports = grammar({
       $._named_type,
     ),
     _named_type: $ => prec.right(seq($.type_identifier, optional($.generic_arguments))),
-    someobject_type: _ => '🔵',
+    someobject_type: _ => kw('🔵'),
     callable_type: $ => seq('🍇', optional($.decorator), repeat($._type),
-                            optional(seq('➡', $._type, optional(seq('🚧', $._type)))), '🍉'),
+                            optional(seq('➡', $._type, optional(seq(kw('🚧'), $._type)))), '🍉'),
     // A type in a multiprotocol cannot start with 🍱, which ends it.
-    multi_protocol: $ => seq('🍱', repeat($._type_in_multi_protocol), '🍱'),
+    multi_protocol: $ => seq(kw('🍱'), repeat($._type_in_multi_protocol), kw('🍱')),
     _type_in_multi_protocol: $ => choice(
       $.type_value_type,
       $.no_return_type,
@@ -239,14 +248,14 @@ module.exports = grammar({
       $.someobject_type,
       $._named_type,
     ),
-    type_identifier: $ => seq(optional(seq('🔶', field('namespace', $._type_name))), field('name', $._type_name)),
+    type_identifier: $ => seq(optional(seq(kw('🔶'), field('namespace', $._type_name))), field('name', $._type_name)),
     // 🔂 is a keyword, but also a valid type name.
     _type_name: $ => choice($.identifier, alias('🔂', $.identifier)),
-    generic_arguments: $ => seq('🐚', repeat($._type), '🍆'),
+    generic_arguments: $ => seq('🐚', repeat($._type), kw('🍆')),
 
     _type_expression: $ => choice(
-      seq('⬛', $._prefix_expression),
-      '⚫',
+      seq(kw('⬛'), $._prefix_expression),
+      kw('⚫'),
       $.this,
       $._type,
     ),
@@ -318,9 +327,9 @@ module.exports = grammar({
       $.callable_call,
       $._primary,
     ),
-    unwrap: $ => prec(PREC.prefix, seq('🍺', $._prefix_expression)),
-    reraise: $ => prec(PREC.prefix, seq('🔺', $._prefix_expression)),
-    cast: $ => prec(PREC.prefix, seq('🔲', $._prefix_expression, $._type_expression)),
+    unwrap: $ => prec(PREC.prefix, seq(kw('🍺'), $._prefix_expression)),
+    reraise: $ => prec(PREC.prefix, seq(kw('🔺'), $._prefix_expression)),
+    cast: $ => prec(PREC.prefix, seq(kw('🔲'), $._prefix_expression, $._type_expression)),
     callable_call: $ => seq('⁉', $._prefix_expression, repeat($._expression), $._mood),
 
     _primary: $ => choice(
@@ -346,8 +355,8 @@ module.exports = grammar({
     this: _ => '👇',
     group: $ => seq('🤜', $._expression, '🤛'),
     type_value: $ => seq(choice('🐇', '🕊', '🔘', '🐊'), $._type),
-    size_of: $ => seq('⚖', $._type),
-    is_only_reference: $ => seq('🏮', $.variable),
+    size_of: $ => seq(kw('⚖'), $._type),
+    is_only_reference: $ => seq(kw('🏮'), $.variable),
     selection: $ => seq('📣', $._expression, $._type_expression),
 
     closure: $ => seq(
@@ -368,7 +377,7 @@ module.exports = grammar({
 
     _mood: $ => alias(choice('❗', '❓'), $.mood),
 
-    collection_literal: $ => seq('🍿', repeat(choice($._expression, '➡')), '🍆'),
+    collection_literal: $ => seq('🍿', repeat(choice($._expression, '➡')), kw('🍆')),
 
     // Tokens
 

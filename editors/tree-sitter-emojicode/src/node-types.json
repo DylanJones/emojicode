@@ -2686,6 +2686,11 @@
     }
   },
   {
+    "type": "no_return_type",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "operator",
     "named": true,
     "fields": {}
@@ -3737,6 +3742,11 @@
     }
   },
   {
+    "type": "someobject_type",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "something_type",
     "named": true,
     "fields": {}
@@ -4363,19 +4373,11 @@
     "named": true
   },
   {
-    "type": "no_return_type",
-    "named": true
-  },
-  {
     "type": "no_value",
     "named": true
   },
   {
     "type": "number",
-    "named": true
-  },
-  {
-    "type": "someobject_type",
     "named": true
   },
   {
@@ -4408,6 +4410,10 @@
   },
   {
     "type": "▶",
+    "named": false
+  },
+  {
+    "type": "◼",
     "named": false
   },
   {
@@ -4636,6 +4642,10 @@
   },
   {
     "type": "🔲",
+    "named": false
+  },
+  {
+    "type": "🔵",
     "named": false
   },
   {
