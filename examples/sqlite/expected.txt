@@ -1,0 +1,18 @@
+Created the table emoji
+Inserted grapes as row 1
+Inserted rabbit as row 2
+Inserted sauropod as row 3
+Inserted bagel as row 4
+Emoji from before 2018:
+  🍇 grapes (2010)
+  🐇 rabbit (2010)
+  🦕 sauropod (2017)
+count = 4, average = 4.10
+Updated 1 row(s)
+Scores:
+  bagel: 🤷
+  grapes: 4.5
+  rabbit: 3.0
+  sauropod: 5.3
+Ranked by score: 🦕🍇🐇🥯
+SQLite error 1: no such table: nope
