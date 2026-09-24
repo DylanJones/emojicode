@@ -171,16 +171,26 @@ void SemanticAnalyser::declareInstanceVariables(const Type &type) {
     scoper->pushScope();  // For closure analysis
     ExpressionAnalyser analyser(this, context, package_, std::move(scoper));
 
+    auto cStruct = type.type() == TypeType::ValueType && type.valueType()->isCStruct();
+    if (cStruct && !typeDef->genericParameters().empty()) {
+        throw CompilerError(typeDef->position(), "A C struct (🎍🌊) cannot be generic.");
+    }
+
     for (auto &var : typeDef->instanceVariablesMut()) {
         typeDef->instanceScope().declareVariable(var.name, var.type->analyseType(context), false,
                                                  var.position);
 
+        if (cStruct && !var.type->type().isCRepresentable()) {
+            throw CompilerError(var.position, var.type->type().toString(context),
+                                " cannot be a field of a C struct (🎍🌊).");
+        }
         if (var.expr != nullptr) {
             analyser.expectType(var.type->type(), &var.expr);
         }
     }
 
-    if (!typeDef->instanceVariables().empty() && typeDef->inits().list().empty()) {
+    // C structs are often only read from memory C wrote.
+    if (!cStruct && !typeDef->instanceVariables().empty() && typeDef->inits().list().empty()) {
         package_->compiler()->warn(typeDef->position(), "Type defines ", typeDef->instanceVariables().size(),
                                    " instances variables but has no initializers.");
     }
@@ -311,6 +321,9 @@ void SemanticAnalyser::finalizeProtocols(const Type &type) {
 Type SemanticAnalyser::defaultLiteralType(const Type &type) const {
     if (type.is<TypeType::IntegerLiteral>()) {
         return compiler()->sInteger->type();
+    }
+    if (type.is<TypeType::RealLiteral>()) {
+        return compiler()->sReal->type();
     }
     if (type.is<TypeType::ListLiteral>()) {
         Type dtype = compiler()->sList->type();

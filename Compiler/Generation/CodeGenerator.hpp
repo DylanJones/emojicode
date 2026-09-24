@@ -94,6 +94,8 @@ private:
     void addCExtensionAttributes(Function *function, llvm::Function *fn);
     /// Returns @p existing, a function already declared under the name of the 🎍🌊 function @p function.
     llvm::Function* reuseCFunction(Function *function, llvm::Function *existing, llvm::FunctionType *ft);
+    /// The type of the trampoline of @p function. @see needsCTrampoline()
+    llvm::FunctionType* cTrampolineFunctionType(Function *function);
     void addParamDereferenceable(const Type &type, size_t index, llvm::Function *function, bool ret);
 
     llvm::Function::LinkageTypes linkageForFunction(Function *function) const;

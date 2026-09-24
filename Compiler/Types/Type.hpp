@@ -57,6 +57,8 @@ enum class TypeType {
     /// May only be used for overload resolution, i.e. returned by ASTExpr::analysed and must be replaced by ASTExpr::comply.
     IntegerLiteral,
     /// May only be used for overload resolution, i.e. returned by ASTExpr::analysed and must be replaced by ASTExpr::comply.
+    RealLiteral,
+    /// May only be used for overload resolution, i.e. returned by ASTExpr::analysed and must be replaced by ASTExpr::comply.
     ListLiteral,
     /// May only be used for overload resolution, i.e. returned by ASTExpr::analysed and must be replaced by ASTExpr::comply.
     DictionaryLiteral,
@@ -103,6 +105,7 @@ public:
     static Type noReturn() { return Type(TypeType::NoReturn); }
     static Type someobject() { return Type(TypeType::Someobject); }
     static Type integerLiteral() { return Type(TypeType::IntegerLiteral); }
+    static Type realLiteral() { return Type(TypeType::RealLiteral); }
     static Type listLiteral(Type element) { return Type(TypeType::ListLiteral, { std::move(element) }); }
     static Type dictionaryLiteral(Type element) {
         return Type(TypeType::DictionaryLiteral, { std::move(element) });
