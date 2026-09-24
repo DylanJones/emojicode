@@ -1,0 +1,383 @@
+📘
+  A wrapper around the SQLite C library, written entirely in Emojicode with
+  the C interface of the c package.
+
+  Open a database with 🗃, run SQL with 🔨 and prepare statements with 📝.
+  Values are passed and returned as 💎. Errors are raised as 💥.
+📘
+
+📦 c 🌊
+
+🔗 🔤sqlite3🔤 🔗
+
+💭 The raw C functions, declared exactly as in sqlite3.h. Calling them needs ☣️; the classes below do that safely.
+🕊 🗄 🍇
+  🎍🌊 🐇☣️❗️ 📂 path 🔶🌊📍🐚🔶🌊🔠🍆 database 🔶🌊📍🐚🍬🔶🌊🕳🍆 ➡️ 🔶🌊🔢 📻 🔤sqlite3_open🔤
+  🎍🌊 🐇☣️❗️ 🚪 database 🔶🌊🕳 ➡️ 🔶🌊🔢 📻 🔤sqlite3_close_v2🔤
+  🎍🌊 🐇☣️❗️ 🗯 database 🔶🌊🕳 ➡️ 🔶🌊📍🐚🔶🌊🔠🍆 📻 🔤sqlite3_errmsg🔤
+  🎍🌊 🐇☣️❗️ 🏃 database 🔶🌊🕳 sql 🔶🌊📍🐚🔶🌊🔠🍆
+    callback 🍇🎍🌊🔶🌊🕳 🔶🌊🔢 🔶🌊📍🐚🍬🔶🌊📍🐚🔶🌊🔠🍆🍆 🔶🌊📍🐚🔶🌊📍🐚🔶🌊🔠🍆🍆➡️🔶🌊🔢🍉
+    userData 🔶🌊🕳 errorMessage 🍬🔶🌊🕳 ➡️ 🔶🌊🔢 📻 🔤sqlite3_exec🔤
+  🎍🌊 🐇☣️❗️ 📝 database 🔶🌊🕳 sql 🔶🌊📍🐚🔶🌊🔠🍆 length 🔶🌊🔢 statement 🔶🌊📍🐚🍬🔶🌊🕳🍆
+    tail 🍬🔶🌊🕳 ➡️ 🔶🌊🔢 📻 🔤sqlite3_prepare_v2🔤
+  🎍🌊 🐇☣️❗️ 🔢 statement 🔶🌊🕳 index 🔶🌊🔢 value 🔢 ➡️ 🔶🌊🔢 📻 🔤sqlite3_bind_int64🔤
+  🎍🌊 🐇☣️❗️ 💯 statement 🔶🌊🕳 index 🔶🌊🔢 value 💯 ➡️ 🔶🌊🔢 📻 🔤sqlite3_bind_double🔤
+  🎍🌊 🐇☣️❗️ 🔡 statement 🔶🌊🕳 index 🔶🌊🔢 value 🔶🌊📍🐚🔶🌊🔠🍆 length 🔶🌊🔢 destructor 🔶🌊🕳
+    ➡️ 🔶🌊🔢 📻 🔤sqlite3_bind_text🔤
+  🎍🌊 🐇☣️❗️ 🈳 statement 🔶🌊🕳 index 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤sqlite3_bind_null🔤
+  🎍🌊 🐇☣️❗️ 👣 statement 🔶🌊🕳 ➡️ 🔶🌊🔢 📻 🔤sqlite3_step🔤
+  🎍🌊 🐇☣️❗️ 📊 statement 🔶🌊🕳 ➡️ 🔶🌊🔢 📻 🔤sqlite3_column_count🔤
+  🎍🌊 🐇☣️❗️ 🏷 statement 🔶🌊🕳 index 🔶🌊🔢 ➡️ 🔶🌊📍🐚🔶🌊🔠🍆 📻 🔤sqlite3_column_name🔤
+  🎍🌊 🐇☣️❗️ 🔎 statement 🔶🌊🕳 index 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤sqlite3_column_type🔤
+  🎍🌊 🐇☣️❗️ 🎱 statement 🔶🌊🕳 index 🔶🌊🔢 ➡️ 🔢 📻 🔤sqlite3_column_int64🔤
+  🎍🌊 🐇☣️❗️ 🌡 statement 🔶🌊🕳 index 🔶🌊🔢 ➡️ 💯 📻 🔤sqlite3_column_double🔤
+  🎍🌊 🐇☣️❗️ 🧾 statement 🔶🌊🕳 index 🔶🌊🔢 ➡️ 🍬🔶🌊📍🐚🔶🌊🔠🍆 📻 🔤sqlite3_column_text🔤
+  🎍🌊 🐇☣️❗️ 📐 statement 🔶🌊🕳 index 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤sqlite3_column_bytes🔤
+  🎍🌊 🐇☣️❗️ 🔃 statement 🔶🌊🕳 ➡️ 🔶🌊🔢 📻 🔤sqlite3_reset🔤
+  🎍🌊 🐇☣️❗️ 🧹 statement 🔶🌊🕳 ➡️ 🔶🌊🔢 📻 🔤sqlite3_clear_bindings🔤
+  🎍🌊 🐇☣️❗️ 🗑 statement 🔶🌊🕳 ➡️ 🔶🌊🔢 📻 🔤sqlite3_finalize🔤
+  🎍🌊 🐇☣️❗️ ✏️ database 🔶🌊🕳 ➡️ 🔶🌊🔢 📻 🔤sqlite3_changes🔤
+  🎍🌊 🐇☣️❗️ 🆔 database 🔶🌊🕳 ➡️ 🔢 📻 🔤sqlite3_last_insert_rowid🔤
+  🎍🌊 🐇☣️❗️ 🏷🔸📦 ➡️ 🔶🌊📍🐚🔶🌊🔠🍆 📻 🔤sqlite3_libversion🔤
+🍉
+
+📗 An error reported by SQLite. 📗
+🌍 🐇 💥 🚧 🍇
+  🖍🆕 code 🔢
+
+  🆕 message 🔡 🍼 code 🔢 🍇
+    ⤴️🆕 message❗️
+  🍉
+
+  📗 The SQLite result code, e.g. 1 for `SQLITE_ERROR`. 📗
+  ❗️ 🔢 ➡️ 🔢 🍇
+    ↩️ code
+  🍉
+🍉
+
+📗 A value stored in a database: an integer, a real, a text or NULL. 📗
+🌍 🕊 💎 🍇
+  🐊 ↘️🔸🔡
+
+  🖍🆕 kind 🔢
+  🖍🆕 integer 🔢
+  🖍🆕 real 💯
+  🖍🆕 text 🔡
+
+  📗 An integer. 📗
+  🆕 ▶️🔢 value 🔢 🍇
+    1 ➡️ 🖍kind
+    value ➡️ 🖍integer
+    0.0 ➡️ 🖍real
+    🔤🔤 ➡️ 🖍text
+  🍉
+  📗 A real number. 📗
+  🆕 ▶️💯 value 💯 🍇
+    2 ➡️ 🖍kind
+    0 ➡️ 🖍integer
+    value ➡️ 🖍real
+    🔤🔤 ➡️ 🖍text
+  🍉
+  📗 A text. 📗
+  🆕 ▶️🔡 value 🔡 🍇
+    3 ➡️ 🖍kind
+    0 ➡️ 🖍integer
+    0.0 ➡️ 🖍real
+    value ➡️ 🖍text
+  🍉
+  📗 NULL. 📗
+  🆕 ▶️🈳 🍇
+    5 ➡️ 🖍kind
+    0 ➡️ 🖍integer
+    0.0 ➡️ 🖍real
+    🔤🔤 ➡️ 🖍text
+  🍉
+
+  📗 Whether the value is NULL. 📗
+  ❗️ 🈳 ➡️ 👌 🍇
+    ↩️ kind 🙌 5
+  🍉
+  📗 The integer, or 🤷‍♀️ if the value is not an integer. 📗
+  ❗️ 🔢 ➡️ 🍬🔢 🍇
+    ↪️ kind 🙌 1 🍇
+      ↩️ integer
+    🍉
+    ↩️ 🤷‍♀️
+  🍉
+  📗 The real number, or 🤷‍♀️ if the value is not a real number. 📗
+  ❗️ 💯 ➡️ 🍬💯 🍇
+    ↪️ kind 🙌 2 🍇
+      ↩️ real
+    🍉
+    ↩️ 🤷‍♀️
+  🍉
+
+  📗 The value as SQLite would show it. NULL is shown as 🤷. 📗
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↪️ kind 🙌 1 🍇
+      ↩️ 🔡 integer 10❗️
+    🍉
+    ↪️ kind 🙌 2 🍇
+      ↩️ 🔡 real 2❗️
+    🍉
+    ↪️ kind 🙌 3 🍇
+      ↩️ text
+    🍉
+    ↩️ 🔤🤷🔤
+  🍉
+
+  📗 Binds this value to the parameter at *index* of *statement*. 📗
+  🐇☣️❗️ 📌 value 💎 statement 🔶🌊🕳 index 🔢 ➡️ 🔶🌊🔢 🍇
+    🆕🔶🌊🔢▶️🔢 index❗️ ➡️ position
+    ↪️ 🈳value❗️ 🍇
+      ↩️ 🈳🕊🗄 statement position❗️
+    🍉
+    ↪️ 🔢value❗️ ➡️ integer 🍇
+      ↩️ 🔢🕊🗄 statement position integer❗️
+    🍉
+    ↪️ 💯value❗️ ➡️ real 🍇
+      ↩️ 💯🕊🗄 statement position real❗️
+    🍉
+    ↩️ 🧶🕊🔶🌊🧶 🔡value❗️ 🍇 text 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🔶🌊🔢
+      💭 SQLITE_TRANSIENT makes SQLite copy the text, which is only valid while this closure runs.
+      ↩️ 🔡🕊🗄 statement position text -1 🆕🔶🌊🕳▶️🔢 -1❗️❗️
+    🍉❗️
+  🍉
+
+  📗 Reads the column at *index* of the current row of *statement*. 📗
+  🐇☣️❗️ 🐽 statement 🔶🌊🕳 index 🔢 ➡️ 💎 🍇
+    🆕🔶🌊🔢▶️🔢 index❗️ ➡️ position
+    🔢🔎🕊🗄 statement position❗️❗️ ➡️ type
+    ↪️ type 🙌 1 🍇
+      ↩️ 🆕💎▶️🔢 🎱🕊🗄 statement position❗️❗️
+    🍉
+    ↪️ type 🙌 2 🍇
+      ↩️ 🆕💎▶️💯 🌡🕊🗄 statement position❗️❗️
+    🍉
+    ↪️ 🧾🕊🗄 statement position❗️ ➡️ text 🍇
+      🔢📐🕊🗄 statement position❗️❗️ ➡️ length
+      ↩️ 🆕💎▶️🔡 🔡🕊🔶🌊🧶 text length❗️❗️
+    🍉
+    ↩️ 🆕💎▶️🈳❗️
+  🍉
+🍉
+
+💭 Carries the Emojicode callback of 🔨 through sqlite3_exec as user data.
+🐇 📬 🍇
+  🖍🆕 callback 🍇🍯🐚💎🍆🍉
+
+  🆕 🍼 🎍🥡 callback 🍇🍯🐚💎🍆🍉 🍇🍉
+
+  ❗️ 📨 row 🍯🐚💎🍆 🍇
+    ⁉️ callback row❗️
+  🍉
+🍉
+
+📗
+  A connection to an SQLite database.
+
+  The connection is closed when the 🗃 is released.
+📗
+🌍 🐇 🗃 🍇
+  🖍🆕 handle 🔶🌊🕳
+
+  📗
+    Opens the database at *path*. The path `:memory:` opens a new database in
+    memory.
+  📗
+  🆕 path 🔡 🚧💥 🍇
+    ☣️ 🍇
+      🍺🛒🕊🔶🌊🔧 🆕🔶🌊📏▶️🔢 ⚖️🔶🌊🕳❗️❗️ ➡️ slot
+      📍🐚🍬🔶🌊🕳🍆slot❗️ ➡️ out
+      🧶🕊🔶🌊🧶 path 🍇 text 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🔶🌊🔢
+        ↩️ 📂🕊🗄 text out❗️
+      🍉❗️ ➡️ result
+      🐽out❗️ ➡️ database
+      🗑🕊🔶🌊🔧 slot❗️
+      💭 sqlite3_open only fails to return a handle if it cannot allocate memory.
+      🍺database ➡️ opened
+      ↪️ ❎🔢result❗️ 🙌 0❗️ 🍇
+        💭 A 🗃 that fails to open is not deinitialized, so close the handle here.
+        🔡🕊🔶🌊🧶 🗯🕊🗄 opened❗️❗️ ➡️ message
+        🚪🕊🗄 opened❗️
+        🚨 🆕💥 message 🔢result❗️❗️
+      🍉
+      opened ➡️ 🖍handle
+    🍉
+  🍉
+
+  ♻️ 🍇
+    ☣️ 🍇
+      🚪🕊🗄 handle❗️
+    🍉
+  🍉
+
+  📗 Runs *sql*, which may consist of several statements. 📗
+  ❗️ 🔨 sql 🔡 🚧💥 🍇
+    🔺🔨👇 sql 🍇🎍🥡 row 🍯🐚💎🍆 🍉❗️
+  🍉
+
+  📗 Runs *sql* and calls *row* with each row of the results. 📗
+  ❗️ 🔨 sql 🔡 🎍🥡 row 🍇🍯🐚💎🍆🍉 🚧💥 🍇
+    🆕📬 row❗️ ➡️ mailbox
+    ☣️ 🍇
+      🆕🔶🌊🕳▶️📤 mailbox❗️ ➡️ userData
+      🧶🕊🔶🌊🧶 sql 🍇 text 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🔶🌊🔢
+        ↩️ 🏃🕊🗄 handle text 🍇🎍🌊 userData 🔶🌊🕳 count 🔶🌊🔢
+            values 🔶🌊📍🐚🍬🔶🌊📍🐚🔶🌊🔠🍆🍆 names 🔶🌊📍🐚🔶🌊📍🐚🔶🌊🔠🍆🍆 ➡️ 🔶🌊🔢
+          🆕🍯🐚💎🍆❗️ ➡️ 🖍🆕 row
+          🔂 i 🆕⏩ 0 🔢count❗️❗️ 🍇
+            🔡🕊🔶🌊🧶 🐽⏭names i❗️❗️❗️ ➡️ name
+            ↪️ 🐽⏭values i❗️❗️ ➡️ value 🍇
+              🆕💎▶️🔡 🔡🕊🔶🌊🧶 value❗️❗️ ➡️🐽 row name❗️
+            🍉
+            🙅 🍇
+              🆕💎▶️🈳❗️ ➡️🐽 row name❗️
+            🍉
+          🍉
+          📨 👀🐚📬🍆userData❗️ row❗️
+          ↩️ 0
+        🍉 userData 🤷‍♀️❗️
+      🍉❗️ ➡️ result
+      📥🐚📬🍆userData❗️ ➡️ taken
+      ↪️ ❎🔢result❗️ 🙌 0❗️ 🍇
+        🚨 🆕💥 💬👇❗️ 🔢result❗️❗️
+      🍉
+    🍉
+  🍉
+
+  📗 Prepares *sql*, a single statement, for running with 🗒. 📗
+  ❗️ 📝 sql 🔡 ➡️ 🗒 🚧💥 🍇
+    ☣️ 🍇
+      🍺🛒🕊🔶🌊🔧 🆕🔶🌊📏▶️🔢 ⚖️🔶🌊🕳❗️❗️ ➡️ slot
+      📍🐚🍬🔶🌊🕳🍆slot❗️ ➡️ out
+      🧶🕊🔶🌊🧶 sql 🍇 text 🔶🌊📍🐚🔶🌊🔠🍆 ➡️ 🔶🌊🔢
+        ↩️ 📝🕊🗄 handle text -1 out 🤷‍♀️❗️
+      🍉❗️ ➡️ result
+      🐽out❗️ ➡️ statement
+      🗑🕊🔶🌊🔧 slot❗️
+      ↪️ ❎🔢result❗️ 🙌 0❗️ 🍇
+        🚨 🆕💥 💬👇❗️ 🔢result❗️❗️
+      🍉
+      ↪️ statement ➡️ prepared 🍇
+        ↩️ 🆕🗒 👇 prepared❗️
+      🍉
+      🚨 🆕💥 🔤The SQL contains no statement🔤 21❗️
+    🍉
+  🍉
+
+  📗 The number of rows changed by the last INSERT, UPDATE or DELETE. 📗
+  ❗️ ✏️ ➡️ 🔢 🍇
+    ☣️ 🍇
+      ↩️ 🔢✏️🕊🗄 handle❗️❗️
+    🍉
+  🍉
+
+  📗 The rowid of the last inserted row. 📗
+  ❗️ 🆔 ➡️ 🔢 🍇
+    ☣️ 🍇
+      ↩️ 🆔🕊🗄 handle❗️
+    🍉
+  🍉
+
+  📗 The message of the last error. 📗
+  ❗️ 💬 ➡️ 🔡 🍇
+    ☣️ 🍇
+      ↩️ 🔡🕊🔶🌊🧶 🗯🕊🗄 handle❗️❗️
+    🍉
+  🍉
+
+  📗 The version of the SQLite library, e.g. 3.43.2. 📗
+  🐇❗️ 🏷 ➡️ 🔡 🍇
+    ☣️ 🍇
+      ↩️ 🔡🕊🔶🌊🧶 🏷🔸📦🕊🗄❗️❗️
+    🍉
+  🍉
+🍉
+
+📗
+  A prepared statement.
+
+  Bind values to its parameters with 📌, then call 👣 to go from row to row.
+  The statement is finalized when the 🗒 is released.
+📗
+🌍 🐇 🗒 🍇
+  🖍🆕 database 🗃
+  🖍🆕 handle 🔶🌊🕳
+
+  🆕 🍼 database 🗃 🍼 handle 🔶🌊🕳 🍇🍉
+
+  ♻️ 🍇
+    ☣️ 🍇
+      🗑🕊🗄 handle❗️
+    🍉
+  🍉
+
+  📗 Binds *value* to the parameter at *index*. The first parameter has the index 1. 📗
+  ❗️ 📌 index 🔢 value 💎 🚧💥 🍇
+    ☣️ 🍇
+      📌🕊💎 value handle index❗️ ➡️ result
+      ↪️ ❎🔢result❗️ 🙌 0❗️ 🍇
+        🚨 🆕💥 💬database❗️ 🔢result❗️❗️
+      🍉
+    🍉
+  🍉
+
+  📗
+    Runs the statement until the next row. Returns 👍 if there is a row to read
+    with 🐽 and 👎 if the statement has finished.
+  📗
+  ❗️ 👣 ➡️ 👌 🚧💥 🍇
+    ☣️ 🍇
+      🔢👣🕊🗄 handle❗️❗️ ➡️ result
+      ↪️ result 🙌 100 🍇
+        ↩️ 👍
+      🍉
+      ↪️ result 🙌 101 🍇
+        ↩️ 👎
+      🍉
+      🚨 🆕💥 💬database❗️ result❗️
+    🍉
+  🍉
+
+  📗 The number of columns in a row. 📗
+  ❗️ 📊 ➡️ 🔢 🍇
+    ☣️ 🍇
+      ↩️ 🔢📊🕊🗄 handle❗️❗️
+    🍉
+  🍉
+
+  📗 The name of the column at *index*. The first column has the index 0. 📗
+  ❗️ 🏷 index 🔢 ➡️ 🔡 🍇
+    ☣️ 🍇
+      ↩️ 🔡🕊🔶🌊🧶 🏷🕊🗄 handle 🆕🔶🌊🔢▶️🔢 index❗️❗️❗️
+    🍉
+  🍉
+
+  📗 The value of the column at *index* in the current row. The first column has the index 0. 📗
+  ❗️ 🐽 index 🔢 ➡️ 💎 🍇
+    ☣️ 🍇
+      ↩️ 🐽🕊💎 handle index❗️
+    🍉
+  🍉
+
+  📗 Resets the statement so that it can be run again, keeping the bound values. 📗
+  ❗️ 🔃 🍇
+    ☣️ 🍇
+      🔃🕊🗄 handle❗️ ➡️ result
+    🍉
+  🍉
+
+  📗 Runs the statement to the end and returns all rows, each mapping column names to values. 📗
+  ❗️ 🍨 ➡️ 🍨🐚🍯🐚💎🍆🍆 🚧💥 🍇
+    🆕🍨🐚🍯🐚💎🍆🍆❗️ ➡️ 🖍🆕 rows
+    🔁 🔺👣👇❗️ 🍇
+      🆕🍯🐚💎🍆❗️ ➡️ 🖍🆕 row
+      🔂 i 🆕⏩ 0 📊👇❗️❗️ 🍇
+        🐽👇 i❗️ ➡️🐽 row 🏷👇 i❗️❗️
+      🍉
+      🐻 rows row❗️
+    🍉
+    ↩️ rows
+  🍉
+🍉

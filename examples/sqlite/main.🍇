@@ -1,0 +1,77 @@
+📦 sqlite 🏠
+
+💭 Runs a few SQL queries against an in-memory database through the sqlite package.
+🕊 🎬 🍇
+  🐇❗️ 🎥 🚧💥 🍇
+    🔺🆕🗃 🔤:memory:🔤❗️ ➡️ database
+
+    🔺🔨 database 🔤CREATE TABLE emoji (glyph TEXT, name TEXT, year INTEGER, score REAL)🔤❗️
+    😀 🔤Created the table emoji🔤❗️
+
+    💭 Insert rows through one prepared statement, rebinding its parameters for each row.
+    🔺📝 database 🔤INSERT INTO emoji (glyph, name, year, score) VALUES (?, ?, ?, ?)🔤❗️ ➡️ insert
+    🍿
+      🍿 🆕💎▶️🔡 🔤🍇🔤❗️ 🆕💎▶️🔡 🔤grapes🔤❗️ 🆕💎▶️🔢 2010❗️ 🆕💎▶️💯 4.5❗️ 🍆
+      🍿 🆕💎▶️🔡 🔤🐇🔤❗️ 🆕💎▶️🔡 🔤rabbit🔤❗️ 🆕💎▶️🔢 2010❗️ 🆕💎▶️💯 3.0❗️ 🍆
+      🍿 🆕💎▶️🔡 🔤🦕🔤❗️ 🆕💎▶️🔡 🔤sauropod🔤❗️ 🆕💎▶️🔢 2017❗️ 🆕💎▶️💯 4.8❗️ 🍆
+      🍿 🆕💎▶️🔡 🔤🥯🔤❗️ 🆕💎▶️🔡 🔤bagel🔤❗️ 🆕💎▶️🔢 2018❗️ 🆕💎▶️🈳❗️ 🍆
+    🍆 ➡️ rows
+    🔂 row rows 🍇
+      🔂 i 🆕⏩ 0 4❗️ 🍇
+        🔺📌 insert i ➕ 1 🐽row i❗️❗️
+      🍉
+      🔺👣 insert❗️ ➡️ hasRow
+      🔃 insert❗️
+      😀 🔤Inserted 🧲🐽row 1❗️🧲 as row 🧲🆔database❗️🧲🔤❗️
+    🍉
+
+    💭 A query with a bound parameter, read row by row.
+    🔺📝 database 🔤SELECT glyph, name, year FROM emoji WHERE year < ? ORDER BY year, name🔤❗️ ➡️ old
+    🔺📌 old 1 🆕💎▶️🔢 2018❗️❗️
+    😀 🔤Emoji from before 2018:🔤❗️
+    🔁 🔺👣 old❗️ 🍇
+      😀 🔤  🧲🐽old 0❗️🧲 🧲🐽old 1❗️🧲 (🧲🐽old 2❗️🧲)🔤❗️
+    🍉
+
+    💭 Aggregates return an integer and a real column. AVG skips the NULL score.
+    🔺📝 database 🔤SELECT COUNT(*) AS count, AVG(score) AS average FROM emoji🔤❗️ ➡️ statistics
+    🔺👣 statistics❗️ ➡️ hasStatistics
+    😀 🔤🧲🏷statistics 0❗️🧲 = 🧲🐽statistics 0❗️🧲, 🧲🏷statistics 1❗️🧲 = 🧲🐽statistics 1❗️🧲🔤❗️
+
+    💭 An update, and how many rows it changed.
+    🔺🔨 database 🔤UPDATE emoji SET score = score + 0.5 WHERE year > 2015 AND score IS NOT NULL🔤❗️
+    😀 🔤Updated 🧲✏️database❗️🧲 row(s)🔤❗️
+
+    💭 sqlite3_exec calls a C callback for each row, which calls this closure.
+    😀 🔤Scores:🔤❗️
+    🔺🔨 database 🔤SELECT name, score FROM emoji ORDER BY name🔤 🍇🎍🥡 row 🍯🐚💎🍆
+      😀 🔤  🧲🍺🐽row 🔤name🔤❗️🧲: 🧲🍺🐽row 🔤score🔤❗️🧲🔤❗️
+    🍉❗️
+
+    💭 All rows at once.
+    🔺📝 database 🔤SELECT glyph FROM emoji ORDER BY score DESC🔤❗️ ➡️ ranking
+    🔤🔤 ➡️ 🖍🆕 glyphs
+    🔂 row 🔺🍨 ranking❗️ 🍇
+      🔤🧲glyphs🧲🧲🍺🐽row 🔤glyph🔤❗️🧲🔤 ➡️ 🖍glyphs
+    🍉
+    😀 🔤Ranked by score: 🧲glyphs🧲🔤❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆗 🎥🕊🎬❗️ 🍇🍉
+  🙅 error 🍇
+    😀 🔤Error: 🧲💬error❗️🧲🔤❗️
+  🍉
+
+  💭 An error from SQLite, raised as 💥.
+  🆗 database 🆕🗃 🔤:memory:🔤❗️ 🍇
+    🆗 🔨 database 🔤SELECT * FROM nope🔤❗️ 🍇🍉
+    🙅 error 🍇
+      😀 🔤SQLite error 🧲🔢error❗️🧲: 🧲💬error❗️🧲🔤❗️
+    🍉
+  🍉
+  🙅 error 🍇
+    😀 🔤Could not open the database🔤❗️
+  🍉
+🍉

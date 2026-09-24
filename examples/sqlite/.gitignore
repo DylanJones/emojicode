@@ -1,0 +1,4 @@
+packages/
+main
+*.o
+output.txt
