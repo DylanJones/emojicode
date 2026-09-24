@@ -187,6 +187,9 @@ public:
 private:
     std::shared_ptr<ASTExpr> callable_;
     ASTArguments args_;
+
+    /// Calls a C function pointer (🍇🎍🌊 … 🍉).
+    Value* generateCCall(FunctionCodeGenerator *fg, llvm::Value *function, const Type &type) const;
 };
 
 } // namespace EmojicodeCompiler

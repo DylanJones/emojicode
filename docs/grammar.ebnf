@@ -360,7 +360,8 @@ type-main           ::= callable-type
                       | type-identifier generic-arguments?
 
 /* An error type can only follow a return type: in 🍇🔢🚧🔡🍉, 🚧 is parsed as a parameter type. */
-callable-type       ::= '🍇' type* ( '➡' type ( '🚧' type )? )? '🍉'
+/* 🎍🌊 makes the type a C function pointer. */
+callable-type       ::= '🍇' '🎍🌊'? type* ( '➡' type ( '🚧' type )? )? '🍉'
 multi-protocol      ::= '🍱' ( type - ( '🍱' tokens ) )* '🍱'
 
 type-identifier     ::= ( '🔶' type-name )? type-name                /* optional namespace */
@@ -465,7 +466,7 @@ collection-element  ::= expression - ( '🍆' tokens )
 
 /* The parser reads parameters, then a return type, then an error type, for as long as the next token allows.
  * So when a part is missing, the body cannot start with a token that would begin it. */
-closure             ::= '🍇' '🎍🥡'? ( variable type )*
+closure             ::= '🍇' '🎍🥡'? '🎍🌊'? ( variable type )*                 /* 🎍🌊: a C function */
                         ( return-type error-type statement*
                         | return-type ( statement* - ( '🚧' tokens ) )
                         | error-type statement*

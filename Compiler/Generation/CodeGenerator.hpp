@@ -36,6 +36,10 @@ struct Parameter;
 ///
 /// A CodeGenerator instance is bound to a Compiler and always generates code for its main package including any
 /// relevant declaration and inline functions from all imported packages.
+/// Returns the attribute C compilers put on an integer argument or return value of the type: Integers narrower than
+/// 32 bits are sign or zero extended. Returns llvm::Attribute::None for all other types.
+llvm::Attribute::AttrKind cExtensionAttribute(const Type &type);
+
 class CodeGenerator {
 public:
     /// Creates a CodeGenerator bound to the provided Compiler.

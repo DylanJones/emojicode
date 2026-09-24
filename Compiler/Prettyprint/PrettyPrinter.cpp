@@ -131,6 +131,7 @@ void PrettyPrinter::printArguments(Function *function) {
 void PrettyPrinter::printClosure(Function *function, bool escaping) {
     prettyStream_ << "🍇";
     if (escaping) prettyStream_ << "🎍🥡 ";
+    if (function->isC()) prettyStream_ << "🎍🌊 ";
     printArguments(function);
     printReturnType(function);
     printErrorType(function);

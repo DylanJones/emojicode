@@ -403,7 +403,7 @@ void FunctionCodeGenerator::release(llvm::Value *value, const Type &otype) {
             manageBox(false, boxInfo, value, type);
         }
     }
-    else if (type.type() == TypeType::Callable) {
+    else if (type.type() == TypeType::Callable && !type.isCCallable()) {
         builder().CreateCall(generator()->runTime().releaseCapture(), builder().CreateExtractValue(value, 1));
     }
 }
@@ -416,7 +416,7 @@ void FunctionCodeGenerator::retain(llvm::Value *value, const Type &otype) {
     else if (type.type() == TypeType::ValueType && type.valueType() == compiler()->sMemory) {
         builder().CreateCall(generator()->runTime().retainMemory(), value);
     }
-    else if (type.type() == TypeType::Callable) {
+    else if (type.type() == TypeType::Callable && !type.isCCallable()) {
         builder().CreateCall(generator()->runTime().retain(), builder().CreateExtractValue(value, 1));
     }
     else if (type.type() == TypeType::ValueType) {

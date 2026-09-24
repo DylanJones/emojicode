@@ -371,6 +371,9 @@ std::shared_ptr<ASTExpr> FunctionParser::parseClosure(const Token &token) {
                                                Mood::Imperative, false, FunctionType::Function, false);
 
     bool escaping = stream_.consumeTokenIf(E_TAKEOUT_BOX, TokenType::Decorator);
+    if (stream_.consumeTokenIf(E_WATER_WAVE, TokenType::Decorator)) {
+        function->setC();
+    }
 
     parseParameters(function.get(), false, false);
     parseReturnType(function.get());

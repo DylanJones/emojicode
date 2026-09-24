@@ -79,7 +79,10 @@ public:
 
     void toCodeType(PrettyStream &pretty) const override;
     Type getType(const TypeContext &typeContext, bool allowGenericInference) const override;
+    /// Makes this a C function pointer type, 🍇🎍🌊 … 🍉.
+    void setC() { c_ = true; }
 private:
+    bool c_ = false;
     std::unique_ptr<ASTType> return_;
     std::vector<std::unique_ptr<ASTType>> params_;
     std::unique_ptr<ASTType> errorType_;

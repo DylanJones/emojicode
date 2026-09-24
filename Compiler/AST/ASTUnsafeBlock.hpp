@@ -16,6 +16,8 @@ public:
     void analyse(FunctionAnalyser *analyser) override;
     void generate(FunctionCodeGenerator *fg) const override { block_.generate(fg); }
 
+    const ASTBlock& block() const { return block_; }
+
     void toCode(PrettyStream &pretty) const override;
     void analyseMemoryFlow(MFFunctionAnalyser *analyser) override {
         block_.analyseMemoryFlow(analyser);

@@ -46,6 +46,9 @@ Value* ASTSizeOf::generate(FunctionCodeGenerator *fg) const {
 Value* ASTCallableCall::generate(FunctionCodeGenerator *fg) const {
     auto callable = callable_->generate(fg);
     auto type = callable_->expressionType();
+    if (type.isCCallable()) {
+        return generateCCall(fg, callable, type);
+    }
 
     auto returnType = fg->typeHelper().llvmTypeFor(type.returnType());
     std::vector<llvm::Type *> argTypes { fg->typeHelper().pointer() };
@@ -66,6 +69,28 @@ Value* ASTCallableCall::generate(FunctionCodeGenerator *fg) const {
         args.emplace_back(errorPointer());
     }
     return handleResult(fg, fg->builder().CreateCall(functionType, function, args));
+}
+
+Value* ASTCallableCall::generateCCall(FunctionCodeGenerator *fg, llvm::Value *function, const Type &type) const {
+    std::vector<llvm::Type *> argTypes;
+    std::vector<llvm::Value *> args;
+    for (size_t i = 0; i < type.parametersCount(); i++) {
+        argTypes.emplace_back(fg->typeHelper().llvmTypeFor(type.parameters()[i]));
+        args.emplace_back(args_.args()[i]->generate(fg));
+    }
+    auto functionType = llvm::FunctionType::get(fg->typeHelper().llvmTypeFor(type.returnType()), argTypes, false);
+    auto call = fg->builder().CreateCall(functionType, function, args);
+    for (size_t i = 0; i < type.parametersCount(); i++) {
+        auto attribute = cExtensionAttribute(type.parameters()[i]);
+        if (attribute != llvm::Attribute::None) {
+            call->addParamAttr(i, attribute);
+        }
+    }
+    auto attribute = cExtensionAttribute(type.returnType());
+    if (attribute != llvm::Attribute::None) {
+        call->addRetAttr(attribute);
+    }
+    return handleResult(fg, call);
 }
 
 }  // namespace EmojicodeCompiler

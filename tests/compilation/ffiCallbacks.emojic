@@ -1,0 +1,77 @@
+📦 c 🌊
+
+🕊 📚 🍇
+  🎍🌊 🐇☣️❗️ 🔀 base 🔶🌊🕳 count 🔶🌊📏 size 🔶🌊📏 compare 🍇🎍🌊🔶🌊🕳🔶🌊🕳➡️🔶🌊🔢🍉 📻 🔤qsort🔤
+  🎍🌊 🐇☣️❗️ 🧵 thread 🔶🌊🕳 attributes 🍬🔶🌊🕳 start 🍇🎍🌊🍬🔶🌊🕳➡️🍬🔶🌊🕳🍉 argument 🍬🔶🌊🕳
+    ➡️ 🔶🌊🔢 📻 🔤pthread_create🔤
+  🎍🌊 🐇☣️❗️ 🛂 thread 🔶🌊🕳 result 🍬🔶🌊🕳 ➡️ 🔶🌊🔢 📻 🔤pthread_join🔤
+  🎍🌊 🐇☣️❗️ 🐁 apply 🍇🎍🌊🔶🌊🐁➡️🔶🌊🐁🍉 value 🔶🌊🐁 ➡️ 🔶🌊🐁 📻 🔤ffiCallbacksApplyShort🔤
+  🎍🌊 🐇☣️❗️ 🎣 ➡️ 🍇🎍🌊🔶🌊🔢➡️🔶🌊🔢🍉 📻 🔤ffiCallbacksGetSquare🔤
+🍉
+
+🔗 🔤ffiCallbacks.c🔤 🔗
+
+🐇 📬 🍇
+  🐊 ↘️🔸🔡
+
+  🖍🆕 message 🔡
+  🖍🆕 count 🔢 ⬅️ 0
+
+  🆕 🍼 message 🔡 🍇🍉
+
+  ❗️ 📨 🍇
+    count ⬅️➕ 1
+  🍉
+
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔤🧲message🧲 🧲count🧲🔤
+  🍉
+🍉
+
+🏁 🍇
+  ☣️ 🍇
+    💭 qsort with a comparator written in Emojicode
+    6 ➡️ count
+    🍺🛒🕊🔶🌊🔧 🆕🔶🌊📏▶️🔢 count ✖️ ⚖️🔶🌊🔢❗️❗️ ➡️ memory
+    📍🐚🔶🌊🔢🍆memory❗️ ➡️ numbers
+    🍿 5 -3 42 0 17 -3 🍆 ➡️ values
+    🔂 i 🆕⏩ 0 count❗️ 🍇
+      🆕🔶🌊🔢▶️🔢 🐽values i❗️❗️ ➡️🐽 ⏭numbers i❗️❗️
+    🍉
+    🔀🕊📚 memory 🆕🔶🌊📏▶️🔢 count❗️ 🆕🔶🌊📏▶️🔢 ⚖️🔶🌊🔢❗️ 🍇🎍🌊 a 🔶🌊🕳 b 🔶🌊🕳 ➡️ 🔶🌊🔢
+      🐽📍🐚🔶🌊🔢🍆a❗️❗️ ➡️ left
+      🐽📍🐚🔶🌊🔢🍆b❗️❗️ ➡️ right
+      ↪️ left ◀️ right 🍇 ↩️ -1 🍉
+      ↪️ left ▶️ right 🍇 ↩️ 1 🍉
+      ↩️ 0
+    🍉❗️
+    🔤🔤 ➡️ 🖍🆕 sorted
+    🔂 i 🆕⏩ 0 count❗️ 🍇
+      🔤🧲sorted🧲 🧲🐽⏭numbers i❗️❗️🧲🔤 ➡️ 🖍sorted
+    🍉
+    😀 🔤sorted:🧲sorted🧲🔤❗️
+    🗑🕊🔶🌊🔧 memory❗️
+
+    💭 A thread started by pthread_create, with an object as user data
+    🆕📬 🔤from the thread🔤❗️ ➡️ mailbox
+    🍺🛒🕊🔶🌊🔧 64❗️ ➡️ thread
+    🧵🕊📚 thread 🤷‍♀️ 🍇🎍🌊 argument 🍬🔶🌊🕳 ➡️ 🍬🔶🌊🕳
+      📥🐚📬🍆 🍺argument❗️ ➡️ box
+      📨 box❗️
+      📨 box❗️
+      ↩️ 🤷‍♀️
+    🍉 🆕🔶🌊🕳▶️📤 mailbox❗️❗️ ➡️ created
+    😀 🔤pthread_create: 🧲created🧲🔤❗️
+    🛂🕊📚 🐽📍🐚🔶🌊🕳🍆thread❗️❗️ 🤷‍♀️❗️ ➡️ joined
+    😀 🔤pthread_join: 🧲joined🧲🔤❗️
+    😀 🔤🧲mailbox🧲🔤❗️
+    🗑🕊🔶🌊🔧 thread❗️
+
+    💭 A callback with a narrow integer type
+    😀 🔤🧲🐁🕊📚 🍇🎍🌊 value 🔶🌊🐁 ➡️ 🔶🌊🐁 ↩️ value ✖️ -2 🍉 1000❗️🧲🔤❗️
+
+    💭 A function pointer returned by C, called from Emojicode
+    🎣🕊📚❗️ ➡️ square
+    😀 🔤🧲⁉️ square 12❗️🧲🔤❗️
+  🍉
+🍉

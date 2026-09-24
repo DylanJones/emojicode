@@ -1,0 +1,6 @@
+sorted: -3 -3 0 5 17 42
+pthread_create: 0
+pthread_join: 0
+from the thread 2
+-1999
+144
