@@ -545,12 +545,35 @@ StorageType Type::storageType() const {
         case TypeType::Box:
             return StorageType::Box;
         case TypeType::Optional:
-            if (optionalType().type() == TypeType::Class || optionalType().type() == TypeType::Someobject) {
+            if (optionalType().type() == TypeType::Class || optionalType().type() == TypeType::Someobject ||
+                optionalType().isCPointer()) {
                 return StorageType::PointerOptional;
             }
             return StorageType::SimpleOptional;
         default:
             return StorageType::Simple;
+    }
+}
+
+bool Type::isCPointer() const {
+    if (type() != TypeType::ValueType || isReference()) {
+        return false;
+    }
+    auto &representation = valueType()->cRepresentation();
+    return representation && representation->isPointer();
+}
+
+bool Type::isCRepresentable() const {
+    if (isReference()) {
+        return false;
+    }
+    switch (type()) {
+        case TypeType::ValueType:
+            return valueType()->cRepresentation().has_value() || valueType()->isCStruct();
+        case TypeType::Optional:
+            return optionalType().isCPointer();
+        default:
+            return false;
     }
 }
 

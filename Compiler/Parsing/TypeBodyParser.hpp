@@ -20,8 +20,8 @@ class Initializer;
 class CompilerError;
 
 using TypeBodyAttributeParser = AttributeParser<Attribute::Inline, Attribute::Deprecated, Attribute::Final,
-    Attribute::Override, Attribute::StaticOnType, Attribute::Unsafe, Attribute::Mutating, Attribute::Required,
-    Attribute::Escaping>;
+    Attribute::Override, Attribute::C, Attribute::StaticOnType, Attribute::Unsafe, Attribute::Mutating,
+    Attribute::Required, Attribute::Escaping>;
 
 /// TypeBodyParser parses $type-body$s of $type-definition$s, which are
 /// represented by TypeDefinition. Some methods of this class are specialized for some types.

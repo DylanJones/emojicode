@@ -90,6 +90,10 @@ private:
     void generateFunction(Function *function);
 
     void addParamAttrs(const Parameter &param, size_t index, llvm::Function *function);
+    /// Adds the sign and zero extension attributes C requires to the parameters and return value of a 🎍🌊 function.
+    void addCExtensionAttributes(Function *function, llvm::Function *fn);
+    /// Returns @p existing, a function already declared under the name of the 🎍🌊 function @p function.
+    llvm::Function* reuseCFunction(Function *function, llvm::Function *existing, llvm::FunctionType *ft);
     void addParamDereferenceable(const Type &type, size_t index, llvm::Function *function, bool ret);
 
     llvm::Function::LinkageTypes linkageForFunction(Function *function) const;

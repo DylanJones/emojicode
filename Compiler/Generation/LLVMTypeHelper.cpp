@@ -268,6 +268,11 @@ llvm::Type* LLVMTypeHelper::llvmTypeForTypeDefinition(const Type &type) {
         return reification.type;
     }
 
+    if (type.type() == TypeType::ValueType && type.valueType()->cRepresentation()) {
+        reification.type = type.valueType()->cRepresentation()->llvmType(context_);
+        return reification.type;
+    }
+
     auto structType = llvm::StructType::create(context_, mangleTypeName(type));
     reification.type = structType;
 

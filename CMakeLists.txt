@@ -27,10 +27,11 @@ add_subdirectory(Compiler)
 add_subdirectory(sockets)
 add_subdirectory(testtube)
 add_subdirectory(json)
+add_subdirectory(c)
 
 add_custom_target(dist python3 ${PROJECT_SOURCE_DIR}/dist.py)
 add_custom_target(tests python3 ${PROJECT_SOURCE_DIR}/tests.py)
 add_custom_target(magicinstall python3 ${PROJECT_SOURCE_DIR}/dist.py install)
 add_custom_target(grammar python3 ${PROJECT_SOURCE_DIR}/tools/grammar_check.py --build ${CMAKE_BINARY_DIR}
                   --mutations 5 --generate 1000)
-add_dependencies(grammar emojicodec s files sockets testtube json)
+add_dependencies(grammar emojicodec s files sockets testtube json c)

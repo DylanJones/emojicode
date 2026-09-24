@@ -104,6 +104,11 @@ public:
 
     bool unsafe() const { return unsafe_; }
 
+    /// Whether the function uses the C calling convention (🎍🌊). Such a function has no hidden parameters and
+    /// only C types in its signature.
+    bool isC() const { return c_; }
+    void setC() { c_ = true; }
+
     Mood mood() const { return mood_; }
     /// Whether the function mutates the callee. Only relevant for value type instance methods.
     bool mutating() const { return mutating_; }
@@ -176,6 +181,7 @@ private:
     bool mutating_;
     bool external_ = false;
     bool closure_ = false;
+    bool c_ = false;
 
     Function *virtualTableThunk_ = nullptr;
     Function *superFunction_ = nullptr;

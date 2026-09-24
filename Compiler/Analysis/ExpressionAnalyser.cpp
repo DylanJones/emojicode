@@ -108,6 +108,11 @@ void deprecatedWarning(Function *function, const SourcePosition &p, Compiler *co
     }
 }
 
+bool ExpressionAnalyser::storesGenericValuesUnboxed(TypeDefinition *typeDef) const {
+    return typeDef != nullptr && (typeDef == compiler()->sMemory || typeDef == compiler()->cPointer ||
+                                  typeDef == compiler()->cVoidPointer);
+}
+
 Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &type, Function *function) {
     auto genericArgs = transformTypeAstVector(node->genericArguments(), typeContext());
 
@@ -118,7 +123,7 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
         auto &paramType = function->parameters()[i].type->type();
         Type exprType = comply(TypeExpectation(paramType.resolveOn(typeContext)), &node->args()[i]);
 
-        if (function->owner() != compiler()->sMemory) {
+        if (!storesGenericValuesUnboxed(function->owner())) {
             if (paramType.is<TypeType::GenericVariable>()) {  // i.e. the value is not boxed
                 insertNode<ASTUpcast>(&node->args()[i], exprType,
                                       type.typeDefinition()->constraintForIndex(paramType.genericVariableIndex()));

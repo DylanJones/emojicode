@@ -16,7 +16,7 @@
 
 namespace EmojicodeCompiler {
 
-using PackageAttributeParser = AttributeParser<Attribute::Export, Attribute::NoGenericDynamism,
+using PackageAttributeParser = AttributeParser<Attribute::Export, Attribute::NoGenericDynamism, Attribute::C,
     Attribute::Final, Attribute::Foreign>;
 
 /// DocumentParser instances parse the direct output from the lexer for one source code document (one source file).
@@ -43,7 +43,8 @@ private:
     void parseProtocol(const std::u32string &documentation, const Token &theToken, bool exported);
     /// Called if a $value-type$ has been detected. The first token has already been parsed.
     ValueType* parseValueType(const std::u32string &documentation, const Token &theToken, bool exported,
-                              bool primitive);
+                              bool primitive, bool cStruct, const std::u32string &cRepresentation,
+                              const SourcePosition &cRepresentationPosition);
     /// Called if a $package-import$ has been detected. The first token has already been parsed.
     void parsePackageImport(const SourcePosition &p);
     /// Called if an $include$ has been detected. The first token has already been parsed.

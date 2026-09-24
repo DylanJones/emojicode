@@ -20,7 +20,11 @@ enum class CallType;
 class ASTInitialization final : public ASTCall, public MFHeapAllocates {
 public:
     enum class InitType {
-        Enum, ValueType, Class, ClassStack, MemoryAllocation
+        Enum, ValueType, Class, ClassStack, MemoryAllocation,
+        /// A built-in initializer of a type with a C representation that converts its only argument.
+        CConversion,
+        /// 🕳 ▶️📤: Retains the object and returns its address.
+        CRetainObject,
     };
 
     ASTInitialization(std::u32string name, std::shared_ptr<ASTTypeExpr> type,
@@ -63,6 +67,7 @@ private:
     Value* generateClassInit(FunctionCodeGenerator *fg) const;
     Value* generateMemoryAllocation(FunctionCodeGenerator *fg) const;
     Value* generateInitValueType(FunctionCodeGenerator *fg) const;
+    Value* generateCInit(FunctionCodeGenerator *fg) const;
 
     Type analyseEnumInit(ExpressionAnalyser *analyser, Type &type);
     llvm::Value* genericArgs(FunctionCodeGenerator *fg) const;

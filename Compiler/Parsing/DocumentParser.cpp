@@ -17,6 +17,7 @@
 #include "Types/Protocol.hpp"
 #include "Types/TypeContext.hpp"
 #include "Types/ValueType.hpp"
+#include "Types/CRepresentation.hpp"
 #include <cstring>
 
 namespace EmojicodeCompiler {
@@ -25,10 +26,23 @@ void DocumentParser::parse() {
     while (stream_.hasMoreTokens()) {
         auto documentation = Documentation().parse(&stream_);
         auto attributes = PackageAttributeParser().parse(&stream_);
+        std::u32string cRepresentation;
+        SourcePosition cRepresentationPosition;
+        if (attributes.has(Attribute::Foreign) && stream_.nextTokenIs(TokenType::String)) {
+            auto token = stream_.consumeToken(TokenType::String);
+            cRepresentation = token.value();
+            cRepresentationPosition = token.position();
+        }
         auto theToken = stream_.consumeToken();
+        if (!cRepresentation.empty() && theToken.type() != TokenType::ValueType) {
+            throw CompilerError(cRepresentationPosition, "Only primitive value types can declare a C representation.");
+        }
 
         switch (theToken.type()) {
             case TokenType::Class: {
+                if (attributes.has(Attribute::C)) {
+                    throw CompilerError(theToken.position(), "Attribute 🎍🌊 not applicable.");
+                }
                 auto klass = parseClass(documentation.get(), theToken, attributes.has(Attribute::Export),
                                         attributes.has(Attribute::Final), attributes.has(Attribute::Foreign));
                 setGenericTypeDynamism(klass, attributes.has(Attribute::NoGenericDynamism));
@@ -44,9 +58,13 @@ void DocumentParser::parse() {
                 continue;
             case TokenType::ValueType: {
                 attributes.allow(Attribute::Export).allow(Attribute::Foreign).allow(Attribute::NoGenericDynamism)
-                    .check(theToken.position(), package_->compiler());
+                    .allow(Attribute::C).check(theToken.position(), package_->compiler());
+                if (attributes.has(Attribute::C) && attributes.has(Attribute::Foreign)) {
+                    throw CompilerError(theToken.position(), "A value type cannot be both 🎍🌊 and 📻.");
+                }
                 auto valueType = parseValueType(documentation.get(), theToken, attributes.has(Attribute::Export),
-                                                attributes.has(Attribute::Foreign));
+                                                attributes.has(Attribute::Foreign), attributes.has(Attribute::C),
+                                                cRepresentation, cRepresentationPosition);
                 setGenericTypeDynamism(valueType, attributes.has(Attribute::NoGenericDynamism));
                 continue;
             }
@@ -204,11 +222,26 @@ Class* DocumentParser::parseClass(const std::u32string &documentation, const Tok
 }
 
 ValueType* DocumentParser::parseValueType(const std::u32string &documentation, const Token &theToken, bool exported,
-                                          bool primitive) {
+                                          bool primitive, bool cStruct, const std::u32string &cRepresentation,
+                                          const SourcePosition &cRepresentationPosition) {
     auto parsedTypeName = parseAndValidateNewTypeName();
 
     auto valueType = package_->add(std::make_unique<ValueType>(parsedTypeName.name, package_, theToken.position(),
                                                                documentation, exported, primitive));
+    if (cStruct) {
+        valueType->setCStruct();
+    }
+    if (!cRepresentation.empty()) {
+        auto representation = CRepresentation::forName(utf8(cRepresentation));
+        if (!representation) {
+            throw CompilerError(cRepresentationPosition, utf8(cRepresentation), " is not a known C type.");
+        }
+        valueType->setCRepresentation(*representation);
+        valueType->setCRepresentationName(utf8(cRepresentation));
+        if (!representation->isPointer()) {
+            valueType->constructibleFrom_ = TypeType::IntegerLiteral;
+        }
+    }
     parseGenericParameters(valueType);
     offerAndParseBody(valueType, parsedTypeName, theToken.position());
     return valueType;

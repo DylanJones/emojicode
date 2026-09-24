@@ -129,12 +129,38 @@ void SemanticAnalyser::analyseFunctionDeclaration(Function *function) const {
     function->analyseConstraints(context);
     for (auto &param : function->parameters()) {
         param.type->analyseType(context);
-        if (!function->externalName().empty() && param.type->type().type() == TypeType::ValueType &&
-            !param.type->type().valueType()->isPrimitive()) {
+        if (!function->externalName().empty() && !function->isC() &&
+            param.type->type().type() == TypeType::ValueType && !param.type->type().valueType()->isPrimitive()) {
             param.type->type().setReference();
         }
     }
     function->returnType()->analyseType(context, true);
+
+    if (function->isC()) {
+        checkCFunctionDeclaration(function);
+    }
+}
+
+void SemanticAnalyser::checkCFunctionDeclaration(Function *function) const {
+    if (function->errorProne()) {
+        throw CompilerError(function->position(), "Functions with 🎍🌊 cannot raise errors.");
+    }
+    if (!function->genericParameters().empty() ||
+        (function->owner() != nullptr && function->owner()->storesGenericArgs())) {
+        throw CompilerError(function->position(), "Functions with 🎍🌊 cannot be generic.");
+    }
+    auto context = function->typeContext();
+    for (auto &param : function->parameters()) {
+        if (!param.type->type().isCRepresentable()) {
+            throw CompilerError(param.type->position(), param.type->type().toString(context),
+                                " cannot be used in a function with 🎍🌊.");
+        }
+    }
+    auto &returnType = function->returnType()->type();
+    if (returnType.type() != TypeType::NoReturn && !returnType.isCRepresentable()) {
+        throw CompilerError(function->returnType()->position(), returnType.toString(context),
+                            " cannot be returned from a function with 🎍🌊.");
+    }
 }
 
 void SemanticAnalyser::declareInstanceVariables(const Type &type) {

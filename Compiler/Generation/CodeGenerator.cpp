@@ -184,6 +184,12 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
     auto name = function->externalName().empty() ? mangleFunction(function, reificationContext.arguments())
     : function->externalName();
 
+    if (function->isC()) {
+        if (auto existing = module()->getFunction(name)) {
+            return reuseCFunction(function, existing, ft);
+        }
+    }
+
     auto fn = llvm::Function::Create(ft, linkageForFunction(function), name, module());
     fn->addFnAttr(llvm::Attribute::NoUnwind);
     if (function->isInline()) {
@@ -246,7 +252,51 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
     }
 
     addParamDereferenceable(function->returnType()->type(), 0, fn, true);
+    if (function->isC()) {
+        addCExtensionAttributes(function, fn);
+    }
     return fn;
+}
+
+llvm::Function* CodeGenerator::reuseCFunction(Function *function, llvm::Function *existing, llvm::FunctionType *ft) {
+    // Several 🎍🌊 declarations, or the run-time library, can declare the same C function, e.g. malloc.
+    if (existing->getFunctionType() != ft) {
+        throw CompilerError(function->position(), "The C function ", existing->getName().str(),
+                            " was already declared with a different signature.");
+    }
+    // Do not let the optimizer assume more than the C declaration promises.
+    existing->removeRetAttr(llvm::Attribute::NonNull);
+    for (unsigned i = 0; i < existing->arg_size(); i++) {
+        existing->removeParamAttr(i, llvm::Attribute::NonNull);
+    }
+    addCExtensionAttributes(function, existing);
+    return existing;
+}
+
+/// Returns the attribute C compilers put on an integer argument or return value of the type: Integers narrower than
+/// 32 bits are sign or zero extended.
+static llvm::Attribute::AttrKind cExtensionAttribute(const Type &type) {
+    if (type.type() != TypeType::ValueType || !type.valueType()->cRepresentation()) {
+        return llvm::Attribute::None;
+    }
+    auto &representation = *type.valueType()->cRepresentation();
+    if (!representation.isInteger() || representation.bits >= 32) {
+        return llvm::Attribute::None;
+    }
+    return representation.isSigned ? llvm::Attribute::SExt : llvm::Attribute::ZExt;
+}
+
+void CodeGenerator::addCExtensionAttributes(Function *function, llvm::Function *fn) {
+    for (size_t i = 0; i < function->parameters().size(); i++) {
+        auto attribute = cExtensionAttribute(function->parameters()[i].type->type());
+        if (attribute != llvm::Attribute::None) {
+            fn->addParamAttr(i, attribute);
+        }
+    }
+    auto attribute = cExtensionAttribute(function->returnType()->type());
+    if (attribute != llvm::Attribute::None) {
+        fn->addRetAttr(attribute);
+    }
 }
 
 void CodeGenerator::declareLlvmFunction(Function *function) {

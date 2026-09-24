@@ -50,7 +50,7 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
     checkMutation(analyser, callee);
     ensureErrorIsHandled(analyser);
     auto rt = analyser->analyseFunctionCall(&args_, calleeType_, method_);
-    if (method_->owner() != analyser->compiler()->sMemory &&
+    if (!analyser->storesGenericValuesUnboxed(method_->owner()) &&
         (method_->returnType()->type().is<TypeType::GenericVariable>() ||
          method_->returnType()->type().is<TypeType::LocalGenericVariable>() ||
          method_->returnType()->type().unoptionalized().is<TypeType::GenericVariable>() ||
@@ -202,6 +202,10 @@ bool ASTMethodable::builtIn(ExpressionAnalyser *analyser, const Type &btype, con
         return true;
     }
 
+    if (type.valueType()->declaresCRepresentation() && builtInC(analyser, type, name)) {
+        return true;
+    }
+
     prepareBuiltIns(analyser->compiler());
     auto it = kBuiltIns.find(std::make_pair(type.valueType(), name.front()));
     if (it != kBuiltIns.end()) {
@@ -210,6 +214,66 @@ bool ASTMethodable::builtIn(ExpressionAnalyser *analyser, const Type &btype, con
     }
 
     return false;
+}
+
+bool ASTMethodable::builtInC(ExpressionAnalyser *analyser, const Type &type, const std::u32string &name) {
+    auto compiler = analyser->compiler();
+    auto valueType = type.valueType();
+    auto &representation = *valueType->cRepresentation();
+    auto first = name.front();
+
+    if (valueType == compiler->cPointer) {
+        switch (first) {
+            case 0x1F43D:  // 🐽
+                builtIn_ = args_.mood() == Mood::Assignment ? BuiltInType::CPointerStore : BuiltInType::CPointerLoad;
+                return true;
+            case 0x23ED:  // ⏭
+                builtIn_ = BuiltInType::CPointerAdvance;
+                return true;
+            case 0x1F3AD:  // 🎭
+            case 0x1F573:  // 🕳
+                builtIn_ = BuiltInType::CReinterpret;
+                return true;
+            default:
+                break;
+        }
+    }
+    if (valueType == compiler->cVoidPointer) {
+        switch (first) {
+            case 0x1F4CD:  // 📍
+            case 0x1F4E5:  // 📥
+                builtIn_ = BuiltInType::CReinterpret;
+                return true;
+            case 0x1F440:  // 👀
+                builtIn_ = BuiltInType::CBorrowObject;
+                return true;
+            default:
+                break;
+        }
+    }
+    if (args_.mood() != Mood::Imperative || !args_.args().empty()) {
+        return false;
+    }
+    switch (first) {
+        case 0x1F522:  // 🔢
+        case E_HUNDRED_POINTS_SYMBOL:
+            builtIn_ = BuiltInType::CConvert;
+            return true;
+        case E_NEGATIVE_SQUARED_CROSS_MARK:
+            if (representation.isInteger()) {
+                builtIn_ = BuiltInType::IntegerNot;
+                return true;
+            }
+            return false;
+        case E_BATTERY:
+            if (representation.isPointer()) {
+                return false;
+            }
+            builtIn_ = representation.isFloat() ? BuiltInType::DoubleInverse : BuiltInType::IntegerInverse;
+            return true;
+        default:
+            return false;
+    }
 }
 
 Type ASTMethod::analyse(ExpressionAnalyser *analyser) {

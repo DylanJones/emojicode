@@ -31,7 +31,11 @@ llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, 
         case CallType::StaticContextfreeDispatch:
         case CallType::StaticDispatch: {
             auto llvmFn = function->reificationFor(astArgs.genericArgumentTypes()).function;
-            return fg_->builder().CreateCall(llvmFn, args);
+            auto call = fg_->builder().CreateCall(llvmFn, args);
+            if (function->isC()) {
+                call->setAttributes(llvmFn->getAttributes());
+            }
+            return call;
         }
         case CallType::DynamicDispatch:
         case CallType::DynamicDispatchOnType:

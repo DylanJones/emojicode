@@ -111,6 +111,9 @@ void Package::parse(const std::string &mainFilePath) {
     if (name() == "s") {
         compiler()->assignSTypes(this);
     }
+    if (name() == "c") {
+        compiler()->assignCTypes(this);
+    }
     finishedLoading_ = true;
 }
 
@@ -159,7 +162,7 @@ std::u32string Package::findNamespace(const Type &type) {
     }
     auto key = kDefaultNamespace + type.typeDefinition()->name();
     auto it = types_.find(key);
-    if (it != types_.end()) {
+    if (it != types_.end() && it->second.typeDefinition() == type.typeDefinition()) {
         return std::u32string();
     }
     for (auto &pair : types_) {
