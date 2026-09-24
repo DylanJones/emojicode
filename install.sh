@@ -18,7 +18,7 @@ else
   echo "👨‍💻  Hi, I’m the Emojicode Installer!"
   echo
 
-  echo "${bold}I’ll copy the ${cyan}Emojicode Compiler${n}${bold} to ${binaries}.${n}"
+  echo "${bold}I’ll copy the ${cyan}Emojicode Compiler${n}${bold} and language server to ${binaries}.${n}"
   echo "${bold}Then I’ll copy the default packages to ${packages}.${n}"
   echo "${bold}Finally, I’ll copy the Emojicode API headers to ${include}.${n}"
   echo "If you prefer different locations you can rerun me and provide me with other locations like so:"
@@ -72,8 +72,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Copying builds${n}"
 
     cp emojicodec "$binaries/emojicodec"
+    cp emojicode-lsp "$binaries/emojicode-lsp"
 
-    chmod 755 "$binaries/emojicodec"
+    chmod 755 "$binaries/emojicodec" "$binaries/emojicode-lsp"
 
     echo "Copying packages${n}"
 

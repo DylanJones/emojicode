@@ -35,6 +35,7 @@ if __name__ == "__main__":
 
     shutil.copy2(os.path.join(source, "install.sh"), path)
     shutil.copy2(os.path.join("Compiler", "emojicodec"), path)
+    shutil.copy2(os.path.join("LanguageServer", "emojicode-lsp"), path)
 
     copy_header("runtime", "Runtime.h")
     copy_header("s", "Data.h")
