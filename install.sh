@@ -71,10 +71,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     set -e
     echo "Copying builds${n}"
 
-    cp emojicodec "$binaries/emojicodec"
-    cp emojicode-lsp "$binaries/emojicode-lsp"
-
-    chmod 755 "$binaries/emojicodec" "$binaries/emojicode-lsp"
+    # install replaces the files instead of writing into them, which fails while an editor runs emojicode-lsp.
+    install -m 755 emojicodec "$binaries/emojicodec"
+    install -m 755 emojicode-lsp "$binaries/emojicode-lsp"
 
     echo "Copying packages${n}"
 
