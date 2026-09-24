@@ -61,8 +61,8 @@ extern "C" void ejcReleaseLocal(runtime::Object<void> *object) {
     }
 }
 
-void deleteControlBlock(runtime::internal::ControlBlock *block) {
-    if (block->weakCount == 0) {
+void releaseWeakCount(runtime::internal::ControlBlock *block) {
+    if (block->weakCount.fetch_sub(1, std::memory_order_acq_rel) - 1 == 0) {
         delete block;
     }
 }
@@ -80,8 +80,8 @@ extern "C" void ejcRelease(runtime::Object<void> *object) {
     if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
 
     object->classInfo()->destructor(object);
-    deleteControlBlock(controlBlock);
     free(object);
+    releaseWeakCount(controlBlock);
 }
 
 extern "C" void ejcReleaseCapture(runtime::internal::Capture *capture) {
@@ -96,8 +96,8 @@ extern "C" void ejcReleaseCapture(runtime::internal::Capture *capture) {
     if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
 
     capture->deinit(capture);
-    deleteControlBlock(controlBlock);
     free(capture);
+    releaseWeakCount(controlBlock);
 }
 
 extern "C" void ejcReleaseMemory(runtime::Object<void> *object) {
@@ -107,8 +107,8 @@ extern "C" void ejcReleaseMemory(runtime::Object<void> *object) {
 
     if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
 
-    delete controlBlock;
     free(object);
+    releaseWeakCount(controlBlock);
 }
 
 extern "C" void ejcReleaseWithoutDeinit(runtime::Object<void> *object) {
@@ -119,8 +119,8 @@ extern "C" void ejcReleaseWithoutDeinit(runtime::Object<void> *object) {
     }
     if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
 
-    deleteControlBlock(controlBlock);
     free(object);
+    releaseWeakCount(controlBlock);
 }
 
 struct WeakReference {
@@ -129,22 +129,19 @@ struct WeakReference {
 };
 
 void releaseWeakReference(WeakReference *ref) {
-    ref->block->weakCount--;
-    if (ref->block->strongCount == 0) {
-        deleteControlBlock(ref->block);
-    }
+    releaseWeakCount(ref->block);
     ref->block = nullptr;
 }
 
 extern "C" void ejcCreateWeak(WeakReference *ref, runtime::Object<void> *object) {
     ref->object = object;
-    object->controlBlock()->weakCount++;
+    object->controlBlock()->weakCount.fetch_add(1, std::memory_order_relaxed);
     ref->block = object->controlBlock();
 }
 
 extern "C" void ejcRetainWeak(WeakReference *ref) {
     if (ref->block != nullptr) {
-        ref->block->weakCount++;
+        ref->block->weakCount.fetch_add(1, std::memory_order_relaxed);
     }
 }
 
