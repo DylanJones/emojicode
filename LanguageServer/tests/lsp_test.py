@@ -574,5 +574,33 @@ class RobustnessTests(ServerTestCase):
             self.assertEqual(self.client.shutdown(), 0)
 
 
+    def test_compiler_crashes(self):
+        cases = [
+            # Includes itself.
+            ("main.emojic", "📜 🔤main.emojic🔤\n🏁 🍇🍉\n", "circular"),
+            # 🍺 on the initialization of an enum value, which has no initializer.
+            ("enum.emojic", "🔘 ⏰ 🍇\n  🆕▶️🥓\n🍉\n🏁 🍇\n  🍺🆕⏰▶️🥓❗️ ➡️ x\n🍉\n", "🍺"),
+            # A multiline comment whose text starts with 💭, as when a comment is commented out.
+            ("comment.emojic", "💭🔜💭 old\n🔚💭\n", "No 🏁 block"),
+        ]
+        self.start()
+        for name, text, message in cases:
+            path = self.write(name, text)
+            self.client.open(path, text)
+            diagnostics = self.client.diagnostics(path)
+            self.assertIn(message, " ".join(d["message"] for d in diagnostics), (name, diagnostics))
+            self.use_every_feature(path, text)
+        self.assertEqual(self.client.shutdown(), 0)
+
+    def test_two_files_that_include_each_other(self):
+        a = self.write("a.emojic", "📜 🔤b.emojic🔤\n🏁 🍇🍉\n")
+        b = self.write("b.emojic", "📜 🔤a.emojic🔤\n")
+        self.start()
+        self.client.open(a)
+        self.assertIn("circular", self.client.diagnostics(a)[0]["message"])
+        self.client.open(b)
+        self.use_every_feature(b, "📜 🔤a.emojic🔤\n")
+        self.assertEqual(self.client.shutdown(), 0)
+
 if __name__ == "__main__":
     unittest.main(argv=sys.argv[:1], verbosity=2)
