@@ -123,6 +123,12 @@ Token Lexer::readToken() {
             nextCharOrEnd();
             return token;
         }
+        if (!hasMoreChars()) {
+            endTokenAtEndOfFile(&token);
+            token.validate();
+            nextCharOrEnd();
+            return token;
+        }
         nextChar();
         state = continueToken(&token, &constState);
         if (state == TokenState::NextBegun) {
@@ -190,7 +196,24 @@ bool Lexer::beginToken(Token *token, TokenConstructionState *constState) const {
         token->type_ = TokenType::Variable;
     }
     token->value_.push_back(codePoint());
-    return hasMoreChars();
+    return true;
+}
+
+void Lexer::endTokenAtEndOfFile(Token *token) const {
+    switch (token->type()) {
+        case TokenType::Identifier:
+            endIdentifierToken(token);
+            break;
+        case TokenType::Variable:
+        case TokenType::Integer:
+        case TokenType::Double:
+        case TokenType::Operator:
+        case TokenType::SinglelineComment:
+        case TokenType::LineBreak:
+            break;
+        default:
+            throw CompilerError(sourcePosition_, "Unexpected end of file.");
+    }
 }
 
 Lexer::TokenState Lexer::continueToken(Token *token, TokenConstructionState *constState) const {
@@ -395,17 +418,21 @@ Lexer::TokenState Lexer::continueIdentifierToken(Token *token, Lexer::TokenConst
     if (codePoint() == 0xFE0F) {  // Emojicode ignores the Emoji modifier behind an emoji character
         return TokenState::Continues;
     }
-    if (token->value_.front() == E_PERSON_SHRUGGING) {
+    if (token->value().front() == E_NO_GESTURE && codePoint() == E_LEFT_ARROW_CURVING_RIGHT) {
+        token->type_ = TokenType::ElseIf;
+        return TokenState::Ended;
+    }
+    endIdentifierToken(token);
+    return TokenState::NextBegun;
+}
+
+void Lexer::endIdentifierToken(Token *token) const {
+    if (token->value().front() == E_PERSON_SHRUGGING) {
         token->type_ = TokenType::NoValue;
     }
     if (token->value().front() == E_NO_GESTURE) {
-        if (codePoint() == E_LEFT_ARROW_CURVING_RIGHT) {
-            token->type_ = TokenType::ElseIf;
-            return TokenState::Ended;
-        }
         token->type_ = TokenType::Else;
     }
-    return TokenState::NextBegun;
 }
 
 Lexer::TokenState Lexer::continueOperator(Token *token) const {

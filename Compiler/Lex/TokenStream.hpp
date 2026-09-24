@@ -64,14 +64,30 @@ public:
     /// Consumes the next token and returns true iff by nextTokenIs(TokenType) returns true for the provided value.
     bool consumeTokenIf(TokenType type);
 
+    /// @returns The token after nextToken() without consuming anything, or nullptr if there is none.
+    const Token* tokenAfterNext();
+
     /// Whether a blank line is between the last consumed token and nextToken().
     bool skipsBlankLine() const { return skippedBlankLine_; }
 
     size_t index() const { return index_; }
 
 private:
-    Token advanceLexer();
+    /// A token read from the lexer, with the information that TokenStream keeps about it.
+    struct ReadToken {
+        Token token = Token(SourcePosition());
+        size_t index = 0;
+        bool skippedBlankLine = false;
+        bool exists = true;
+    };
 
+    Token advanceLexer();
+    /// Reads the next token from the lexer, skipping line breaks and comments.
+    ReadToken read();
+
+    /// The token after nextToken_, if it was already read by tokenAfterNext().
+    ReadToken afterNext_;
+    bool hasAfterNext_ = false;
     bool moreTokens_ = true;
     bool skippedBlankLine_ = false;
     Lexer lexer_;

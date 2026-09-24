@@ -29,7 +29,6 @@
  *   2. Otherwise the longest match of `token-shape` is taken. The lexer reads each kind of token greedily and
  *      only afterwards checks that it is well-formed, so this string must match `token`. Exactly one alternative
  *      of `token` matches it; that alternative is the kind of the token.
- *   3. If the token ends at the end of the document, it must also match `token-at-end`.
  *
  * The document is syntactically valid if its tokens match `document`. In the syntactic grammar:
  *
@@ -59,9 +58,6 @@
  * Interface documents (🏛, interface.emojii), which the compiler generates, are also not described. They differ
  * from source documents in one respect: a `function-body` may be omitted, and only functions with the 🥯
  * attribute may have a `block`.
- *
- * The grammar deliberately includes some behavior of the compiler that is probably unintended. Each case is
- * marked "Quirk:".
  */
 
 
@@ -107,15 +103,9 @@ token               ::= keyword
                       | documentation-comment
                       | package-documentation-comment
 
-/* Quirk: the lexer reads past the end of most tokens to find where they end, and reports "Unexpected end of
- * file" if there is nothing to read. So a document cannot end directly (without whitespace) after one of these
- * tokens. */
-token-at-end        ::= token - ( ( identifier | no-value | else | variable | integer-literal | float-literal ) - char
-                                | triangle-operator - ( char* '🙌' ) )
-
 /* ---- Comments ---- */
 
-single-line-comment ::= '💭' ( ( char - ( newline | '🔜' ) ) ( char - newline )* )? newline
+single-line-comment ::= '💭' ( ( char - ( newline | '🔜' ) ) ( char - newline )* )? newline?       /* none at the end */
 
 /* A multi-line comment ends at the first 💭 that directly follows 🔜 or 🔚. */
 multi-line-comment  ::= '💭' '🔜' ( '🔚' | ( char - ( '💭' | '🔚' ) ) ( char - '🔚' )* '🔚' )* '💭'
@@ -331,9 +321,8 @@ method-name         ::= ( '❗' | '❓' | '➡' ) identifier               /* im
 initializer         ::= '🆕' initializer-name? generic-parameters? init-parameters
 initializer-name    ::= '▶' identifier
 
-/* Quirk: a 🎍🥡 after the last parameter is accepted and ignored. */
-parameters          ::= ( '🎍🥡'? variable type )* '🎍🥡'?
-init-parameters     ::= ( '🍼'? '🎍🥡'? variable type )* '🎍🥡'?       /* 🍼: assign to the instance variable */
+parameters          ::= ( '🎍🥡'? variable type )*
+init-parameters     ::= ( '🍼'? '🎍🥡'? variable type )*          /* 🍼: assign to the instance variable */
 
 return-type         ::= '➡' type
 error-type          ::= '🚧' type
@@ -458,10 +447,9 @@ primary             ::= integer-literal
 
 interpolation       ::= interpolation-begin expression ( interpolation-middle expression )* interpolation-end
 
-/* Quirk: the parser does not check that the token after 🍿➡ is 🍆. */
 collection-literal  ::= '🍿' collection-element* '🍆'                              /* list */
                       | '🍿' ( collection-element '➡' expression )+ '🍆'           /* dictionary */
-                      | '🍿' '➡' token                                              /* empty dictionary */
+                      | '🍿' '➡' '🍆'                                               /* empty dictionary */
 collection-element  ::= expression - ( '🍆' tokens )
 
 /* The parser reads parameters, then a return type, then an error type, for as long as the next token allows.
@@ -479,8 +467,8 @@ instantiation       ::= '🆕' type-expr initializer-name? generic-arguments? ar
 method-call         ::= ( identifier - ( '🍺' | '⚖' | '🔲' | '🏮' | '🔺' ) ) generic-arguments? ( expression argument* )?
                         mood
 
-/* Quirk: any token is accepted as the name of the super initializer or method. */
-super               ::= '⤴' token generic-arguments? argument* mood
+/* 🆕 or a name calls an initializer of the superclass, a name or operator in a method calls a superclass method. */
+super               ::= '⤴' ( '🆕' | identifier | operator ) generic-arguments? argument* mood
 
 argument            ::= expression
 mood                ::= '❗'                                         /* imperative */

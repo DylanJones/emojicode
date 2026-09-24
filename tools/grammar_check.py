@@ -42,7 +42,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GRAMMAR_PATH = os.path.join(ROOT, 'docs', 'grammar.ebnf')
 
 # Rules that the tokenization procedure and the syntactic grammar start from.
-LEXICAL_ROOTS = ['ignorable', 'token-shape', 'token', 'token-at-end']
+LEXICAL_ROOTS = ['ignorable', 'token-shape', 'token']
 SYNTAX_ROOT = 'document'
 
 # Compiler errors that depend on more than the document and are therefore not described by the grammar.
@@ -497,8 +497,6 @@ class Lexer:
             kinds = [kind for kind in self.kinds if self.text.full(kind, text)]
             if len(kinds) != 1:
                 raise LexError(i, '{!r} matches {} kinds of token: {}'.format(text, len(kinds), kinds))
-            if end == n and not self.text.full('token-at-end', text):
-                raise LexError(i, '{!r} cannot end the document'.format(text))
             tokens.append(Token(kinds[0], text, i))
             i = end
         return tokens

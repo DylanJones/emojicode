@@ -140,7 +140,16 @@ void AbstractParser::parseParameters(Function *function, bool initializer, bool 
             }
         }
 
-        bool escaping = allowEscaping && stream_.consumeTokenIf(E_TAKEOUT_BOX, TokenType::Decorator);
+        // 🎍🥡 only belongs to a parameter if a variable follows. Otherwise it is an attribute of the next
+        // declaration, as after the parameters of a protocol method.
+        bool escaping = false;
+        if (allowEscaping && stream_.nextTokenIs(E_TAKEOUT_BOX, TokenType::Decorator)) {
+            auto after = stream_.tokenAfterNext();
+            if (argumentToVariable || (after != nullptr && after->type() == TokenType::Variable)) {
+                stream_.consumeToken();
+                escaping = true;
+            }
+        }
         if (!argumentToVariable && !stream_.nextTokenIs(TokenType::Variable)) {
             break;
         }

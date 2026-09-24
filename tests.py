@@ -10,6 +10,7 @@ valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
 
 compilation_tests = [
     "hello",
+    "endOfFile",
     "print",
     "intTest",
     "if",
