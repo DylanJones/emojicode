@@ -15,6 +15,8 @@
 #include <memory>
 #include <string>
 #include <map>
+#include <set>
+#include <llvm/TargetParser/Triple.h>
 
 namespace llvm {
 class TargetMachine;
@@ -32,14 +34,14 @@ class RunTimeHelper;
 class OptimizationManager;
 struct Parameter;
 
+/// Returns the attribute C compilers put on an integer argument or return value of the type on the target @p triple,
+/// e.g. llvm::Attribute::SExt for a short on x86-64. Returns llvm::Attribute::None for all other types.
+llvm::Attribute::AttrKind cExtensionAttribute(const Type &type, const llvm::Triple &triple);
+
 /// Manages code generation.
 ///
 /// A CodeGenerator instance is bound to a Compiler and always generates code for its main package including any
 /// relevant declaration and inline functions from all imported packages.
-/// Returns the attribute C compilers put on an integer argument or return value of the type: Integers narrower than
-/// 32 bits are sign or zero extended. Returns llvm::Attribute::None for all other types.
-llvm::Attribute::AttrKind cExtensionAttribute(const Type &type);
-
 class CodeGenerator {
 public:
     /// Creates a CodeGenerator bound to the provided Compiler.
@@ -79,6 +81,8 @@ public:
     ~CodeGenerator();
 
 private:
+    /// The C symbols of the functions exported with 🎍🌊, to detect duplicate exports.
+    std::set<std::string> exportedCSymbols_;
     Compiler *const compiler_;
     llvm::LLVMContext context_;
     std::unique_ptr<llvm::Module> module_;

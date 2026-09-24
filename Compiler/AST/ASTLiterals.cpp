@@ -44,18 +44,25 @@ Type ASTNumberLiteral::analyse(ExpressionAnalyser *analyser) {
     if (type_ == NumberType::Integer) {
         return Type::integerLiteral();
     }
-    return Type::realLiteral();
+    return Type::realLiteral(analyser->real());
 }
 
 Type ASTNumberLiteral::comply(ExpressionAnalyser *analyser, const TypeExpectation &expectation) {
-    if (expectation.type() == TypeType::ValueType && expectation.valueType()->declaresCRepresentation()) {
-        auto &representation = *expectation.valueType()->cRepresentation();
+    // The expectation may wrap the C type in an optional or a box (e.g. a generic argument); the analyser wraps the
+    // complied value accordingly.
+    auto target = expectation.unboxed();
+    if (target.type() == TypeType::Optional) {
+        target = target.optionalType();
+    }
+    if (target.type() == TypeType::ValueType && target.valueType()->declaresCRepresentation()) {
+        auto &representation = *target.valueType()->cRepresentation();
         if (representation.isFloat() || (representation.isInteger() && type_ == NumberType::Integer)) {
             if (type_ == NumberType::Integer) {
                 doubleValue_ = integerValue_;
+                warnIfOutOfRange(analyser, representation);
             }
             type_ = NumberType::C;
-            cType_ = expectation.copyType();
+            cType_ = target;
             cType_.setMutable(false);
             cType_.setReference(false);
             return cType_;
@@ -78,6 +85,19 @@ Type ASTNumberLiteral::comply(ExpressionAnalyser *analyser, const TypeExpectatio
         return analyser->byte();
     }
     return analyser->integer();
+}
+
+void ASTNumberLiteral::warnIfOutOfRange(ExpressionAnalyser *analyser, const CRepresentation &representation) const {
+    auto bits = representation.bits;
+    if (bits < 2 || bits >= 64) {
+        return;
+    }
+    // Accept every value that fits the type either as a signed or as an unsigned integer, like C does silently.
+    auto minimum = -(int64_t(1) << (bits - 1)), maximum = (int64_t(1) << bits) - 1;
+    if (integerValue_ < minimum || integerValue_ > maximum) {
+        analyser->compiler()->warn(position(), "Literal ", integerValue_, " does not fit into the C type and is ",
+                                   "truncated.");
+    }
 }
 
 Type ASTThis::analyse(ExpressionAnalyser *analyser) {

@@ -149,11 +149,15 @@ void Compiler::NativeCompilationPhase::perform(Compiler *compiler) {
         compiler->nativeObjects_.emplace_back(object);
     }
 
+    size_t sourceIndex = 0;
     for (auto &hint : package->linkHints()) {
         if (!Package::isNativeSourceHint(hint)) {
             continue;
         }
-        llvm::SmallString<128> source(package->linkHintsDirectory());
+        llvm::SmallString<128> source;
+        if (!llvm::sys::path::is_absolute(hint)) {
+            source = package->linkHintsDirectory();
+        }
         llvm::sys::path::append(source, hint);
         if (!llvm::sys::fs::exists(source)) {
             throw CompilerError(SourcePosition(), "Native source ", std::string(source), " does not exist.");
@@ -164,10 +168,23 @@ void Compiler::NativeCompilationPhase::perform(Compiler *compiler) {
             compiler->nativeObjects_.emplace_back(source.str());
             continue;
         }
-        auto object = (base + "_" + llvm::sys::path::stem(source) + ".o").str();
+        // The index keeps sources with the same name in different directories (or x.c and x.cpp) apart.
+        auto object = (base + "_" + std::to_string(sourceIndex++) + "_" + llvm::sys::path::stem(source) + ".o").str();
         auto tool = extension == ".c" || extension == ".m" ? cc_ : cxx_;
         runTool(tool, { "-c", "-O2", std::string(source), "-o", object });
         compiler->nativeObjects_.emplace_back(object);
+    }
+
+    // Only LinkPhase and ArchivePhase add the native objects. Otherwise the requested object file must contain them.
+    if (mergeIntoObject_ && !compiler->nativeObjects_.empty()) {
+        auto merged = (base + "_merged.o").str();
+        std::vector<std::string> args { "-r", "-nostdlib", "-o", merged, objectFilePath_ };
+        args.insert(args.end(), compiler->nativeObjects_.begin(), compiler->nativeObjects_.end());
+        runTool(cxx_, args);
+        if (auto error = llvm::sys::fs::rename(merged, objectFilePath_)) {
+            throw CompilerError(SourcePosition(), "Could not write ", objectFilePath_, ": ", error.message());
+        }
+        compiler->nativeObjects_.clear();
     }
 }
 

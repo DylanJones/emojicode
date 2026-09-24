@@ -39,7 +39,7 @@ Type ASTClosure::comply(ExpressionAnalyser *analyser, const TypeExpectation &exp
     FunctionAnalyser closureAnaly(closure_.get(), std::move(scoper), analyser->semanticAnalyser());
     // A closure written in a ☣️ block or ☣️ function may use unsafe functions, just like the code around it.
     if (analyser->isInUnsafeBlock()) {
-        closureAnaly.setInUnsafeBlock(true);
+        closureAnaly.inheritUnsafety();
     }
     scoperPtr->setPathAnalyser(&closureAnaly.pathAnalyser());
     closureAnaly.analyse();

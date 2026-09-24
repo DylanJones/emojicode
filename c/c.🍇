@@ -154,7 +154,12 @@
 
   📗 The value in base 10. 📗
   ❗️ 🔡 ➡️ 🔡 🍇
-    ↩️ 🔡 🔢👇❗️ 10❗️
+    🔢👇❗️ ➡️ signed
+    ↪️ signed ◀️ 0 🍇
+      💭 At least 2^63, which 🔢 cannot hold: the value without its last digit, then the last digit.
+      ↩️ 🔤🧲🔡 🔢👇 ➗ 10❗️ 10❗️🧲🧲🔡 🔢👇 🚮 10❗️ 10❗️🧲🔤
+    🍉
+    ↩️ 🔡 signed 10❗️
   🍉
 🍉
 
@@ -202,7 +207,12 @@
 
   📗 The value in base 10. 📗
   ❗️ 🔡 ➡️ 🔡 🍇
-    ↩️ 🔡 🔢👇❗️ 10❗️
+    🔢👇❗️ ➡️ signed
+    ↪️ signed ◀️ 0 🍇
+      💭 At least 2^63, which 🔢 cannot hold: the value without its last digit, then the last digit.
+      ↩️ 🔤🧲🔡 🔢👇 ➗ 10❗️ 10❗️🧲🧲🔡 🔢👇 🚮 10❗️ 10❗️🧲🔤
+    🍉
+    ↩️ 🔡 signed 10❗️
   🍉
 🍉
 
@@ -298,7 +308,12 @@
 
   📗 The value in base 10. 📗
   ❗️ 🔡 ➡️ 🔡 🍇
-    ↩️ 🔡 🔢👇❗️ 10❗️
+    🔢👇❗️ ➡️ signed
+    ↪️ signed ◀️ 0 🍇
+      💭 At least 2^63, which 🔢 cannot hold: the value without its last digit, then the last digit.
+      ↩️ 🔤🧲🔡 🔢👇 ➗ 10❗️ 10❗️🧲🧲🔡 🔢👇 🚮 10❗️ 10❗️🧲🔤
+    🍉
+    ↩️ 🔡 signed 10❗️
   🍉
 🍉
 

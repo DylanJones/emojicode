@@ -7,6 +7,7 @@
 //
 
 #include "ASTMethod.hpp"
+#include <algorithm>
 #include "ASTVariables.hpp"
 #include "Analysis/FunctionAnalyser.hpp"
 #include "Analysis/SemanticAnalyser.hpp"
@@ -220,9 +221,26 @@ bool ASTMethodable::builtInC(ExpressionAnalyser *analyser, const Type &type, con
     auto compiler = analyser->compiler();
     auto valueType = type.valueType();
     auto &representation = *valueType->cRepresentation();
+    // Only the methods the type declares as built-ins are built-ins; methods with bodies are called normally.
+    auto &methods = valueType->methods().list();
+    if (name.size() != 1 || std::none_of(methods.begin(), methods.end(), [&](Function *method) {
+        return method->name() == name && method->mood() == args_.mood() && method->externalName() == "ejcBuiltIn";
+    })) {
+        return false;
+    }
     auto first = name.front();
 
     if (valueType == compiler->cPointer) {
+        auto &pointee = type.genericArguments().front();
+        auto accessesPointee = first == 0x1F43D || first == 0x23ED;  // 🐽, ⏭
+        if (accessesPointee && (pointee.is<TypeType::GenericVariable>() ||
+                                pointee.is<TypeType::LocalGenericVariable>() || pointee.storageType() == StorageType::Box ||
+                                pointee.unboxedType() == TypeType::Something ||
+                                pointee.unboxedType() == TypeType::Protocol ||
+                                pointee.unboxedType() == TypeType::MultiProtocol)) {
+            throw CompilerError(position(), "Cannot access a ", type.toString(analyser->typeContext()),
+                                " because its values are not stored as C values. Use a concrete pointee type.");
+        }
         switch (first) {
             case 0x1F43D:  // 🐽
                 builtIn_ = args_.mood() == Mood::Assignment ? BuiltInType::CPointerStore : BuiltInType::CPointerLoad;

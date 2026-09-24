@@ -105,7 +105,8 @@ public:
     static Type noReturn() { return Type(TypeType::NoReturn); }
     static Type someobject() { return Type(TypeType::Someobject); }
     static Type integerLiteral() { return Type(TypeType::IntegerLiteral); }
-    static Type realLiteral() { return Type(TypeType::RealLiteral); }
+    /// @param real The type of the literal when it is not a C float, 💯.
+    static Type realLiteral(Type real) { return Type(TypeType::RealLiteral, { std::move(real) }); }
     static Type listLiteral(Type element) { return Type(TypeType::ListLiteral, { std::move(element) }); }
     static Type dictionaryLiteral(Type element) {
         return Type(TypeType::DictionaryLiteral, { std::move(element) });

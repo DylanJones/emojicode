@@ -7,6 +7,7 @@
 //
 
 #include "Type.hpp"
+#include <algorithm>
 #include "Class.hpp"
 #include "CommonTypeFinder.hpp"
 #include "Emojis.h"
@@ -361,9 +362,12 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
             to.typeDefinition()->canInitFrom(*this)) {
         return true;
     }
-    if (is<TypeType::RealLiteral>() && to.is<TypeType::ValueType>() && to.valueType()->cRepresentation() &&
+    if (is<TypeType::RealLiteral>()) {
+        if (to.is<TypeType::ValueType>() && to.valueType()->cRepresentation() &&
             to.valueType()->cRepresentation()->isFloat()) {
-        return true;
+            return true;
+        }
+        return genericArguments_.front().compatibleTo(to, tc, inf);  // Otherwise the literal is a 💯.
     }
     if ((is<TypeType::ListLiteral>() || is<TypeType::DictionaryLiteral>()) &&
             to.is<TypeType::ValueType>() && to.typeDefinition()->canInitFrom(*this)) {
@@ -574,8 +578,15 @@ bool Type::isCRepresentable() const {
     switch (type()) {
         case TypeType::ValueType:
             return valueType()->cRepresentation().has_value() || valueType()->isCStruct();
-        case TypeType::Callable:
-            return cCallable_;
+        case TypeType::Callable: {
+            // Calls through C function pointers have no trampolines, so structs cannot be passed by value.
+            auto passable = [](const Type &type) {
+                return type.isCRepresentable() && !(type.type() == TypeType::ValueType && type.valueType()->isCStruct());
+            };
+            return cCallable_ && errorType().type() == TypeType::NoReturn &&
+                (returnType().type() == TypeType::NoReturn || passable(returnType())) &&
+                std::all_of(parameters(), parametersEnd(), passable);
+        }
         case TypeType::Optional:
             return optionalType().isCPointer() || optionalType().isCCallable();
         default:

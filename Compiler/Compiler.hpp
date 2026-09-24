@@ -124,13 +124,17 @@ public:
         /// @param objectFilePath Where the object file of the main package is located.
         /// @param cc Name of or path to the C compiler to use.
         /// @param cxx Name of or path to the C++ compiler to use.
-        NativeCompilationPhase(std::string objectFilePath, std::string cc, std::string cxx)
-            : objectFilePath_(std::move(objectFilePath)), cc_(std::move(cc)), cxx_(std::move(cxx)) {}
+        /// @param mergeIntoObject Whether to merge the native objects into the main object file, because the object
+        ///                        file is the result and neither LinkPhase nor ArchivePhase will run.
+        NativeCompilationPhase(std::string objectFilePath, std::string cc, std::string cxx, bool mergeIntoObject)
+            : objectFilePath_(std::move(objectFilePath)), cc_(std::move(cc)), cxx_(std::move(cxx)),
+              mergeIntoObject_(mergeIntoObject) {}
         void perform(Compiler *compiler) override;
     private:
         std::string objectFilePath_;
         std::string cc_;
         std::string cxx_;
+        bool mergeIntoObject_;
     };
 
     /// Links an object file with the archives of the imported packages of the Compiler.

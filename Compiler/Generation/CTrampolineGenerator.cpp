@@ -10,6 +10,7 @@
 #include "Types/Type.hpp"
 #include "Types/ValueType.hpp"
 #include <map>
+#include <set>
 #include <sstream>
 
 namespace EmojicodeCompiler {
@@ -47,7 +48,9 @@ static std::string cIdentifier(const std::string &string) {
 }
 
 std::string cTrampolineName(Function *function) {
-    return "__ejc_tramp_" + cIdentifier(function->package()->name()) + "_" + function->externalName();
+    // The length prefix keeps the package name and the symbol apart, e.g. for package a_b and symbol c.
+    auto package = cIdentifier(function->package()->name());
+    return "__ejc_tramp_" + std::to_string(package.size()) + package + "_" + function->externalName();
 }
 
 namespace {
@@ -92,12 +95,13 @@ private:
         if (it != structs_.end()) {
             return it->second;
         }
-        auto name = "struct ejc_struct_" + std::to_string(structs_.size());
         std::stringstream fields;
         size_t i = 0;
         for (auto &ivar : valueType->instanceVariables()) {
             fields << "    " << typeName(ivar.type->type()) << " f" << i++ << ";\n";
         }
+        // Named only now, after the structs of the fields have been named and defined.
+        auto name = "struct ejc_struct_" + std::to_string(structs_.size());
         structs_.emplace(valueType, name);
         definitions_ << name << " {\n" << fields.str() << "};\n\n";
         return name;
@@ -145,9 +149,10 @@ void writeTrampoline(Function *function, CDeclarationWriter &writer, std::string
 std::string generateCTrampolines(Package *package) {
     CDeclarationWriter writer;
     std::stringstream code;
+    std::set<std::string> written;  // Several declarations can declare the same C function.
     for (auto &valueType : package->valueTypes()) {
         for (auto function : valueType->typeMethods().list()) {
-            if (needsCTrampoline(function)) {
+            if (needsCTrampoline(function) && written.insert(cTrampolineName(function)).second) {
                 writeTrampoline(function, writer, code);
             }
         }

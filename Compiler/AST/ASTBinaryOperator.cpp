@@ -9,6 +9,7 @@
 #include "ASTBinaryOperator.hpp"
 #include "ASTLiterals.hpp"
 #include "Analysis/FunctionAnalyser.hpp"
+#include "Analysis/SemanticAnalyser.hpp"
 #include "Compiler.hpp"
 #include "MemoryFlowAnalysis/MFFunctionAnalyser.hpp"
 #include "Types/TypeExpectation.hpp"
@@ -51,7 +52,8 @@ Type ASTBinaryOperator::analyseIsNoValue(ExpressionAnalyser *analyser, std::shar
 
 std::pair<bool, ASTBinaryOperator::BuiltIn> ASTBinaryOperator::builtInPrimitiveOperator(ExpressionAnalyser *analyser,
                                                                                         const Type &btype) {
-    auto type = btype.unboxed();
+    // A literal on the left, e.g. `1.5 🤝 x`, stands for a value of its default type.
+    auto type = analyser->semanticAnalyser()->defaultLiteralType(btype).unboxed();
     if ((type.type() == TypeType::ValueType || type.type() == TypeType::Enum) &&
         type.valueType()->isPrimitive()) {
         auto &representation = type.valueType()->cRepresentation();

@@ -84,6 +84,10 @@ llvm::Constant *CodeGenerator::boxInfoFor(const Type &type) {
     if (type.type() == TypeType::Class) {
         return runTime_->boxInfoForObjects();
     }
+    if (type.isCCallable()) {
+        // A C function pointer is an unmanaged word, which boxes like an integer.
+        return compiler()->sInteger->boxInfo();
+    }
     if (type.type() == TypeType::Callable) {
         return runTime_->boxInfoForCallables();
     }
@@ -189,7 +193,12 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
         ft = cTrampolineFunctionType(function);
         name = cTrampolineName(function);
     }
-    if (function->isC()) {
+    // Several 🎍🌊 declarations, or the run-time library, can declare the same C symbol. C closures are not C symbols
+    // (their mangled names are not unique) and each export must be the only definition of its symbol.
+    if (function->isC() && !function->isClosure()) {
+        if (function->isExported() && !exportedCSymbols_.insert(name).second) {
+            throw CompilerError(function->position(), "A C function named ", name, " was already exported.");
+        }
         if (auto existing = module()->getFunction(name)) {
             return reuseCFunction(function, existing, ft);
         }
@@ -283,6 +292,21 @@ llvm::Function* CodeGenerator::reuseCFunction(Function *function, llvm::Function
         throw CompilerError(function->position(), "The C function ", existing->getName().str(),
                             " was already declared with a different signature.");
     }
+    auto triple = llvm::Triple(module()->getTargetTriple());
+    auto conflicts = [](llvm::Attribute::AttrKind kind, auto hasAttribute) {
+        return (kind == llvm::Attribute::SExt && hasAttribute(llvm::Attribute::ZExt)) ||
+            (kind == llvm::Attribute::ZExt && hasAttribute(llvm::Attribute::SExt));
+    };
+    bool signednessDiffers = conflicts(cExtensionAttribute(function->returnType()->type(), triple),
+                                       [&](auto kind) { return existing->hasRetAttribute(kind); });
+    for (unsigned i = 0; i < function->parameters().size(); i++) {
+        signednessDiffers |= conflicts(cExtensionAttribute(function->parameters()[i].type->type(), triple),
+                                       [&](auto kind) { return existing->hasParamAttribute(i, kind); });
+    }
+    if (signednessDiffers) {
+        throw CompilerError(function->position(), "The C function ", existing->getName().str(),
+                            " was already declared with integers of different signedness.");
+    }
     // Do not let the optimizer assume more than the C declaration promises.
     existing->removeRetAttr(llvm::Attribute::NonNull);
     for (unsigned i = 0; i < existing->arg_size(); i++) {
@@ -292,25 +316,44 @@ llvm::Function* CodeGenerator::reuseCFunction(Function *function, llvm::Function
     return existing;
 }
 
-llvm::Attribute::AttrKind cExtensionAttribute(const Type &type) {
+llvm::Attribute::AttrKind cExtensionAttribute(const Type &type, const llvm::Triple &triple) {
     if (type.type() != TypeType::ValueType || !type.valueType()->cRepresentation()) {
         return llvm::Attribute::None;
     }
     auto &representation = *type.valueType()->cRepresentation();
-    if (!representation.isInteger() || representation.bits >= 32) {
+    if (!representation.isInteger()) {
         return llvm::Attribute::None;
     }
-    return representation.isSigned ? llvm::Attribute::SExt : llvm::Attribute::ZExt;
+    auto extension = representation.isSigned ? llvm::Attribute::SExt : llvm::Attribute::ZExt;
+    if (triple.isAArch64() && !triple.isOSDarwin()) {
+        return llvm::Attribute::None;  // AAPCS64 leaves the upper bits unspecified.
+    }
+    if (triple.isOSWindows()) {
+        return representation.bits == 1 ? llvm::Attribute::ZExt : llvm::Attribute::None;
+    }
+    if (representation.bits < 32) {
+        return extension;
+    }
+    if (representation.bits == 32) {
+        if (triple.isRISCV64()) {
+            return llvm::Attribute::SExt;  // RV64 sign extends all 32-bit integers.
+        }
+        if (triple.isPPC64()) {
+            return extension;
+        }
+    }
+    return llvm::Attribute::None;
 }
 
 void CodeGenerator::addCExtensionAttributes(Function *function, llvm::Function *fn) {
+    auto triple = llvm::Triple(module()->getTargetTriple());
     for (size_t i = 0; i < function->parameters().size(); i++) {
-        auto attribute = cExtensionAttribute(function->parameters()[i].type->type());
+        auto attribute = cExtensionAttribute(function->parameters()[i].type->type(), triple);
         if (attribute != llvm::Attribute::None) {
             fn->addParamAttr(i, attribute);
         }
     }
-    auto attribute = cExtensionAttribute(function->returnType()->type());
+    auto attribute = cExtensionAttribute(function->returnType()->type(), triple);
     if (attribute != llvm::Attribute::None && !fn->getReturnType()->isVoidTy()) {
         fn->addRetAttr(attribute);
     }

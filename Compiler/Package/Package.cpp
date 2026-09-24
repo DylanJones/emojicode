@@ -49,7 +49,7 @@ Package::Package(std::string name, std::string path, Compiler *app, bool importe
 Package::~Package() = default;
 
 bool Package::isNativeSourceHint(const std::string &hint) {
-    if (hint.find_first_of(" \t\n") != std::string::npos) {
+    if (hint.empty() || hint.front() == '-' || hint.find_first_of(" \t\n") != std::string::npos) {
         return false;
     }
     for (auto extension : { ".c", ".cc", ".cpp", ".cxx", ".m", ".o" }) {

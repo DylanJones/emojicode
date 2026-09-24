@@ -80,13 +80,14 @@ Value* ASTCallableCall::generateCCall(FunctionCodeGenerator *fg, llvm::Value *fu
     }
     auto functionType = llvm::FunctionType::get(fg->typeHelper().llvmTypeFor(type.returnType()), argTypes, false);
     auto call = fg->builder().CreateCall(functionType, function, args);
+    auto triple = llvm::Triple(fg->generator()->module()->getTargetTriple());
     for (size_t i = 0; i < type.parametersCount(); i++) {
-        auto attribute = cExtensionAttribute(type.parameters()[i]);
+        auto attribute = cExtensionAttribute(type.parameters()[i], triple);
         if (attribute != llvm::Attribute::None) {
             call->addParamAttr(i, attribute);
         }
     }
-    auto attribute = cExtensionAttribute(type.returnType());
+    auto attribute = cExtensionAttribute(type.returnType(), triple);
     if (attribute != llvm::Attribute::None) {
         call->addRetAttr(attribute);
     }

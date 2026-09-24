@@ -64,6 +64,8 @@ public:
     void analyseMemoryFlow(MFFunctionAnalyser *, MFFlowCategory) override {}
 };
 
+struct CRepresentation;
+
 class ASTNumberLiteral final : public ASTExpr {
 public:
     ASTNumberLiteral(double value, std::u32string string, const SourcePosition &p)
@@ -79,6 +81,8 @@ public:
     void analyseMemoryFlow(MFFunctionAnalyser *, MFFlowCategory) override {}
 
 private:
+    void warnIfOutOfRange(ExpressionAnalyser *analyser, const CRepresentation &representation) const;
+
     enum class NumberType {
         Double, Integer, Byte,
         /// A literal of a type with a C representation, stored in cType_.

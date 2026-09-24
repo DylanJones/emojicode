@@ -34,6 +34,9 @@ public:
 
     void setInUnsafeBlock(bool v) { inUnsafeBlock_ = v; }
     bool isInUnsafeBlock() const override { return inUnsafeBlock_; }
+    /// Makes a closure unsafe because the code around it is. Such a closure may still contain ☣️ blocks.
+    void inheritUnsafety() { inUnsafeBlock_ = true; unsafetyInherited_ = true; }
+    bool isUnsafetyInherited() const { return unsafetyInherited_; }
 
     void checkThisUse(const SourcePosition &p) const override;
     FunctionType functionType() const override;
@@ -49,6 +52,7 @@ private:
     Function *function_;
 
     bool inUnsafeBlock_;
+    bool unsafetyInherited_ = false;
 
     void analyseReturn(ASTBlock *root);
     bool analyseInitializationRequirements();
