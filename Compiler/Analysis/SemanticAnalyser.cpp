@@ -75,6 +75,9 @@ void SemanticAnalyser::analyse(bool executable) {
         enqueueFunction(function.get());
     }
 
+    if (auto observer = compiler()->analysisObserver()) {
+        observer->analysingFunctions(package_);
+    }
     analyseQueue();
     checkStartFlagFunction(executable);
 }

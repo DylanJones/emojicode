@@ -7,6 +7,7 @@
 #include "Index.hpp"
 #include "CompilerError.hpp"
 #include "Lex/SourceManager.hpp"
+#include "Package/RecordingPackage.hpp"
 #include "Positions.hpp"
 #include "Tokens.hpp"
 #include <cstdlib>
@@ -63,15 +64,6 @@ private:
 };
 
 /// Records that the phases before it completed without errors.
-class MarkPhase : public Compiler::Phase {
-public:
-    explicit MarkPhase(bool *reached) : reached_(reached) {}
-    void perform(Compiler *compiler) override { *reached_ = true; }
-
-private:
-    bool *reached_;
-};
-
 bool isSourceFile(const fs::path &path) {
     auto name = path.filename().string();
     return endsWith(name, ".emojic") || endsWith(name, ".🍇");
@@ -166,12 +158,11 @@ Analysis Checker::check(const std::string &rootPath) const {
     analysis.index = std::make_unique<Index>();
     analysis.compiler->setAnalysisObserver(analysis.index.get());
     analysis.compiler->add<Compiler::ParsePhase>();
-    // The compiler stops after the first phase with errors, so this marks whether the package parsed.
-    analysis.compiler->add<MarkPhase>(&analysis.analysed);
     analysis.compiler->add<Compiler::AnalysisPhase>(standalone);
     try {
         analysis.compiler->compile();
         analysis.index->finish();
+        analysis.analysed = analysis.index->analysedFunctionsOf(analysis.compiler->mainPackage());
     }
     catch (std::exception &e) {
         // The compiler is left in an unknown state, so nothing it produced is used.

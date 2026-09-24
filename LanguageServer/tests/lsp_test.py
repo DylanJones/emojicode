@@ -494,6 +494,19 @@ class CompletionTests(ServerTestCase):
                                                            "position": {"line": 2, "character": 12}})["items"]
         self.assertEqual(items[0]["label"], "count")
 
+    def test_variables_with_error_in_a_declaration(self):
+        # An error in a declaration stops the analysis before any function body is analysed, so the variables are
+        # those of the last analysis that got that far.
+        path = self.write("declaration.emojic", "🏁 🍇\n  5 ➡️ counter\n  cou\n🍉\n")
+        client = self.start()
+        client.open(path)
+        client.diagnostics(path)
+        client.change(path, "🐇 🐟 🍇\n  ❗️ 🐽 a 🦖 🍇🍉\n🍉\n🏁 🍇\n  5 ➡️ counter\n  coun\n🍉\n")
+        self.assertIn("🦖", client.diagnostics(path)[0]["message"])
+        items = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                           "position": {"line": 5, "character": 6}})["items"]
+        self.assertEqual(items[0]["label"], "counter")
+
     def test_variables_before_better_matches(self):
         # "sum" starts many emoji names and documentation words, but only a later word of the variable's name.
         path = self.write("sum.emojic", "🏁 🍇\n  1 ➡️ total_sum\n  sum\n🍉\n")
