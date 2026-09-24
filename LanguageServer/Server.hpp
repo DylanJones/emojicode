@@ -8,10 +8,12 @@
 
 #include "Checker.hpp"
 #include "JsonRpc.hpp"
+#include "Navigation.hpp"
 #include "Positions.hpp"
 #include "Tokens.hpp"
 #include "Utils/rapidjson/document.h"
 #include <chrono>
+#include <optional>
 #include <map>
 #include <set>
 #include <string>
@@ -25,16 +27,6 @@ struct Document {
     std::string uri;
     std::string path;
     int version = 0;
-};
-
-/// The text of a file with what is needed to convert positions in it.
-struct SourceText {
-    explicit SourceText(std::u32string text) : text(std::move(text)), lines(this->text), tokens(lex(this->text)) {}
-    SourceText(const SourceText &) = delete;
-
-    const std::u32string text;
-    const LineIndex lines;
-    const std::vector<TokenSpan> tokens;
 };
 
 /// The language server: answers the client's requests and publishes diagnostics.
@@ -58,6 +50,18 @@ private:
     void didChange(const rapidjson::Value &params);
     void didSave(const rapidjson::Value &params);
     void didClose(const rapidjson::Value &params);
+    void hover(const rapidjson::Value &id, const rapidjson::Value &params);
+    void definition(const rapidjson::Value &id, const rapidjson::Value &params);
+    void semanticTokens(const rapidjson::Value &id, const rapidjson::Value &params);
+    void documentSymbols(const rapidjson::Value &id, const rapidjson::Value &params);
+    void completion(const rapidjson::Value &id, const rapidjson::Value &params);
+
+    /// Returns the canonical path of the document in @p params and the code point offset of the position in it.
+    /// Checks the document's package first if it has pending changes.
+    std::optional<std::pair<std::string, size_t>> documentPosition(const rapidjson::Value &params);
+    Navigator navigator(const Analysis &analysis, const std::string &path);
+    /// Returns the latest analysis of the package that contains the open document at @p path, or nullptr.
+    const Analysis* analysisFor(const std::string &path);
 
     void respond(const rapidjson::Value &id, rapidjson::Value &result, rapidjson::Document &document);
     void respondError(const rapidjson::Value &id, int code, const std::string &message);
@@ -79,6 +83,10 @@ private:
     const SourceText& sourceText(const std::string &path);
     /// Returns the LSP range of the token at @p location.
     rapidjson::Value range(const Location &location, rapidjson::Document::AllocatorType &allocator);
+    /// Returns the LSP range from code point offset @p start to @p end.
+    rapidjson::Value range(const SourceText &source, size_t start, size_t end,
+                           rapidjson::Document::AllocatorType &allocator);
+    rapidjson::Value locationJson(const Location &location, rapidjson::Document::AllocatorType &allocator);
     std::string uriForPath(const std::string &path) const;
 
     Checker checker() const;
@@ -87,6 +95,7 @@ private:
     std::vector<std::string> searchPaths_;
     PositionEncoding encoding_ = PositionEncoding::UTF16;
     bool shutdown_ = false;
+    bool snippetSupport_ = false;
 
     /// Open documents by canonical path.
     std::map<std::string, Document> documents_;
@@ -96,6 +105,8 @@ private:
     std::map<std::string, std::string> roots_;
     /// The last analysis of each root file.
     std::map<std::string, Analysis> analyses_;
+    /// The last analysis of each root file that parsed, which completion uses while the code being typed does not.
+    std::map<std::string, Analysis> parsedAnalyses_;
     /// The files for which diagnostics were published from each root file.
     std::map<std::string, std::set<std::string>> published_;
     /// When each root file with pending changes is to be checked.

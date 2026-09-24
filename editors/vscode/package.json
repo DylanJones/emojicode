@@ -69,6 +69,17 @@
           "description": "Logs the messages between VS Code and the language server to the Emojicode output channel."
         }
       }
+    },
+    "configurationDefaults": {
+      "[emojicode]": {
+        "editor.semanticHighlighting.enabled": true,
+        "editor.wordBasedSuggestions": "off",
+        "editor.quickSuggestions": {
+          "other": true,
+          "comments": false,
+          "strings": false
+        }
+      }
     }
   },
   "scripts": {

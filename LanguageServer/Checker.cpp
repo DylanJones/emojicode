@@ -4,6 +4,7 @@
 //
 
 #include "Checker.hpp"
+#include "Index.hpp"
 #include "CompilerError.hpp"
 #include "Lex/SourceManager.hpp"
 #include "Positions.hpp"
@@ -76,6 +77,11 @@ bool isSourceFile(const fs::path &path) {
 }
 
 }  // namespace
+
+Analysis::Analysis() = default;
+Analysis::Analysis(Analysis &&) = default;
+Analysis& Analysis::operator=(Analysis &&) = default;
+Analysis::~Analysis() = default;
 
 std::u32string Checker::read(const std::string &path) const {
     auto overlay = overlays_.find(path);
@@ -156,16 +162,20 @@ Analysis Checker::check(const std::string &rootPath) const {
     for (auto &overlay : overlays_) {
         analysis.compiler->sourceManager().setOverlay(overlay.first, overlay.second);
     }
+    analysis.index = std::make_unique<Index>();
+    analysis.compiler->setAnalysisObserver(analysis.index.get());
     analysis.compiler->add<Compiler::ParsePhase>();
     // The compiler stops after the first phase with errors, so this marks whether the package parsed.
     analysis.compiler->add<MarkPhase>(&analysis.analysed);
     analysis.compiler->add<Compiler::AnalysisPhase>(standalone);
     try {
         analysis.compiler->compile();
+        analysis.index->finish();
     }
     catch (std::exception &e) {
         // The compiler is left in an unknown state, so nothing it produced is used.
         analysis.compiler = nullptr;
+        analysis.index = nullptr;
         analysis.analysed = false;
         analysis.diagnostics.push_back(Diagnostic{Location{rootPath, 1, 1}, Diagnostic::Severity::Error,
                                                   std::string("The compiler crashed while checking this file: ") +

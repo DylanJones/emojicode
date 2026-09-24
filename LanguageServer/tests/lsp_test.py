@@ -31,7 +31,7 @@ def utf16_length(text):
 class Client:
     """A minimal LSP client that talks to a server process over stdio."""
 
-    def __init__(self, encodings=("utf-16",), options=None):
+    def __init__(self, encodings=("utf-16",), options=None, capabilities=None):
         # stderr goes to a file: a pipe that nobody reads would block the server once it is full.
         self.log = tempfile.TemporaryFile()
         self.process = subprocess.Popen([SERVER], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log)
@@ -41,7 +41,7 @@ class Client:
         self.versions = {}
         result = self.request("initialize", {
             "processId": os.getpid(), "rootUri": None,
-            "capabilities": {"general": {"positionEncodings": list(encodings)}},
+            "capabilities": {"general": {"positionEncodings": list(encodings)}, **(capabilities or {})},
             "initializationOptions": options or {},
         })
         self.capabilities = result["capabilities"]
@@ -252,6 +252,196 @@ class DiagnosticsTests(ServerTestCase):
             client.change(path, text)
             client.diagnostics(path)
         self.assertEqual(client.shutdown(), 0)
+
+
+FISH = """📗 A fish that can swim. 📗
+🐇 🐟 🍇
+  🖍🆕 depth 🔢 ⬅️ 0
+
+  📗 Makes the fish swim down by meters. 📗
+  ❗️ 🏊 meters 🔢 ➡️ 🔢 🍇
+    depth ⬅️➕ meters
+    ↩️ depth
+  🍉
+
+  🆕 🍇🍉
+🍉
+
+🏁 🍇
+  🆕🐟❗️ ➡️ fish
+  🏊 fish 5❗️ ➡️ 🖍🆕 total
+  🍿 1 2 3 🍆 ➡️ list
+  🔂 item list 🍇
+    total ⬅️➕ item
+  🍉
+  😀 🔤Depth 🧲total🧲🔤❗️
+🍉
+"""
+
+
+def position(text, needle, occurrence=1, encoding="utf-16"):
+    """Returns the LSP position of the n-th occurrence of needle in text. Only occurrences outside of comments
+    count. If needle contains a |, the position is that of the |, which is not part of the text."""
+    offset = needle.find("|")
+    needle = needle.replace("|", "")
+    index = -1
+    for _ in range(occurrence):
+        index = text.index(needle, index + 1)
+        while "📗" in text[text.rfind("\n", 0, index) + 1:index]:
+            index = text.index(needle, index + 1)
+    index += max(offset, 0)
+    line = text.count("\n", 0, index)
+    column = text[text.rfind("\n", 0, index) + 1:index]
+    return {"line": line, "character": utf16_length(column) if encoding == "utf-16" else len(column)}
+
+
+class NavigationTests(ServerTestCase):
+    def setUp(self):
+        super().setUp()
+        self.path = self.write("fish.emojic", FISH)
+        self.client = self.start()
+        self.client.open(self.path)
+        self.assertEqual(self.client.diagnostics(self.path), [])
+
+    def request(self, method, needle, occurrence=1):
+        return self.client.request(method, {"textDocument": {"uri": uri(self.path)},
+                                            "position": position(FISH, needle, occurrence)})
+
+    def hover(self, needle, occurrence=1):
+        result = self.request("textDocument/hover", needle, occurrence)
+        return result["contents"]["value"] if result else None
+
+    def definition(self, needle, occurrence=1):
+        result = self.request("textDocument/definition", needle, occurrence)
+        if result is None:
+            return None
+        return urllib.parse.unquote(result["uri"]), result["range"]["start"]
+
+    def test_hover_method_call(self):
+        text = self.hover("🏊", 2)
+        self.assertIn("❗️ 🏊 meters 🔢 ➡️ 🔢", text)
+        self.assertIn("Makes the fish swim down by meters.", text)
+
+    def test_hover_type_with_documentation(self):
+        self.assertIn("A fish that can swim.", self.hover("🐟", 2))
+
+    def test_hover_variables(self):
+        self.assertIn("fish 🐟", self.hover("fish", 2))
+        self.assertIn("🖍 total 🔢", self.hover("total"))
+        self.assertIn("list 🍨🐚🔢", self.hover("list", 2))
+        self.assertIn("depth 🔢", self.hover("depth", 2))
+
+    def test_hover_standard_library(self):
+        self.assertIn("😀", self.hover("😀"))
+
+    def test_no_hover_on_compiler_generated_code(self):
+        self.assertIsNone(self.hover("🔂"))
+
+    def test_definition_of_method_and_type(self):
+        self.assertEqual(self.definition("🏊", 2), (urllib.parse.unquote(uri(self.path)), position(FISH, "🏊")))
+        self.assertEqual(self.definition("🐟", 2)[1], position(FISH, "🐟"))
+
+    def test_definition_of_variables_is_their_name(self):
+        self.assertEqual(self.definition("meters", 2)[1], position(FISH, "meters"))
+        self.assertEqual(self.definition("fish", 2)[1], position(FISH, "fish"))
+        self.assertEqual(self.definition("item", 2)[1], position(FISH, "item"))
+        self.assertEqual(self.definition("depth", 2)[1], position(FISH, "depth"))
+
+    def test_definition_in_standard_library(self):
+        path, start = self.definition("😀")
+        self.assertTrue(path.endswith("🏛"), path)
+
+    def test_semantic_tokens(self):
+        legend = self.client.capabilities["semanticTokensProvider"]["legend"]
+        data = self.client.request("textDocument/semanticTokens/full",
+                                   {"textDocument": {"uri": uri(self.path)}})["data"]
+        tokens = {}
+        line = character = 0
+        lines = FISH.split("\n")
+        for i in range(0, len(data), 5):
+            delta_line, delta_start, length, kind, modifiers = data[i:i + 5]
+            line += delta_line
+            character = character + delta_start if delta_line == 0 else delta_start
+            text = lines[line].encode("utf-16-le")[character * 2:(character + length) * 2].decode("utf-16-le")
+            names = [m for bit, m in enumerate(legend["tokenModifiers"]) if modifiers & (1 << bit)]
+            tokens.setdefault(text, (legend["tokenTypes"][kind], names))
+        self.assertEqual(tokens["🐟"], ("class", ["declaration"]))
+        self.assertEqual(tokens["🏊"], ("method", ["declaration"]))
+        self.assertEqual(tokens["depth"], ("property", ["declaration"]))
+        self.assertEqual(tokens["😀"], ("method", ["defaultLibrary"]))
+        self.assertEqual(tokens["🔢"], ("struct", ["defaultLibrary"]))
+        self.assertEqual(tokens["fish"][0], "variable")
+        self.assertEqual(tokens["🔤Depth 🧲"][0], "string")
+        self.assertEqual(tokens["🏁"][0], "keyword")
+
+    def test_document_symbols(self):
+        symbols = self.client.request("textDocument/documentSymbol", {"textDocument": {"uri": uri(self.path)}})
+        self.assertEqual([s["name"] for s in symbols], ["🐟"])
+        self.assertEqual([c["name"] for c in symbols[0]["children"]], ["depth", "🏊", "🆕"])
+
+
+class CompletionTests(ServerTestCase):
+    def complete(self, word, snippets=False):
+        """Types word on a new line at the end of the 🏁 block of FISH and returns the completion items."""
+        if self.client is None:
+            self.path = self.write("fish.emojic", FISH)
+            self.start(capabilities={"textDocument": {"completion": {"completionItem": {
+                "snippetSupport": snippets}}}})
+            self.client.open(self.path)
+            self.client.diagnostics(self.path)
+        text = FISH[:FISH.rindex("🍉")] + "  " + word + "\n🍉\n"
+        self.client.change(self.path, text)
+        line = text.count("\n") - 2
+        result = self.client.request("textDocument/completion", {"textDocument": {"uri": uri(self.path)},
+                                                                 "position": {"line": line,
+                                                                              "character": 2 + len(word)}})
+        self.assertTrue(result["isIncomplete"])
+        return result["items"]
+
+    def test_emoji_by_name(self):
+        items = self.complete("grap")
+        self.assertEqual(items[0]["textEdit"]["newText"], "🍇")
+        self.assertEqual(items[0]["textEdit"]["range"]["start"], {"line": 21, "character": 2})
+
+    def test_variables_first_even_with_errors(self):
+        # The typed word is an undefined variable, which stops the analysis of the function.
+        items = self.complete("to")
+        self.assertEqual(items[0]["label"], "total")
+        self.assertEqual(items[0]["detail"], "🔢")
+
+    def test_method_by_documentation(self):
+        items = self.complete("swim")
+        self.assertEqual(items[0]["textEdit"]["newText"], "🏊")
+        self.assertIn("❗️ 🏊 meters 🔢 ➡️ 🔢", items[0]["detail"])
+
+    def test_standard_library_method_by_documentation(self):
+        items = self.complete("append")
+        self.assertIn("🐻", [item["textEdit"]["newText"] for item in items[:5]])
+
+    def test_type_by_documentation(self):
+        items = self.complete("integer")
+        self.assertEqual(items[0]["textEdit"]["newText"], "🔢")
+
+    def test_keyword_without_snippet_support(self):
+        items = self.complete("class")
+        self.assertEqual(items[0]["textEdit"]["newText"], "🐇")
+        self.assertNotIn("insertTextFormat", items[0])
+
+    def test_no_completion_in_strings_and_comments(self):
+        path = self.write("strings.emojic", "🏁 🍇\n  😀 🔤grap🔤❗️ 💭 grap\n🍉\n")
+        client = self.start()
+        client.open(path)
+        client.diagnostics(path)
+        for character in (9, 23):
+            result = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                                "position": {"line": 1, "character": character}})
+            self.assertEqual(result["items"], [], character)
+
+
+    def test_keyword_snippet(self):
+        items = self.complete("class", snippets=True)
+        self.assertEqual(items[0]["insertTextFormat"], 2)
+        self.assertTrue(items[0]["textEdit"]["newText"].startswith("🐇 ${1:🐟} 🍇"))
 
 
 if __name__ == "__main__":

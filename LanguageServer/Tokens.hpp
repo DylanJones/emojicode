@@ -7,6 +7,7 @@
 #define Tokens_hpp
 
 #include "Lex/Token.hpp"
+#include "Positions.hpp"
 #include <string>
 #include <vector>
 
@@ -24,6 +25,16 @@ struct TokenSpan {
 /// Lexes @p text with the compiler's lexer. If the text contains an invalid token, the tokens before it are
 /// returned. Line breaks are left out.
 std::vector<TokenSpan> lex(const std::u32string &text);
+
+/// The text of a file with its lines and tokens.
+struct SourceText {
+    explicit SourceText(std::u32string text) : text(std::move(text)), lines(this->text), tokens(lex(this->text)) {}
+    SourceText(const SourceText &) = delete;
+
+    const std::u32string text;
+    const LineIndex lines;
+    const std::vector<TokenSpan> tokens;
+};
 
 /// Returns the token that starts at @p offset, or nullptr.
 const TokenSpan* tokenStartingAt(const std::vector<TokenSpan> &tokens, size_t offset);

@@ -4,6 +4,8 @@
 //
 
 #include "Server.hpp"
+#include "Completion.hpp"
+#include "SemanticTokens.hpp"
 #include <algorithm>
 
 namespace EmojicodeLanguageServer {
@@ -87,6 +89,21 @@ void Server::handleRequest(const std::string &method, const Value &id, const Val
     if (method == "initialize") {
         initialize(id, params);
     }
+    else if (method == "textDocument/hover") {
+        hover(id, params);
+    }
+    else if (method == "textDocument/definition") {
+        definition(id, params);
+    }
+    else if (method == "textDocument/semanticTokens/full") {
+        semanticTokens(id, params);
+    }
+    else if (method == "textDocument/documentSymbol") {
+        documentSymbols(id, params);
+    }
+    else if (method == "textDocument/completion") {
+        completion(id, params);
+    }
     else if (method == "shutdown") {
         shutdown_ = true;
         rapidjson::Document document;
@@ -123,6 +140,9 @@ void Server::initialize(const Value &id, const Value &params) {
             }
         }
     }
+    auto &snippets = member(member(member(member(member(params, "capabilities"), "textDocument"), "completion"),
+                                   "completionItem"), "snippetSupport");
+    snippetSupport_ = snippets.IsBool() && snippets.GetBool();
     auto &paths = member(member(params, "initializationOptions"), "packageSearchPaths");
     if (paths.IsArray()) {
         std::vector<std::string> clientPaths;
@@ -144,6 +164,23 @@ void Server::initialize(const Value &id, const Value &params) {
     sync.AddMember("change", 1, allocator);  // Full: the whole document is sent with each change.
     sync.AddMember("save", Value(rapidjson::kObjectType), allocator);
     capabilities.AddMember("textDocumentSync", sync, allocator);
+    capabilities.AddMember("hoverProvider", true, allocator);
+    capabilities.AddMember("definitionProvider", true, allocator);
+    capabilities.AddMember("documentSymbolProvider", true, allocator);
+    capabilities.AddMember("completionProvider", Value(rapidjson::kObjectType), allocator);
+    Value tokenTypes(rapidjson::kArrayType);
+    for (auto type : kSemanticTokenTypes) tokenTypes.PushBack(Value(rapidjson::StringRef(type)), allocator);
+    Value tokenModifiers(rapidjson::kArrayType);
+    for (auto modifier : kSemanticTokenModifiers) {
+        tokenModifiers.PushBack(Value(rapidjson::StringRef(modifier)), allocator);
+    }
+    Value legend(rapidjson::kObjectType);
+    legend.AddMember("tokenTypes", tokenTypes, allocator);
+    legend.AddMember("tokenModifiers", tokenModifiers, allocator);
+    Value semanticTokens(rapidjson::kObjectType);
+    semanticTokens.AddMember("legend", legend, allocator);
+    semanticTokens.AddMember("full", true, allocator);
+    capabilities.AddMember("semanticTokensProvider", semanticTokens, allocator);
 
     Value info(rapidjson::kObjectType);
     info.AddMember("name", "emojicode-lsp", allocator);
@@ -207,6 +244,7 @@ void Server::didClose(const Value &params) {
     // Nothing of this package is open anymore: its diagnostics are removed.
     scheduled_.erase(root);
     analyses_.erase(root);
+    parsedAnalyses_.erase(root);
     Analysis empty;
     empty.rootPath = root;
     publishDiagnostics(empty);
@@ -268,6 +306,12 @@ void Server::runChecks(bool all) {
 void Server::check(const std::string &root) {
     auto analysis = checker().check(root);
     publishDiagnostics(analysis);
+    if (analysis.analysed) {
+        parsedAnalyses_.erase(root);  // The latest analysis is now the last one that parsed.
+    }
+    else if (analyses_.count(root) > 0 && analyses_[root].analysed) {
+        parsedAnalyses_[root] = std::move(analyses_[root]);
+    }
     analyses_[root] = std::move(analysis);
 }
 
@@ -292,18 +336,100 @@ rapidjson::Value Server::range(const Location &location, rapidjson::Document::Al
     auto startOffset = lines.offset(line, character);
     auto token = tokenStartingAt(source.tokens, startOffset);
     auto endOffset = token != nullptr ? token->end : std::min(startOffset + 1, lines.offset(line, SIZE_MAX));
-    auto end = lines.lineAndCharacter(endOffset);
+    if (endOffset == startOffset && startOffset > 0) {
+        startOffset--;  // E.g. an unexpected end of file: the range covers the last character so that it is visible.
+    }
+    return range(source, startOffset, endOffset, allocator);
+}
 
-    auto toJson = [&](ClientPosition position) {
+rapidjson::Value Server::range(const SourceText &source, size_t start, size_t end,
+                               rapidjson::Document::AllocatorType &allocator) {
+    auto toJson = [&](size_t offset) {
+        auto position = source.lines.lineAndCharacter(offset);
+        auto client = source.lines.toClient(position.first, position.second, encoding_);
         Value json(rapidjson::kObjectType);
-        json.AddMember("line", static_cast<uint64_t>(position.line), allocator);
-        json.AddMember("character", static_cast<uint64_t>(position.character), allocator);
+        json.AddMember("line", static_cast<uint64_t>(client.line), allocator);
+        json.AddMember("character", static_cast<uint64_t>(client.character), allocator);
         return json;
     };
     Value range(rapidjson::kObjectType);
-    range.AddMember("start", toJson(lines.toClient(line, character, encoding_)), allocator);
-    range.AddMember("end", toJson(lines.toClient(end.first, end.second, encoding_)), allocator);
+    range.AddMember("start", toJson(start), allocator);
+    range.AddMember("end", toJson(end), allocator);
     return range;
+}
+
+rapidjson::Value Server::locationJson(const Location &location, rapidjson::Document::AllocatorType &allocator) {
+    Value json(rapidjson::kObjectType);
+    json.AddMember("uri", jsonString(uriForPath(location.path), allocator), allocator);
+    json.AddMember("range", range(location, allocator), allocator);
+    return json;
+}
+
+std::optional<std::pair<std::string, size_t>> Server::documentPosition(const Value &params) {
+    auto path = uriToPath(string(member(params, "textDocument"), "uri"));
+    auto &position = member(params, "position");
+    auto &line = member(position, "line");
+    auto &character = member(position, "character");
+    if (documents_.count(path) == 0 || !line.IsUint() || !character.IsUint()) {
+        return std::nullopt;
+    }
+    analysisFor(path);  // Checks pending changes, so that the text and the analysis match.
+    auto &source = sourceText(path);
+    auto codePoint = source.lines.toCodePoint(ClientPosition{line.GetUint(), character.GetUint()}, encoding_);
+    return std::make_pair(path, source.lines.offset(line.GetUint(), codePoint));
+}
+
+const Analysis* Server::analysisFor(const std::string &path) {
+    auto root = roots_.find(path);
+    if (root == roots_.end()) {
+        return nullptr;
+    }
+    if (scheduled_.count(root->second) > 0) {
+        scheduled_.erase(root->second);
+        check(root->second);
+    }
+    auto analysis = analyses_.find(root->second);
+    return analysis == analyses_.end() ? nullptr : &analysis->second;
+}
+
+Navigator Server::navigator(const Analysis &analysis, const std::string &path) {
+    return Navigator(analysis, path, [this](const std::string &path) -> const SourceText& { return sourceText(path); });
+}
+
+void Server::hover(const Value &id, const Value &params) {
+    rapidjson::Document document;
+    auto &allocator = document.GetAllocator();
+    Value result;
+    auto position = documentPosition(params);
+    auto analysis = position ? analysisFor(position->first) : nullptr;
+    if (analysis != nullptr) {
+        auto navigator = this->navigator(*analysis, position->first);
+        if (auto symbol = navigator.symbolAt(position->second)) {
+            result.SetObject();
+            Value contents(rapidjson::kObjectType);
+            contents.AddMember("kind", "markdown", allocator);
+            contents.AddMember("value", jsonString(symbol->first.hover, allocator), allocator);
+            result.AddMember("contents", contents, allocator);
+            result.AddMember("range", range(navigator.source(), symbol->second->start, symbol->second->end, allocator),
+                             allocator);
+        }
+    }
+    respond(id, result, document);
+}
+
+void Server::definition(const Value &id, const Value &params) {
+    rapidjson::Document document;
+    auto &allocator = document.GetAllocator();
+    Value result;
+    auto position = documentPosition(params);
+    auto analysis = position ? analysisFor(position->first) : nullptr;
+    if (analysis != nullptr) {
+        auto symbol = navigator(*analysis, position->first).symbolAt(position->second);
+        if (symbol && symbol->first.declaration) {
+            result = locationJson(*symbol->first.declaration, allocator);
+        }
+    }
+    respond(id, result, document);
 }
 
 void Server::publishDiagnostics(const Analysis &analysis) {
@@ -363,6 +489,124 @@ void Server::publishDiagnostics(const Analysis &analysis) {
         params.AddMember("diagnostics", diagnostics, allocator);
         notify("textDocument/publishDiagnostics", params, document);
     }
+}
+
+void Server::semanticTokens(const Value &id, const Value &params) {
+    rapidjson::Document document;
+    auto &allocator = document.GetAllocator();
+    Value result(rapidjson::kObjectType);
+    Value data(rapidjson::kArrayType);
+    auto path = uriToPath(string(member(params, "textDocument"), "uri"));
+    auto analysis = documents_.count(path) > 0 ? analysisFor(path) : nullptr;
+    if (analysis != nullptr) {
+        for (auto value : EmojicodeLanguageServer::semanticTokens(navigator(*analysis, path), encoding_)) {
+            data.PushBack(value, allocator);
+        }
+    }
+    result.AddMember("data", data, allocator);
+    respond(id, result, document);
+}
+
+/// Returns the LSP SymbolKind for @p kind.
+static int symbolKind(Symbol::Kind kind) {
+    switch (kind) {
+        case Symbol::Kind::Class: return 5;
+        case Symbol::Kind::Method: return 6;
+        case Symbol::Kind::TypeMethod: return 6;
+        case Symbol::Kind::InstanceVariable: return 7;
+        case Symbol::Kind::Initializer: return 9;
+        case Symbol::Kind::Enum: return 10;
+        case Symbol::Kind::Protocol: return 11;
+        case Symbol::Kind::Variable: return 13;
+        case Symbol::Kind::ValueType: return 23;
+        case Symbol::Kind::OtherType: return 26;
+        case Symbol::Kind::Expression: return 13;
+    }
+    return 13;
+}
+
+void Server::documentSymbols(const Value &id, const Value &params) {
+    rapidjson::Document document;
+    auto &allocator = document.GetAllocator();
+    Value result(rapidjson::kArrayType);
+    auto path = uriToPath(string(member(params, "textDocument"), "uri"));
+    auto analysis = documents_.count(path) > 0 ? analysisFor(path) : nullptr;
+    if (analysis != nullptr) {
+        std::function<Value (const OutlineEntry &)> toJson = [&](const OutlineEntry &entry) {
+            Value json(rapidjson::kObjectType);
+            json.AddMember("name", jsonString(utf8(entry.name), allocator), allocator);
+            json.AddMember("kind", symbolKind(entry.kind), allocator);
+            json.AddMember("range", range(entry.location, allocator), allocator);
+            json.AddMember("selectionRange", range(entry.location, allocator), allocator);
+            Value children(rapidjson::kArrayType);
+            for (auto &child : entry.children) {
+                children.PushBack(toJson(child), allocator);
+            }
+            json.AddMember("children", children, allocator);
+            return json;
+        };
+        auto navigator = this->navigator(*analysis, path);
+        for (auto &entry : navigator.outline()) {
+            result.PushBack(toJson(entry), allocator);
+        }
+    }
+    respond(id, result, document);
+}
+
+void Server::completion(const Value &id, const Value &params) {
+    rapidjson::Document document;
+    auto &allocator = document.GetAllocator();
+    Value items(rapidjson::kArrayType);
+    auto position = documentPosition(params);
+    if (position) {
+        auto &path = position->first;
+        auto analysis = analysisFor(path);
+        if (analysis != nullptr && !analysis->analysed) {
+            auto parsed = parsedAnalyses_.find(roots_[path]);
+            if (parsed != parsedAnalyses_.end()) {
+                analysis = &parsed->second;
+            }
+        }
+        auto &source = sourceText(path);
+        Completer completer(analysis, path, source, snippetSupport_);
+        if (completer.canComplete(position->second)) {
+            auto start = completer.wordStart(position->second);
+            auto word = utf8(std::u32string_view(source.text).substr(start, position->second - start));
+            size_t index = 0;
+            for (auto &item : completer.complete(start, position->second, 200)) {
+                Value json(rapidjson::kObjectType);
+                json.AddMember("label", jsonString(item.label, allocator), allocator);
+                json.AddMember("kind", item.kind, allocator);
+                if (!item.detail.empty()) {
+                    json.AddMember("detail", jsonString(item.detail, allocator), allocator);
+                }
+                if (!item.documentation.empty()) {
+                    Value documentation(rapidjson::kObjectType);
+                    documentation.AddMember("kind", "markdown", allocator);
+                    documentation.AddMember("value", jsonString(item.documentation, allocator), allocator);
+                    json.AddMember("documentation", documentation, allocator);
+                }
+                // The items are already filtered and sorted: the typed word describes the item, it does not start it.
+                json.AddMember("filterText", jsonString(word, allocator), allocator);
+                char sortText[16];
+                snprintf(sortText, sizeof(sortText), "%05zu", index++);
+                json.AddMember("sortText", Value(sortText, allocator), allocator);
+                Value edit(rapidjson::kObjectType);
+                edit.AddMember("range", range(source, start, position->second, allocator), allocator);
+                edit.AddMember("newText", jsonString(item.insertText, allocator), allocator);
+                json.AddMember("textEdit", edit, allocator);
+                if (item.isSnippet) {
+                    json.AddMember("insertTextFormat", 2, allocator);
+                }
+                items.PushBack(json, allocator);
+            }
+        }
+    }
+    Value result(rapidjson::kObjectType);
+    // Incomplete, so that the client asks again as the word grows: the server matches it in ways the client cannot.
+    result.AddMember("isIncomplete", true, allocator);
+    result.AddMember("items", items, allocator);
+    respond(id, result, document);
 }
 
 void Server::respond(const Value &id, Value &result, rapidjson::Document &document) {

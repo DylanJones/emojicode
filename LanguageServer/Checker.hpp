@@ -31,9 +31,19 @@ struct Diagnostic {
     std::vector<std::pair<Location, std::string>> notes;
 };
 
+class Index;
+
 /// Everything known about a package after it was checked.
 struct Analysis {
+    Analysis();
+    Analysis(Analysis &&);
+    Analysis& operator=(Analysis &&);
+    ~Analysis();
+
     std::string rootPath;
+    /// What the analysis found out, by position. Declared before the compiler, which refers to it, so that it is
+    /// destroyed after it.
+    std::unique_ptr<Index> index;
     /// The compiler that checked the package. It owns the packages, types, functions and their ASTs. nullptr if the
     /// compiler crashed.
     std::unique_ptr<EmojicodeCompiler::Compiler> compiler;

@@ -1,8 +1,15 @@
 # Emojicode for Visual Studio Code
 
 Highlighting, bracket matching, folding and comment toggling for Emojicode. With the `emojicode-lsp` language
-server it also shows errors as you type, types on hover, goes to definitions and completes code, including emoji
-by name.
+server it also:
+
+- shows errors and warnings as you type,
+- shows types, method signatures and documentation on hover,
+- goes to definitions (F12), also into the standard library,
+- lists the types and methods of a file in the outline,
+- highlights types, methods and variables by what they are,
+- completes code. Type a word and pick what it describes: `grapes` inserts 🍇, `append` finds the methods whose
+  documentation mentions it, `class` or `if` insert the construct, and variable names complete as usual.
 
 ## Installing
 
