@@ -95,6 +95,8 @@ compilation_tests = [
     "linkHints",
     "linkHintFlag",
     "linkHintSource",
+    "ffiScalars",
+    "ffiPointers",
     "threadUnjoined",
     "mutexTryLock",
     "inferLiteralFromExpec",

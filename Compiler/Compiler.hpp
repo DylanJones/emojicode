@@ -206,6 +206,8 @@ public:
     Package *loadPackage(const std::string &name, const SourcePosition &p, Package *requestor);
 
     void assignSTypes(Package *s);
+    /// Looks up the pointer types 📍 and 🕳 of the c package, which are defined in the namespace 🌊.
+    void assignCTypes(Package *c);
 
     Class *sString = nullptr;
     Class *sError = nullptr;
@@ -219,6 +221,10 @@ public:
     ValueType *sMemory = nullptr;
     ValueType *sByte = nullptr;
     ValueType *sWeak = nullptr;
+    /// 📍🐚T🍆 of the c package, a C pointer to T. nullptr if the c package is not loaded.
+    ValueType *cPointer = nullptr;
+    /// 🕳 of the c package, a C void pointer. nullptr if the c package is not loaded.
+    ValueType *cVoidPointer = nullptr;
 
     ~Compiler();
 

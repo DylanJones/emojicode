@@ -53,7 +53,8 @@
  *     parameter,
  *   - more than one 🏁 or more than one list of link hints in a package (these may be in different documents),
  *   - 📦 and 📜: whether the package can be found and loaded, and whether the included file has a valid name and
- *     can be read.
+ *     can be read,
+ *   - whether the string after 📻 on a value type names a C type that the compiler knows (see Types/CRepresentation.cpp).
  *
  * Interface documents (🏛, interface.emojii), which the compiler generates, are also not described. They differ
  * from source documents in one respect: a `function-body` may be omitted, and only functions with the 🥯
@@ -243,7 +244,7 @@ link-hints          ::= documentation-comment? '🔗' string-literal+ '🔗'
  *
  * Attributes must appear in the order in which they are written here.
  *
- *   🌍 exported    🎍🛢 no generic dynamism    🔏 final    📻 foreign (classes), primitive (value types)
+ *   🌍 exported    🎍🛢 no generic dynamism    🎍🌊 C struct    🔏 final    📻 foreign (classes), primitive (value types)
  * ================================================================================================================ */
 
 type-definition     ::= class-definition | value-type-definition | enum-definition | protocol-definition
@@ -258,10 +259,14 @@ class-definition    ::= documentation-comment? '🌍'?
 superclass          ::= type - ( '🍇' tokens )
 
 value-type-definition ::= documentation-comment? '🌍'?
-                        ( '🕊' type-identifier generic-parameters? value-type-body
-                        | '📻' '🕊' type-identifier generic-parameters? primitive-value-type-body
-                        | '🎍🛢' '🕊' type-identifier non-empty-generic-parameters value-type-body
-                        | '🎍🛢' '📻' '🕊' type-identifier non-empty-generic-parameters primitive-value-type-body )
+                        ( '🎍🌊'? '🕊' type-identifier generic-parameters? value-type-body
+                        | '📻' c-representation? '🕊' type-identifier generic-parameters? primitive-value-type-body
+                        | '🎍🛢' '🎍🌊'? '🕊' type-identifier non-empty-generic-parameters value-type-body
+                        | '🎍🛢' '📻' c-representation? '🕊' type-identifier non-empty-generic-parameters
+                          primitive-value-type-body )
+
+/* The C type that represents a primitive value type, e.g. 🔤unsigned int🔤 or 🔤void *🔤. */
+c-representation    ::= string-literal
 
 enum-definition     ::= documentation-comment? '🌍'? '🔘' type-identifier enum-body
 protocol-definition ::= documentation-comment? '🌍'? '🐊' type-identifier generic-parameters? protocol-body
@@ -276,8 +281,10 @@ generic-parameter   ::= '☣'? variable type                        /* ☣: this
  *
  * Member attributes must appear in this order, and each kind of member allows only some of them:
  *
- *   🥯 inline   ⚠ deprecated   🔏 final   ✒ override   🐇 type method   ☣ unsafe   🖍 mutating   🔑 required
- *   🎍🥡 escaping
+ *   🥯 inline   ⚠ deprecated   🔏 final   ✒ override   🎍🌊 C function   🐇 type method   ☣ unsafe   🖍 mutating
+ *   🔑 required   🎍🥡 escaping
+ *
+ * A C function (🎍🌊) must be a type method marked ☣ of a value type or an enumeration.
  * ================================================================================================================ */
 
 class-body          ::= '🍇' class-member* ( deinitializer class-member* )? '🍉'
@@ -291,13 +298,13 @@ foreign-class-member ::= documentation-comment? '🥯'? '⚠'? '🔏'? '✒'? '�
 value-type-body     ::= '🍇' value-type-member* '🍉'
 primitive-value-type-body ::= '🍇' primitive-value-type-member* '🍉'
 value-type-member   ::= primitive-value-type-member | instance-variable
-primitive-value-type-member ::= documentation-comment? '🥯'? '⚠'? ( '🐇' '☣'? | '☣'? '🖍'? ) '🎍🥡'? access-level?
-                        method
+primitive-value-type-member ::= documentation-comment? '🥯'? '⚠'? ( '🎍🌊' '🐇' '☣' | '🐇' '☣'? | '☣'? '🖍'? ) '🎍🥡'?
+                        access-level? method
                       | documentation-comment? '🥯'? '☣'? '🎍🥡'? access-level? initializer function-body
                       | protocol-conformance
 
 enum-body           ::= '🍇' enum-member* '🍉'
-enum-member         ::= documentation-comment? '🥯'? '⚠'? '🐇'? '☣'? '🎍🥡'? access-level? method
+enum-member         ::= documentation-comment? '🥯'? '⚠'? ( '🎍🌊' '🐇' '☣' | '🐇'? '☣'? ) '🎍🥡'? access-level? method
                       | documentation-comment? '🆕' initializer-name?               /* enum value */
                       | protocol-conformance
 
@@ -307,7 +314,7 @@ enum-member         ::= documentation-comment? '🥯'? '⚠'? '🐇'? '☣'? '�
 protocol-body       ::= '🍇' protocol-methods? '🍉'
 protocol-methods    ::= protocol-method return-type protocol-methods?
                       | protocol-method ( protocol-methods - ( '➡' tokens ) )?
-protocol-method     ::= documentation-comment? '🥯'? '⚠'? '🔏'? '✒'? '🐇'? '☣'? '🖍'? '🔑'? '🎍🥡'? access-level?
+protocol-method     ::= documentation-comment? '🥯'? '⚠'? '🔏'? '✒'? '🎍🌊'? '🐇'? '☣'? '🖍'? '🔑'? '🎍🥡'? access-level?
                         method-name parameters
 
 /* The parser accepts an access level on instance variables, protocol conformances and deinitializers, but

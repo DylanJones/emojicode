@@ -46,6 +46,8 @@ public:
                                               const TypeContext &subContext, const TypeContext &superContext);
 
     void analyseFunctionDeclaration(Function *function) const;
+    /// Checks that a 🎍🌊 function only uses C types, cannot raise and is not generic.
+    void checkCFunctionDeclaration(Function *function) const;
 
     void declareInstanceVariables(const Type &type);
 

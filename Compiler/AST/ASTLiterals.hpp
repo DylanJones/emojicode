@@ -80,10 +80,13 @@ public:
 
 private:
     enum class NumberType {
-        Double, Integer, Byte
+        Double, Integer, Byte,
+        /// A literal of a type with a C representation, stored in cType_.
+        C,
     };
 
     std::u32string string_;
+    Type cType_ = Type::noReturn();
     double doubleValue_ = 0;
     int64_t integerValue_ = 0;
     NumberType type_;

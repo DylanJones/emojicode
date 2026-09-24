@@ -285,6 +285,10 @@ void Compiler::assignSTypes(Package *s) {
     sMemory = getStandardValueType(U"🧠", s);
     sByte = getStandardValueType(U"💧", s);
     sByte->constructibleFrom_ = TypeType::IntegerLiteral;
+    sInteger->setCRepresentation(CRepresentation(CRepresentation::Kind::Integer, 64, true));
+    sReal->setCRepresentation(CRepresentation(CRepresentation::Kind::Float, 64, true));
+    sByte->setCRepresentation(CRepresentation(CRepresentation::Kind::Integer, 8, true));
+    sBoolean->setCRepresentation(CRepresentation(CRepresentation::Kind::Integer, 1, false));
     sWeak = getStandardValueType(U"📶", s);
     sString = getStandardClass(U"🔡", s);
     sError = getStandardClass(U"🚧", s);
@@ -296,6 +300,18 @@ void Compiler::assignSTypes(Package *s) {
     sInterpolateable = getStandardProtocol(U"↘🔸🔡", s);
     sEnumerable = getStandardProtocol(
             std::u32string(1, E_CLOCKWISE_RIGHTWARDS_AND_LEFTWARDS_OPEN_CIRCLE_ARROWS_WITH_CIRCLED_ONE_OVERLAY), s);
+}
+
+void Compiler::assignCTypes(Package *c) {
+    Type type = Type::noReturn();
+    if (c->lookupRawType(TypeIdentifier(U"📍", U"🌊", SourcePosition()), &type) &&
+        type.type() == TypeType::ValueType) {
+        cPointer = type.valueType();
+    }
+    if (c->lookupRawType(TypeIdentifier(U"🕳", U"🌊", SourcePosition()), &type) &&
+        type.type() == TypeType::ValueType) {
+        cVoidPointer = type.valueType();
+    }
 }
 
 } // namespace EmojicodeCompiler

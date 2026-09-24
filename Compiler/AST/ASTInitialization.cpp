@@ -43,6 +43,10 @@ Type ASTInitialization::analyse(ExpressionAnalyser *analyser) {
 
     analyser->analyseFunctionCall(&args_, type, init);
     ensureErrorIsHandled(analyser);
+    if (type.type() == TypeType::ValueType && type.valueType()->declaresCRepresentation() &&
+        init->externalName() == "ejcBuiltIn") {
+        initType_ = name_.front() == 0x1F4E4 ? InitType::CRetainObject : InitType::CConversion;  // 📤
+    }
     return init->constructedType(type);
 }
 

@@ -90,6 +90,10 @@ public:
     /// @returns The number of bytes an instance of @c type takes up in memory.
     llvm::Value* sizeOf(llvm::Type *type);
 
+    /// Converts @p value of type @p from to type @p to. Both types must have a C representation, or @p from must be
+    /// 🧠 and @p to a C pointer, in which case the address of the memory's payload is returned.
+    llvm::Value* buildCConversion(llvm::Value *value, const Type &from, const Type &to);
+
     /// Gets a pointer to the box info field of a box.
     /// @param box Pointer to a box.
     llvm::Value* buildGetBoxInfoPtr(llvm::Value *box);

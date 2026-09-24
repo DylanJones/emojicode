@@ -97,6 +97,33 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
                                            llvm::MaybeAlign());
                 return nullptr;
             }
+            case BuiltInType::CConvert:
+                return fg->buildCConversion(v, calleeType_, expressionType());
+            case BuiltInType::CPointerLoad: {
+                auto value = fg->builder().CreateLoad(fg->typeHelper().llvmTypeFor(expressionType()), v);
+                if (expressionType().isManaged()) {
+                    fg->retain(fg->isManagedByReference(expressionType()) ? v : value, expressionType());
+                }
+                return handleResult(fg, value);
+            }
+            case BuiltInType::CReinterpret:
+                return handleResult(fg, v);
+            case BuiltInType::CBorrowObject:
+                fg->retain(v, expressionType());
+                return handleResult(fg, v);
+            case BuiltInType::CPointerStore: {
+                auto type = calleeType_.genericArguments().front();
+                auto val = args_.args().front()->generate(fg);
+                fg->builder().CreateStore(val, v);
+                if (type.isManaged()) {
+                    fg->retain(fg->isManagedByReference(type) ? v : val, type);
+                }
+                return nullptr;
+            }
+            case BuiltInType::CPointerAdvance: {
+                auto type = fg->typeHelper().llvmTypeFor(calleeType_.genericArguments().front());
+                return fg->builder().CreateGEP(type, v, args_.args().front()->generate(fg));
+            }
             case BuiltInType::Multiprotocol:
                 return MultiprotocolCallCodeGenerator(fg, callType_).generate(callee_->generate(fg), calleeType_, args_,
                                                                               method_, errorPointer(), multiprotocolN_);

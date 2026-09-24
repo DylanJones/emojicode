@@ -41,6 +41,21 @@ protected:
         IntegerRemainder, IntegerToDouble, IntegerNot, IntegerInverse, IntegerToByte, ByteToInteger,
         BooleanAnd, BooleanOr, BooleanNegate,
         Equal, Store, Load, Release, MemoryMove, MemorySet, IsNoValueLeft, IsNoValueRight, Multiprotocol,
+        UnsignedDivide, UnsignedRemainder, UnsignedGreater, UnsignedGreaterOrEqual, UnsignedLess,
+        UnsignedLessOrEqual, SignedRightShift,
+        /// Converts a value of a C type to the return type of the method.
+        CConvert,
+        /// 📍: The value at the address.
+        CPointerLoad,
+        /// 📍: Stores the argument at the address.
+        CPointerStore,
+        /// 📍: The address advanced by the argument times the size of the pointee.
+        CPointerAdvance,
+        /// The value itself, reinterpreted as the return type. Used for pointer casts and to take over the reference
+        /// to an object from a 🕳.
+        CReinterpret,
+        /// 🕳: The object the pointer points to, retained.
+        CBorrowObject,
     };
 
     BuiltInType builtIn_ = BuiltInType::None;
@@ -59,6 +74,8 @@ private:
     static void prepareBuiltIns(Compiler *c);
 
     bool builtIn(ExpressionAnalyser *analyser, const Type &type, const std::u32string &name);
+    /// Recognizes the built-in methods of types with a C representation declared in source.
+    bool builtInC(ExpressionAnalyser *analyser, const Type &type, const std::u32string &name);
 
     Type analyseMultiProtocolCall(ExpressionAnalyser *analyser, const std::u32string &name);
 

@@ -319,6 +319,10 @@ public:
 
     /// Returns true iff a value of the given type requires memory management.
     bool isManaged() const;
+    /// Whether this is a value type whose C representation is a pointer, like 📍 and 🕳 of the c package.
+    bool isCPointer() const;
+    /// Whether values of this type can be passed to and returned from C functions (🎍🌊).
+    bool isCRepresentable() const;
 
     TypeDefinition* resolutionConstraint() const;
 

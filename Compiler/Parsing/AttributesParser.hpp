@@ -26,7 +26,14 @@ enum class Attribute : char32_t {
     Deprecated = E_WARNING_SIGN, Final = E_LOCK_WITH_INK_PEN, Override = E_BLACK_NIB, StaticOnType = E_RABBIT,
     Required = E_KEY, Export = E_EARTH_GLOBE_EUROPE_AFRICA, Foreign = E_RADIO, Unsafe = E_BIOHAZARD,
     Mutating = E_CRAYON, Escaping = E_TAKEOUT_BOX, Inline = E_BAGEL, NoGenericDynamism = E_OIL_DRUM,
+    /// 🎍🌊: C calling convention on type methods, C layout on value types.
+    C = E_WATER_WAVE,
 };
+
+/// Whether the attribute is written as a decorator, i.e. prefixed with 🎍.
+inline bool isDecoratorAttribute(Attribute attr) {
+    return attr == Attribute::Escaping || attr == Attribute::NoGenericDynamism || attr == Attribute::C;
+}
 
 template <Attribute ...Attributes>
 class AttributeParser {
@@ -38,6 +45,9 @@ public:
         for (auto &pair : found_) {
             if (!pair.second.allowed && pair.second.found) {
                 auto name = utf8(std::u32string(1, static_cast<char32_t>(pair.first)));
+                if (isDecoratorAttribute(pair.first)) {
+                    name = "🎍" + name;
+                }
                 compiler->error(CompilerError(p, "Attribute ", name, " not applicable."));
             }
         }
@@ -67,6 +77,7 @@ private:
                 return stream->consumeTokenIf(TokenType::Class);
             case Attribute::Escaping:
             case Attribute::NoGenericDynamism:
+            case Attribute::C:
                 return stream->consumeTokenIf(static_cast<char32_t>(attr), TokenType::Decorator);
             default:
                 return stream->consumeTokenIf(static_cast<char32_t>(attr));

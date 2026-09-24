@@ -1,0 +1,53 @@
+📦 c 🌊
+
+💭 C functions from libc and libm, called with the C calling convention.
+🕊 🧮 🍇
+  🎍🌊 🐇☣️❗️ 🏧 value 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤abs🔤
+  🎍🌊 🐇☣️❗️ 🐘 value 🔶🌊🐘 ➡️ 🔶🌊🐘 📻 🔤labs🔤
+  🎍🌊 🐇☣️❗️ 📈 value 💯 ➡️ 💯 📻 🔤fabs🔤
+  🎍🌊 🐇☣️❗️ 🌱 value 💯 ➡️ 💯 📻 🔤sqrt🔤
+  🎍🌊 🐇☣️❗️ 🎈 value 🔶🌊🎈 ➡️ 🔶🌊🎈 📻 🔤sqrtf🔤
+  🎍🌊 🐇☣️❗️ 🔠 character 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤toupper🔤
+  🎍🌊 🐇☣️❗️ 🐁 a 🔶🌊🐁 b 🔶🌊🐁 ➡️ 🔶🌊🐁 📻 🔤ffiScalarsShortAdd🔤
+  🎍🌊 🐇☣️❗️ 🔼 value 🔶🌊🔠🔸🔼 ➡️ 🔶🌊🔢🔸🔼 📻 🔤ffiScalarsWiden🔤
+  🎍🌊 🐇☣️❗️ 👌 value 🔶🌊🔢 ➡️ 👌 📻 🔤ffiScalarsIsEven🔤
+🍉
+
+🔗 🔤ffiScalars.c🔤 🔗
+
+🏁 🍇
+  ☣️ 🍇
+    😀 🔤🧲🏧🕊🧮 -42❗️🧲🔤❗️
+    😀 🔤🧲🐘🕊🧮 -1234567890123❗️🧲🔤❗️
+    😀 🔤🧲📈🕊🧮 -2.5❗️🧲🔤❗️
+    😀 🔡 🌱🕊🧮 2.0❗️ 5❗️❗️
+    😀 🔤🧲🎈🕊🧮 16❗️🧲🔤❗️
+    😀 🔤🧲🔠🕊🧮 97❗️🧲🔤❗️
+    😀 🔤🧲🐁🕊🧮 -30000 -2768❗️🧲🔤❗️
+    😀 🔤🧲🔼🕊🧮 200❗️🧲🔤❗️
+    ↪️ 👌🕊🧮 10❗️ 🍇
+      😀 🔤10 is even🔤❗️
+    🍉
+    ↪️ ❎👌🕊🧮 7❗️❗️ 🍇
+      😀 🔤7 is odd🔤❗️
+    🍉
+  🍉
+
+  💭 Arithmetic on C types
+  🆕🔶🌊🔢▶️🔢 7❗️ ➡️ seven
+  😀 🔤🧲seven ➗ 2🧲 🧲seven 🚮 3🧲 🧲seven 👉 1🧲🔤❗️
+  🆕🔶🌊🔢🔸🔼▶️🔢 -1❗️ ➡️ max
+  😀 🔤🧲max🧲 🧲max ➗ 2🧲🔤❗️
+  ↪️ max ▶️ 1 🍇
+    😀 🔤unsigned comparison🔤❗️
+  🍉
+  🆕🔶🌊🔢▶️🔢 -8❗️ ➡️ negative
+  😀 🔤🧲negative 👉 1🧲 🧲🔋negative❗️🧲🔤❗️
+  ↪️ negative ◀️ 0 🍇
+    😀 🔤signed comparison🔤❗️
+  🍉
+  🆕🔶🌊🔠▶️🔢 300❗️ ➡️ truncated
+  😀 🔤🧲truncated🧲🔤❗️
+  🆕🔶🌊🎈▶️💯 1.5❗️ ➡️ float
+  😀 🔤🧲float ✖️ 3🧲 🧲💯float❗️🧲🔤❗️
+🍉

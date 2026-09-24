@@ -48,6 +48,19 @@ Type ASTNumberLiteral::analyse(ExpressionAnalyser *analyser) {
 }
 
 Type ASTNumberLiteral::comply(ExpressionAnalyser *analyser, const TypeExpectation &expectation) {
+    if (expectation.type() == TypeType::ValueType && expectation.valueType()->declaresCRepresentation()) {
+        auto &representation = *expectation.valueType()->cRepresentation();
+        if (representation.isFloat() || (representation.isInteger() && type_ == NumberType::Integer)) {
+            if (type_ == NumberType::Integer) {
+                doubleValue_ = integerValue_;
+            }
+            type_ = NumberType::C;
+            cType_ = expectation.copyType();
+            cType_.setMutable(false);
+            cType_.setReference(false);
+            return cType_;
+        }
+    }
     if (type_ == NumberType::Double) {
         return analyser->real();
     }

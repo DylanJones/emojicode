@@ -1,0 +1,10 @@
+strlen: 5
+setenv: 0
+🌊 works
+getenv returned NULL
+value
+0 100 -7
+borrowed: Rex
+taken: Rex
+done
+Rex was released

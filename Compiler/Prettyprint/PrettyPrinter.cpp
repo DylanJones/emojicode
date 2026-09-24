@@ -173,8 +173,14 @@ void PrettyPrinter::printTypeDef(const Type &type) {
         }
     }
     if (auto valueType = type.valueType()) {
+        if (valueType->isCStruct()) {
+            prettyStream_ << "🎍🌊 ";
+        }
         if (valueType->isPrimitive() && type.type() != TypeType::Enum) {
             prettyStream_ << "📻 ";
+            if (valueType->declaresCRepresentation()) {
+                prettyStream_ << "🔤" << valueType->cRepresentationName() << "🔤 ";
+            }
         }
     }
 
@@ -300,6 +306,9 @@ void PrettyPrinter::printFunctionAttributes(Function *function, bool noMutate) {
     if (function->overriding()) {
         prettyStream_ << "✒️ ";
     }
+    if (function->isC()) {
+        prettyStream_ << "🎍🌊 ";
+    }
     if (function->functionType() == FunctionType::ClassMethod ||
         (function->functionType() == FunctionType::Function &&
          dynamic_cast<ValueType*>(function->owner()) != nullptr)) {
@@ -308,6 +317,7 @@ void PrettyPrinter::printFunctionAttributes(Function *function, bool noMutate) {
     if (function->unsafe()) {
         prettyStream_ << "☣️ ";
     }
+
     if (function->owner()->type().type() == TypeType::ValueType && function->mutating() && !noMutate) {
         prettyStream_ << "🖍 ";
     }
