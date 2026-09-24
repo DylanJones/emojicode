@@ -301,10 +301,14 @@ enum-member         ::= documentation-comment? '🥯'? '⚠'? '🐇'? '☣'? '�
                       | documentation-comment? '🆕' initializer-name?               /* enum value */
                       | protocol-conformance
 
-/* Protocol methods accept all member attributes and an access level, but ignore everything except ⚠. */
-protocol-body       ::= '🍇' protocol-method* '🍉'
+/* Protocol methods accept all member attributes and an access level, but ignore everything except ⚠. As they
+ * have no body, a ➡ after a method without a return type is read as its return type: the next method cannot start
+ * with ➡. */
+protocol-body       ::= '🍇' protocol-methods? '🍉'
+protocol-methods    ::= protocol-method return-type protocol-methods?
+                      | protocol-method ( protocol-methods - ( '➡' tokens ) )?
 protocol-method     ::= documentation-comment? '🥯'? '⚠'? '🔏'? '✒'? '🐇'? '☣'? '🖍'? '🔑'? '🎍🥡'? access-level?
-                        method-name parameters return-type?
+                        method-name parameters
 
 /* The parser accepts an access level on instance variables, protocol conformances and deinitializers, but
  * ignores it. */
