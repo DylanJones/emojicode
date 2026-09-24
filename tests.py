@@ -113,6 +113,7 @@ compilation_tests = [
     "weak",
     "superMemoryFlow",
     "interpolationDereference",
+    "interpolationRelease",
     "genericDynDisableLiteralConstraint"
 ]
 

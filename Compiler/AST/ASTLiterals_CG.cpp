@@ -128,6 +128,8 @@ Value* ASTInterpolationLiteral::generate(FunctionCodeGenerator *fg) const {
         auto str = CallCodeGenerator(fg, CallType::DynamicProtocolDispatch).generate(value->generate(fg), value->expressionType(),
                                                                  ASTArguments(position()), toString_, nullptr);
         append(fg, str, builder);
+        // 🐻 only borrows the string, so release the +1 reference the 🔡 call returned.
+        fg->release(str, fg->compiler()->sString->type());
         append(fg, *literalsIt++, builder);
     }
 
