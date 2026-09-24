@@ -49,6 +49,10 @@ private:
     std::map<std::pair<size_t, size_t>, Token> comments_;
 };
 
+/// Returns @p path absolute and without "." and ".." components or symbolic links, so that different spellings of
+/// the same path compare equal. The path does not need to exist.
+std::string canonicalPath(const std::string &path);
+
 /// The SourceManager is responsible for reading source files. It caches their content and can provide lines from
 /// source files.
 class SourceManager {

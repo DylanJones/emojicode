@@ -13,9 +13,7 @@
 
 namespace EmojicodeCompiler {
 
-/// Returns @p path absolute and without "." and ".." components or symbolic links, so that different spellings of
-/// the same path compare equal. The path does not need to exist.
-static std::string canonicalPath(const std::string &path) {
+std::string canonicalPath(const std::string &path) {
     std::error_code error;
     auto canonical = std::filesystem::weakly_canonical(std::filesystem::absolute(path, error), error);
     return error ? path : canonical.string();

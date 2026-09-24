@@ -1,0 +1,74 @@
+//
+//  Checker.hpp
+//  EmojicodeLanguageServer
+//
+
+#ifndef Checker_hpp
+#define Checker_hpp
+
+#include "Compiler.hpp"
+#include <functional>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace EmojicodeLanguageServer {
+
+/// A place in a file as the compiler reports it: line and character start at 1, character counts code points.
+struct Location {
+    std::string path;
+    size_t line = 1;
+    size_t character = 1;
+};
+
+struct Diagnostic {
+    enum class Severity { Error = 1, Warning = 2 };
+
+    Location location;
+    Severity severity;
+    std::string message;
+    std::vector<std::pair<Location, std::string>> notes;
+};
+
+/// Everything known about a package after it was checked.
+struct Analysis {
+    std::string rootPath;
+    /// The compiler that checked the package. It owns the packages, types, functions and their ASTs. nullptr if the
+    /// compiler crashed.
+    std::unique_ptr<EmojicodeCompiler::Compiler> compiler;
+    std::vector<Diagnostic> diagnostics;
+    /// Whether the package was analysed, i.e. whether it had no syntax errors. Analysis continues after errors in a
+    /// function, so the other functions are analysed even if there are errors.
+    bool analysed = false;
+};
+
+/// Checks packages with the compiler.
+class Checker {
+public:
+    /// @param searchPaths Where to search for packages, before the defaults. See Compiler::searchPackage.
+    /// @param overlays The content of files that are open in the editor, by canonical path.
+    Checker(std::vector<std::string> searchPaths, const std::map<std::string, std::u32string> &overlays)
+        : searchPaths_(std::move(searchPaths)), overlays_(overlays) {}
+
+    /// Returns the file that the compiler must be given to check the file at @p path: the file that includes it
+    /// with 📜, or the file that includes that one, and so on.
+    std::string rootFile(const std::string &path) const;
+
+    /// Returns the content of the file at @p path, from the overlays if it is open. Returns an empty string if the
+    /// file cannot be read.
+    std::u32string read(const std::string &path) const;
+
+    /// Parses and analyses the package whose main file is @p rootPath.
+    Analysis check(const std::string &rootPath) const;
+
+private:
+    std::string includer(const std::string &path) const;
+
+    std::vector<std::string> searchPaths_;
+    const std::map<std::string, std::u32string> &overlays_;
+};
+
+}  // namespace EmojicodeLanguageServer
+
+#endif /* Checker_hpp */
