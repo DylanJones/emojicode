@@ -74,7 +74,11 @@ public:
     size_t endIndex() const { return endIndex_; }
 
     size_t stmtsSize() const { return stmts_.size(); }
-    
+
+    /// The position of the 🍉 that ends the block.
+    const SourcePosition& endPosition() const { return endPosition_; }
+    void setEndPosition(const SourcePosition &p) { endPosition_ = p; }
+
 private:
     std::vector<std::unique_ptr<ASTStatement>> stmts_;
     bool returnedCertainly_ = false;
@@ -83,6 +87,7 @@ private:
     size_t endIndex_ = 0;
     bool hasStats_ = false;
     SemanticScopeStats scopeStats_;
+    SourcePosition endPosition_;
 };
 
 class ASTExprStatement final : public ASTStatement {

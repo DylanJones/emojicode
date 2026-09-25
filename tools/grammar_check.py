@@ -20,11 +20,15 @@ The grammar is read and interpreted directly: there is no hand-written copy of i
      used alternative of each rule so that all of them are exercised. The compiler's parser must accept each one,
      unless it reports only errors outside the grammar.
 
+  7. Tree-sitter (--tree-sitter): the tree-sitter grammar in editors/tree-sitter-emojicode, which editors use, must
+     parse every document that the compiler accepts in checks 3 to 6 without errors. Needs the tree-sitter CLI.
+
 Checks 3 and 4 test that the grammar accepts everything that the compiler accepts, and check 6 tests the converse.
 Check 5 tests both. Check 1 and 2 need only the source tree. The others need a build directory (--build).
 """
 
 import argparse
+import atexit
 import bisect
 import concurrent.futures
 import glob
@@ -40,6 +44,7 @@ import threading
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GRAMMAR_PATH = os.path.join(ROOT, 'docs', 'grammar.ebnf')
+TREE_SITTER_PATH = os.path.join(ROOT, 'editors', 'tree-sitter-emojicode')
 
 # Rules that the tokenization procedure and the syntactic grammar start from.
 LEXICAL_ROOTS = ['ignorable', 'token-shape', 'token']
@@ -52,6 +57,7 @@ CONTEXT_ERRORS = [
     'Link hints were already provided',
     'Could not find package',
     'Circular dependency',
+    'is circular as it is already being included',
     'could not be loaded into namespace',
     "Couldn't read input file",
     'Emojicode files must',
@@ -915,14 +921,74 @@ def describe_failure(tokens, index):
     return 'near token {} ({!r}) in: {}'.format(index, tokens[index].text, around)
 
 
+class TreeSitterError(Exception):
+    pass
+
+
+class TreeSitter:
+    """Parses documents with the tree-sitter grammar that editors use."""
+
+    # A document the parser must reject. If tree-sitter does not report it, the parser is not working.
+    BROKEN = '🍉 🍉 🍉\n'
+
+    def __init__(self, directory):
+        # The parser is generated in a copy, so that the check does not write to the source tree. grammar.js reads
+        # docs/grammar.ebnf from two directories up.
+        self.root = tempfile.mkdtemp(prefix='grammar_tree_sitter_')
+        atexit.register(shutil.rmtree, self.root, True)
+        self.directory = os.path.join(self.root, 'editors', 'tree-sitter-emojicode')
+        shutil.copytree(directory, self.directory, ignore=shutil.ignore_patterns('src', 'node_modules'))
+        os.mkdir(os.path.join(self.root, 'docs'))
+        shutil.copy(os.path.join(ROOT, 'docs', 'grammar.ebnf'), os.path.join(self.root, 'docs'))
+        completed = subprocess.run(['tree-sitter', 'generate'], cwd=self.directory, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        if completed.returncode != 0:
+            raise SystemExit('tree-sitter generate failed:\n' + completed.stderr.decode('utf-8', 'replace'))
+
+    def rejected(self, sources):
+        """Returns the indices of the sources that the tree-sitter parser cannot parse without errors."""
+        if not sources:
+            return []
+        directory = tempfile.mkdtemp(prefix='grammar_tree_sitter_documents_')
+        paths = []
+        for i, source in enumerate(list(sources) + [self.BROKEN]):
+            paths.append(os.path.join(directory, '{}.emojic'.format(i)))
+            with open(paths[-1], 'w', encoding='utf-8') as f:
+                f.write(source)
+        with open(os.path.join(directory, 'paths'), 'w', encoding='utf-8') as f:
+            f.write('\n'.join(paths))
+        completed = subprocess.run(['tree-sitter', 'parse', '--quiet', '--paths', os.path.join(directory, 'paths')],
+                                   cwd=self.directory, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output = completed.stdout.decode('utf-8', 'replace')
+        failing = {line.split('\t')[0].strip() for line in output.splitlines() if '(ERROR' in line or '(MISSING' in line}
+        shutil.rmtree(directory)
+        if paths[-1] not in failing:
+            raise TreeSitterError('tree-sitter did not parse the documents: ' +
+                                  completed.stderr.decode('utf-8', 'replace').strip()[-1000:])
+        return [i for i, path in enumerate(paths[:-1]) if path in failing]
+
+    def check(self, report, cases, what):
+        """cases: (label, source) of documents the compiler accepts."""
+        try:
+            failed = self.rejected([source for _, source in cases])
+        except TreeSitterError as e:
+            report.fail(str(e))
+            return
+        for i in failed:
+            report.fail('{}: accepted by the compiler, not parsed by the tree-sitter grammar'.format(cases[i][0]))
+        if not failed:
+            report.ok('{} {} accepted by the compiler parsed by the tree-sitter grammar'.format(len(cases), what))
+
+
 class Checker:
-    def __init__(self, grammar, build):
+    def __init__(self, grammar, build, tree_sitter=None):
         self.g = grammar
         self.lexer = Lexer(grammar)
         self.text = self.lexer.text
         self.build = build
         self.emojicodec = os.path.join(build, 'Compiler', 'emojicodec')
         self.comparison = TokenComparison()
+        self.tree_sitter = tree_sitter
 
     def grammar_verdict(self, source):
         """(accepted, reason) for a document according to the grammar."""
@@ -982,13 +1048,19 @@ class Checker:
             report.ok('{} files tokenized identically by the grammar and the compiler'.format(len(paths)))
         if not syntax_failures:
             report.ok('{} files accepted by the grammar'.format(len(paths)))
+        if self.tree_sitter:
+            self.tree_sitter.check(report, [(os.path.relpath(p, ROOT), open(p, encoding='utf-8').read())
+                                            for p in paths], 'files')
 
     def compare_verdicts(self, report, cases, what):
         """cases: (label, path, source, package). Runs the compiler in parallel."""
         agreed = skipped = crashed = 0
+        accepted = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
             results = pool.map(lambda case: self.compiler_verdict(case[1], case[3]), cases)
             for (label, path, source, package), (theirs, messages) in zip(cases, results):
+                if theirs is True:
+                    accepted.append((label, source))
                 if theirs is None:
                     skipped += 1
                     continue
@@ -1006,6 +1078,8 @@ class Checker:
                         label, '; '.join(messages[:2])))
         report.ok('{} {}: {} agree, {} skipped (errors outside the grammar), {} crashed the compiler'.format(
             len(cases), what, agreed, skipped, crashed))
+        if self.tree_sitter:
+            self.tree_sitter.check(report, accepted, what)
 
     def compare_tokens(self, report, cases):
         """cases: (label, path, source). The grammar and the compiler must produce the same tokens or both fail."""
@@ -1067,6 +1141,7 @@ class Checker:
             used.append(alternatives)
 
         accepted = skipped = crashed = 0
+        accepted_cases = []
         exercised = set()
         with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
             results = pool.map(lambda case: self.compiler_verdict(case[1]), cases)
@@ -1081,12 +1156,15 @@ class Checker:
                     report.warn('{}: {}'.format(label, messages[0]))
                 elif theirs:
                     accepted += 1
+                    accepted_cases.append((label, source))
                     exercised |= alternatives
                 else:
                     report.fail('{}: rejected by the compiler ({})'.format(label, '; '.join(messages[:2])))
         shutil.rmtree(directory)
         report.ok('{} documents: {} accepted by the compiler, {} skipped (errors outside the grammar), {} crashed '
                   'the compiler'.format(len(cases), accepted, skipped, crashed))
+        if self.tree_sitter:
+            self.tree_sitter.check(report, accepted_cases, 'generated documents')
         total = generator.alternatives()
         report.ok('{} of {} alternatives in the syntactic grammar exercised by accepted documents'.format(
             len(exercised & total), len(total)))
@@ -1318,6 +1396,8 @@ def main():
     parser.add_argument('--mutations', type=int, default=0, help='variants to test per corpus file')
     parser.add_argument('--generate', type=int, default=0, help='documents to generate from the grammar')
     parser.add_argument('--seed', type=int, default=1, help='random seed for --mutations and --generate')
+    parser.add_argument('--tree-sitter', action='store_true',
+                        help='also check the tree-sitter grammar in editors/tree-sitter-emojicode')
     parser.add_argument('files', nargs='*', help='check only these corpus files')
     args = parser.parse_args()
 
@@ -1332,7 +1412,8 @@ def main():
     check_literals(grammar, lexer, report)
 
     if args.build:
-        checker = Checker(grammar, os.path.abspath(args.build))
+        checker = Checker(grammar, os.path.abspath(args.build),
+                          TreeSitter(TREE_SITTER_PATH) if args.tree_sitter else None)
         if args.files:
             corpus = [os.path.abspath(f) for f in args.files]
         else:

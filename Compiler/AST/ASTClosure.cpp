@@ -7,6 +7,8 @@
 //
 
 #include "ASTClosure.hpp"
+#include "Analysis/AnalysisObserver.hpp"
+#include "CompilerError.hpp"
 #include "Analysis/FunctionAnalyser.hpp"
 #include "Analysis/SemanticAnalyser.hpp"
 #include "Analysis/ThunkBuilder.hpp"
@@ -42,7 +44,16 @@ Type ASTClosure::comply(ExpressionAnalyser *analyser, const TypeExpectation &exp
         closureAnaly.inheritUnsafety();
     }
     scoperPtr->setPathAnalyser(&closureAnaly.pathAnalyser());
-    closureAnaly.analyse();
+    try {
+        closureAnaly.analyse();
+    }
+    catch (CompilerError &) {
+        // The closure's scopes are lost when closureAnaly is destroyed, so they are reported before.
+        if (auto observer = analyser->compiler()->analysisObserver()) {
+            observer->analysisFailed(&closureAnaly);
+        }
+        throw;
+    }
     capture_.captures = dynamic_cast<CapturingSemanticScoper &>(closureAnaly.scoper()).captures();
     if (closureAnaly.pathAnalyser().hasPotentially(PathAnalyserIncident::UsedSelf)) {
         analyser->checkThisUse(position());

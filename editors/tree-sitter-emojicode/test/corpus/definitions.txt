@@ -1,0 +1,156 @@
+============================================================
+Class with instance variable, method and initializer
+============================================================
+
+📗 A fish that can swim. 📗
+🐇 🐟 🍇
+  🖍🆕 depth 🔢 ⬅️ 0
+
+  📗 Makes the fish swim down by meters. 📗
+  ❗️ 🏊 meters 🔢 ➡️ 🔢 🍇
+    depth ⬅️➕ meters
+    ↩️ depth
+  🍉
+
+  🆕 🍇🍉
+🍉
+
+------------------------------------------------------------
+
+(source_file
+  (documentation_comment)
+  (class_definition
+    name: (type_identifier
+      name: (identifier))
+    body: (type_body
+      (instance_variable
+        name: (variable)
+        type: (type_identifier
+          name: (identifier))
+        value: (number))
+      (documentation_comment)
+      (method
+        name: (identifier)
+        (parameter
+          name: (variable)
+          type: (type_identifier
+            name: (identifier))))
+      (method
+        name: (identifier)
+        body: (block
+          (operator_assignment
+            name: (variable)
+            (operator)
+            (primary_variable
+              (variable)))
+          (return
+            (primary_variable
+              (variable)))))
+      (initializer
+        body: (block)))))
+
+============================================================
+Generic value type with protocol conformance
+============================================================
+
+🕊 🎁🐚T ⚪️🍆 🍇
+  🐊 🔂🐚T🍆
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+🍉
+
+------------------------------------------------------------
+
+(source_file
+  (value_type_definition
+    name: (type_identifier
+      name: (identifier))
+    (generic_parameters
+      (generic_parameter
+        name: (variable)
+        constraint: (something_type)))
+    body: (type_body
+      (protocol_conformance
+        (type_identifier
+          name: (identifier))
+        (generic_arguments
+          (type_variable)))
+      (instance_variable
+        name: (variable)
+        type: (type_variable))
+      (initializer
+        (parameter
+          name: (variable)
+          type: (type_variable))
+        body: (block)))))
+
+============================================================
+Enumeration
+============================================================
+
+🔘 🚦 🍇
+  🆕▶️🔴
+  🆕▶️🍏
+🍉
+
+------------------------------------------------------------
+
+(source_file
+  (enum_definition
+    name: (type_identifier
+      name: (identifier))
+    body: (type_body
+      (initializer
+        name: (identifier))
+      (initializer
+        name: (identifier)))))
+
+============================================================
+Protocol and C function
+============================================================
+
+🐊 🐾 🍇
+  ❗️ 🐽 ➡️ 🔢
+  ❓ 🐣 ➡️ 👌
+🍉
+
+🕊 🧮 🍇
+  🎍🌊 🐇 ☣️ ❗️ 🍏 x 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤abs🔤
+🍉
+
+------------------------------------------------------------
+
+(source_file
+  (protocol_definition
+    name: (type_identifier
+      name: (identifier))
+    body: (type_body
+      (method
+        name: (identifier)
+        (return_type
+          (type_identifier
+            name: (identifier))))
+      (method
+        name: (identifier)
+        (return_type
+          (type_identifier
+            name: (identifier))))))
+  (value_type_definition
+    name: (type_identifier
+      name: (identifier))
+    body: (type_body
+      (method
+        (decorator)
+        name: (identifier)
+        (parameter
+          name: (variable)
+          type: (type_identifier
+            namespace: (identifier)
+            name: (identifier)))
+        (return_type
+          (type_identifier
+            namespace: (identifier)
+            name: (identifier)))
+        body: (external_body
+          (string
+            (string_content)))))))

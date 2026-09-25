@@ -6,6 +6,7 @@
 //
 
 #include "ExpressionAnalyser.hpp"
+#include "AnalysisObserver.hpp"
 #include "AST/ASTClosure.hpp"
 #include "AST/ASTVariables.hpp"
 #include "AST/ASTTypeExpr.hpp"
@@ -75,6 +76,9 @@ Type ExpressionAnalyser::analyse(const std::shared_ptr<ASTExpr> &ptr) {
     assert(ptr->expressionType().is<TypeType::Invalid>() && "Expression was already analysed.");
     Type type = ptr->analyse(this);
     ptr->setExpressionType(type);
+    if (auto observer = compiler()->analysisObserver()) {
+        observer->analysedExpression(ptr, this);
+    }
     return type;
 }
 

@@ -6,11 +6,36 @@
 #include "SourceManager.hpp"
 #include "SourcePosition.hpp"
 #include <algorithm>
-#include <codecvt>
+#include <filesystem>
 #include <fstream>
-#include <locale>
 
 namespace EmojicodeCompiler {
+
+std::string canonicalPath(const std::string &path) {
+    std::error_code error;
+    auto canonical = std::filesystem::weakly_canonical(std::filesystem::absolute(path, error), error);
+    return error ? path : canonical.string();
+}
+
+std::u32string readSourceFile(const std::string &path) {
+    std::ifstream f(path, std::ios_base::binary | std::ios_base::in);
+    if (f.fail()) {
+        throw CompilerError(SourcePosition(), "Couldn't read input file ", path, ".");
+    }
+    return utf32(std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>()));
+}
+
+void SourceManager::setOverlay(const std::string &path, std::u32string content) {
+    overlays_[canonicalPath(path)] = std::move(content);
+}
+
+std::vector<std::string> SourceManager::paths() const {
+    std::vector<std::string> paths;
+    for (auto &pair : cache_) {
+        paths.push_back(pair.first);
+    }
+    return paths;
+}
 
 SourceFile* SourceManager::read(std::string file) {
     auto find = cache_.find(file);
@@ -18,14 +43,14 @@ SourceFile* SourceManager::read(std::string file) {
         return find->second.get();
     }
 
-    std::ifstream f(file, std::ios_base::binary | std::ios_base::in);
-    if (f.fail()) {
-        throw CompilerError(SourcePosition(), "Couldn't read input file ", file, ".");
+    std::u32string content;
+    auto overlay = overlays_.empty() ? overlays_.end() : overlays_.find(canonicalPath(file));
+    if (overlay != overlays_.end()) {
+        content = overlay->second;
     }
-
-    auto string = std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv;
-    auto content = conv.from_bytes(string);
+    else {
+        content = readSourceFile(file);
+    }
 
     if (find != cache_.end()) {
         find->second->setContent(std::move(content));

@@ -29,6 +29,7 @@ class Protocol;
 class ValueType;
 class Compiler;
 class CodeGenerator;
+class AnalysisObserver;
 
 /// CompilerDelegate is an interface class, which is used by Compiler to notify about certain events, like
 /// compiler errors.
@@ -190,6 +191,10 @@ public:
 
     SourceManager &sourceManager() { return sourceManager_; }
 
+    /// Sets an observer that is told about the results of the semantic analysis. It is not owned by the compiler.
+    void setAnalysisObserver(AnalysisObserver *observer) { analysisObserver_ = observer; }
+    AnalysisObserver* analysisObserver() const { return analysisObserver_; }
+
     /// Issues a compiler warning. The compilation is continued normally.
     /// @param args All arguments will be concatenated.
     template<typename... Args>
@@ -253,6 +258,7 @@ private:
     std::unique_ptr<CodeGenerator> generator_;
     std::unique_ptr<RecordingPackage> mainPackage_;
     SourceManager sourceManager_;
+    AnalysisObserver *analysisObserver_ = nullptr;
 };
 
 }  // namespace EmojicodeCompiler

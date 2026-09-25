@@ -35,6 +35,7 @@ if __name__ == "__main__":
 
     shutil.copy2(os.path.join(source, "install.sh"), path)
     shutil.copy2(os.path.join("Compiler", "emojicodec"), path)
+    shutil.copy2(os.path.join("LanguageServer", "emojicode-lsp"), path)
 
     copy_header("runtime", "Runtime.h")
     copy_header("s", "Data.h")
@@ -54,4 +55,4 @@ if __name__ == "__main__":
 
     if len(sys.argv) > 1 and sys.argv[1] == "install":
         bash = "cd " + path + " && yes | " + os.path.join(path, "install.sh")
-        subprocess.run(["bash", "-c", bash])
+        subprocess.run(["bash", "-c", bash], check=True)

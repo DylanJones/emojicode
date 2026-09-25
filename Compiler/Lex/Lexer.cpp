@@ -14,7 +14,7 @@
 namespace EmojicodeCompiler {
 
 Lexer::Lexer(SourceFile *source, bool minimalMode)
-        : sourcePosition_(1, 0, source), source_(source), minimalMode_(minimalMode) {
+        : sourcePosition_(1, 1, source), source_(source), minimalMode_(minimalMode) {
     skipWhitespace();
 
     loadOperatorSingleTokens();
@@ -293,6 +293,8 @@ Lexer::TokenState Lexer::continueSingleLineToken(Token *token, TokenConstruction
     if (!constState->commentDetermined_) {
         if (codePoint() == E_SOON_ARROW) {
             token->type_ = TokenType::MultilineComment;
+            // Only 🔚💭 ends the comment, so a 💭 right after 💭🔜 does not.
+            constState->commentDetermined_ = true;
             return TokenState::Continues;
         }
         constState->commentDetermined_ = true;

@@ -1,0 +1,102 @@
+{
+  "name": "emojicode",
+  "displayName": "Emojicode",
+  "description": "Emojicode language support: highlighting, errors, hover, go to definition and completion",
+  "version": "0.1.0",
+  "publisher": "emojicode",
+  "license": "Artistic-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DylanJones/emojicode"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "emojicode",
+        "aliases": [
+          "Emojicode",
+          "emojicode"
+        ],
+        "extensions": [
+          ".emojic",
+          ".🍇",
+          ".emojii"
+        ],
+        "filenames": [
+          "🏛"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "emojicode",
+        "scopeName": "source.emojicode",
+        "path": "./syntaxes/emojicode.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "Emojicode",
+      "properties": {
+        "emojicode.server.path": {
+          "type": "string",
+          "default": "emojicode-lsp",
+          "description": "Path to the emojicode-lsp language server. Leave it as emojicode-lsp to look it up on the PATH."
+        },
+        "emojicode.packageSearchPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional directories to search for packages, like the compiler's -S option."
+        },
+        "emojicode.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Logs the messages between VS Code and the language server to the Emojicode output channel."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[emojicode]": {
+        "editor.semanticHighlighting.enabled": true,
+        "editor.wordBasedSuggestions": "off",
+        "editor.quickSuggestions": {
+          "other": true,
+          "comments": false,
+          "strings": false
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -watch -p .",
+    "test": "node test/grammar.test.js",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.0.0",
+    "typescript": "^5.4.0",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.1.0"
+  }
+}

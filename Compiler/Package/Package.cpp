@@ -95,10 +95,22 @@ std::pair<SourceFile*, TokenStream> Package::lexFile(const std::string &path) {
 
 void Package::includeDocument(const std::string &path, const std::string &relativePath) {
     auto pair = lexFile(path);
-    DocumentParser(this, std::move(pair.second), endsWith(path, "🏛") || endsWith(path, "emojii")).parse();
+    including_.emplace_back(canonicalPath(path));
+    try {
+        DocumentParser(this, std::move(pair.second), endsWith(path, "🏛") || endsWith(path, "emojii")).parse();
+    }
+    catch (...) {
+        including_.pop_back();
+        throw;
+    }
+    including_.pop_back();
     if (isImported()) {
         pair.first->clearContent();
     }
+}
+
+bool Package::isIncluding(const std::string &path) const {
+    return std::find(including_.begin(), including_.end(), canonicalPath(path)) != including_.end();
 }
 
 void Package::parse(const std::string &mainFilePath) {

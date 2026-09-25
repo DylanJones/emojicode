@@ -75,7 +75,7 @@ const Type& ASTInitialization::errorType() const {
 }
 
 bool ASTInitialization::isErrorProne() const {
-    return initializer_->errorProne();
+    return initializer_ != nullptr && initializer_->errorProne();
 }
 
 Type ASTInitialization::analyseEnumInit(ExpressionAnalyser *analyser, Type &type) {

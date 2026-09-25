@@ -46,6 +46,10 @@ public:
     void setDestination(llvm::Value *dest) { vtDestination_ = dest; }
     /// Returns the type of type which is initialized.
     InitType initType() { return initType_; }
+    /// The initializer that is called, or nullptr if it is built in or was not analysed.
+    Function* initializer() const { return initializer_; }
+    /// The name of the initializer, which is 🆕 for the unnamed initializer.
+    const std::u32string& name() const { return name_; }
 
     void allocateOnStack() override;
 

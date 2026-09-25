@@ -12,6 +12,7 @@
 #include "Lex/SourcePosition.hpp"
 #include "Types/TypeContext.hpp"
 #include <fstream>
+#include <sstream>
 #include <functional>
 #include <memory>
 
@@ -30,6 +31,10 @@ public:
     PrettyStream(PrettyPrinter *prettyPrinter) : prettyPrinter_(prettyPrinter) {}
 
     void setOutPath(const std::string &path);
+    /// Makes the stream write to a string, which takeString() returns.
+    void setOutString();
+    /// Returns what was written since setOutString() and clears it.
+    std::string takeString();
 
     template <typename T>
     PrettyStream& operator<<(const std::unique_ptr<T> &node) {
@@ -74,7 +79,7 @@ public:
     void offerNewLineUnlessEmpty(const T &collection) { if (!collection.empty()) { offerNewLine(); } }
     
 private:
-    std::fstream stream_;
+    std::unique_ptr<std::ostream> stream_;
 
     PrettyPrinter *prettyPrinter_;
     TypeContext typeContext_;

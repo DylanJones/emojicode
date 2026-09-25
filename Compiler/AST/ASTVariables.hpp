@@ -46,6 +46,8 @@ public:
     const std::u32string& name() const { return name_; }
     VariableID id() const { return id_; }
     bool inInstanceScope() const { return inInstanceScope_; }
+    /// Where the variable that is accessed was declared. Unknown until the node was analysed.
+    const SourcePosition& declarationPosition() const { return declarationPosition_; }
 protected:
     explicit AccessesAnyVariable(std::u32string name) : name_(std::move(name)) {}
     AccessesAnyVariable(bool inInstanceScope, VariableID id, Type type)
@@ -69,6 +71,7 @@ private:
     VariableID id_;
     std::u32string name_;
     Type variableType_ = Type::noReturn();
+    SourcePosition declarationPosition_;
 };
 
 /// Represents the retrieval of the contents of a variable or the address of the content of the variable.

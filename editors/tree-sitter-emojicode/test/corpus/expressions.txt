@@ -1,0 +1,141 @@
+============================================================
+Strings with interpolation and escapes
+============================================================
+
+🏁 🍇
+  😀 🔤a ❌🔤 🧲🔡 1 10❗️🧲 b❌n🔤❗️
+🍉
+
+------------------------------------------------------------
+
+(source_file
+  (start_flag
+    body: (block
+      (expression_statement
+        (method_call
+          name: (identifier)
+          (string
+            (string_content)
+            (escape_sequence)
+            (string_content)
+            (interpolation
+              (method_call
+                name: (identifier)
+                (number)
+                (number)
+                (mood)))
+            (string_content)
+            (escape_sequence))
+          (mood))))))
+
+============================================================
+Operators bind by precedence
+============================================================
+
+🏁 🍇
+  1 ➕ 2 ✖️ 3 🙌 7 🤝 👍 ➡️ x
+🍉
+
+------------------------------------------------------------
+
+(source_file
+  (start_flag
+    body: (block
+      (expression_statement
+        (binary_expression
+          left: (binary_expression
+            left: (binary_expression
+              left: (number)
+              operator: (operator)
+              right: (binary_expression
+                left: (number)
+                operator: (operator)
+                right: (number)))
+            operator: (operator)
+            right: (number))
+          operator: (operator)
+          right: (boolean))
+        declares: (variable)))))
+
+============================================================
+Closures and callables
+============================================================
+
+🏁 🍇
+  🍇 a 🔢 ➡️ 🔢
+    ↩️ a ➕ 1
+  🍉 ➡️ add
+  ⁉️ add 1❗️ ➡️ two
+🍉
+
+------------------------------------------------------------
+
+(source_file
+  (start_flag
+    body: (block
+      (expression_statement
+        (closure
+          (parameter
+            name: (variable)
+            type: (type_identifier
+              name: (identifier)))
+          (return_type
+            (type_identifier
+              name: (identifier)))
+          (return
+            (binary_expression
+              left: (primary_variable
+                (variable))
+              operator: (operator)
+              right: (number))))
+        declares: (variable))
+      (expression_statement
+        (callable_call
+          (primary_variable
+            (variable))
+          (number)
+          (mood))
+        declares: (variable)))))
+
+============================================================
+Casts, unwrapping and type values
+============================================================
+
+🏁 🍇
+  🔲 x 🔡 ➡️ s
+  🍺 🐽 list 0❗️ ➡️ first
+  🆕 🐇🐟 ❗️ ➡️ fish
+  ⤴️🆕 ❗️
+🍉
+
+------------------------------------------------------------
+
+(source_file
+  (start_flag
+    body: (block
+      (expression_statement
+        (cast
+          (primary_variable
+            (variable))
+          (type_identifier
+            name: (identifier)))
+        declares: (variable))
+      (expression_statement
+        (unwrap
+          (method_call
+            name: (identifier)
+            (primary_variable
+              (variable))
+            (number)
+            (mood)))
+        declares: (variable))
+      (expression_statement
+        (instantiation
+          type: (type_value_type
+            (type_identifier
+              name: (identifier)))
+          (mood))
+        declares: (variable))
+      (expression_statement
+        (super_call
+          (mood))))))

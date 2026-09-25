@@ -26,6 +26,9 @@ public:
     const Type& errorType() const override;
     bool isErrorProne() const override;
 
+    /// The superclass method or initializer that is called, or nullptr if it was not analysed.
+    Function* function() const { return function_; }
+
 private:
     void analyseSuperInit(ExpressionAnalyser *analyser);
     std::u32string name_;

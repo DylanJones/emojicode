@@ -138,6 +138,14 @@ public:
     const std::u32string& findGenericName(size_t index) const {
         return genericParameters_[index - offset_].name;
     }
+    /// Returns the name of the generic parameter at the index, or nullptr if this does not declare it, e.g. because
+    /// it is a generic parameter of the superclass.
+    const std::u32string* declaredGenericName(size_t index) const {
+        if (index < offset_ || index - offset_ >= genericParameters_.size()) {
+            return nullptr;
+        }
+        return &genericParameters_[index - offset_].name;
+    }
 
     void analyseConstraints(const TypeContext &typeContext) {
         for (auto &param : genericParameters_) {

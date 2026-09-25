@@ -167,6 +167,10 @@ void DocumentParser::parseInclude(const SourcePosition &p) {
         fileString = relativePath.substr(0, lastSlash) + "/" + fileString;
     }
 
+    if (package_->isIncluding(fileString)) {
+        throw CompilerError(pathString.position(), "Including ", originalPathString,
+                            " is circular as it is already being included.");
+    }
     package_->includeDocument(fileString, originalPathString);
 }
 

@@ -20,6 +20,12 @@ class FunctionAnalyser;
 class Compiler;
 
 class ASTMethodable : public ASTCall {
+public:
+    /// The method that is called, or nullptr if the call is built in or was not analysed.
+    Function* method() const { return method_; }
+    /// The type on which the method is called.
+    const Type& calleeType() const { return calleeType_; }
+
 protected:
     explicit ASTMethodable(const SourcePosition &p) : ASTCall(p), args_(p) {}
     ASTMethodable(const SourcePosition &p, ASTArguments args) : ASTCall(p), args_(std::move(args)) {}
@@ -96,6 +102,8 @@ public:
     Value* generate(FunctionCodeGenerator *fg) const override;
     void analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCategory type) override;
     void mutateReference(ExpressionAnalyser *analyser) final;
+
+    const std::u32string& name() const { return name_; }
 
 private:
     std::u32string name_;

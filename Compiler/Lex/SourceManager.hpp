@@ -49,6 +49,14 @@ private:
     std::map<std::pair<size_t, size_t>, Token> comments_;
 };
 
+/// Returns @p path absolute and without "." and ".." components or symbolic links, so that different spellings of
+/// the same path compare equal. The path does not need to exist.
+std::string canonicalPath(const std::string &path);
+
+/// Returns the content of the file at @p path, decoded from UTF-8.
+/// @throws CompilerError if the file cannot be read.
+std::u32string readSourceFile(const std::string &path);
+
 /// The SourceManager is responsible for reading source files. It caches their content and can provide lines from
 /// source files.
 class SourceManager {
@@ -57,8 +65,16 @@ public:
     /// @param file Path to the source file.
     SourceFile* read(std::string file);
 
+    /// Makes read() return @p content for the file at @p path instead of reading it from disk. Editors use this to
+    /// check files with unsaved changes. Paths are compared after being made absolute and canonical.
+    void setOverlay(const std::string &path, std::u32string content);
+
+    /// Returns the paths of the files that were read, as they were passed to read().
+    std::vector<std::string> paths() const;
+
 private:
     std::map<std::string, std::unique_ptr<SourceFile>> cache_;
+    std::map<std::string, std::u32string> overlays_;
 };
 
 }  // namespace EmojicodeCompiler

@@ -27,6 +27,10 @@ public:
     /// to preserve them as backup.
     void print();
 
+    /// Returns the declaration of @p function as an interface file contains it, without documentation and body.
+    /// Returns an empty string for functions without an owner, like closures.
+    std::string declaration(Function *function);
+
 private:
     PrettyStream prettyStream_;
 
@@ -37,7 +41,7 @@ private:
     void printClosure(Function *function, bool esacping);
 
     void printRecordings(const std::vector<std::unique_ptr<RecordingPackage::Recording>> &recordings);
-    void print(const char *key, Function *function, bool body, bool noMutate);
+    void print(const char *key, Function *function, bool body, bool noMutate, bool documentation = true);
     void print(RecordingPackage::Recording *recording);
     void printEnumValues(Enum *enumeration);
     void printProtocolConformances(TypeDefinition *typeDef, const TypeContext &typeContext);
