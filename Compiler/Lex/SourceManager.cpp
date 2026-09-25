@@ -29,6 +29,14 @@ void SourceManager::setOverlay(const std::string &path, std::u32string content) 
     overlays_[canonicalPath(path)] = std::move(content);
 }
 
+std::vector<std::string> SourceManager::paths() const {
+    std::vector<std::string> paths;
+    for (auto &pair : cache_) {
+        paths.push_back(pair.first);
+    }
+    return paths;
+}
+
 SourceFile* SourceManager::read(std::string file) {
     auto find = cache_.find(file);
     if (find != cache_.end() && !find->second->wasCleared()) {

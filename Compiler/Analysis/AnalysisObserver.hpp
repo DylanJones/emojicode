@@ -15,6 +15,7 @@ class ASTExpr;
 class ASTType;
 class ExpressionAnalyser;
 class FunctionAnalyser;
+class Package;
 class Scope;
 
 /// An AnalysisObserver is told about what the semantic analysis finds out, e.g. by the language server, which
@@ -34,6 +35,9 @@ public:
     /// yet are still available from the analyser's scoper(). For an error in a closure, this is called for the
     /// closure and then for each function or closure around it.
     virtual void analysisFailed(FunctionAnalyser *analyser) = 0;
+    /// Called when the declarations of @p package were analysed, just before the bodies of its functions are. An
+    /// error in a declaration stops the analysis of the package before this.
+    virtual void analysingFunctions(Package *package) = 0;
 
     virtual ~AnalysisObserver() = default;
 };

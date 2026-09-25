@@ -711,6 +711,11 @@ void Type::typeName(Type type, const TypeContext &typeContext, std::string &stri
                 auto str = callee.typeDefinition()->findGenericName(type.genericVariableIndex());
                 string.append(utf8(str));
             }
+            else if (auto name = type.typeDefinition_ != nullptr ?
+                     type.typeDefinition_->declaredGenericName(type.genericVariableIndex()) : nullptr) {
+                // Without a context, e.g. in a declaration, the variable has the name its type gave it.
+                string.append(utf8(*name));
+            }
             else {
                 string.append("T" + std::to_string(type.genericVariableIndex()) + "?");
             }
@@ -718,6 +723,10 @@ void Type::typeName(Type type, const TypeContext &typeContext, std::string &stri
         case TypeType::LocalGenericVariable:
             if (typeContext.function() == type.localResolutionConstraint_) {
                 string.append(utf8(typeContext.function()->findGenericName(type.genericVariableIndex())));
+            }
+            else if (auto name = type.localResolutionConstraint_ != nullptr ?
+                     type.localResolutionConstraint_->declaredGenericName(type.genericVariableIndex()) : nullptr) {
+                string.append(utf8(*name));
             }
             else {
                 string.append("L" + std::to_string(type.genericVariableIndex()) + "?");

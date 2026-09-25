@@ -316,7 +316,8 @@ struct GenericStringRef {
 
     GenericStringRef(const GenericStringRef& rhs) : s(rhs.s), length(rhs.length) {}
 
-    GenericStringRef& operator=(const GenericStringRef& rhs) { s = rhs.s; length = rhs.length; }
+    //! The members are const, so a GenericStringRef cannot be assigned. (GCC 14 rejects the assignment.)
+    GenericStringRef& operator=(const GenericStringRef& rhs) = delete;
 
     //! implicit conversion to plain CharType pointer
     operator const Ch *() const { return s; }

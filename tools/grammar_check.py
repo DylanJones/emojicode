@@ -57,6 +57,7 @@ CONTEXT_ERRORS = [
     'Link hints were already provided',
     'Could not find package',
     'Circular dependency',
+    'is circular as it is already being included',
     'could not be loaded into namespace',
     "Couldn't read input file",
     'Emojicode files must',

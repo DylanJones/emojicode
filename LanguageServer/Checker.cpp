@@ -7,8 +7,10 @@
 #include "Index.hpp"
 #include "CompilerError.hpp"
 #include "Lex/SourceManager.hpp"
+#include "Package/RecordingPackage.hpp"
 #include "Positions.hpp"
 #include "Tokens.hpp"
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -62,19 +64,36 @@ private:
     std::string rootPath_;
 };
 
-/// Records that the phases before it completed without errors.
-class MarkPhase : public Compiler::Phase {
-public:
-    explicit MarkPhase(bool *reached) : reached_(reached) {}
-    void perform(Compiler *compiler) override { *reached_ = true; }
-
-private:
-    bool *reached_;
-};
-
 bool isSourceFile(const fs::path &path) {
     auto name = path.filename().string();
     return endsWith(name, ".emojic") || endsWith(name, ".🍇");
+}
+
+bool isInterfaceFile(const fs::path &path) {
+    auto name = path.filename().string();
+    return endsWith(name, "🏛") || endsWith(name, ".emojii");
+}
+
+/// Calls @p body with each token that is not in a block, i.e. that starts a declaration or statement of the
+/// document. The lexer's tokens leave out those in comments and strings.
+template <typename Body>
+void eachTopLevelToken(const std::vector<TokenSpan> &tokens, Body body) {
+    size_t depth = 0;
+    for (size_t i = 0; i < tokens.size(); i++) {
+        if (tokens[i].type == TokenType::BlockBegin) {
+            depth++;
+        }
+        else if (tokens[i].type == TokenType::BlockEnd) {
+            depth -= depth > 0 ? 1 : 0;
+        }
+        else if (depth == 0) {
+            body(i);
+        }
+    }
+}
+
+bool isTopLevelIdentifier(const TokenSpan &token, char32_t emoji) {
+    return token.type == TokenType::Identifier && !token.value.empty() && token.value.front() == emoji;
 }
 
 }  // namespace
@@ -98,32 +117,67 @@ std::u32string Checker::read(const std::string &path) const {
     }
 }
 
+std::vector<std::string> Checker::includes(const std::string &path) const {
+    std::vector<std::string> includes;
+    auto content = read(path);
+    if (content.find(U'📜') == std::u32string::npos) {
+        return includes;
+    }
+    // The compiler only reads 📜 where a declaration can start, and resolves the path relative to the document.
+    auto tokens = lex(content);
+    eachTopLevelToken(tokens, [&](size_t i) {
+        if (isTopLevelIdentifier(tokens[i], U'📜') && i + 1 < tokens.size() &&
+            tokens[i + 1].type == TokenType::String) {
+            includes.emplace_back(canonicalPath((fs::path(path).parent_path() / utf8(tokens[i + 1].value)).string()));
+        }
+    });
+    return includes;
+}
+
 std::string Checker::includer(const std::string &path) const {
-    // 📜 paths are relative to the including file, which is therefore in the same directory or above.
+    // A 📜 path is relative to the including document, which can be anywhere. It is looked for near the included
+    // file, the nearest first: in its directory, then in the directory above and its subdirectories, and then in the
+    // one above that and its subdirectories up to two levels deep.
     auto directory = fs::path(path).parent_path();
-    for (int level = 0; level < 3 && !directory.empty(); level++, directory = directory.parent_path()) {
+    std::set<fs::path> checked;
+    auto ancestor = directory;
+    for (int level = 0; level < 3; level++) {
+        std::vector<fs::path> candidates;
         std::error_code error;
-        for (auto &entry : fs::directory_iterator(directory, error)) {
-            if (!entry.is_regular_file() || !isSourceFile(entry.path()) || entry.path() == fs::path(path)) {
-                continue;
-            }
-            auto content = read(entry.path().string());
-            if (content.find(U'📜') == std::u32string::npos) {
-                continue;
-            }
-            // The lexer's tokens leave out 📜 in comments and strings.
-            auto tokens = lex(content);
-            for (size_t i = 0; i + 1 < tokens.size(); i++) {
-                if (tokens[i].type != TokenType::Identifier || tokens[i].value.front() != U'📜' ||
-                    tokens[i + 1].type != TokenType::String) {
-                    continue;
+        size_t entries = 0;
+        for (auto it = fs::recursive_directory_iterator(ancestor, fs::directory_options::skip_permission_denied,
+                                                        error);
+             !error && it != fs::recursive_directory_iterator() && entries++ < kMaxIncluderSearchEntries;
+             it.increment(error)) {
+            std::error_code entryError;
+            if (it->is_directory(entryError)) {
+                if (it.depth() >= level || it->path().filename().string().front() == '.') {
+                    it.disable_recursion_pending();
                 }
-                auto included = directory / utf8(tokens[i + 1].value);
-                if (canonicalPath(included.string()) == path) {
-                    return entry.path().string();
-                }
+            }
+            else if (isSourceFile(it->path()) && it->path() != fs::path(path) && it->is_regular_file(entryError) &&
+                     checked.insert(it->path()).second) {
+                candidates.push_back(it->path());
             }
         }
+        auto distance = [&](const fs::path &candidate) {
+            auto parent = candidate.parent_path();
+            auto mismatch = std::mismatch(directory.begin(), directory.end(), parent.begin(), parent.end());
+            return std::distance(mismatch.first, directory.end()) + std::distance(mismatch.second, parent.end());
+        };
+        std::sort(candidates.begin(), candidates.end(), [&](auto &a, auto &b) {
+            return std::make_pair(distance(a), a) < std::make_pair(distance(b), b);
+        });
+        for (auto &candidate : candidates) {
+            auto included = includes(candidate.string());
+            if (std::find(included.begin(), included.end(), path) != included.end()) {
+                return candidate.string();
+            }
+        }
+        if (!ancestor.has_relative_path()) {
+            break;
+        }
+        ancestor = ancestor.parent_path();
     }
     return "";
 }
@@ -140,13 +194,45 @@ std::string Checker::rootFile(const std::string &path) const {
     }
 }
 
+bool Checker::isLibrary(const std::string &rootPath) const {
+    // A package that is not a program has no 🏁 block, and exports types with 🌍 as it is of no use otherwise.
+    bool exports = false;
+    std::set<std::string> visited;
+    std::vector<std::string> documents{rootPath};
+    while (!documents.empty()) {
+        auto path = documents.back();
+        documents.pop_back();
+        if (!visited.insert(path).second) {
+            continue;
+        }
+        auto tokens = lex(read(path));
+        bool start = false;
+        eachTopLevelToken(tokens, [&](size_t i) {
+            start = start || isTopLevelIdentifier(tokens[i], U'🏁');
+            exports = exports || isTopLevelIdentifier(tokens[i], U'🌍');
+        });
+        if (start) {
+            return false;
+        }
+        auto included = includes(path);
+        documents.insert(documents.end(), included.begin(), included.end());
+    }
+    return exports;
+}
+
 Analysis Checker::check(const std::string &rootPath) const {
     Analysis analysis;
     analysis.rootPath = rootPath;
 
-    // A package's main file is named like its directory, e.g. s/s.🍇. Other files are standalone programs.
     auto root = fs::path(rootPath);
-    auto packageName = root.stem().string() == root.parent_path().filename().string() ? root.stem().string() : "_";
+    std::string packageName = "_";
+    if (isInterfaceFile(root)) {
+        // The interface of an installed package, e.g. s/🏛, which go-to-definition opens.
+        packageName = root.parent_path().filename().string();
+    }
+    else if (isLibrary(rootPath)) {
+        packageName = root.stem().string();
+    }
     bool standalone = packageName == "_";
 
     auto searchPaths = searchPaths_;
@@ -166,12 +252,14 @@ Analysis Checker::check(const std::string &rootPath) const {
     analysis.index = std::make_unique<Index>();
     analysis.compiler->setAnalysisObserver(analysis.index.get());
     analysis.compiler->add<Compiler::ParsePhase>();
-    // The compiler stops after the first phase with errors, so this marks whether the package parsed.
-    analysis.compiler->add<MarkPhase>(&analysis.analysed);
     analysis.compiler->add<Compiler::AnalysisPhase>(standalone);
     try {
         analysis.compiler->compile();
+        for (auto &path : analysis.compiler->sourceManager().paths()) {
+            analysis.files.insert(canonicalPath(path));
+        }
         analysis.index->finish();
+        analysis.analysed = analysis.index->analysedFunctionsOf(analysis.compiler->mainPackage());
     }
     catch (std::exception &e) {
         // The compiler is left in an unknown state, so nothing it produced is used.

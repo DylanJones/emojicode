@@ -104,6 +104,14 @@ class Client:
                     return message["params"]["diagnostics"]
             self.notifications.append(self.receive(max(0.01, deadline - time.time())))
 
+    def diagnostics_until(self, path, condition, timeout=20):
+        """Waits for diagnostics for the file at path that fulfill condition and returns them."""
+        deadline = time.time() + timeout
+        while True:
+            diagnostics = self.diagnostics(path, max(0.01, deadline - time.time()))
+            if condition(diagnostics):
+                return diagnostics
+
     def open(self, path, text=None):
         if text is None:
             with open(path, encoding="utf-8") as f:
@@ -257,6 +265,63 @@ class DiagnosticsTests(ServerTestCase):
             pass
         self.assertEqual(last, [])
 
+    def test_include_from_another_directory(self):
+        self.write("app/main.🍇", "📜 🔤../lib/util.🍇🔤\n🏁 🍇\n  🆕🐠❗️ ➡️ x\n🍉\n")
+        util = self.write("lib/util.🍇", "🐇 🐠 🍇\n  🆕 🍇🍉\n🍉\n")
+        client = self.start()
+        client.open(util)
+        self.assertEqual(client.diagnostics(util), [])
+        hover = client.request("textDocument/hover", {"textDocument": {"uri": uri(util)},
+                                                      "position": {"line": 0, "character": 3}})
+        self.assertIn("🐇 🐠", hover["contents"]["value"])
+
+    def test_scroll_in_code_is_not_an_include(self):
+        data = self.write("data.🍇", TYPE_ERROR)
+        self.write("reader.🍇", "📦 files 🏠\n🏁 🍇\n  🍺🆕📄▶️📜 🔤data.🍇🔤❗️ ➡️ file\n🍉\n")
+        client = self.start()
+        client.open(data)
+        self.assertEqual(len(client.diagnostics(data)), 1)
+
+    def test_packages_and_programs(self):
+        client = self.start()
+        # A package is a program unless it exports types and has no 🏁 block, whatever its file is named.
+        for name, text, diagnostics in (("hello/hello.🍇", "🐇 🐠 🍇\n  🆕 🍇🍉\n🍉\n", ["No 🏁 block was found."]),
+                                        ("lib/other.🍇", "🌍 🐇 🐠 🍇\n  🆕 🍇🍉\n🍉\n", []),
+                                        ("lib/lib.🍇", "📜 🔤other.🍇🔤\n", [])):
+            path = self.write(name, text)
+            client.open(path)
+            self.assertEqual([d["message"] for d in client.diagnostics(path)], diagnostics, name)
+
+    def test_file_included_by_two_programs(self):
+        util = self.write("util.🍇", "🐇 🐠 🍇\n  🆕 🍇\n    😀 🔤a🔤 ➕ 1❗️\n  🍉\n🍉\n")
+        a = self.write("a.🍇", "📜 🔤util.🍇🔤\n🏁 🍇🍉\n")
+        b = self.write("b.🍇", "📜 🔤util.🍇🔤\n🏁 🍇\n  🆕🐠❗️ ➡️ x\n🍉\n")
+        client = self.start()
+        client.open(util)
+        self.assertEqual(len(client.diagnostics(util)), 1)
+        client.open(a)
+        client.open(b)
+        # The checks of both programs must not clear the error in util, whose root is one of them.
+        for _ in range(2):
+            self.assertEqual(len(client.diagnostics(util)), 1)
+        # An edit of util checks both programs.
+        client.change(util, "🐇 🐠 🍇\n  🆕 🍇🍉\n🍉\n")
+        self.assertEqual(client.diagnostics(util), [])
+        client.change(b, "📜 🔤util.🍇🔤\n🏁 🍇\n  🆕🐠❗️ ➡️ x\n  🐽 x❗️\n🍉\n")
+        self.assertEqual(len(client.diagnostics_until(b, bool)), 1)
+
+    def test_include_removed_without_saving(self):
+        main = self.write("main.🍇", "📜 🔤b.🍇🔤\n🏁 🍇🍉\n")
+        b = self.write("b.🍇", "🐇 🐠 🍇\n  🆕 🍇🍉\n🍉\n")
+        client = self.start()
+        client.open(main)
+        client.open(b)
+        client.diagnostics(b)
+        client.change(main, "🏁 🍇🍉\n")
+        # b is its own root now, as main no longer includes it, so its errors are published.
+        client.change(b, "🐇 🐠 🍇\n  🆕 🍇\n    😀 🔤a🔤 ➕ 1❗️\n  🍉\n🍉\n")
+        self.assertIn("➕", client.diagnostics_until(b, bool)[0]["message"])
+
     def test_debounce_checks_only_last_change(self):
         path = self.write("main.emojic", HELLO)
         client = self.start()
@@ -407,9 +472,59 @@ class NavigationTests(ServerTestCase):
         self.assertEqual(self.definition("item", 2)[1], position(FISH, "item"))
         self.assertEqual(self.definition("depth", 2)[1], position(FISH, "depth"))
 
+    def test_definition_of_captured_variables(self):
+        text = ("🏁 🍇\n  5 ➡️ x\n  0 ➡️ 🖍🆕 y\n  🍇\n    😀 🔡 x❗️❗️\n    😀 🔡 x❗️❗️\n    6 ➡️ 🖍y\n"
+                "    🍇\n      😀 🔡 x❗️❗️\n    🍉 ➡️ g\n  🍉 ➡️ f\n🍉\n")
+        path = self.write("closure.emojic", text)
+        self.client.open(path)
+        # The closure mutates its copy of y, so the warning that y is never mutated is right.
+        self.assertEqual([d for d in self.client.diagnostics(path) if d["severity"] == 1], [])
+        for occurrence in (2, 3, 4):
+            result = self.client.request("textDocument/definition", {"textDocument": {"uri": uri(path)},
+                                                                     "position": position(text, "x", occurrence)})
+            self.assertEqual(result["range"]["start"], position(text, "x"), occurrence)
+        hover = self.client.request("textDocument/hover", {"textDocument": {"uri": uri(path)},
+                                                           "position": position(text, "x")})
+        self.assertEqual(hover["contents"]["value"], "```emojicode\nx 🔢\n```")
+        # Assigning to a captured variable does not declare it.
+        hover = self.client.request("textDocument/hover", {"textDocument": {"uri": uri(path)},
+                                                           "position": position(text, "y", 2)})
+        self.assertIsNone(hover)
+
+    def test_super_calls(self):
+        text = ("🐇 🐠 🍇\n  🆕 🍇🍉\n  ❗️ 🐽 🍇🍉\n🍉\n"
+                "🐇 🐟 🐠 🍇\n  🆕 🍇\n    ⤴️🆕❗️\n  🍉\n  ✒️❗️ 🐽 🍇\n    ⤴️🐽❗️\n  🍉\n🍉\n🏁 🍇🍉\n")
+        path = self.write("super.emojic", text)
+        self.client.open(path)
+        self.assertEqual(self.client.diagnostics(path), [])
+        for needle, declaration in (("⤴️|🆕", ("🆕", 1)), ("|⤴️🆕", ("🆕", 1)), ("⤴️|🐽", ("🐽", 1)),
+                                    ("|⤴️🐽", ("🐽", 1))):
+            result = self.client.request("textDocument/definition", {"textDocument": {"uri": uri(path)},
+                                                                     "position": position(text, needle)})
+            self.assertIsNotNone(result, needle)
+            self.assertEqual(result["range"]["start"], position(text, *declaration), needle)
+
+    def test_hover_generic_parameters_by_name(self):
+        text = ("🐇 🍞 🐚Element ⚪️🍆 🍇\n  🖍🆕 item Element\n  🆕 e Element 🍇\n    e ➡️ 🖍item\n  🍉\n"
+                "  ❗️ 🥪 🐚Thing ⚪️🍆 thing Thing ➡️ Thing 🍇\n    ↩️ thing\n  🍉\n🍉\n"
+                "🏁 🍇\n  🍿 1 2 🍆 ➡️ 🖍🆕 list\n  🐻 list 4❗️\n🍉\n")
+        path = self.write("generic.emojic", text)
+        self.client.open(path)
+        self.assertEqual(self.client.diagnostics(path), [])
+        for needle, occurrence, expected in (("🐻", 1, "in `🍨🐚Element`"), ("🍞", 1, "🐇 🍞🐚Element"),
+                                             ("Element", 2, "Element"), ("Thing", 3, "Thing")):
+            hover = self.client.request("textDocument/hover", {"textDocument": {"uri": uri(path)},
+                                                               "position": position(text, needle, occurrence)})
+            self.assertIn(expected, hover["contents"]["value"], needle)
+            self.assertNotIn("0?", hover["contents"]["value"], needle)
+
     def test_definition_in_standard_library(self):
         path, start = self.definition("😀")
         self.assertTrue(path.endswith("🏛"), path)
+        # The interface of the package is checked as that package.
+        path = urllib.parse.urlparse(path).path
+        self.client.open(path)
+        self.assertEqual(self.client.diagnostics(path, timeout=60), [])
 
     def test_semantic_tokens(self):
         legend = self.client.capabilities["semanticTokensProvider"]["legend"]
@@ -447,6 +562,34 @@ class NavigationTests(ServerTestCase):
             if legend["tokenTypes"][data[i + 3]] == "class":
                 classes.append(line)
         self.assertEqual(classes[0], 2)
+
+    def semantic_types(self, text):
+        """Returns the semantic token type of the first token with each text."""
+        data = self.client.request("textDocument/semanticTokens/full",
+                                   {"textDocument": {"uri": uri(self.path)}})["data"]
+        legend = self.client.capabilities["semanticTokensProvider"]["legend"]
+        tokens = {}
+        line = character = 0
+        lines = text.split("\n")
+        for i in range(0, len(data), 5):
+            delta_line, delta_start, length, kind = data[i:i + 4]
+            line += delta_line
+            character = character + delta_start if delta_line == 0 else delta_start
+            token = lines[line].encode("utf-16-le")[character * 2:(character + length) * 2].decode("utf-16-le")
+            tokens.setdefault((token, line), legend["tokenTypes"][kind])
+        return tokens
+
+    def test_semantic_tokens_of_unchanged_code_while_there_are_errors(self):
+        expected = self.semantic_types(FISH)
+        call = position(FISH, "🏊", 2)["line"]
+        self.assertEqual(expected[("🏊", call)], "method")
+        # A syntax error, and an error in a declaration, stop the analysis before the function bodies.
+        for broken in ("  ❗️ 🐽 🍇\n", "  ❗️ 🐽 a 🦖 🍇🍉\n"):
+            text = FISH.replace("  🆕 🍇🍉\n", "  🆕 🍇🍉\n" + broken)
+            self.client.change(self.path, text)
+            tokens = self.semantic_types(text)
+            self.assertEqual(tokens[("🏊", call + 1)], "method", broken)
+            self.assertEqual(tokens[("😀", text.split("\n").index("  😀 🔤Depth 🧲total🧲🔤❗️"))], "method")
 
     def test_document_symbols(self):
         symbols = self.client.request("textDocument/documentSymbol", {"textDocument": {"uri": uri(self.path)}})
@@ -494,6 +637,33 @@ class CompletionTests(ServerTestCase):
                                                            "position": {"line": 2, "character": 12}})["items"]
         self.assertEqual(items[0]["label"], "count")
 
+    def test_variables_with_error_in_a_declaration(self):
+        # An error in a declaration stops the analysis before any function body is analysed, so the variables are
+        # those of the last analysis that got that far.
+        path = self.write("declaration.emojic", "🏁 🍇\n  5 ➡️ counter\n  cou\n🍉\n")
+        client = self.start()
+        client.open(path)
+        client.diagnostics(path)
+        client.change(path, "🐇 🐟 🍇\n  ❗️ 🐽 a 🦖 🍇🍉\n🍉\n🏁 🍇\n  5 ➡️ counter\n  coun\n🍉\n")
+        self.assertIn("🦖", client.diagnostics(path)[0]["message"])
+        items = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                           "position": {"line": 5, "character": 6}})["items"]
+        self.assertEqual(items[0]["label"], "counter")
+
+    def test_no_variables_of_functions_with_errors_elsewhere(self):
+        # 🅰️ has an error, so its analysis stops with its scope open. Its variables must not be offered in 🏁.
+        text = ("🐇 🐟 🍇\n  🆕 🍇🍉\n  ❗️ 🅰️ 🍇\n    5 ➡️ alphabet\n    😀 🔤a🔤 ➕ 1❗️\n  🍉\n🍉\n"
+                "🏁 🍇\n  🍇 alpaca 🔢\n    😀 alpacas❗️\n  🍉 ➡️ f\n  alp\n🍉\n")
+        path = self.write("scopes.emojic", text)
+        client = self.start()
+        client.open(path)
+        client.diagnostics(path)
+        items = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                           "position": {"line": 11, "character": 5}})["items"]
+        labels = [item["label"] for item in items]
+        self.assertNotIn("alphabet", labels)
+        self.assertNotIn("alpaca", labels)
+
     def test_variables_before_better_matches(self):
         # "sum" starts many emoji names and documentation words, but only a later word of the variable's name.
         path = self.write("sum.emojic", "🏁 🍇\n  1 ➡️ total_sum\n  sum\n🍉\n")
@@ -532,6 +702,33 @@ class CompletionTests(ServerTestCase):
                                                             "position": {"line": 1, "character": 11}})
         self.assertEqual(result["items"], [])
 
+    def test_no_completion_in_unterminated_string_at_the_end(self):
+        path = self.write("end.emojic", "🏁 🍇\n  😀 🔤hello wor")
+        client = self.start()
+        client.open(path)
+        client.diagnostics(path)
+        result = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                            "position": {"line": 1, "character": 16}})
+        self.assertEqual(result["items"], [])
+
+    def test_completion_after_string_with_invalid_escape(self):
+        text = "🏁 🍇\n  😀 🔤Done ❌ now🔤❗️\n  grap\n🍉\n"
+        path = self.write("escape.emojic", text)
+        client = self.start()
+        client.open(path)
+        client.diagnostics(path)
+        items = client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                           "position": {"line": 2, "character": 6}})["items"]
+        self.assertEqual(items[0]["textEdit"]["newText"], "🍇")
+        data = client.request("textDocument/semanticTokens/full", {"textDocument": {"uri": uri(path)}})["data"]
+        legend = client.capabilities["semanticTokensProvider"]["legend"]["tokenTypes"]
+        line, lines = 0, []
+        for i in range(0, len(data), 5):
+            line += data[i]
+            if legend[data[i + 3]] == "string":
+                lines.append(line)
+        self.assertEqual(lines, [1])
+
     def test_no_completion_in_strings_and_comments(self):
         path = self.write("strings.emojic", "🏁 🍇\n  😀 🔤grap🔤❗️ 💭 grap\n🍉\n")
         client = self.start()
@@ -548,6 +745,60 @@ class CompletionTests(ServerTestCase):
         self.assertEqual(items[0]["insertTextFormat"], 2)
         self.assertTrue(items[0]["textEdit"]["newText"].startswith("🐇 ${1:🐟} 🍇"))
 
+
+class RobustnessTests(ServerTestCase):
+    def use_every_feature(self, path, text):
+        """Sends every request that works on a position at the start of each line of text."""
+        client = self.client
+        document = {"textDocument": {"uri": uri(path)}}
+        client.request("textDocument/semanticTokens/full", document)
+        client.request("textDocument/documentSymbol", document)
+        for line, content in enumerate(text.split("\n")):
+            for character in range(0, utf16_length(content) + 1, 2):
+                params = {**document, "position": {"line": line, "character": character}}
+                for method in ("textDocument/hover", "textDocument/definition", "textDocument/completion"):
+                    client.request(method, params)
+
+    def test_cyclic_inheritance(self):
+        for text in ("🐇 🐟 🐟 🍇\n  ❗️ 🐽 🍇\n    \n  🍉\n🍉\n",
+                     "🐇 🐟 🐠 🍇\n  🖍🆕 a 🔢 ⬅️ 1\n  ❗️ 🐽 🍇\n    a\n  🍉\n🍉\n🐇 🐠 🐟 🍇🍉\n"):
+            path = self.write("cycle.emojic", text)
+            self.start()
+            self.client.open(path, text)
+            diagnostics = self.client.diagnostics(path)
+            self.assertIn("inherits from itself", " ".join(d["message"] for d in diagnostics))
+            self.use_every_feature(path, text)
+            self.assertEqual(self.client.shutdown(), 0)
+
+
+    def test_compiler_crashes(self):
+        cases = [
+            # Includes itself.
+            ("main.emojic", "📜 🔤main.emojic🔤\n🏁 🍇🍉\n", "circular"),
+            # 🍺 on the initialization of an enum value, which has no initializer.
+            ("enum.emojic", "🔘 ⏰ 🍇\n  🆕▶️🥓\n🍉\n🏁 🍇\n  🍺🆕⏰▶️🥓❗️ ➡️ x\n🍉\n", "🍺"),
+            # A multiline comment whose text starts with 💭, as when a comment is commented out.
+            ("comment.emojic", "💭🔜💭 old\n🔚💭\n", "No 🏁 block"),
+        ]
+        self.start()
+        for name, text, message in cases:
+            path = self.write(name, text)
+            self.client.open(path, text)
+            diagnostics = self.client.diagnostics(path)
+            self.assertIn(message, " ".join(d["message"] for d in diagnostics), (name, diagnostics))
+            self.use_every_feature(path, text)
+        self.assertEqual(self.client.shutdown(), 0)
+
+    def test_two_files_that_include_each_other(self):
+        a = self.write("a.emojic", "📜 🔤b.emojic🔤\n🏁 🍇🍉\n")
+        b = self.write("b.emojic", "📜 🔤a.emojic🔤\n")
+        self.start()
+        self.client.open(a)
+        # b includes a, so it is the root, and its include of a is circular when a includes it again.
+        self.assertIn("circular", self.client.diagnostics(a)[0]["message"])
+        self.client.open(b)
+        self.use_every_feature(b, "📜 🔤a.emojic🔤\n")
+        self.assertEqual(self.client.shutdown(), 0)
 
 if __name__ == "__main__":
     unittest.main(argv=sys.argv[:1], verbosity=2)

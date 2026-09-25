@@ -11,6 +11,7 @@
 #include "Types/Type.hpp"
 #include "Types/TypeContext.hpp"
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -61,6 +62,11 @@ public:
     void leavingScope(const EmojicodeCompiler::ASTBlock &block, const EmojicodeCompiler::Scope &scope,
                       EmojicodeCompiler::FunctionAnalyser *analyser) override;
     void analysisFailed(EmojicodeCompiler::FunctionAnalyser *analyser) override;
+    void analysingFunctions(EmojicodeCompiler::Package *package) override { packages_.insert(package); }
+
+    /// Whether the bodies of the functions of @p package were analysed, which requires that it had no syntax errors
+    /// and no errors in its declarations. Analysis continues after an error in a function body.
+    bool analysedFunctionsOf(EmojicodeCompiler::Package *package) const { return packages_.count(package) > 0; }
 
     /// Returns the nodes whose position is exactly @p line and @p character (as the compiler counts them) in the
     /// file at @p path.
@@ -84,6 +90,7 @@ private:
     std::vector<IndexedVariable> variables_;
     std::vector<IndexedScope> scopes_;
     std::map<EmojicodeCompiler::SourceFile *, std::string> paths_;
+    std::set<EmojicodeCompiler::Package *> packages_;
 };
 
 }  // namespace EmojicodeLanguageServer

@@ -16,6 +16,7 @@
 #include "Utils/StringUtils.hpp"
 #include "Scoping/Scope.hpp"
 #include <algorithm>
+#include <set>
 #include <utility>
 
 namespace EmojicodeCompiler {
@@ -46,6 +47,19 @@ void Class::analyseSuperType() {
 
     if (type.klass()->superType() != nullptr && !type.klass()->superType()->wasAnalysed()) {
         type.klass()->analyseSuperType();
+    }
+
+    std::set<Class *> visited;
+    for (auto klass = type.klass(); klass != nullptr && visited.insert(klass).second;) {
+        if (klass == this) {
+            throw CompilerError(superType()->position(), Type(this).toString(TypeContext(classType)),
+                                " inherits from itself.");
+        }
+        auto super = klass->superType();
+        if (super == nullptr || !super->wasAnalysed() || super->type().type() != TypeType::Class) {
+            break;
+        }
+        klass = super->type().klass();
     }
 
     if (type.klass()->final()) {

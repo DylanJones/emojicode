@@ -213,7 +213,7 @@ bool Completer::canComplete(size_t offset) const {
         case TokenType::MultilineComment:
         case TokenType::DocumentationComment:
         case TokenType::PackageDocumentationComment:
-            return offset >= token->end;
+            return !token->unterminated && offset >= token->end;
         default:
             return true;
     }

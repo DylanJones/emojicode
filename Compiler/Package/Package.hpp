@@ -55,6 +55,9 @@ public:
     ///                     subclasses that might be interested in this. (e.g. RecordingPackage)
     virtual void includeDocument(const std::string &path, const std::string &relativePath);
 
+    /// @returns True iff the document at path is being included, i.e. including it again would be circular.
+    bool isIncluding(const std::string &path) const;
+
     /// @returns The application to which this package belongs.
     Compiler* compiler() const { return compiler_; }
 
@@ -154,6 +157,8 @@ private:
     std::vector<std::unique_ptr<Protocol>> protocols_;
     std::vector<std::string> linkHints_;
     std::string linkHintsDirectory_;
+    /// The canonical paths of the documents that are being included, the innermost last.
+    std::vector<std::string> including_;
 
     std::u32string documentation_;
     Compiler *compiler_;

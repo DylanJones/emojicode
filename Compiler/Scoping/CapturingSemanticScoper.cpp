@@ -21,9 +21,12 @@ ResolvedVariable CapturingSemanticScoper::getVariable(const std::u32string &name
     catch (VariableNotFoundError &e) {
         auto pair = analyser_->scoper().getVariable(name, errorPosition);
         auto &variable = pair.variable;
+        // The capture is declared where the captured variable is, which is what uses of it inside the closure
+        // refer to, and not at the first use.
         auto &captureVariable = topmostLocalScope().declareVariableWithId(variable.name(), variable.type(),
                                                                           constantCaptures_,
-                                                                          VariableID(captureId_++), errorPosition);
+                                                                          VariableID(captureId_++),
+                                                                          variable.position());
         captureVariable.setCaptured();
         if (analyser_->pathAnalyser().hasCertainly(PathAnalyserIncident(false, variable.id()))) {
             pathAnalyser_->recordForMainBranch(PathAnalyserIncident(false, captureVariable.id()));

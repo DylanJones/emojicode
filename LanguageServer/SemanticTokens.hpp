@@ -20,7 +20,11 @@ extern const std::vector<const char *> kSemanticTokenModifiers;
 
 /// Returns the semantic tokens of the file of @p navigator in the LSP encoding: five integers per token (line and
 /// start relative to the previous token, length, type and modifiers).
-std::vector<uint32_t> semanticTokens(const Navigator &navigator, PositionEncoding encoding);
+/// @param previous Navigates the version of the file of the last analysis that analysed the function bodies, if the
+///                 analysis of @p navigator did not. A token that @p navigator cannot classify is classified like the
+///                 same token in that version, if it is on a line before or after the lines that changed since.
+std::vector<uint32_t> semanticTokens(const Navigator &navigator, PositionEncoding encoding,
+                                     const Navigator *previous = nullptr);
 
 }  // namespace EmojicodeLanguageServer
 

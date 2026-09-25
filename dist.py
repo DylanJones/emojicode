@@ -55,4 +55,4 @@ if __name__ == "__main__":
 
     if len(sys.argv) > 1 and sys.argv[1] == "install":
         bash = "cd " + path + " && yes | " + os.path.join(path, "install.sh")
-        subprocess.run(["bash", "-c", bash])
+        subprocess.run(["bash", "-c", bash], check=True)

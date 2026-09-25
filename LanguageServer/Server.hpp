@@ -26,6 +26,8 @@ using Clock = std::chrono::steady_clock;
 struct Document {
     std::string uri;
     int version = 0;
+    /// The files the document includes with 📜, which determine the root files of the open documents.
+    std::vector<std::string> includes;
 };
 
 /// A request that is answered once the package it is about was checked.
@@ -70,6 +72,9 @@ private:
     /// Returns the latest analysis of the package that contains the open document at @p path, or nullptr. If
     /// @p checkPending is true, the package is checked first if it has pending changes.
     const Analysis* analysisFor(const std::string &path, bool checkPending = true);
+    /// Returns the last analysis of the package that contains the open document at @p path that analysed the function
+    /// bodies, if @p analysis, its latest analysis, did not. Otherwise returns nullptr.
+    const Analysis* previousAnalysis(const std::string &path, const Analysis *analysis);
 
     void respond(const rapidjson::Value &id, rapidjson::Value &result, rapidjson::Document &document);
     void respondError(const rapidjson::Value &id, int code, const std::string &message);
@@ -82,11 +87,19 @@ private:
     /// Returns how long until the next scheduled check, or -1 if none is scheduled.
     int millisecondsToNextCheck() const;
     void check(const std::string &root);
-    void publishDiagnostics(const Analysis &analysis);
+    /// Publishes the diagnostics of the files that the latest analysis of @p root has or had diagnostics for, and of
+    /// its open files.
+    void publishDiagnostics(const std::string &root);
+    /// Publishes the diagnostics of each file in @p paths. Those of an open file are those of the analysis of its
+    /// root; the client keeps one list per file, so the analysis of another root that includes it must not replace
+    /// them. Those of other files are those of all analyses.
+    void publishDiagnostics(const std::set<std::string> &paths);
 
     /// Finds the root file of every open document again, e.g. after an include was added. Roots that changed are
     /// checked, and roots that no open document belongs to anymore are dropped.
     void updateRoots();
+    /// Schedules the check of each root file whose package contains the file at @p path in @p delay.
+    void scheduleRootsContaining(const std::string &path, std::chrono::milliseconds delay);
     bool isRootOpen(const std::string &root) const;
     /// Forgets the analyses of @p root and removes its diagnostics.
     void dropRoot(const std::string &root);
@@ -124,9 +137,10 @@ private:
     std::map<std::string, std::string> roots_;
     /// The last analysis of each root file.
     std::map<std::string, Analysis> analyses_;
-    /// The last analysis of each root file that parsed, which completion uses while the code being typed does not.
+    /// The last analysis of each root file that analysed the function bodies, if the latest one did not. Completion and
+    /// semantic tokens use it while the code being typed has errors that stop the analysis.
     std::map<std::string, Analysis> parsedAnalyses_;
-    /// The files for which diagnostics were published from each root file.
+    /// The files for which the latest analysis of each root file has diagnostics.
     std::map<std::string, std::set<std::string>> published_;
     /// When each root file with pending changes is to be checked.
     std::map<std::string, Clock::time_point> scheduled_;
