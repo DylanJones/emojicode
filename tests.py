@@ -54,6 +54,7 @@ compilation_tests = [
     "protocolSubclass",
     "protocolValueType",
     "genericRecursion",
+    "optionalGenericField",
     "forInVariableReuse",
     "valueTypeIterator",
     "listIterator",

@@ -229,7 +229,11 @@ Type Type::resolveOnSuperArgumentsAndConstraints(const TypeContext &typeContext)
     bool ref = isReference();
     bool mut = mutable_;
     if (type() == TypeType::Optional) {
-        t.genericArguments_[0] = genericArguments_[0].resolveOnSuperArgumentsAndConstraints(typeContext);
+        auto resolved = genericArguments_[0].resolveOnSuperArgumentsAndConstraints(typeContext);
+        if (resolved.type() == TypeType::Box) {
+            return resolved.optionalized();  // An optional must not contain a box, but a box an optional.
+        }
+        t.genericArguments_[0] = resolved;
         return t;
     }
     if (type() == TypeType::Box) {
@@ -284,7 +288,11 @@ Type Type::resolveOn(const TypeContext &typeContext) const {
     bool ref = isReference();
     bool mut = mutable_;
     if (type() == TypeType::Optional) {
-        t.genericArguments_[0] = genericArguments_[0].resolveOn(typeContext);
+        auto resolved = genericArguments_[0].resolveOn(typeContext);
+        if (resolved.type() == TypeType::Box) {
+            return resolved.optionalized();  // An optional must not contain a box, but a box an optional.
+        }
+        t.genericArguments_[0] = resolved;
         return t;
     }
     if (type() == TypeType::Box) {
