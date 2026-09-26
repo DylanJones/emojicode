@@ -135,6 +135,7 @@ compilation_tests = [
     "rcOnlyReference",
     "rcIvarArgMut",
     "rcEscaping",
+    "returnParameter",
     "classEscapingParamOverride",
     "references",
     "identifierTest",

@@ -149,20 +149,22 @@ void MFFunctionAnalyser::releaseAllVariables(Releasing *releasing, const Semanti
     }
 }
 
-void MFFunctionAnalyser::recordVariableGet(size_t id, MFFlowCategory category) {
-    if (category.isReturn()) {
-        auto &var = scope_.getVariable(id);
-        if (var.isParam) return;
+bool MFFunctionAnalyser::recordVariableGet(size_t id, MFFlowCategory category) {
+    auto &var = scope_.getVariable(id);
+    // A returned parameter escapes too, as the caller receives it, so that an argument must not be allocated on the
+    // stack of the caller.
+    bool returnsValueOfVariable = category.isReturn() && !var.isParam;
+    if (returnsValueOfVariable) {
         var.isReturned = true;
     }
     if (category.isEscaping()) {
-        auto &var = scope_.getVariable(id);
         auto type = var.type.unoptionalized();
-        if (type.is<TypeType::ValueType>() || type.is<TypeType::Enum>()) {
-            return;
+        if (!type.is<TypeType::ValueType>() && !type.is<TypeType::Enum>()) {
+            // Not Return, which would become the category of a parameter, with which a caller would return its argument.
+            var.flowCategory = MFFlowCategory::Escaping;
         }
-        var.flowCategory = category;
     }
+    return returnsValueOfVariable;
 }
 
 void MFFunctionAnalyser::take(ASTExpr *expr) {
