@@ -338,6 +338,8 @@ public:
     bool isCRepresentable() const;
 
     TypeDefinition* resolutionConstraint() const;
+    /// Returns the function declaring the generic parameter if the type is a TypeType::LocalGenericVariable.
+    Function* localResolutionConstraint() const;
 
 protected:
     Type(bool isReference, bool isMutable)
@@ -370,8 +372,6 @@ private:
     TypeDefinition *typeDefinition_ = nullptr;
     Function *localResolutionConstraint_ = nullptr;
     std::vector<Type> genericArguments_;
-
-    Function* localResolutionConstraint() const;
 
     bool isReference_ = false;
     bool mutable_ = false;

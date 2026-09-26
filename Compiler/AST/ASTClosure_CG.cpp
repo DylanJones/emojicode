@@ -8,6 +8,8 @@
 
 #include "ASTClosure.hpp"
 #include "Generation/ClosureCodeGenerator.hpp"
+#include "Generation/RunTimeHelper.hpp"
+#include "Generation/TypeDescriptionGenerator.hpp"
 #include "Compiler.hpp"
 #include "Types/TypeContext.hpp"
 #include "Functions/Function.hpp"
@@ -39,6 +41,15 @@ Value* ASTClosure::generate(FunctionCodeGenerator *fg) const {
     auto capture = capture_;
     for (auto &capturedVar : capture.captures) {
         capture.variableTypes.emplace_back(fg->scoper().getVariable(capturedVar.sourceId).type);
+    }
+    if (fg->functionGenericArgs() != nullptr) {
+        for (auto function = closure_->enclosingFunction(); function != nullptr;
+             function = function->enclosingFunction()) {
+            if (!function->genericParameters().empty()) {
+                capture.genericArgsOf = function;
+                break;
+            }
+        }
     }
     capture.type = fg->generator()->typeHelper().llvmTypeForCapture(capture, thisValue, isEscaping_);
 
@@ -73,6 +84,11 @@ llvm::Value* ASTClosure::createDeinit(CodeGenerator *cg, const Capture &capture)
             if (capturedVar.type.isManaged()) {
                 fg.releaseByReference(ptr, capturedVar.type);
             }
+        }
+        if (capture.genericArgsOf != nullptr) {
+            auto ptr = fg.builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++);
+            fg.builder().CreateCall(fg.generator()->runTime().free(),
+                                    fg.builder().CreateLoad(fg.typeHelper().pointer(), ptr));
         }
     }
 
@@ -115,6 +131,20 @@ llvm::Value* ASTClosure::storeCapturedVariables(FunctionCodeGenerator *fg, const
             auto ep = fg->builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++);
             fg->builder().CreateStore(var.ptr, ep);
         }
+    }
+    if (capture.genericArgsOf != nullptr) {
+        llvm::Value *genericArgs = fg->functionGenericArgs();
+        if (isEscaping_) {
+            // The generic arguments are on the stack of the caller of the generic function, which the closure can
+            // outlive, so it gets a copy, which its deinitializer frees.
+            std::vector<Type> variables;
+            for (size_t j = 0; j < capture.genericArgsOf->genericParameters().size(); j++) {
+                variables.emplace_back(j, capture.genericArgsOf);
+            }
+            auto copy = TypeDescriptionGenerator(fg, TypeDescriptionUser::Class).generate(variables);
+            genericArgs = fg->builder().CreateExtractValue(copy, 0);
+        }
+        fg->builder().CreateStore(genericArgs, fg->builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++));
     }
     return captures;
 }

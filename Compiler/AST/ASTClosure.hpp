@@ -32,6 +32,9 @@ struct Capture {
     llvm::StructType *type = nullptr;
     /// The LLVM types of the captured variables as they are stored in the capturing function.
     std::vector<llvm::Type *> variableTypes;
+    /// The generic function enclosing the closure, whose generic arguments are captured so that the closure can
+    /// describe its generic variables at run-time, or nullptr if there are none.
+    Function *genericArgsOf = nullptr;
 
     bool capturesSelf() const { return self.type() != TypeType::NoReturn; }
 };

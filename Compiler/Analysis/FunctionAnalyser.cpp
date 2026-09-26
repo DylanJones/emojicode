@@ -41,6 +41,7 @@ FunctionType FunctionAnalyser::functionType() const {
 void FunctionAnalyser::configureClosure(Function *closure) const {
     closure->setMutating(function()->mutating());
     closure->setOwner(function()->owner());
+    closure->setEnclosingFunction(function_);
     auto functionType = function()->functionType();
     if (functionType == FunctionType::ObjectInitializer) {
         closure->setFunctionType(FunctionType::ObjectMethod);

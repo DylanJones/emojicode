@@ -67,6 +67,9 @@ void ClosureCodeGenerator::loadCapturedVariables(Value *value) {
             scoper().getVariable(capture.captureId) = CGVariable(loadCapture(index++), capture_.variableTypes[i]);
         }
     }
+    if (capture_.genericArgsOf != nullptr) {
+        setFunctionGenericArgs(loadCapture(index++));
+    }
 }
 
 }  // namespace EmojicodeCompiler
