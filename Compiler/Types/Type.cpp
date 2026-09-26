@@ -225,21 +225,13 @@ Function* Type::localResolutionConstraint() const {
 }
 
 Type Type::resolveOnSuperArgumentsAndConstraints(const TypeContext &typeContext) const {
+    if (type() == TypeType::Optional || type() == TypeType::Box) {
+        return rewrapped(genericArguments_[0].resolveOnSuperArgumentsAndConstraints(typeContext));
+    }
+
     Type t = *this;
     bool ref = isReference();
     bool mut = mutable_;
-    if (type() == TypeType::Optional) {
-        auto resolved = genericArguments_[0].resolveOnSuperArgumentsAndConstraints(typeContext);
-        if (resolved.type() == TypeType::Box) {
-            return resolved.optionalized();  // An optional must not contain a box, but a box an optional.
-        }
-        t.genericArguments_[0] = resolved;
-        return t;
-    }
-    if (type() == TypeType::Box) {
-        t.genericArguments_[0] = genericArguments_[0].resolveOnSuperArgumentsAndConstraints(typeContext).unboxed();
-        return t;
-    }
 
     TypeDefinition *c = nullptr;
     if (typeContext.calleeType().canHaveGenericArguments()) {
@@ -283,28 +275,22 @@ std::vector<Type> Type::selfResolvedGenericArgs() const {
     return args;
 }
 
-Type Type::resolveOn(const TypeContext &typeContext) const {
-    Type t = *this;
-    bool ref = isReference();
-    bool mut = mutable_;
-    if (type() == TypeType::Optional) {
-        auto resolved = genericArguments_[0].resolveOn(typeContext);
-        if (resolved.type() == TypeType::Box) {
-            return resolved.optionalized();  // An optional must not contain a box, but a box an optional.
-        }
-        t.genericArguments_[0] = resolved;
-        return t;
+Type Type::rewrapped(Type wrapped) const {
+    if (type() == TypeType::Optional && wrapped.type() == TypeType::Box) {
+        return wrapped.optionalized();  // An optional must not contain a box, but a box an optional.
     }
-    if (type() == TypeType::Box) {
-        t.genericArguments_[0] = genericArguments_[0].resolveOn(typeContext).unboxed();
-        return t;
+    Type t = *this;
+    t.genericArguments_[0] = type() == TypeType::Box ? wrapped.unboxed() : std::move(wrapped);
+    return t;
+}
+
+Type Type::resolveOn(const TypeContext &typeContext) const {
+    if (type() == TypeType::Optional || type() == TypeType::Box) {
+        return rewrapped(genericArguments_[0].resolveOn(typeContext));
     }
 
-    if (t.unboxedType() == TypeType::LocalGenericVariable && typeContext.function() == t.localResolutionConstraint()
-        && typeContext.functionGenericArguments() != nullptr) {
-        // The generic arguments are types of the calling code, which must not be resolved again. A recursive call
-        // with its own generic variable would otherwise resolve it forever.
-        t = (*typeContext.functionGenericArguments())[t.genericVariableIndex()];
+    Type t = *this;
+    auto keepStorage = [ref = isReference(), mut = mutable_](Type t) {
         if (ref) {
             t.setReference();
         }
@@ -312,6 +298,13 @@ Type Type::resolveOn(const TypeContext &typeContext) const {
             t.setMutable(true);
         }
         return t;
+    };
+
+    if (t.unboxedType() == TypeType::LocalGenericVariable && typeContext.function() == t.localResolutionConstraint()
+        && typeContext.functionGenericArguments() != nullptr) {
+        // The generic arguments are types of the calling code, which must not be resolved again. A recursive call
+        // with its own generic variable would otherwise resolve it forever.
+        return keepStorage((*typeContext.functionGenericArguments())[t.genericVariableIndex()]);
     }
 
     if (typeContext.calleeType().canHaveGenericArguments()) {
@@ -332,13 +325,7 @@ Type Type::resolveOn(const TypeContext &typeContext) const {
             arg = arg.resolveOn(typeContext);
         }
     }
-    if (ref) {
-        t.setReference();
-    }
-    if (mut) {
-        t.setMutable(true);
-    }
-    return t;
+    return keepStorage(std::move(t));
 }
 
 bool Type::identicalGenericArguments(Type to, const TypeContext &typeContext, GenericInferer *inf) const {
