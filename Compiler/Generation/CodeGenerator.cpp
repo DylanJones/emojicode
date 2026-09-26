@@ -168,6 +168,11 @@ void CodeGenerator::generateFunctions(Package *package, bool imported) {
     for (auto &function : package->functions()) {
         generateFunction(function.get());
     }
+    for (auto &valueType : package->valueTypes()) {
+        for (auto &specialization : valueType->specializations()) {
+            generateFunction(specialization.get());
+        }
+    }
 }
 
 void CodeGenerator::generateFunction(Function *function) {
@@ -400,6 +405,10 @@ llvm::Function::LinkageTypes CodeGenerator::linkageForFunction(Function *functio
     }
     if (function->isInline() && function->package()->isImported()) {
         return llvm::Function::AvailableExternallyLinkage;
+    }
+    // Every module that uses a specialization creates its own.
+    if (function->specializedFunction() != nullptr) {
+        return llvm::Function::InternalLinkage;
     }
     if ((function->accessLevel() == AccessLevel::Private && !function->isExternal() &&
          (function->owner() == nullptr || !function->owner()->exported())) || function->isClosure()) {

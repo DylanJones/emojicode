@@ -28,6 +28,9 @@ void MFAnalyser::analyseTypeDefinition(TypeDefinition *typeDef) {
     typeDef->eachFunction([this](Function *function) {
         analyseFunction(function);
     });
+    for (auto &specialization : typeDef->specializations()) {
+        analyseFunction(specialization.get());
+    }
 }
 
 void MFAnalyser::analyseFunction(Function *function) {

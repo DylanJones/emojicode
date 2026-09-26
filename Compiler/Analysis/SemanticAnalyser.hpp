@@ -26,7 +26,8 @@ class ValueType;
 
 class SemanticAnalyser {
 public:
-    explicit SemanticAnalyser(Package *package, bool imported) : package_(package), imported_(imported) {}
+    explicit SemanticAnalyser(Package *package, bool imported);
+    ~SemanticAnalyser();
 
     /// Analyses the package.
     /// @throws CompilerError if an unrecoverable error occurs, e.g. if the start flag function is not present but
@@ -36,6 +37,13 @@ public:
     void analyse(bool executable);
 
     void enqueueFunction(Function *);
+
+    /// Returns the specialization of @p function for @p genericArguments, which the caller should call instead of
+    /// the generic function, or nullptr if it must call the generic function.
+    /// A specialization is created and analysed if it does not exist yet. If its code does not compile, e.g. because a
+    /// cast of a value of a generic type is unnecessary with the concrete type, the generic function is used.
+    /// @param caller The function whose code calls @p function, or nullptr.
+    Function* specialize(Function *function, const std::vector<Type> &genericArguments, Function *caller);
 
     /// Iff `type` is a literal type, returns the default inferred type for the literal type. Otherwise the type is
     /// returned.
@@ -58,6 +66,8 @@ public:
 
 private:
     void analyseQueue();
+    /// Analyses @p specialization with trapped errors and returns whether it compiled.
+    bool analyseSpecialization(Function *specialization);
     void enqueueFunctionsOfTypeDefinition(TypeDefinition *typeDef);
     void finalizeProtocols(const Type &type);
     void checkProtocolConformance(const Type &type);
@@ -66,6 +76,18 @@ private:
 
     Package *package_;
     std::queue<Function *> queue_;
+    struct PendingSpecialization {
+        Function *generic;
+        std::vector<Type> arguments;
+        std::unique_ptr<Function> specialization;
+    };
+    /// Specializations that were created while analysing a specialization. They are only used if that specialization
+    /// compiles, as they may call it.
+    std::vector<PendingSpecialization> pendingSpecializations_;
+    /// The number of specializations being analysed.
+    size_t specializationTrials_ = 0;
+    /// Specializations that are not used, which are kept as code analysed with them may refer to them.
+    std::vector<std::unique_ptr<Function>> unusedSpecializations_;
     bool imported_;
 
     bool checkArgumentPromise(const Function *sub, const Function *super, const TypeContext &subContext,

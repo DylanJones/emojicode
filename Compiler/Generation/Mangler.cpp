@@ -105,6 +105,22 @@ void mangleGenericArguments(std::stringstream &stream, const std::map<size_t, Ty
     }
 }
 
+/// Mangles the type including its generic arguments, which mangleTypeName() omits.
+void mangleSpecializationArgument(std::stringstream &stream, const Type &type) {
+    mangleTypeName(stream, type);
+    auto unboxed = type.unboxed();
+    if (unboxed.type() == TypeType::Optional) {
+        mangleSpecializationArgument(stream, unboxed.unoptionalized());
+    }
+    else if (unboxed.canHaveGenericArguments() && !unboxed.genericArguments().empty()) {
+        stream << '<';
+        for (auto &argument : unboxed.genericArguments()) {
+            mangleSpecializationArgument(stream, argument);
+        }
+        stream << '>';
+    }
+}
+
 std::string mangleClassInfoName(Class *klass) {
     std::stringstream stream;
     stream << klass->package()->name() << "_class_info_";
@@ -145,6 +161,14 @@ std::string mangleFunction(Function *function, const std::map<size_t, Type> &gen
         stream << "_assign";
     }
     mangleGenericArguments(stream, genericArgs);
+    if (function->specializedFunction() != nullptr) {
+        stream << "$s";
+        for (auto &argument : function->specializationArguments()) {
+            stream << '<';
+            mangleSpecializationArgument(stream, argument);
+            stream << '>';
+        }
+    }
     for (auto &param : function->parameters()) {
         stream << '-';
         mangleTypeName(stream, param.type->type());

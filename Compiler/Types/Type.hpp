@@ -327,6 +327,9 @@ public:
 
     /// Returns true iff a value of the given type requires memory management.
     bool isManaged() const;
+    /// Whether this type or any type it is composed of, like a generic argument, is a generic variable, i.e. whether
+    /// the type depends on the generic arguments with which the code using it runs.
+    bool containsGenericVariables() const;
     /// Whether this is a value type whose C representation is a pointer, like 📍 and 🕳 of the c package.
     bool isCPointer() const;
     /// Whether this is a C function pointer type, 🍇🎍🌊 … 🍉. Values of such types are plain function pointers
