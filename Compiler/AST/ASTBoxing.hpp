@@ -93,6 +93,13 @@ protected:
         analyseAllocation(type);
         ASTBoxing::analyseMemoryFlow(analyser, type);
     }
+
+    /// Returns a variable that will hold the heap object in which buildStoreAddress() stores a remote value, which is
+    /// released as a temporary, or nullptr if the value is not stored in such an object or it is not a temporary.
+    Value* temporaryRemoteObjectVariable(FunctionCodeGenerator *fg) const;
+
+    /// The heap object that buildStoreAddress() allocated for a remote value, or nullptr.
+    mutable Value *remoteObject_ = nullptr;
 };
 
 class ASTSimpleOptionalToBox final : public ASTToBox {
@@ -124,6 +131,10 @@ class ASTBoxReferenceToReference final : public ASTBoxing {
     Value* generate(FunctionCodeGenerator *fg) const override;
     void toCode(PrettyStream &pretty) const override {}
     void mutateReference(ExpressionAnalyser *analyser) override;
+
+private:
+    /// Whether the value is mutated through the reference, which is only possible if the box is a mutable variable.
+    bool mutated_ = false;
 };
 
 class ASTDereference : public ASTBoxing {

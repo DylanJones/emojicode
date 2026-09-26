@@ -347,6 +347,9 @@ protected:
 private:
     explicit Type(TypeType t) : typeContent_(t) {}
 
+    /// Returns this optional or box with @p wrapped as the type it contains. A box stays outside of an optional.
+    Type rewrapped(Type wrapped) const;
+
     Type(TypeType typeType, std::vector<Type> genArgs)
         : typeContent_(typeType), genericArguments_(std::move(genArgs)) {}
 

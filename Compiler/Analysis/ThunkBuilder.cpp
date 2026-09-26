@@ -52,10 +52,10 @@ void buildBoxingThunkAst(Function *thunk, const Function *destinationFunction, c
 
 std::unique_ptr<Function> makeBoxingThunk(const std::u32string& name, TypeDefinition *owner, Package *package,
                                           SourcePosition p, std::vector<Parameter> &&params, const Type &returnType,
-                                          FunctionType functionType) {
+                                          FunctionType functionType, bool mutating = false) {
     auto function = std::make_unique<Function>(name, AccessLevel::Private, true, owner, package, p, false,
-                                               std::u32string(), false, false, Mood::Imperative, false, functionType,
-                                               false);
+                                               std::u32string(), false, mutating, Mood::Imperative, false,
+                                               functionType, false);
     function->setParameters(std::move(params));
     function->setReturnType(std::make_unique<ASTLiteralType>(returnType));
     function->setThunk();
@@ -76,7 +76,7 @@ std::unique_ptr<Function> buildBoxingThunk(const TypeContext &declarator, const 
     auto function = makeBoxingThunk(name, methodImplementation->owner(), methodImplementation->package(),
                                     methodImplementation->position(), std::move(params),
                                     method->returnType()->type().resolveOn(declarator),
-                                    methodImplementation->functionType());
+                                    methodImplementation->functionType(), methodImplementation->mutating());
     buildBoxingThunkAst(function.get(), methodImplementation, Type::noReturn());
     return function;
 }

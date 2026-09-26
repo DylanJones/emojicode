@@ -11,24 +11,22 @@
   🖍🆕 step 🔢
 
   📗
-    Creates a range from *start* to *stop*.
+    Creates a range of the integers from *start* up to, but not including,
+    *stop*. The range is empty if *stop* is not greater than *start*; to count
+    down, provide a negative step.
   📗
-  🆕 🍼 start 🔢 🍼 stop 🔢 🍇
+  🥯🆕 🍼 start 🔢 🍼 stop 🔢 🍇
     1 ➡️ 🖍step
-    ↪️ stop ◀️ start 🍇
-      -1 ➡️ 🖍step
-    🍉
   🍉
-
   📗
     Creates a range from *start* to *stop* with the provided *step*.
   📗
-  🆕 🍼 start 🔢 🍼 stop 🔢 🍼 step 🔢 🍇🍉
+  🥯🆕 🍼 start 🔢 🍼 stop 🔢 🍼 step 🔢 🍇🍉
 
   📗
-    Returns the *n*th element of the range. *n* is only valid if
-    `start + step * n` is `>= start` and `< stop`. If *n* is invalid, the
-    program will panic.
+    Returns the *n*th element of the range, `start + step * n`. *n* is only
+    valid if that is `>= start` and `< stop` (or `<= start` and `> stop` if
+    *step* is negative). If *n* is invalid, the program will panic.
   📗
   ❗️ 🐽 n 🔢 ➡️ 🔢 🍇
     start ➕ n ✖️ step ➡️ v
@@ -49,13 +47,57 @@
   📗 Returns the number of integers in this range. 📗
   ❓ 📏 ➡️ 🔢 🍇
     ↪️ step ◀️ 0 🍇
+      ↪️ stop ▶️🙌 start 🍇
+        ↩️ 0
+      🍉
       ↩️ 🤜stop ➖ start ➕ step ➕ 1🤛 ➗ step
+    🍉
+    ↪️ stop ◀️🙌 start 🍇
+      ↩️ 0
     🍉
     ↩️ 🤜stop ➖ start ➕ step ➖ 1🤛 ➗ step
   🍉
 
   📗 Returns an iterator to iterate over integers in this range. 📗
-  ❗️ 🍡 ➡️ 🌳🐚🔢🍆 🍇
-    ↩️ 🆕🌳🐚🔢🍆👇❗️
+  ❗️ 🍡 ➡️ 👣 🍇
+    ↩️ 🆕👣 start step 📏👇❓❗️
+  🍉
+🍉
+
+📗
+  Iterator over a [[⏩]].
+
+  Being a value type whose methods are inlined, iterating a range with 🔂
+  compiles to a plain counting loop. Like other values, a copy of an iterator
+  is independent of it: iterating one copy does not advance the others.
+📗
+🌍 🕊 👣 🍇
+  🐊 🍡🐚🔢🍆
+  🐊 🔂🐚🔢🍆
+
+  🖍🆕 start 🔢
+  🖍🆕 step 🔢
+  🖍🆕 count 🔢
+  🖍🆕 index 🔢
+
+  🥯🆕 🍼 start 🔢 🍼 step 🔢 🍼 count 🔢 🍇
+    0 ➡️ 🖍index
+  🍉
+
+  🥯🖍❗️ 🔽 ➡️ 🔢 🍇
+    ↪️ index ▶️🙌 count 🎍🐌🍇
+      🤯🐇💻 🔤Iterated past the end of a ⏩ with 👣🔽❗️🔤❗️
+    🍉
+    start ➕ index ✖️ step ➡️ value
+    index ⬅️➕ 1
+    ↩️ value
+  🍉
+
+  🥯❓ 🔽 ➡️ 👌 🍇
+    ↩️ index ◀️ count
+  🍉
+
+  🥯❗️ 🍡 ➡️ 👣 🍇
+    ↩️ 👇
   🍉
 🍉
