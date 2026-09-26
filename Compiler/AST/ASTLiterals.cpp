@@ -161,19 +161,31 @@ Type ASTCollectionLiteral::complyPairs(ExpressionAnalyser *analyser, const TypeE
     finder_ = nullptr;
     type_.setExact(true);
 
-    Type elementType = analyser->compiler()->sDictionary->typeForVariable(0).resolveOn(TypeContext(type_));
+    setElementType(analyser->compiler()->sDictionary->typeForVariable(0), analyser);
     for (auto it = values_.begin(); it != values_.end(); it++) {
         analyser->comply(TypeExpectation(analyser->compiler()->sString->type()), &(*it));
         if (++it == values_.end()) {
             throw CompilerError(position(), "A value must be provided for every key.");
         }
-        analyser->comply(TypeExpectation(elementType), &(*it));
+        analyser->comply(TypeExpectation(elementType_), &(*it));
     }
     initializer_ = type_.typeDefinition()->inits().lookup(U"🍪", Mood::Imperative,
                                                           { analyser->compiler()->sMemory->type(), analyser->compiler()->sMemory->type(), analyser->integer() }, type_, analyser->typeContext(),
                                                           analyser->semanticAnalyser());
     initializer_->createUnspecificReification();
     return type_;
+}
+
+void ASTCollectionLiteral::setElementType(const Type &variable, ExpressionAnalyser *analyser) {
+    auto boxed = variable.resolveOn(TypeContext(type_));
+    auto unboxed = boxed.unboxedType();
+    if (unboxed == TypeType::GenericVariable || unboxed == TypeType::LocalGenericVariable) {
+        elementType_ = boxed;  // Generic here, so stored with the witness of the type it stands for.
+        analyser->usesGenericArgumentsOf(boxed);
+    }
+    else {
+        elementType_ = boxed.unboxed().withMinimalBoxing();
+    }
 }
 
 void ASTCollectionLiteral::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCategory type) {
@@ -194,9 +206,9 @@ Type ASTCollectionLiteral::comply(ExpressionAnalyser *analyser, const TypeExpect
     finder_ = nullptr;
     type_.setExact(true);
 
-    Type elementType = analyser->compiler()->sList->typeForVariable(0).resolveOn(TypeContext(type_));
+    setElementType(analyser->compiler()->sList->typeForVariable(0), analyser);
     for (auto &valueNode : values_) {
-        analyser->comply(TypeExpectation(elementType), &valueNode);
+        analyser->comply(TypeExpectation(elementType_), &valueNode);
     }
     initializer_ = type_.typeDefinition()->inits().lookup(U"🍪", Mood::Imperative,
             { analyser->compiler()->sMemory->type(), analyser->integer() }, type_, analyser->typeContext(),

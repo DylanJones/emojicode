@@ -42,6 +42,13 @@ llvm::Value* CallCodeGenerator::markNeverReturning(llvm::Value *value, Function 
 llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, const ASTArguments &astArgs,
                                          Function *function, llvm::Value *errorPointer,
                                          const std::vector<llvm::Value *> &supplArgs) {
+    if (callee != nullptr && callee->getType() == fg_->typeHelper().erasedReference()) {
+        // The method is called on a box with the value, which is written back if the method mutates it.
+        auto box = fg_->buildErasedReferenceBox(callee, type);
+        auto value = generate(box, type, astArgs, function, errorPointer, supplArgs);
+        fg_->buildErasedReferenceWriteBack(callee, box, type, function->mutating());
+        return value;
+    }
     auto args = createArgsVector(callee, astArgs, errorPointer, supplArgs);
 
     assert(function != nullptr);
@@ -139,6 +146,12 @@ llvm::Value *MultiprotocolCallCodeGenerator::generate(llvm::Value *callee, const
                                                       llvm::Value *errorPointer, size_t multiprotocolN) {
     assert(calleeType.type() == TypeType::Box);
     assert(function != nullptr);
+    if (callee->getType() == fg()->typeHelper().erasedReference()) {
+        auto box = fg()->buildErasedReferenceBox(callee, calleeType);
+        auto value = generate(box, calleeType, args, function, errorPointer, multiprotocolN);
+        fg()->buildErasedReferenceWriteBack(callee, box, calleeType, function->mutating());
+        return value;
+    }
 
     auto argsv = createArgsVector(callee, args, errorPointer, {});
 

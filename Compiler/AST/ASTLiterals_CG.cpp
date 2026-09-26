@@ -15,6 +15,7 @@
 #include "Generation/CallCodeGenerator.hpp"
 #include "Generation/RunTimeHelper.hpp"
 #include "Generation/FunctionCodeGenerator.hpp"
+#include "Generation/LLVMTypeHelper.hpp"
 #include "Generation/StringPool.hpp"
 #include "Types/Class.hpp"
 
@@ -93,30 +94,66 @@ std::pair<llvm::Value *, llvm::Value *> EmojicodeCompiler::ASTCollectionLiteral:
 }
 
 
+Value* ASTCollectionLiteral::storeElements(FunctionCodeGenerator *fg, const std::vector<Value *> &values,
+                                           const char *name) const {
+    if (!LLVMTypeHelper::isErased(elementType_)) {
+        auto type = fg->typeHelper().llvmTypeFor(elementType_);
+        llvm::Value *current, *structure;
+        std::tie(current, structure) = prepareValueArray(fg, type, values.size(), name);
+        for (auto value : values) {
+            fg->builder().CreateStore(value, current);
+            current = fg->builder().CreateConstInBoundsGEP1_32(type, current, 1);
+        }
+        return structure;
+    }
+
+    // The elements are values of the type the generic parameter stands for, whose size is only known at run time.
+    auto entry = fg->buildTypeDescriptionEntry(elementType_);
+    auto size = fg->buildValueSize(entry);
+    auto header = fg->typeHelper().pointer();
+    auto bytes = fg->builder().CreateAdd(fg->sizeOf(header), fg->builder().CreateMul(size, fg->int64(values.size())));
+    auto structure = fg->builder().CreateAlloca(llvm::Type::getInt8Ty(fg->ctx()), bytes, name);
+    fg->builder().CreateStore(fg->generator()->runTime().ignoreBlockPtr(), structure);
+    llvm::Value *current = fg->builder().CreateGEP(header, structure, fg->int64(1));
+    for (auto value : values) {
+        auto box = fg->createEntryAlloca(fg->typeHelper().box());
+        fg->builder().CreateStore(value, box);
+        fg->buildStoreErased(current, entry, value, elementType_);
+        fg->release(box, elementType_);  // The memory holds the value instead, like a value stored directly.
+        current = fg->builder().CreateGEP(llvm::Type::getInt8Ty(fg->ctx()), current, size);
+    }
+    return structure;
+}
+
 Value* ASTCollectionLiteral::generate(FunctionCodeGenerator *fg) const {
     if (pairs_) return generatePairs(fg);
-    llvm::Value *current, *structure;
-    std::tie(current, structure) = prepareValueArray(fg, fg->typeHelper().box(), values_.size(), "items");
+    std::vector<Value *> values;
     for (auto &value : values_) {
-        fg->builder().CreateStore(value->generate(fg), current);
-        current = fg->builder().CreateConstInBoundsGEP1_32(fg->typeHelper().box(), current, 1);
+        values.emplace_back(value->generate(fg));
     }
-    return init(fg, { structure, fg->int64(values_.size()) });
+    auto stack = fg->builder().CreateStackSave();
+    auto result = init(fg, { storeElements(fg, values, "items"), fg->int64(values_.size()) });
+    fg->builder().CreateStackRestore(stack);
+    return result;
 }
 
 Value *ASTCollectionLiteral::generatePairs(FunctionCodeGenerator *fg) const {
-    llvm::Value *keys, *values, *currentKey, *currentValue;
-    auto string = fg->typeHelper().llvmTypeFor(Type(fg->compiler()->sString));
-    std::tie(currentKey, keys) = prepareValueArray(fg, string, values_.size() / 2, "keys");
-    std::tie(currentValue, values) = prepareValueArray(fg, fg->typeHelper().box(), values_.size() / 2, "values");
-    auto it = values_.begin();
-    while (it != values_.end()) {
-        fg->builder().CreateStore((*it++)->generate(fg), currentKey);
-        fg->builder().CreateStore((*it++)->generate(fg), currentValue);
-        currentKey = fg->builder().CreateConstInBoundsGEP1_32(string, currentKey, 1);
-        currentValue = fg->builder().CreateConstInBoundsGEP1_32(fg->typeHelper().box(), currentValue, 1);
+    std::vector<Value *> keyValues, values;
+    for (size_t i = 0; i < values_.size(); i += 2) {
+        keyValues.emplace_back(values_[i]->generate(fg));
+        values.emplace_back(values_[i + 1]->generate(fg));
     }
-    return init(fg, { keys, values, fg->int64(values_.size() / 2) });
+    llvm::Value *keys, *currentKey;
+    auto string = fg->typeHelper().llvmTypeFor(Type(fg->compiler()->sString));
+    std::tie(currentKey, keys) = prepareValueArray(fg, string, keyValues.size(), "keys");
+    for (auto key : keyValues) {
+        fg->builder().CreateStore(key, currentKey);
+        currentKey = fg->builder().CreateConstInBoundsGEP1_32(string, currentKey, 1);
+    }
+    auto stack = fg->builder().CreateStackSave();
+    auto result = init(fg, { keys, storeElements(fg, values, "values"), fg->int64(keyValues.size()) });
+    fg->builder().CreateStackRestore(stack);
+    return result;
 }
 
 

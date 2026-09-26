@@ -49,10 +49,38 @@ void retainAt(FunctionCodeGenerator &fg, llvm::Value *ptr, const Type &type) {
               type);
 }
 
-/// Whether the first field of a box of @p type is a protocol conformance, which boxes of the witness replace with the
-/// box info of the value's type.
+/// Whether the first field of a box of @p type is a protocol conformance (or a table of them for a multiprotocol), which
+/// boxes of the witness replace with the box info of the value's type.
 bool hasConformance(const Type &type) {
-    return type.type() == TypeType::Box && type.boxedFor().type() == TypeType::Protocol;
+    return type.type() == TypeType::Box && (type.boxedFor().type() == TypeType::Protocol ||
+                                            type.boxedFor().type() == TypeType::MultiProtocol);
+}
+
+/// Returns the conformance of the value in the box to which @p box points, whose box info is @p boxInfo, to the
+/// protocol or multiprotocol of @p type, which a box of @p type points to.
+llvm::Value* buildConformance(FunctionCodeGenerator &fg, llvm::Value *box, llvm::Value *boxInfo, const Type &type) {
+    auto boxedFor = type.boxedFor();
+    if (boxedFor.type() == TypeType::Protocol) {
+        return fg.buildFindProtocolConformance(box, boxInfo, boxedFor.protocol()->rtti());
+    }
+    auto &protocols = boxedFor.protocols();
+    auto arrayType = llvm::ArrayType::get(fg.typeHelper().pointer(), protocols.size());
+    auto conformances = fg.createEntryAlloca(arrayType);
+    for (size_t i = 0; i < protocols.size(); i++) {
+        auto conformance = fg.buildFindProtocolConformance(box, boxInfo, protocols[i].protocol()->rtti());
+        fg.builder().CreateStore(conformance, fg.builder().CreateConstInBoundsGEP2_32(arrayType, conformances, 0, i));
+    }
+    return fg.builder().CreateCall(fg.generator()->runTime().multiprotocolTable(),
+                                   { conformances, fg.int64(protocols.size()) });
+}
+
+/// Returns the box info to which @p conformance, the first field of a box of @p type, points.
+llvm::Value* buildBoxInfoFromConformance(FunctionCodeGenerator &fg, llvm::Value *conformance, const Type &type) {
+    if (type.boxedFor().type() == TypeType::MultiProtocol) {  // A table of conformances, whose first one is used.
+        conformance = fg.builder().CreateLoad(fg.typeHelper().pointer(), conformance);
+    }
+    auto boxInfoPtr = fg.builder().CreateConstInBoundsGEP2_32(fg.typeHelper().protocolConformance(), conformance, 0, 2);
+    return fg.builder().CreateLoad(fg.typeHelper().pointer(), boxInfoPtr);
 }
 
 llvm::Function* createWitnessFunction(CodeGenerator *generator, llvm::FunctionType *type, const std::string &name) {
@@ -133,9 +161,7 @@ llvm::Function* ValueWitnessBuilder::buildLoad(const Type &type, const std::stri
                 auto infoPtr = fg.buildGetBoxInfoPtr(box);
                 auto conformance = fg.builder().CreateLoad(fg.typeHelper().pointer(), infoPtr);
                 fg.createIf(fg.builder().CreateIsNotNull(conformance), [&] {
-                    auto boxInfoPtr = fg.builder().CreateConstInBoundsGEP2_32(fg.typeHelper().protocolConformance(),
-                                                                              conformance, 0, 2);
-                    fg.builder().CreateStore(fg.builder().CreateLoad(fg.typeHelper().pointer(), boxInfoPtr), infoPtr);
+                    fg.builder().CreateStore(buildBoxInfoFromConformance(fg, conformance, type), infoPtr);
                 });
             }
             break;
@@ -178,9 +204,7 @@ llvm::Function* ValueWitnessBuilder::buildStore(const Type &type, const std::str
             if (hasConformance(type)) {
                 auto boxInfo = fg.builder().CreateLoad(fg.typeHelper().pointer(), fg.buildGetBoxInfoPtr(box));
                 fg.createIf(fg.builder().CreateIsNotNull(boxInfo), [&] {
-                    auto rtti = type.boxedFor().protocol()->rtti();
-                    auto conformance = fg.buildFindProtocolConformance(box, boxInfo, rtti);
-                    fg.builder().CreateStore(conformance, fg.buildGetBoxInfoPtr(raw));
+                    fg.builder().CreateStore(buildConformance(fg, box, boxInfo, type), fg.buildGetBoxInfoPtr(raw));
                 });
             }
             fg.retain(raw, type);

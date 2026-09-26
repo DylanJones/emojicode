@@ -75,6 +75,7 @@ compilation_tests = [
     "selfConstraint",
     "numericMatrix",
     "directCalls",
+    "genericStorage",
     "protocolValueTypeRemote",
     "protocolEnum",
     "protocolGenericLayerClass",
@@ -182,6 +183,7 @@ unoptimized_tests = [
     "remoteBoxRelease",
     "boxValueSemantics",
     "borrowedBoxes",
+    "genericStorage",
 ]
 # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
 # NAME.specializations. A function that is not specialized, but called generically, does not change what a program

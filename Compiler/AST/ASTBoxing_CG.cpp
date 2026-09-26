@@ -9,6 +9,7 @@
 #include "ASTBoxing.hpp"
 #include "ASTInitialization.hpp"
 #include "Generation/FunctionCodeGenerator.hpp"
+#include "Generation/LLVMTypeHelper.hpp"
 #include "Generation/ProtocolsTableGenerator.hpp"
 #include "Generation/RunTimeHelper.hpp"
 #include "Types/Protocol.hpp"
@@ -206,19 +207,27 @@ Value* ASTStoreTemporarily::generate(FunctionCodeGenerator *fg) const {
     else {
         fg->builder().CreateStore(expr_->generate(fg), store);
     }
+    if (LLVMTypeHelper::isErasedReference(expressionType())) {
+        return fg->buildErasedReference(store);
+    }
     return store;
 }
 
 Value* ASTBoxReferenceToReference::generate(FunctionCodeGenerator *fg) const {
     auto containedType = expr_->expressionType().unboxed().unoptionalized();
-    if (fg->typeHelper().isRemote(containedType)) {
-        auto box = expr_->generate(fg);
-        if (mutated_) {  // A mutation must not change copies of the box, which share the object storing the value.
-            fg->makeRemoteBoxValueUnique(box, containedType);
+    auto reference = expr_->generate(fg);
+    auto address = fg->buildErasedReferenceAddress(reference);
+    auto entry = fg->builder().CreateExtractValue(reference, 1);
+    // A reference to a value in memory refers to the value itself.
+    return fg->createIfElsePhi(fg->builder().CreateIsNull(entry), [&]() -> Value* {
+        if (fg->typeHelper().isRemote(containedType)) {
+            if (mutated_) {  // A mutation must not change copies of the box, which share the object storing the value.
+                fg->makeRemoteBoxValueUnique(address, containedType);
+            }
+            return fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxValuePtr(address));
         }
-        return fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxValuePtr(box));
-    }
-    return fg->buildGetBoxValuePtr(expr_->generate(fg));
+        return fg->buildGetBoxValuePtr(address);
+    }, [&] { return address; });
 }
 
 void ASTBoxReferenceToReference::mutateReference(ExpressionAnalyser *analyser) {
@@ -227,6 +236,9 @@ void ASTBoxReferenceToReference::mutateReference(ExpressionAnalyser *analyser) {
 }
 
 Value* ASTDereference::generate(FunctionCodeGenerator *fg) const {
+    if (LLVMTypeHelper::isErasedReference(expr_->expressionType())) {
+        return handleResult(fg, fg->buildLoadErased(expr_->generate(fg), expressionType()));
+    }
     auto ptr = expr_->generate(fg);
     auto val = fg->builder().CreateLoad(fg->typeHelper().llvmTypeFor(expressionType()), ptr);
     if (expressionType().isManaged()) {
@@ -240,16 +252,18 @@ void ASTDereference::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCateg
 }
 
 Value* ASTBoxReferenceToSimple::generate(FunctionCodeGenerator *fg) const {
-    auto box = expr_->generate(fg);
+    auto reference = expr_->generate(fg);
+    auto box = fg->buildErasedReferenceAddress(reference);
+    auto entry = fg->builder().CreateExtractValue(reference, 1);
     auto containedType = expr_->expressionType().unboxed().unoptionalized();
-    llvm::Value *valuePtr;
 
-    if (fg->typeHelper().isRemote(containedType)) {
-        valuePtr = fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxValuePtr(box));
-    }
-    else {
-        valuePtr = getBoxValuePtr(box, fg);
-    }
+    // A reference to a value in memory refers to the value itself.
+    auto valuePtr = fg->createIfElsePhi(fg->builder().CreateIsNull(entry), [&]() -> Value* {
+        if (fg->typeHelper().isRemote(containedType)) {
+            return fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxValuePtr(box));
+        }
+        return getBoxValuePtr(box, fg);
+    }, [&] { return box; });
 
     auto val = fg->builder().CreateLoad(fg->typeHelper().llvmTypeFor(containedType), valuePtr);
     if (expressionType().isManaged()) {

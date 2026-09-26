@@ -55,6 +55,10 @@ public:
     /// Must be called when User is User::Function, after the called function has returned.
     void restoreStack();
 
+    /// Returns a pointer to the entry describing the type for which @p type, a generic variable, stands, without
+    /// copying it. It points into the generic arguments of the callee or the function, and lives as long as they do.
+    llvm::Value* entryFor(const Type &type);
+
 private:
     void addType(const Type &type);
     llvm::Value* finish();

@@ -84,6 +84,27 @@ llvm::Value* TypeDescriptionGenerator::extractTypeDescriptionPtr() {
     return fg_->builder().CreateConstInBoundsGEP2_32(type, ptr, 0, 1);
 }
 
+llvm::Value* TypeDescriptionGenerator::entryFor(const Type &otype) {
+    auto type = otype.unboxed();
+    llvm::Value *gargs;
+    if (type.type() == TypeType::LocalGenericVariable) {
+        gargs = fg_->functionGenericArgs();
+    }
+    else {
+        assert(type.type() == TypeType::GenericVariable);
+        if (!fg_->calleeType().is<TypeType::TypeAsValue>() &&
+            fg_->calleeType().typeDefinition()->isGenericDynamismDisabled()) {
+            throw CompilerError(fg_->position(), "Generic dynamism is disabled in this type.");
+        }
+        gargs = extractTypeDescriptionPtr();
+    }
+    auto index = type.genericVariableIndex();
+    if (index == 0) {
+        return gargs;
+    }
+    return fg_->builder().CreateCall(fg_->generator()->runTime().indexTypeDescription(), { gargs, fg_->int64(index) });
+}
+
 void TypeDescriptionGenerator::addDynamic(llvm::Value *gargs, size_t index) {
     dynamic_++;
     auto idf = fg_->generator()->runTime().indexTypeDescription();

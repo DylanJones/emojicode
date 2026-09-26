@@ -114,6 +114,30 @@ public:
     /// Makes the box to which @p box points store its value in @p object, a managable of type @p managable, and returns
     /// a pointer to the value in the object.
     llvm::Value* buildSetRemoteBoxObject(llvm::Value *box, llvm::StructType *managable, llvm::Value *object);
+    /// Builds an erased reference (see LLVMTypeHelper::erasedReference()) to @p address, which points to a value in
+    /// memory of the type described by the type description entry @p entry, or to a box if @p entry is nullptr.
+    llvm::Value* buildErasedReference(llvm::Value *address, llvm::Value *entry = nullptr);
+    /// Returns the address to which the erased reference @p reference refers.
+    llvm::Value* buildErasedReferenceAddress(llvm::Value *reference);
+    /// Returns a pointer to a box that holds the value to which the erased @p reference, a reference to a box of
+    /// @p type, refers. If the reference refers to a value in memory, the box holds a copy of it, which
+    /// buildErasedReferenceWriteBack() writes back after a mutation and releases.
+    llvm::Value* buildErasedReferenceBox(llvm::Value *reference, const Type &type);
+    /// Writes the copy in @p box, obtained from buildErasedReferenceBox(), back to the memory to which @p reference
+    /// refers and releases it, if it is a copy.
+    void buildErasedReferenceWriteBack(llvm::Value *reference, llvm::Value *box, const Type &type, bool mutated);
+    /// Returns a pointer to the type description entry of the type for which @p type, a generic variable, stands.
+    llvm::Value* buildTypeDescriptionEntry(const Type &type);
+    /// Returns the size of a value in memory of the type described by the type description entry @p entry.
+    llvm::Value* buildValueSize(llvm::Value *entry);
+    /// Returns a box of @p type (not a reference) with a copy of the value to which the erased @p reference refers,
+    /// which the box owns.
+    llvm::Value* buildLoadErased(llvm::Value *reference, const Type &type);
+    /// Stores a copy of the value in @p box, a box of @p type, into memory at @p address, where values of the type
+    /// described by @p entry are stored.
+    void buildStoreErased(llvm::Value *address, llvm::Value *entry, llvm::Value *box, const Type &type);
+    /// Releases the value at @p address, which is of the type described by @p entry.
+    void buildReleaseErased(llvm::Value *address, llvm::Value *entry);
     /// Makes the value of the box to which @p box points unique, using the function of the protocol @p conformance,
     /// if the value is stored remotely. @p box must point to a variable that owns the box.
     void makeBoxValueUnique(llvm::Value *conformance, llvm::Value *box);
