@@ -1,0 +1,72 @@
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+
+🐇 🐡 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ♻️ 🍇
+    😀 🔤deinit🔤❗️
+    😀 name❗️
+  🍉
+🍉
+
+💭 Too large to be stored in a box, so boxes store it in an object on the heap.
+🕊 🐘 🍇
+  🐊 🔼
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 d 🔢
+  🖍🆕 fish 🐡
+  🆕 🍼 a 🔢 name 🔡 🍇
+    0 ➡️ 🖍b
+    0 ➡️ 🖍c
+    0 ➡️ 🖍d
+    🆕🐡 name❗️ ➡️ 🖍fish
+  🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+🍉
+
+🕊 🎁🐚T 🔼🍆 🍇
+  🖍🆕 value T
+  🖍🆕 previous T
+  🆕 🍼 value T 🍇
+    value ➡️ 🖍previous
+  🍉
+  🖍❗️ 🔄 new T 🍇
+    value ➡️ 🖍previous
+    new ➡️ 🖍value
+  🍉
+  ❗️ 🧮 ➡️ 🔢 🍇
+    ↩️ 📏 value❗️ ➕ 📏 previous❗️
+  🍉
+🍉
+
+🐇 🧰 🍇
+  🐇❗️ 👀🐚T 🔼🍆 value T ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+  🐇❗️ 📐 value 🔼 ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+🍉
+
+🏁 🍇
+  😀 🔡 👀🐇🧰 🆕🐘 1 🔤passed to a generic method🔤❗️❗️❗️❗️
+  😀 🔡 📐🐇🧰 🆕🐘 2 🔤passed as a protocol🔤❗️❗️❗️❗️
+
+  🆕🎁🐚🐘🍆 🆕🐘 10 🔤first🔤❗️❗️ ➡️ 🖍🆕 gift
+  🔄gift 🆕🐘 20 🔤second🔤❗️❗️
+  😀 🔡 🧮gift❗️❗️❗️
+  🔄gift 🆕🐘 30 🔤third🔤❗️❗️
+  😀 🔡 🧮gift❗️❗️❗️
+
+  🖍🆕 stored 🔼
+  🆕🐘 3 🔤stored🔤❗️ ➡️ 🖍stored
+  stored ➡️ copy
+  😀 🔡 📏copy❗️❗️❗️
+  😀 🔤end🔤❗️
+🍉

@@ -93,6 +93,9 @@ protected:
         analyseAllocation(type);
         ASTBoxing::analyseMemoryFlow(analyser, type);
     }
+
+    /// The heap object that buildStoreAddress() allocated for a remote value, or nullptr.
+    mutable Value *remoteObject_ = nullptr;
 };
 
 class ASTSimpleOptionalToBox final : public ASTToBox {

@@ -93,6 +93,7 @@ compilation_tests = [
     "errorHandlerDiscardMem",
     "valueTypeCopySelf",
     "valueTypeBoxCopySelf",
+    "remoteBoxRelease",
     "includer",
     "threads",
     "linkHints",

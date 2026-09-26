@@ -114,12 +114,18 @@ Value* ASTSimpleToSimpleOptional::generate(FunctionCodeGenerator *fg) const {
 
 Value* ASTSimpleToBox::generate(FunctionCodeGenerator *fg) const {
     auto box = fg->createEntryAlloca(fg->typeHelper().box());
+    remoteObject_ = nullptr;
     if (isValueTypeInit()) {
         setBoxInfo(box, fg);
         valueTypeInit(fg, buildStoreAddress(box, fg));
     }
     else {
         getPutValueIntoBox(box, expr_->generate(fg), fg);
+    }
+    // The value is released as a temporary, but a heap object storing it is not. It is released after the value,
+    // which is in it.
+    if (remoteObject_ != nullptr && !allocatesOnStack() && producesTemporaryObject()) {
+        fg->addTemporaryRemoteObject(remoteObject_);
     }
     return fg->builder().CreateLoad(fg->typeHelper().box(), box);
 }
@@ -146,6 +152,7 @@ Value* ASTToBox::buildStoreAddress(Value *box, FunctionCodeGenerator *fg) const 
         auto boxPtr1 = fg->buildGetBoxValuePtr(box);
         auto boxPtr2 = fg->buildGetBoxValuePtrAfter(box, fg->typeHelper().pointer(), fg->typeHelper().pointer());
         auto alloc = allocate(fg, mngType);
+        remoteObject_ = alloc;
         auto valuePtr = fg->managableGetValuePtr(mngType, alloc);
         // The first element in the value area is a direct pointer to the struct.
         fg->builder().CreateStore(valuePtr, boxPtr1);
