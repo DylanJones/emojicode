@@ -292,9 +292,18 @@ Type Type::resolveOn(const TypeContext &typeContext) const {
         return t;
     }
 
-    while (t.unboxedType() == TypeType::LocalGenericVariable && typeContext.function() == t.localResolutionConstraint()
-           && typeContext.functionGenericArguments() != nullptr) {
+    if (t.unboxedType() == TypeType::LocalGenericVariable && typeContext.function() == t.localResolutionConstraint()
+        && typeContext.functionGenericArguments() != nullptr) {
+        // The generic arguments are types of the calling code, which must not be resolved again. A recursive call
+        // with its own generic variable would otherwise resolve it forever.
         t = (*typeContext.functionGenericArguments())[t.genericVariableIndex()];
+        if (ref) {
+            t.setReference();
+        }
+        if (mut) {
+            t.setMutable(true);
+        }
+        return t;
     }
 
     if (typeContext.calleeType().canHaveGenericArguments()) {

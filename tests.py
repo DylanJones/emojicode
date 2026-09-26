@@ -73,6 +73,7 @@ compilation_tests = [
     "genericToConstraintOptional",
     "genericsInferenceValueType",
     "genericsInferenceClass",
+    "genericRecursion",
     "variableInitAndScoping",
     "varInitPath",
     "valueTypeRemoteAdditional",
