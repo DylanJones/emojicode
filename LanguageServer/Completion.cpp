@@ -29,72 +29,99 @@ const int Text = 1, Method = 2, Field = 5, Variable = 6, Class = 7, Interface = 
           Snippet = 15, Struct = 22, TypeParameter = 25;
 }
 
-/// A keyword with the words it can be found by, and a snippet that inserts it with what usually follows.
+/// Where a keyword can be written, as flags.
+namespace Places {
+/// At the start of a statement outside of all types and blocks.
+const int TopLevel = 1;
+/// At the start of a member of a class, value type or enumeration, e.g. a method.
+const int Member = 2;
+/// In the code of a method or block.
+const int Code = 4;
+/// After the start of a declaration, where types are written, e.g. the type of an instance variable.
+const int Declaration = 8;
+/// At the start of a member of a protocol, which only declares methods.
+const int ProtocolMember = 16;
+/// Where the grammar can't be followed, e.g. after an invalid token.
+const int Anywhere = TopLevel | Member | Code | Declaration;
+}
+
+/// A keyword with the words it can be found by, a snippet that inserts it with what usually follows, and the
+/// Places where it can be written.
 struct Keyword {
     const char *words;
     const char *emoji;
     const char *description;
     const char *snippet;
+    int places;
 };
 
 const Keyword kKeywords[] = {
-    {"class", "🐇", "Defines a class.", "🐇 ${1:🐟} 🍇\n\t$0\n🍉"},
-    {"value type struct", "🕊", "Defines a value type.", "🕊 ${1:🐟} 🍇\n\t$0\n🍉"},
-    {"enumeration enum", "🔘", "Defines an enumeration.", "🔘 ${1:🚦} 🍇\n\t🆕▶️${2:🔴}\n🍉"},
-    {"protocol interface", "🐊", "Defines a protocol.", "🐊 ${1:🐟} 🍇\n\t$0\n🍉"},
-    {"method function func def", "❗️", "Defines a method.", "❗️ ${1:🐽} ${2:value} ${3:🔢} 🍇\n\t$0\n🍉"},
-    {"initializer init constructor", "🆕", "Defines an initializer, or creates an instance.", "🆕 🍇\n\t$0\n🍉"},
-    {"start main", "🏁", "The code that runs when the program starts.", "🏁 🍇\n\t$0\n🍉"},
-    {"if", "↪️", "Runs a block if a condition is true.", "↪️ ${1:condition} 🍇\n\t$0\n🍉"},
-    {"else", "🙅", "Runs a block if no condition before was true.", "🙅 🍇\n\t$0\n🍉"},
+    {"class", "🐇", "Defines a class.", "🐇 ${1:🐟} 🍇\n\t$0\n🍉", Places::TopLevel},
+    {"value type struct", "🕊", "Defines a value type.", "🕊 ${1:🐟} 🍇\n\t$0\n🍉", Places::TopLevel},
+    {"enumeration enum", "🔘", "Defines an enumeration.", "🔘 ${1:🚦} 🍇\n\t🆕▶️${2:🔴}\n🍉", Places::TopLevel},
+    {"protocol interface", "🐊", "Defines a protocol.", "🐊 ${1:🐟} 🍇\n\t$0\n🍉", Places::TopLevel},
+    {"conformance conform protocol interface", "🐊", "Declares that the type conforms to a protocol.", "🐊 ${1:🐟}",
+     Places::Member},
+    {"method function func def", "❗️", "Defines a method.", "❗️ ${1:🐽} ${2:value} ${3:🔢} 🍇\n\t$0\n🍉", Places::Member},
+    {"method function func def", "❗️", "Declares a method that the types conforming to the protocol define.",
+     "❗️ ${1:🐽} ${2:value} ${3:🔢}", Places::ProtocolMember},
+    {"initializer init constructor", "🆕", "Defines an initializer.", "🆕 🍇\n\t$0\n🍉", Places::Member},
+    {"start main", "🏁", "The code that runs when the program starts.", "🏁 🍇\n\t$0\n🍉", Places::TopLevel},
+    {"if", "↪️", "Runs a block if a condition is true.", "↪️ ${1:condition} 🍇\n\t$0\n🍉", Places::Code},
+    {"else", "🙅", "Runs a block if no condition before was true.", "🙅 🍇\n\t$0\n🍉", Places::Code},
     {"elseif", "🙅↪️", "Runs a block if no condition before was true and this one is.",
-     "🙅↪️ ${1:condition} 🍇\n\t$0\n🍉"},
+     "🙅↪️ ${1:condition} 🍇\n\t$0\n🍉", Places::Code},
     {"for foreach each loop iterate", "🔂", "Runs a block for each element of a collection.",
-     "🔂 ${1:element} ${2:collection} 🍇\n\t$0\n🍉"},
-    {"while repeat loop", "🔁", "Runs a block while a condition is true.", "🔁 ${1:condition} 🍇\n\t$0\n🍉"},
-    {"return", "↩️", "Returns from a method.", "↩️ $0"},
-    {"variable var let mutable declare", "🖍🆕", "Declares a mutable variable.", "🖍🆕 ${1:name} ${2:🔢}"},
-    {"new create instance", "🆕", "Creates an instance.", "🆕${1:🐟}❗️"},
-    {"this self", "👇", "The instance on which the method was called.", nullptr},
-    {"super parent", "⤴️", "Calls the method or initializer of the superclass.", nullptr},
-    {"true yes", "👍", "True.", nullptr},
-    {"false no", "👎", "False.", nullptr},
-    {"nil null none nothing novalue", "🤷‍♀️", "No value.", nullptr},
-    {"string text", "🔤", "A string literal.", "🔤$1🔤"},
-    {"interpolation interpolate", "🧲", "Inserts a value into a string.", "🧲$1🧲"},
-    {"comment", "💭", "A comment.", "💭 $0"},
-    {"documentation doc", "📗", "Documents the definition that follows.", "📗 $1 📗"},
-    {"print output log", "😀", "Prints a string.", "😀 🔤$1🔤❗️"},
-    {"unwrap force optional", "🍺", "Unwraps an optional, which must not be empty.", nullptr},
-    {"try rethrow reraise", "🔺", "Raises the error of a call that raised one.", nullptr},
-    {"cast as", "🔲", "Casts a value to a type.", "🔲 ${1:value} ${2:🔢}"},
-    {"error throw raise", "🚨", "Raises an error.", "🚨 $0"},
+     "🔂 ${1:element} ${2:collection} 🍇\n\t$0\n🍉", Places::Code},
+    {"while repeat loop", "🔁", "Runs a block while a condition is true.", "🔁 ${1:condition} 🍇\n\t$0\n🍉", Places::Code},
+    {"return", "↩️", "Returns from a method.", "↩️ $0", Places::Code},
+    {"variable var let mutable declare", "🖍🆕", "Declares a mutable variable.", "🖍🆕 ${1:name} ${2:🔢}",
+     Places::Code | Places::Member},
+    {"new create instance", "🆕", "Creates an instance.", "🆕${1:🐟}❗️", Places::Code},
+    {"this self", "👇", "The instance on which the method was called.", nullptr, Places::Code},
+    {"super parent", "⤴️", "Calls the method or initializer of the superclass.", nullptr, Places::Code},
+    {"true yes", "👍", "True.", nullptr, Places::Code},
+    {"false no", "👎", "False.", nullptr, Places::Code},
+    {"nil null none nothing novalue", "🤷‍♀️", "No value.", nullptr, Places::Code},
+    {"string text", "🔤", "A string literal.", "🔤$1🔤", Places::Code},
+    {"interpolation interpolate", "🧲", "Inserts a value into a string.", "🧲$1🧲", Places::Code},
+    {"comment", "💭", "A comment.", "💭 $0",
+     Places::TopLevel | Places::Member | Places::ProtocolMember | Places::Code | Places::Declaration},
+    {"documentation doc", "📗", "Documents the definition that follows.", "📗 $1 📗",
+     Places::TopLevel | Places::Member | Places::ProtocolMember},
+    {"print output log", "😀", "Prints a string.", "😀 🔤$1🔤❗️", Places::Code},
+    {"unwrap force optional", "🍺", "Unwraps an optional, which must not be empty.", nullptr, Places::Code},
+    {"try rethrow reraise", "🔺", "Raises the error of a call that raised one.", nullptr, Places::Code},
+    {"cast as", "🔲", "Casts a value to a type.", "🔲 ${1:value} ${2:🔢}", Places::Code},
+    {"error throw raise", "🚨", "Raises an error.", "🚨 $0", Places::Code},
     {"catch handle error", "🆗", "Handles the error a call raises.",
-     "🆗 ${1:value} ${2:call} 🍇\n\t$0\n🍉 🙅 ${3:error} 🍇\n\t\n🍉"},
-    {"unsafe", "☣️", "Allows unsafe code in a block.", "☣️ 🍇\n\t$0\n🍉"},
-    {"import package", "📦", "Imports a package.", "📦 ${1:package} 🏠"},
-    {"include file", "📜", "Includes another file of this package.", "📜 🔤$1🔤"},
-    {"list array collection", "🍿", "A list or dictionary literal.", "🍿 $1 🍆"},
-    {"optional maybe", "🍬", "Makes a type optional.", nullptr},
-    {"generic", "🐚", "Generic arguments or parameters.", "🐚$1🍆"},
-    {"export public", "🌍", "Exports a type from the package.", nullptr},
-    {"final sealed", "🔏", "Prevents overriding or subclassing.", nullptr},
-    {"override", "✒️", "Overrides a method of the superclass.", nullptr},
-    {"public", "🔓", "Public access.", nullptr},
-    {"private", "🔒", "Private access.", nullptr},
-    {"protected", "🔐", "Protected access.", nullptr},
-    {"required", "🔑", "Requires subclasses to implement the initializer.", nullptr},
-    {"static typemethod", "🐇", "Makes a method a type method.", nullptr},
-    {"and", "🤝", "Logical and.", nullptr},
-    {"or", "👐", "Logical or.", nullptr},
-    {"equal equals", "🙌", "Whether two values are equal.", nullptr},
-    {"plus add", "➕", "Adds.", nullptr},
-    {"minus subtract", "➖", "Subtracts.", nullptr},
-    {"times multiply", "✖️", "Multiplies.", nullptr},
-    {"divide", "➗", "Divides.", nullptr},
-    {"remainder modulo mod", "🚮", "The remainder of a division.", nullptr},
-    {"call closure", "⁉️", "Calls a callable.", nullptr},
-    {"group parenthesis", "🤜", "Groups an expression.", "🤜$1🤛"},
+     "🆗 ${1:value} ${2:call} 🍇\n\t$0\n🍉 🙅 ${3:error} 🍇\n\t\n🍉", Places::Code},
+    {"deinitializer deinit destructor", "♻️", "Defines code that runs when an instance is released.",
+     "♻️ 🍇\n\t$0\n🍉", Places::Member},
+    {"unsafe", "☣️", "Allows unsafe code in a block.", "☣️ 🍇\n\t$0\n🍉", Places::Code},
+    {"import package", "📦", "Imports a package.", "📦 ${1:package} 🏠", Places::TopLevel},
+    {"include file", "📜", "Includes another file of this package.", "📜 🔤$1🔤", Places::TopLevel},
+    {"list array collection", "🍿", "A list or dictionary literal.", "🍿 $1 🍆", Places::Code},
+    {"optional maybe", "🍬", "Makes a type optional.", nullptr, Places::Code | Places::Declaration},
+    {"generic", "🐚", "Generic arguments or parameters.", "🐚$1🍆", Places::Code | Places::Declaration},
+    {"export public", "🌍", "Exports a type from the package.", nullptr, Places::TopLevel},
+    {"final sealed", "🔏", "Prevents overriding or subclassing.", nullptr, Places::TopLevel | Places::Member},
+    {"override", "✒️", "Overrides a method of the superclass.", nullptr, Places::Member},
+    {"public", "🔓", "Public access.", nullptr, Places::Member},
+    {"private", "🔒", "Private access.", nullptr, Places::Member},
+    {"protected", "🔐", "Protected access.", nullptr, Places::Member},
+    {"required", "🔑", "Requires subclasses to implement the initializer.", nullptr, Places::Member},
+    {"static typemethod", "🐇", "Makes a method a type method.", nullptr, Places::Member},
+    {"and", "🤝", "Logical and.", nullptr, Places::Code},
+    {"or", "👐", "Logical or.", nullptr, Places::Code},
+    {"equal equals", "🙌", "Whether two values are equal.", nullptr, Places::Code},
+    {"plus add", "➕", "Adds.", nullptr, Places::Code},
+    {"minus subtract", "➖", "Subtracts.", nullptr, Places::Code},
+    {"times multiply", "✖️", "Multiplies.", nullptr, Places::Code},
+    {"divide", "➗", "Divides.", nullptr, Places::Code},
+    {"remainder modulo mod", "🚮", "The remainder of a division.", nullptr, Places::Code},
+    {"call closure", "⁉️", "Calls a callable.", nullptr, Places::Code},
+    {"group parenthesis", "🤜", "Groups an expression.", "🤜$1🤛", Places::Code},
 };
 
 /// Emoji that are shown with U+FE0F in source code, as they default to text presentation.
@@ -164,7 +191,109 @@ bool isOperator(const std::u32string &name) {
     return !name.empty() && operators.find(name.front()) != std::u32string::npos;
 }
 
+/// Whether @p token is an attribute of a declaration, or ends a block before a statement on the same line, so that a
+/// statement can still start after it.
+bool precedesStatement(const TokenSpan &token) {
+    static const std::u32string attributes = U"🌍🔏📻🥯⚠✒☣🖍🔑🔓🔒🔐";
+    switch (token.type) {
+        case TokenType::Decorator:
+        case TokenType::BlockEnd:
+        case TokenType::DocumentationComment:
+        case TokenType::PackageDocumentationComment:
+        case TokenType::MultilineComment:
+            return true;
+        default:
+            return token.value.size() == 1 && attributes.find(token.value[0]) != std::u32string::npos;
+    }
+}
+
 }  // namespace
+
+Completer::Place Completer::place(size_t offset) const {
+    auto &text = source_.text;
+    auto &tokens = source_.tokens;
+    auto lineStart = [&](size_t index) { return index - source_.lines.lineAndCharacter(index).second; };
+    // Whether only tokens that can precede a statement come before token @p index on its line.
+    auto headsLine = [&](size_t index) {
+        auto start = lineStart(tokens[index].start);
+        for (auto j = index; j > 0 && tokens[j - 1].start >= start; j--) {
+            if (!precedesStatement(tokens[j - 1])) return false;
+        }
+        return true;
+    };
+    // What each open 🍇 contains. A 🍇 at the top level opens the body of a type if a type was declared since the
+    // last body, maybe on an earlier line; in the generic arguments of the declaration, it is a callable type. All
+    // other blocks contain code.
+    std::vector<Place::Kind> blocks;
+    auto declared = Place::Code;
+    size_t generics = 0;  // The 🐚 at the top level that are not closed yet.
+    size_t i = 0;
+    for (; i < tokens.size() && tokens[i].end <= offset; i++) {
+        auto &token = tokens[i];
+        if (token.type == TokenType::BlockBegin) {
+            blocks.push_back(blocks.empty() ? declared : Place::Code);
+            if (blocks.size() == 1 && generics == 0) declared = Place::Code;
+        }
+        else if (token.type == TokenType::BlockEnd) {
+            if (!blocks.empty()) blocks.pop_back();
+        }
+        else if (blocks.empty()) {
+            switch (token.type) {
+                case TokenType::Class:
+                case TokenType::ValueType:
+                case TokenType::Enumeration:
+                    declared = Place::TypeBody;
+                    generics = 0;
+                    break;
+                case TokenType::Protocol:
+                    declared = Place::ProtocolBody;
+                    generics = 0;
+                    break;
+                case TokenType::Generic:
+                    generics++;
+                    break;
+                case TokenType::Identifier:
+                    if (token.value == U"🍆") {
+                        if (generics > 0) generics--;
+                    }
+                    // A statement like 🏁 that is no type declaration starts. Elsewhere, e.g. as the name of a type,
+                    // these are types.
+                    else if ((token.value == U"🏁" || token.value == U"📦" || token.value == U"📜" ||
+                              token.value == U"🔗") && headsLine(i)) {
+                        declared = Place::Code;
+                        generics = 0;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    // The lexer stops at an invalid token, e.g. an ASCII operator, so the grammar can't be followed after it.
+    if (i == tokens.size()) {
+        for (auto k = tokens.empty() ? 0 : tokens.back().end; k < std::min(offset, text.size()); k++) {
+            if (!isSkipped(text[k]) && text[k] != 0xFE0F) return Place{Place::Unknown, false};
+        }
+    }
+
+    Place place{blocks.empty() ? Place::TopLevel : blocks.back(), true};
+    // The tokens before the offset on its line are the last ones that the loop went through.
+    auto start = lineStart(offset);
+    auto first = i;
+    while (first > 0 && tokens[first - 1].start >= start) first--;
+    for (auto j = first; j < i; j++) {
+        auto &token = tokens[j];
+        auto inTypeBody = place.kind == Place::TypeBody || place.kind == Place::ProtocolBody;
+        if (inTypeBody && token.type == TokenType::LeftProductionOperator) {
+            place.kind = Place::Code;  // The default value of an instance variable.
+        }
+        // In a type body, 🐇 is the attribute that makes the method after it a type method.
+        if (!precedesStatement(token) && !(inTypeBody && token.type == TokenType::Class)) {
+            place.statementStart = false;
+        }
+    }
+    return place;
+}
 
 size_t mapOffset(const std::u32string &now, const std::u32string &before, size_t offset) {
     auto limit = std::min(now.size(), before.size());
@@ -280,11 +409,9 @@ void Completer::addVariables(size_t offset, const std::string &word, std::vector
     }
 }
 
-void Completer::addKeywords(const std::string &word, std::vector<CompletionItem> *items) const {
-    if (word.empty()) {
-        return;
-    }
+void Completer::addKeywords(const std::string &word, int places, std::vector<CompletionItem> *items) const {
     for (auto &keyword : kKeywords) {
+        if ((keyword.places & places) == 0) continue;
         auto quality = match(word, keyword.words);
         if (quality < 0) continue;
         CompletionItem item{std::string(keyword.emoji) + " " + keyword.words, Kind::Keyword, keyword.description,
@@ -299,7 +426,8 @@ void Completer::addKeywords(const std::string &word, std::vector<CompletionItem>
     }
 }
 
-void Completer::addTypesAndMethods(const std::string &word, std::vector<CompletionItem> *items) const {
+void Completer::addTypesAndMethods(const std::string &word, bool methods,
+                                   std::vector<CompletionItem> *items) const {
     if (analysis_ == nullptr || analysis_->compiler == nullptr) {
         return;
     }
@@ -329,7 +457,7 @@ void Completer::addTypesAndMethods(const std::string &word, std::vector<Completi
                                             quality});
         }
 
-        if (!seen.insert(definition).second) {
+        if (!methods || !seen.insert(definition).second) {
             continue;
         }
         auto addMethod = [&](Function *function) {
@@ -365,9 +493,23 @@ void Completer::addEmoji(const std::string &word, std::vector<CompletionItem> *i
 std::vector<CompletionItem> Completer::complete(size_t start, size_t offset, size_t limit) const {
     auto word = lowercase(utf8(source_.text.substr(start, offset - start)));
     std::vector<CompletionItem> items;
-    addVariables(offset, word, &items);
-    addKeywords(word, &items);
-    addTypesAndMethods(word, &items);
+    // Only what the grammar allows where the word is: e.g. at the start of a member of a type, a method or an
+    // instance variable is declared, so no variable, type or method is used there.
+    auto where = place(start);
+    if (where.kind == Place::Code || where.kind == Place::Unknown) {
+        addVariables(offset, word, &items);
+        // In code, most words name a variable, type or method, so keywords are only offered for a typed word.
+        if (!word.empty()) addKeywords(word, where.kind == Place::Code ? Places::Code : Places::Anywhere, &items);
+        addTypesAndMethods(word, true, &items);
+    }
+    else if (where.statementStart) {
+        addKeywords(word, where.kind == Place::TopLevel ? Places::TopLevel
+                          : where.kind == Place::ProtocolBody ? Places::ProtocolMember : Places::Member, &items);
+    }
+    else {
+        addKeywords(word, Places::Declaration, &items);
+        addTypesAndMethods(word, false, &items);
+    }
     addEmoji(word, &items);
     // Variables in scope are what is most likely meant, and there are few of them, so they come first and are never
     // cut off by the limit.

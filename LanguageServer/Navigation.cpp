@@ -5,6 +5,7 @@
 
 #include "Navigation.hpp"
 #include <algorithm>
+#include <sstream>
 #include "AST/ASTInitialization.hpp"
 #include "AST/ASTMethod.hpp"
 #include "AST/ASTSuper.hpp"
@@ -13,6 +14,7 @@
 #include "Functions/Function.hpp"
 #include "Functions/FunctionType.hpp"
 #include "Functions/Initializer.hpp"
+#include "Generation/Mangler.hpp"
 #include "Lex/SourceManager.hpp"
 #include "Package/RecordingPackage.hpp"
 #include "Prettyprint/PrettyPrinter.hpp"
@@ -46,6 +48,19 @@ static std::string withDocumentation(std::string hover, const std::u32string &do
         hover += "\n\n---\n\n" + text;
     }
     return hover;
+}
+
+/// Returns the page of @p definition in the package documentation, which names it by its code points in hex.
+static std::string docsPage(TypeDefinition *definition) {
+    std::stringstream page;
+    page << "docs/packages/" << definition->package()->name() << "/" << std::hex;
+    bool first = true;
+    for (auto ch : definition->name()) {
+        page << (first ? "" : "_") << static_cast<uint32_t>(ch);
+        first = false;
+    }
+    page << ".html";
+    return page.str();
 }
 
 /// Removes U+FE0F, which the lexer ignores in names.
@@ -154,6 +169,10 @@ Symbol Navigator::functionSymbol(Function *function) const {
     }
     symbol.declaration = nameLocation(function->position(), function->name());
     symbol.isImported = function->package() != analysis_.compiler->mainPackage();
+    if (symbol.isImported && function->owner() != nullptr) {
+        // The documentation anchors each method at its mangled name, as the package report lists it.
+        symbol.docsPath = docsPage(function->owner()) + "#" + mangleFunction(function, {});
+    }
     return symbol;
 }
 
@@ -191,6 +210,9 @@ Symbol Navigator::typeSymbol(const Type &type, const TypeContext &context) const
         }
         symbol.declaration = nameLocation(definition->position(), definition->name());
         symbol.isImported = definition->package() != analysis_.compiler->mainPackage();
+        if (symbol.isImported) {
+            symbol.docsPath = docsPage(definition);
+        }
     }
     return symbol;
 }

@@ -52,6 +52,9 @@ struct Symbol {
     bool isConstant = false;
     /// Whether the symbol is defined in another package.
     bool isImported = false;
+    /// Where the package documentation describes the symbol, relative to the root of the documentation website,
+    /// e.g. docs/packages/s/1f521.html#s.class_1f521.1f600. Empty for symbols of the file's own package.
+    std::string docsPath;
 };
 
 /// Returns the instance variables of @p definition, including inherited ones, each with the type that declares it.

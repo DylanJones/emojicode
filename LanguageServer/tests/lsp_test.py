@@ -459,6 +459,19 @@ class NavigationTests(ServerTestCase):
     def test_hover_standard_library(self):
         self.assertIn("😀", self.hover("😀"))
 
+    def docs(self, needle, occurrence=1):
+        result = self.request("emojicode/docs", needle, occurrence)
+        return result["path"] if result else None
+
+    def test_docs_of_standard_library(self):
+        self.assertEqual(self.docs("😀"), "docs/packages/s/1f521.html#s.class_1f521.1f600")
+        self.assertEqual(self.docs("🔢"), "docs/packages/s/1f522.html")
+
+    def test_no_docs_of_own_code(self):
+        self.assertIsNone(self.docs("🏊", 2))
+        self.assertIsNone(self.docs("🐟", 2))
+        self.assertIsNone(self.docs("fish", 2))
+
     def test_no_hover_on_compiler_generated_code(self):
         self.assertIsNone(self.hover("🔂"))
 
@@ -688,8 +701,8 @@ class CompletionTests(ServerTestCase):
         self.assertEqual(items[0]["textEdit"]["newText"], "🔢")
 
     def test_keyword_without_snippet_support(self):
-        items = self.complete("class")
-        self.assertEqual(items[0]["textEdit"]["newText"], "🐇")
+        items = self.complete("if")
+        self.assertEqual(items[0]["textEdit"]["newText"], "↪️")
         self.assertNotIn("insertTextFormat", items[0])
 
     def test_no_completion_in_unterminated_string(self):
@@ -741,9 +754,101 @@ class CompletionTests(ServerTestCase):
 
 
     def test_keyword_snippet(self):
-        items = self.complete("class", snippets=True)
+        items = self.complete("if", snippets=True)
         self.assertEqual(items[0]["insertTextFormat"], 2)
-        self.assertTrue(items[0]["textEdit"]["newText"].startswith("🐇 ${1:🐟} 🍇"))
+        self.assertTrue(items[0]["textEdit"]["newText"].startswith("↪️ ${1:condition} 🍇"))
+
+    def complete_at(self, text):
+        """Returns the labels of the completion items at the | in text, a file of its own."""
+        offset = text.index("|")
+        text = text.replace("|", "")
+        path = self.write("place.emojic", text)
+        if self.client is None:
+            self.start()
+        self.client.open(path, text)
+        self.client.diagnostics(path)
+        line = text.count("\n", 0, offset)
+        character = utf16_length(text[text.rfind("\n", 0, offset) + 1:offset])
+        result = self.client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                                 "position": {"line": line, "character": character}})
+        return [item["label"] for item in result["items"]]
+
+    def test_members_at_the_start_of_a_line_in_a_type(self):
+        for text in ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n",
+                     "🌍 🐇 🐟 🍇\n  🖍🆕 a 🔢\n  ❗️ 🐽 🍇\n  🍉\n  |\n🍉\n🏁 🍇🍉\n",
+                     "🕊 🐟 🍇\n  📗 Docs. 📗\n  🔓 |\n🍉\n🏁 🍇🍉\n"):
+            labels = self.complete_at(text)
+            self.assertIn("❗️ method function func def", labels, text)
+            self.assertIn("🆕 initializer init constructor", labels, text)
+            self.assertIn("🖍🆕 variable var let mutable declare", labels, text)
+            self.assertNotIn("↪️ if", labels, text)
+            self.assertNotIn("🐇 class", labels, text)
+            self.assertFalse([label for label in labels if label.startswith("🔢")], text)
+
+    def test_member_by_keyword(self):
+        self.assertEqual(self.complete_at("🐇 🐟 🍇\n  meth|\n🍉\n🏁 🍇🍉\n")[0], "❗️ method function func def")
+
+    def test_types_in_a_declaration(self):
+        labels = self.complete_at("🐇 🐟 🍇\n  🖍🆕 a |\n🍉\n🏁 🍇🍉\n")
+        self.assertIn("🔢", labels)
+        self.assertIn("🍬 optional maybe", labels)
+        self.assertFalse([label for label in labels if "  " in label], "no methods")
+        self.assertNotIn("❗️ method function func def", labels)
+
+    def test_declarations_at_the_top_level(self):
+        labels = self.complete_at("🐇 🐟 🍇\n🍉\n|\n🏁 🍇🍉\n")
+        self.assertIn("🐇 class", labels)
+        self.assertIn("🏁 start main", labels)
+        self.assertIn("📦 import package", labels)
+        self.assertNotIn("❗️ method function func def", labels)
+        self.assertFalse([label for label in labels if label.startswith("🔢")])
+
+    def test_code_in_a_method(self):
+        labels = self.complete_at("🐇 🐟 🍇\n  ❗️ 🐽 🍇\n    5 ➡️ five\n    |\n  🍉\n🍉\n🏁 🍇🍉\n")
+        self.assertEqual(labels[0], "five")
+        self.assertIn("🔢", labels)
+        self.assertNotIn("❗️ method function func def", labels)
+
+    def test_method_after_type_method_attribute(self):
+        self.assertEqual(self.complete_at("🐇 🐟 🍇\n  🐇 meth|\n🍉\n🏁 🍇🍉\n")[0], "❗️ method function func def")
+
+    def test_code_in_default_value(self):
+        self.assertIn("👍 true yes", self.complete_at("🐇 🐟 🍇\n  🖍🆕 alive 👌 ⬅️ tr|\n🍉\n🏁 🍇🍉\n"))
+
+    def test_members_of_types_declared_before_their_line(self):
+        # A C representation before 🕊, and a 🍇 on the line after the declaration.
+        for text in ("🌍 📻 🔤int🔤 🕊 🐟 🍇\n  meth|\n🍉\n🏁 🍇🍉\n", "🐇 🐟\n🍇\n  meth|\n🍉\n🏁 🍇🍉\n"):
+            self.assertEqual(self.complete_at(text)[0], "❗️ method function func def", text)
+
+    def test_members_of_a_protocol(self):
+        labels = self.complete_at("🐊 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n")
+        self.assertIn("❗️ method function func def", labels)
+        self.assertNotIn("🆕 initializer init constructor", labels)
+        self.assertNotIn("🖍🆕 variable var let mutable declare", labels)
+        self.assertNotIn("🐊 conformance conform protocol interface", labels)
+
+    def test_conformance_in_a_type(self):
+        labels = self.complete_at("🐇 🐟 🍇\n  prot|\n🍉\n🏁 🍇🍉\n")
+        self.assertIn("🐊 conformance conform protocol interface", labels)
+        self.assertNotIn("🐊 protocol interface", labels)
+
+    def test_keywords_after_invalid_token(self):
+        # The lexer stops at the ASCII +, so the place of the cursor in the grammar is not known.
+        text = "🐇 🐟 🍇\n  ❗️ 🐽 ➡️ 🔢 🍇\n    ↩️ a + b\n  🍉\n🍉\n🐇 🐠 🍇\n  meth|\n🍉\n"
+        self.assertIn("❗️ method function func def", self.complete_at(text))
+
+    def test_keywords_after_other_whitespace(self):
+        # The lexer skips the no-break space.
+        self.assertIn("🐇 class", self.complete_at("🏁 🍇\n🍉\n \n|"))
+
+    def test_members_of_types_named_like_statements(self):
+        # 📦 names the type and 🔗 is a superclass, so neither starts a statement.
+        for text in ("🐇 📦🐚T🔡🍆 🍇\n  meth|\n🍉\n🏁 🍇🍉\n", "🐇 🐟 🔗 🍇\n  meth|\n🍉\n🏁 🍇🍉\n"):
+            self.assertEqual(self.complete_at(text)[0], "❗️ method function func def", text)
+
+    def test_members_of_a_type_with_a_callable_generic_argument(self):
+        text = "🐇 🐟🐚T 🍇🔢🍉🍆 🍇\n  meth|\n🍉\n🏁 🍇🍉\n"
+        self.assertEqual(self.complete_at(text)[0], "❗️ method function func def")
 
 
 class RobustnessTests(ServerTestCase):
@@ -787,6 +892,18 @@ class RobustnessTests(ServerTestCase):
             diagnostics = self.client.diagnostics(path)
             self.assertIn(message, " ".join(d["message"] for d in diagnostics), (name, diagnostics))
             self.use_every_feature(path, text)
+        self.assertEqual(self.client.shutdown(), 0)
+
+    def test_imported_initializer_with_someobject_parameter(self):
+        # Its documentation is anchored at its mangled name, which names the 🔵 of the parameter.
+        text = "📦 c 🌊\n🐇 🐕 🍇\n  🆕 🍇🍉\n🍉\n🏁 🍇\n  ☣️ 🍇\n    🆕🔶🌊🕳▶️📤 🆕🐕❗️❗️ ➡️ data\n  🍉\n🍉\n"
+        path = self.write("pointer.emojic", text)
+        self.start()
+        self.client.open(path, text)
+        self.client.diagnostics(path)
+        params = {"textDocument": {"uri": uri(path)}, "position": position(text, "🆕🔶")}
+        self.assertIn("📤", self.client.request("textDocument/hover", params)["contents"]["value"])
+        self.assertTrue(self.client.request("emojicode/docs", params)["path"].startswith("docs/packages/c/"))
         self.assertEqual(self.client.shutdown(), 0)
 
     def test_two_files_that_include_each_other(self):
