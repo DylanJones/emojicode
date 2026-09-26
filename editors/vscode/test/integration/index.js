@@ -161,6 +161,42 @@ const cases = {
         await type('🍇');
         assert.strictEqual(state(editor), '📗 Grapes 🍇|');
     },
+    async 'closes an opening typed inside an inserted pair'() {
+        const editor = await editorWith('');
+        await type('🍿');
+        await type('🔤');
+        assert.strictEqual(state(editor), '🍿🔤|🔤🍆');
+        await type('a');
+        await type('🔤');
+        await type('🍆');
+        assert.strictEqual(state(editor), '🍿🔤a🔤🍆|');
+    },
+    async 'does not close when 🔤 ends an empty string'() {
+        const editor = await editorWith('😀 🔤❗️');
+        editor.selection = new vscode.Selection(0, 5, 0, 5);
+        await type('🔤');
+        assert.strictEqual(state(editor), '😀 🔤🔤|❗️');
+    },
+    async 'closes for two cursors on one line'() {
+        const editor = await editorWith('a b');
+        editor.selections = [new vscode.Selection(0, 1, 0, 1), new vscode.Selection(0, 3, 0, 3)];
+        await type('🍇');
+        assert.strictEqual(editor.document.getText(), 'a🍇🍉 b🍇🍉');
+        assert.deepStrictEqual(editor.selections.map((selection) => selection.active.character).sort((a, b) => a - b),
+                               [3, 9]);
+    },
+    async 'forgets the inserted 🍉 when another document is typed in'() {
+        const editor = await editorWith('🍇🍉');
+        editor.selection = new vscode.Selection(0, 2, 0, 2);
+        await type('🍇');
+        await editorWith('🏁 ');
+        await type('🍇');
+        await vscode.commands.executeCommand('workbench.action.revertAndCloseActiveEditor');
+        const again = await vscode.window.showTextDocument(editor.document);
+        again.selection = new vscode.Selection(0, 6, 0, 6);
+        await type('🍉');
+        assert.strictEqual(state(again), '🍇🍇🍉🍉|🍉');
+    },
     async 'not before a word'() {
         const editor = await editorWith('x');
         editor.selection = new vscode.Selection(0, 0, 0, 0);

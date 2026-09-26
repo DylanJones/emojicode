@@ -23,31 +23,34 @@ export function registerLearnerDocs(context: vscode.ExtensionContext, getClient:
         return cached.analysis;
     };
 
-    /** Returns the piece at `position` and the URL of the documentation that explains it. */
-    const locate = async (document: vscode.TextDocument, position: vscode.Position, token?: vscode.CancellationToken) => {
-        const explained = analyse(document).explain(document.offsetAt(position));
+    /** Returns the piece at `offset` and the URL of the documentation that explains it. */
+    const locate = async (document: vscode.TextDocument, offset: number, token?: vscode.CancellationToken) => {
+        const explained = analyse(document).explain(offset);
         if (explained === undefined) return undefined;
-        const { piece, section } = explained;
-        if (section !== undefined) {
-            return { piece, section, url: url(section.path) };
-        }
-        // An emoji that is no keyword names a type or method, which only the language server knows.
+        const { piece, section, named } = explained;
+        // An emoji that names a type or method, even one that is a keyword elsewhere like 🔒, is explained by the
+        // documentation of its package, which only the language server knows.
         const client = getClient();
-        if (piece.kind !== 'emoji' || client === undefined || !client.isRunning()) return undefined;
-        const params = client.code2ProtocolConverter.asTextDocumentPositionParams(document, position);
-        const location = await client.sendRequest<DocsLocation | null>('emojicode/docs', params, token)
-            .catch(() => null);
-        if (!location) return undefined;
-        const summary = `${piece.text} is part of a package. Its documentation describes what it does.`;
-        return { piece, section: { summary, title: `${piece.text} in the package documentation`, path: location.path },
-                 url: url(location.path) };
+        if (named && client !== undefined && client.isRunning()) {
+            const params = client.code2ProtocolConverter.asTextDocumentPositionParams(document, document.positionAt(piece.start));
+            // Without a token, sendRequest would send [params, null] as the parameters.
+            const request = token === undefined ? client.sendRequest<DocsLocation | null>('emojicode/docs', params)
+                : client.sendRequest<DocsLocation | null>('emojicode/docs', params, token);
+            const location = await request.catch(() => null);
+            if (location) {
+                const summary = `${piece.text} is part of a package. Its documentation describes what it does.`;
+                return { piece, url: url(location.path),
+                         section: { summary, title: `${piece.text} in the package documentation`, path: location.path } };
+            }
+        }
+        return section && { piece, section, url: url(section.path) };
     };
 
     context.subscriptions.push(
         vscode.languages.registerHoverProvider({ language: 'emojicode' }, {
             async provideHover(document, position, token) {
                 if (!enabled()) return undefined;
-                const found = await locate(document, position, token);
+                const found = await locate(document, document.offsetAt(position), token);
                 return found && new vscode.Hover(hoverText(found.section, found.url), range(document, found.piece));
             },
         }),
@@ -63,7 +66,11 @@ export function registerLearnerDocs(context: vscode.ExtensionContext, getClient:
         vscode.commands.registerCommand('emojicode.openLearnerDocs', async () => {
             const editor = vscode.window.activeTextEditor;
             if (editor?.document.languageId !== 'emojicode') return;
-            const found = await locate(editor.document, editor.selection.active);
+            const document = editor.document;
+            // The selected token, or the one at the cursor, or the one that ends there, e.g. right after typing it.
+            let offset = document.offsetAt(editor.selection.start);
+            if (offset > 0 && analyse(document).explain(offset) === undefined) offset--;
+            const found = await locate(document, offset);
             if (found === undefined) {
                 vscode.window.showInformationMessage('The Emojicode documentation does not explain the token at the cursor.');
                 return;

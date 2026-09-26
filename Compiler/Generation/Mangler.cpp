@@ -78,6 +78,13 @@ void mangleTypeName(std::stringstream &stream, const Type &typeb) {
                 mangleTypeName(stream, proto);
             }
             return;
+        // ⚪️ and 🔵 have no type definition to name them by, e.g. the parameter of c's 🕳 ▶️📤.
+        case TypeType::Something:
+            stream << "something";
+            return;
+        case TypeType::Someobject:
+            stream << "someobject";
+            return;
         default:
             stream << "ty_";
             break;

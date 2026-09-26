@@ -33,12 +33,16 @@ const int Text = 1, Method = 2, Field = 5, Variable = 6, Class = 7, Interface = 
 namespace Places {
 /// At the start of a statement outside of all types and blocks.
 const int TopLevel = 1;
-/// At the start of a member of a type, e.g. a method.
+/// At the start of a member of a class, value type or enumeration, e.g. a method.
 const int Member = 2;
 /// In the code of a method or block.
 const int Code = 4;
 /// After the start of a declaration, where types are written, e.g. the type of an instance variable.
 const int Declaration = 8;
+/// At the start of a member of a protocol, which only declares methods.
+const int ProtocolMember = 16;
+/// Where the grammar can't be followed, e.g. after an invalid token.
+const int Anywhere = TopLevel | Member | Code | Declaration;
 }
 
 /// A keyword with the words it can be found by, a snippet that inserts it with what usually follows, and the
@@ -55,8 +59,12 @@ const Keyword kKeywords[] = {
     {"class", "🐇", "Defines a class.", "🐇 ${1:🐟} 🍇\n\t$0\n🍉", Places::TopLevel},
     {"value type struct", "🕊", "Defines a value type.", "🕊 ${1:🐟} 🍇\n\t$0\n🍉", Places::TopLevel},
     {"enumeration enum", "🔘", "Defines an enumeration.", "🔘 ${1:🚦} 🍇\n\t🆕▶️${2:🔴}\n🍉", Places::TopLevel},
-    {"protocol interface", "🐊", "Defines a protocol.", "🐊 ${1:🐟} 🍇\n\t$0\n🍉", Places::TopLevel | Places::Member},
+    {"protocol interface", "🐊", "Defines a protocol.", "🐊 ${1:🐟} 🍇\n\t$0\n🍉", Places::TopLevel},
+    {"conformance conform protocol interface", "🐊", "Declares that the type conforms to a protocol.", "🐊 ${1:🐟}",
+     Places::Member},
     {"method function func def", "❗️", "Defines a method.", "❗️ ${1:🐽} ${2:value} ${3:🔢} 🍇\n\t$0\n🍉", Places::Member},
+    {"method function func def", "❗️", "Declares a method that the types conforming to the protocol define.",
+     "❗️ ${1:🐽} ${2:value} ${3:🔢}", Places::ProtocolMember},
     {"initializer init constructor", "🆕", "Defines an initializer.", "🆕 🍇\n\t$0\n🍉", Places::Member},
     {"start main", "🏁", "The code that runs when the program starts.", "🏁 🍇\n\t$0\n🍉", Places::TopLevel},
     {"if", "↪️", "Runs a block if a condition is true.", "↪️ ${1:condition} 🍇\n\t$0\n🍉", Places::Code},
@@ -77,8 +85,10 @@ const Keyword kKeywords[] = {
     {"nil null none nothing novalue", "🤷‍♀️", "No value.", nullptr, Places::Code},
     {"string text", "🔤", "A string literal.", "🔤$1🔤", Places::Code},
     {"interpolation interpolate", "🧲", "Inserts a value into a string.", "🧲$1🧲", Places::Code},
-    {"comment", "💭", "A comment.", "💭 $0", Places::TopLevel | Places::Member | Places::Code | Places::Declaration},
-    {"documentation doc", "📗", "Documents the definition that follows.", "📗 $1 📗", Places::TopLevel | Places::Member},
+    {"comment", "💭", "A comment.", "💭 $0",
+     Places::TopLevel | Places::Member | Places::ProtocolMember | Places::Code | Places::Declaration},
+    {"documentation doc", "📗", "Documents the definition that follows.", "📗 $1 📗",
+     Places::TopLevel | Places::Member | Places::ProtocolMember},
     {"print output log", "😀", "Prints a string.", "😀 🔤$1🔤❗️", Places::Code},
     {"unwrap force optional", "🍺", "Unwraps an optional, which must not be empty.", nullptr, Places::Code},
     {"try rethrow reraise", "🔺", "Raises the error of a call that raised one.", nullptr, Places::Code},
@@ -201,45 +211,85 @@ bool precedesStatement(const TokenSpan &token) {
 
 Completer::Place Completer::place(size_t offset) const {
     auto &text = source_.text;
-    auto lineStart = [&](size_t offset) {
-        auto newline = offset == 0 ? std::u32string::npos : text.rfind(U'\n', offset - 1);
-        return newline == std::u32string::npos ? 0 : newline + 1;
-    };
-    // What each open 🍇 contains. A 🍇 at the top level opens the body of a type if its line declares one;
-    // all other blocks contain code.
-    std::vector<Place::Kind> blocks;
     auto &tokens = source_.tokens;
-    for (size_t i = 0; i < tokens.size() && tokens[i].end <= offset; i++) {
-        if (tokens[i].type == TokenType::BlockBegin) {
-            auto kind = Place::Code;
-            if (blocks.empty()) {
-                auto start = lineStart(tokens[i].start);
-                auto head = i;
-                while (head > 0 && tokens[head - 1].start >= start) head--;
-                while (head < i && precedesStatement(tokens[head])) head++;
-                switch (tokens[head].type) {
-                    case TokenType::Class:
-                    case TokenType::ValueType:
-                    case TokenType::Enumeration:
-                    case TokenType::Protocol:
-                        kind = Place::TypeBody;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            blocks.push_back(kind);
+    auto lineStart = [&](size_t index) { return index - source_.lines.lineAndCharacter(index).second; };
+    // Whether only tokens that can precede a statement come before token @p index on its line.
+    auto headsLine = [&](size_t index) {
+        auto start = lineStart(tokens[index].start);
+        for (auto j = index; j > 0 && tokens[j - 1].start >= start; j--) {
+            if (!precedesStatement(tokens[j - 1])) return false;
         }
-        else if (tokens[i].type == TokenType::BlockEnd && !blocks.empty()) {
-            blocks.pop_back();
+        return true;
+    };
+    // What each open 🍇 contains. A 🍇 at the top level opens the body of a type if a type was declared since the
+    // last body, maybe on an earlier line; in the generic arguments of the declaration, it is a callable type. All
+    // other blocks contain code.
+    std::vector<Place::Kind> blocks;
+    auto declared = Place::Code;
+    size_t generics = 0;  // The 🐚 at the top level that are not closed yet.
+    size_t i = 0;
+    for (; i < tokens.size() && tokens[i].end <= offset; i++) {
+        auto &token = tokens[i];
+        if (token.type == TokenType::BlockBegin) {
+            blocks.push_back(blocks.empty() ? declared : Place::Code);
+            if (blocks.size() == 1 && generics == 0) declared = Place::Code;
+        }
+        else if (token.type == TokenType::BlockEnd) {
+            if (!blocks.empty()) blocks.pop_back();
+        }
+        else if (blocks.empty()) {
+            switch (token.type) {
+                case TokenType::Class:
+                case TokenType::ValueType:
+                case TokenType::Enumeration:
+                    declared = Place::TypeBody;
+                    generics = 0;
+                    break;
+                case TokenType::Protocol:
+                    declared = Place::ProtocolBody;
+                    generics = 0;
+                    break;
+                case TokenType::Generic:
+                    generics++;
+                    break;
+                case TokenType::Identifier:
+                    if (token.value == U"🍆") {
+                        if (generics > 0) generics--;
+                    }
+                    // A statement like 🏁 that is no type declaration starts. Elsewhere, e.g. as the name of a type,
+                    // these are types.
+                    else if ((token.value == U"🏁" || token.value == U"📦" || token.value == U"📜" ||
+                              token.value == U"🔗") && headsLine(i)) {
+                        declared = Place::Code;
+                        generics = 0;
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
     }
+    // The lexer stops at an invalid token, e.g. an ASCII operator, so the grammar can't be followed after it.
+    if (i == tokens.size()) {
+        for (auto k = tokens.empty() ? 0 : tokens.back().end; k < std::min(offset, text.size()); k++) {
+            if (!isSkipped(text[k]) && text[k] != 0xFE0F) return Place{Place::Unknown, false};
+        }
+    }
+
     Place place{blocks.empty() ? Place::TopLevel : blocks.back(), true};
+    // The tokens before the offset on its line are the last ones that the loop went through.
     auto start = lineStart(offset);
-    for (auto &token : tokens) {
-        if (token.start >= start && token.end <= offset && !precedesStatement(token)) {
+    auto first = i;
+    while (first > 0 && tokens[first - 1].start >= start) first--;
+    for (auto j = first; j < i; j++) {
+        auto &token = tokens[j];
+        auto inTypeBody = place.kind == Place::TypeBody || place.kind == Place::ProtocolBody;
+        if (inTypeBody && token.type == TokenType::LeftProductionOperator) {
+            place.kind = Place::Code;  // The default value of an instance variable.
+        }
+        // In a type body, 🐇 is the attribute that makes the method after it a type method.
+        if (!precedesStatement(token) && !(inTypeBody && token.type == TokenType::Class)) {
             place.statementStart = false;
-            break;
         }
     }
     return place;
@@ -446,14 +496,15 @@ std::vector<CompletionItem> Completer::complete(size_t start, size_t offset, siz
     // Only what the grammar allows where the word is: e.g. at the start of a member of a type, a method or an
     // instance variable is declared, so no variable, type or method is used there.
     auto where = place(start);
-    if (where.kind == Place::Code) {
+    if (where.kind == Place::Code || where.kind == Place::Unknown) {
         addVariables(offset, word, &items);
         // In code, most words name a variable, type or method, so keywords are only offered for a typed word.
-        if (!word.empty()) addKeywords(word, Places::Code, &items);
+        if (!word.empty()) addKeywords(word, where.kind == Place::Code ? Places::Code : Places::Anywhere, &items);
         addTypesAndMethods(word, true, &items);
     }
     else if (where.statementStart) {
-        addKeywords(word, where.kind == Place::TopLevel ? Places::TopLevel : Places::Member, &items);
+        addKeywords(word, where.kind == Place::TopLevel ? Places::TopLevel
+                          : where.kind == Place::ProtocolBody ? Places::ProtocolMember : Places::Member, &items);
     }
     else {
         addKeywords(word, Places::Declaration, &items);

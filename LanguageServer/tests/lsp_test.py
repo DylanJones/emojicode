@@ -809,6 +809,47 @@ class CompletionTests(ServerTestCase):
         self.assertIn("🔢", labels)
         self.assertNotIn("❗️ method function func def", labels)
 
+    def test_method_after_type_method_attribute(self):
+        self.assertEqual(self.complete_at("🐇 🐟 🍇\n  🐇 meth|\n🍉\n🏁 🍇🍉\n")[0], "❗️ method function func def")
+
+    def test_code_in_default_value(self):
+        self.assertIn("👍 true yes", self.complete_at("🐇 🐟 🍇\n  🖍🆕 alive 👌 ⬅️ tr|\n🍉\n🏁 🍇🍉\n"))
+
+    def test_members_of_types_declared_before_their_line(self):
+        # A C representation before 🕊, and a 🍇 on the line after the declaration.
+        for text in ("🌍 📻 🔤int🔤 🕊 🐟 🍇\n  meth|\n🍉\n🏁 🍇🍉\n", "🐇 🐟\n🍇\n  meth|\n🍉\n🏁 🍇🍉\n"):
+            self.assertEqual(self.complete_at(text)[0], "❗️ method function func def", text)
+
+    def test_members_of_a_protocol(self):
+        labels = self.complete_at("🐊 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n")
+        self.assertIn("❗️ method function func def", labels)
+        self.assertNotIn("🆕 initializer init constructor", labels)
+        self.assertNotIn("🖍🆕 variable var let mutable declare", labels)
+        self.assertNotIn("🐊 conformance conform protocol interface", labels)
+
+    def test_conformance_in_a_type(self):
+        labels = self.complete_at("🐇 🐟 🍇\n  prot|\n🍉\n🏁 🍇🍉\n")
+        self.assertIn("🐊 conformance conform protocol interface", labels)
+        self.assertNotIn("🐊 protocol interface", labels)
+
+    def test_keywords_after_invalid_token(self):
+        # The lexer stops at the ASCII +, so the place of the cursor in the grammar is not known.
+        text = "🐇 🐟 🍇\n  ❗️ 🐽 ➡️ 🔢 🍇\n    ↩️ a + b\n  🍉\n🍉\n🐇 🐠 🍇\n  meth|\n🍉\n"
+        self.assertIn("❗️ method function func def", self.complete_at(text))
+
+    def test_keywords_after_other_whitespace(self):
+        # The lexer skips the no-break space.
+        self.assertIn("🐇 class", self.complete_at("🏁 🍇\n🍉\n \n|"))
+
+    def test_members_of_types_named_like_statements(self):
+        # 📦 names the type and 🔗 is a superclass, so neither starts a statement.
+        for text in ("🐇 📦🐚T🔡🍆 🍇\n  meth|\n🍉\n🏁 🍇🍉\n", "🐇 🐟 🔗 🍇\n  meth|\n🍉\n🏁 🍇🍉\n"):
+            self.assertEqual(self.complete_at(text)[0], "❗️ method function func def", text)
+
+    def test_members_of_a_type_with_a_callable_generic_argument(self):
+        text = "🐇 🐟🐚T 🍇🔢🍉🍆 🍇\n  meth|\n🍉\n🏁 🍇🍉\n"
+        self.assertEqual(self.complete_at(text)[0], "❗️ method function func def")
+
 
 class RobustnessTests(ServerTestCase):
     def use_every_feature(self, path, text):
@@ -851,6 +892,18 @@ class RobustnessTests(ServerTestCase):
             diagnostics = self.client.diagnostics(path)
             self.assertIn(message, " ".join(d["message"] for d in diagnostics), (name, diagnostics))
             self.use_every_feature(path, text)
+        self.assertEqual(self.client.shutdown(), 0)
+
+    def test_imported_initializer_with_someobject_parameter(self):
+        # Its documentation is anchored at its mangled name, which names the 🔵 of the parameter.
+        text = "📦 c 🌊\n🐇 🐕 🍇\n  🆕 🍇🍉\n🍉\n🏁 🍇\n  ☣️ 🍇\n    🆕🔶🌊🕳▶️📤 🆕🐕❗️❗️ ➡️ data\n  🍉\n🍉\n"
+        path = self.write("pointer.emojic", text)
+        self.start()
+        self.client.open(path, text)
+        self.client.diagnostics(path)
+        params = {"textDocument": {"uri": uri(path)}, "position": position(text, "🆕🔶")}
+        self.assertIn("📤", self.client.request("textDocument/hover", params)["contents"]["value"])
+        self.assertTrue(self.client.request("emojicode/docs", params)["path"].startswith("docs/packages/c/"))
         self.assertEqual(self.client.shutdown(), 0)
 
     def test_two_files_that_include_each_other(self):

@@ -26,9 +26,9 @@ const FISH = `📘 Fish and how they swim. 📘
   🏊 fish 5❗️ ➡️ 🖍🆕 total
   🍿 1 2 3 🍆 ➡️ list
   🍿 🔤a🔤 ➡️ 1 🍆 ➡️ dictionary
-  🍨🐚🔢🍆 ➡️ empty
+  🆕🍨🐚🔢🍆❗️ ➡️ empty
   🔂 item list 🍇
-    total ⬅️ total ➕ item
+    total ➕ item ➡️ 🖍total
   🍉
   ↪️ total ▶️🙌 10 🤝 👍 🍇
     😀 🔤Deep 😀 ❌n 🧲total🧲🔤❗️
@@ -40,7 +40,47 @@ const FISH = `📘 Fish and how they swim. 📘
   ⁉️ double 2❗️ 💭 😀 in a comment
   💭🔜 🔂 in a
   long comment 🔚💭
-  🎍🐌 ↪️ 👎 🍇 🍉
+  ↪️ 👎 🎍🐌 🍇 🍉
+🍉
+`;
+
+// Methods and calls whose emoji mean different things than they do elsewhere.
+const MORE = `🐇 🐣 🍇
+  🐊 🍡🐚🔢🍆
+  🎍🌊 🐇☣️❗️ 🏧 value 🔢 ➡️ 🔢 📻 🔤abs🔤
+  ❗️ 🥚 ➡️ 🔡 🚧🚧 🍇
+    ↪️ 👎 🍇 🚨🆕🚧 🔤No egg🔤❗️ 🍉
+    ↩️ 🔺🐤🐇🐣❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🔡▶️👂🏼❗️ ➡️ line
+  🦁 list 🍇 a 🔢 b 🔢 ➡️ 🔢
+    ↩️ a ➖ b
+  🍉❗️ ➡️ sorted
+  ☣️ 🍇
+    🔒 mutex❗️
+  🍉
+  5 ➡️ constructor
+  constructor ⬅️ ➕ 1
+  🍺🆕🚧🔸↕️ 🔤x🔤❗️ ➡️ error
+  🆕🚧 🔤Oops🔤❗️ ➡️ oops
+🍉
+`;
+
+// Bodies that start on the line after their declaration.
+const NEXT_LINE = `🐇 🐟
+🍇
+  🖍🆕 depth 🔢 ⬅️ 0
+  🆕 🚧🚧 🍇
+    🚨🆕🚧 🔤x🔤❗️
+  🍉
+🍉
+
+🏁
+🍇
+  🆕🚧 🔤Oops🔤❗️ ➡️ oops
 🍉
 `;
 
@@ -57,7 +97,8 @@ const cases = [
     ['🏁', 'start'], ['🍇#7', 'start'],
     ['🆕#4', 'instantiate'], ['❗️#3', 'call'], ['➡️#2', 'constant'], ['🖍#2', 'mutable'], ['🆕#5', 'mutable'],
     ['🍿', 'list'], ['🍆', 'list'], ['➡️#5', 'dictionary'], ['🍿#2', 'dictionary'], ['🐚', 'generic'], ['🍆#3', 'generic'],
-    ['🔂', 'forIn'], ['🍇#8', 'block'], ['⬅️ total', 'assign'], ['➕ item', 'operator'],
+    ['🔂', 'forIn'], ['🍇#8', 'block'], ['➡️ 🖍total', 'assign'], ['🖍total', 'assign'], ['➡️#3', 'mutable'],
+    ['➕ item', 'operator'],
     ['↪️', 'if'], ['▶️🙌', 'operator'], ['🤝', 'shortCircuit'], ['👍', 'true'],
     // An emoji in a string is part of the string, and one in an interpolation is code again.
     ['😀', undefined], ['Deep', 'string'], ['😀#2', 'string'], ['❌n', 'escape'], ['🧲', 'interpolation'],
@@ -69,17 +110,48 @@ const cases = [
     ['🎍', 'branchSpeed'], ['🐌', 'branchSpeed'],
 ];
 
-const document = new LearnerDocument(FISH);
+const moreCases = [
+    ['🐊', 'conformance'], ['🐇#2', 'typeMethod'], ['❗️', 'declareMethod'], ['➡️', 'returnType'],
+    ['🚧', 'errorType'], ['🚧#2', undefined], ['🚨', 'raise'], ['🚧#3', undefined], ['🔺', 'reraise'],
+    ['🐇#3', 'typeMethod'], ['▶️', 'namedInitializer'], ['❗️ ➡️ sorted', 'call'], ['➡️ sorted', 'constant'],
+    ['☣️', 'unsafe'], ['🍇\n    🔒', 'unsafe'], ['🔒', 'access'], ['constructor', 'variable'], ['⬅️ ➕', 'operatorAssign'],
+    ['➕ 1', 'operatorAssign'], ['🚧🔸↕️', undefined], ['↕️', undefined], ['🆕🚧 🔤Oops', 'instantiate'],
+    ['🚧 🔤Oops', undefined],
+];
+
+const nextLineCases = [
+    ['🍇', 'typeBody'], ['🖍', 'instanceVariable'], ['⬅️', 'defaultValue'], ['🆕#2', 'declareInitializer'],
+    ['🚧', 'errorType'], ['🍇#2', 'initializerBody'], ['🆕#3', 'instantiate'], ['🍉#2', 'typeBody'],
+    ['🍇#3', 'start'], ['🆕🚧 🔤Oops', 'instantiate'],
+];
+
 let failures = 0;
-for (const [needle, expected] of cases) {
-    const [text, n] = needle.split('#');
-    let index = -1;
-    for (let i = 0; i < Number(n ?? 1); i++) index = FISH.indexOf(text, index + 1);
-    assert.notStrictEqual(index, -1, `${needle} is not in the snippet`);
-    const actual = document.explain(index)?.section;
-    const name = actual && Object.keys(sections).find((key) => sections[key] === actual);
-    if (name !== expected) {
-        console.error(`${needle}: expected ${expected}, got ${name}`);
+function check(snippet, cases) {
+    const document = new LearnerDocument(snippet);
+    for (const [needle, expected] of cases) {
+        const [text, n] = needle.split('#');
+        let index = -1;
+        for (let i = 0; i < Number(n ?? 1); i++) index = snippet.indexOf(text, index + 1);
+        assert.notStrictEqual(index, -1, `${needle} is not in the snippet`);
+        const actual = document.explain(index)?.section;
+        const name = actual && Object.keys(sections).find((key) => sections[key] === actual);
+        if (name !== expected) {
+            console.error(`${needle}: expected ${expected}, got ${name}`);
+            failures++;
+        }
+    }
+}
+check(FISH, cases);
+check(MORE, moreCases);
+check(NEXT_LINE, nextLineCases);
+// The same with Windows line breaks, where a 💭 comment still ends at the end of its line.
+check(FISH.replace(/\n/g, '\r\n'), cases.filter(([needle]) => !needle.includes('\n')));
+
+// 🔒 is also a method of 🔐, and 🚧🔸↕️ one name, so the language server is asked about them.
+const more = new LearnerDocument(MORE);
+for (const needle of ['🔒', '🚧🔸↕️']) {
+    if (!more.explain(MORE.indexOf(needle))?.named) {
+        console.error(`${needle}: expected to be asked as a name`);
         failures++;
     }
 }
@@ -105,4 +177,4 @@ else {
 if (failures > 0) {
     process.exit(1);
 }
-console.log(`All ${cases.length} learner docs cases passed.`);
+console.log(`All ${cases.length + moreCases.length + nextLineCases.length} learner docs cases passed.`);

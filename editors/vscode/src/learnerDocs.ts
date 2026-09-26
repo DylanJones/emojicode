@@ -25,6 +25,8 @@ export interface Piece {
     text: string;
     start: number;
     end: number;
+    /** Whether the piece is a 🔤 that starts a string, as a piece of a string can also start at the 🔤 that ends it. */
+    opensString?: boolean;
 }
 
 interface Token extends Piece {
@@ -90,10 +92,11 @@ const S = {
 
     constant: section('➡️ stores the value on its left in the constant variable on its right.',
                       'Assigning a Constant Variable', ref('variables', 'assigning-a-constant-variable')),
-    mutable: section('🖍🆕 declares a mutable variable, whose value can be changed with ⬅️.',
+    mutable: section('🖍🆕 declares a mutable variable, whose value can be changed with ➡️ 🖍.',
                      'Declaring and Assigning Mutable Variables',
                      ref('variables', 'declaring-and-assigning-mutable-variables')),
-    assign: section('⬅️ changes the value of a mutable variable.', 'Changing the value of mutable variables',
+    assign: section('➡️ 🖍 stores the value on its left in the mutable variable on its right.',
+                    'Changing the value of mutable variables',
                     ref('variables', 'changing-the-value-of-mutable-variables')),
     operatorAssign: section('⬅️ followed by an operator applies the operator to the variable, e.g. x ⬅️➕ 1 adds 1 to x.',
                             'Operator Assignment', ref('variables', 'operator-assignment')),
@@ -110,6 +113,8 @@ const S = {
                              'Defining a Value Type', ref('classes-valuetypes', 'defining-a-value-type')),
     defineProtocol: section('🐊 defines a protocol: methods that the types conforming to it promise to have.',
                             'Protocols', ref('protocols', 'declaration')),
+    conformance: section('🐊 in the body of a type declares that the type conforms to the protocol after it.',
+                         'Conforming', ref('protocols', 'conforming')),
     defineEnum: section('🔘 defines an enumeration, a type with a fixed set of values.', 'Defining an Enumeration',
                         ref('enums', 'defining-an-enumeration')),
     typeMethod: section('🐇 before a method makes it a type method, which is called on the type, not on an instance.',
@@ -177,8 +182,8 @@ const S = {
     noValue: section('🤷‍♀️ is no value, for optionals.', 'No Value', ref('optionals', 'no-value')),
     unwrap: section('🍺 gets the value of an optional or of an error-prone call, and stops the program if there is none.',
                     '🍺 Unwrapping', ref('optionals', '-unwrapping')),
-    errorType: section('🚨 before types makes a method error-prone: it returns an error or a value.', 'Error-Proneness',
-                       ref('errors', 'error-proneness')),
+    errorType: section('🚧 and an error type make a method error-prone: it returns a value or raises an error of that type.',
+                       'Error-Proneness', ref('errors', 'error-proneness')),
     raise: section('🚨 raises an error, which ends the method.', 'Raising Errors', ref('errors', 'raising-errors')),
     reraise: section('🔺 passes the error of a call on to the caller.', '🔺 Reraising Errors',
                      ref('errors', '-reraising-errors')),
@@ -223,7 +228,9 @@ const S = {
 export type SectionName = keyof typeof S;
 export const sections: Record<SectionName, Section> = S;
 
-const OPERATORS = new Set(['➕', '➖', '➗', '✖', '⭕', '💢', '❌', '👈', '👉', '🚮', '🙌', '◀', '▶', '🔺']);
+const OPERATORS = new Set(['➕', '➖', '➗', '✖', '⭕', '💢', '❌', '👈', '👉', '🚮', '🙌', '◀', '▶']);
+/** What can follow the 🍉 of a closure, as the expression goes on. */
+const CONTINUATIONS = ['❗', '❓', '⁉', '➡', '🤛', '🍆'];
 const MODIFIERS = new Set(['🌍', '🔏', '✒', '🥯', '⚠', '🔑', '☣', '🔓', '🔒', '🔐', '📻', '🍼']);
 const DECORATORS: Record<string, SectionName> = {
     '🐌': 'branchSpeed', '🏎': 'branchSpeed', '🛢': 'noDynamism', '🥡': 'escaping', '🌊': 'cFunction',
@@ -234,16 +241,23 @@ const KEYWORDS: Record<string, SectionName> = {
     '🕊': 'defineValueType', '🐊': 'defineProtocol', '🔘': 'defineEnum', '♻': 'deinitializer',
     '👍': 'true', '👎': 'false', '🤜': 'grouping', '🤛': 'grouping', '👐': 'shortCircuit', '🤝': 'shortCircuit',
     '😜': 'identity', '🍬': 'optional', '🤷': 'noValue', '🤷‍♀': 'noValue', '🤷‍♂': 'noValue', '🍺': 'unwrap',
-    '🆗': 'handle', '🚧': 'errorType', '🔶': 'namespace', '🔲': 'cast', '⚖': 'size', '⚪': 'something',
-    '🔵': 'someobject', '◼': 'noReturn', '⚫': 'builtInType', '⬛': 'typeValue', '🍱': 'multiprotocol',
+    '🆗': 'handle', '🚨': 'raise', '🔺': 'reraise', '🚧': 'errorType', '🔶': 'namespace', '🔲': 'cast', '⚖': 'size',
+    '⚪': 'something', '🔵': 'someobject', '◼': 'noReturn', '⚫': 'builtInType', '⬛': 'typeValue', '🍱': 'multiprotocol',
     '✴': 'reference', '🏮': 'shared', '📣': 'expectation', '📦': 'package', '📜': 'include', '🔗': 'link',
     '🌍': 'exported', '🔏': 'final', '✒': 'override', '🥯': 'inline', '⚠': 'deprecated', '🔑': 'required',
     '🔓': 'access', '🔒': 'access', '🔐': 'access', '📻': 'foreign', '☣': 'unsafe', '🍼': 'initParameter',
 };
 
+/** Keywords that the compiler reads as names where no keyword is expected, e.g. 🔒 in `🔒 mutex❗️` calls the method
+ * 🔒 of 🔐, and 🚧 names a class of the s package. */
+const NAMES = new Set(['🏁', '📦', '📜', '🔗', '🌍', '🔏', '✒', '🥯', '⚠', '🔑', '🔓', '🔒', '🔐', '📻', '🍼', '♻', '🚧',
+                       '⚪', '🔵']);
+
 const EMOJI = /\p{Extended_Pictographic}|[\u{1F1E6}-\u{1F1FF}]/u;
 const NUMBER = /^(?:0,*[xX][0-9a-fA-F,]*|[+-]?,*[0-9][0-9,]*)(?:\.[0-9]+)?$/;
 const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+/** Whether a grapheme ends a line like the lexer's line breaks. \r\n is one grapheme. */
+const isLineBreak = (g: string) => g === '\n' || g === '\r\n' || g === '\u2028' || g === '\u2029';
 
 /** Splits Emojicode source into pieces. Whitespace, and the parts of comments between pieces, are left out. */
 export function lex(text: string): Piece[] {
@@ -277,8 +291,9 @@ export function lex(text: string): Piece[] {
             i = end + 1;
         }
         else if (g === '💭') {
-            const end = find(i, '\n');
-            add('comment', i, graphemes[end].text === '\n' ? end - 1 : end);
+            let end = i;
+            while (end < graphemes.length - 1 && !isLineBreak(graphemes[end].text)) end++;
+            add('comment', i, isLineBreak(graphemes[end].text) ? end - 1 : end);
             i = end + 1;
         }
         else if (g === '📗' || g === '📘') {
@@ -298,11 +313,17 @@ export function lex(text: string): Piece[] {
         }
         else if (g === '🔤') {
             add('string', i, i);
+            pieces[pieces.length - 1].opensString = true;
             i = lexString(i + 1);
         }
         else if (EMOJI.test(g)) {
-            add('emoji', i, i);
-            i++;
+            // 🔸 joins emoji into one name, e.g. 🚧🔸↕️.
+            let end = i;
+            while (graphemes[end + 1]?.text === '🔸' && end + 2 < graphemes.length && EMOJI.test(graphemes[end + 2].text)) {
+                end += 2;
+            }
+            add('emoji', i, end);
+            i = end + 1;
         }
         else {
             let end = i;
@@ -380,7 +401,7 @@ export class LearnerDocument {
             this.tokenIndex.set(piece, index);
             if (!this.lineStarts.has(token.line)) this.lineStarts.set(token.line, index);
 
-            const opener = { '🍉': '🍇', '🍆': '🐚🍿', '🤛': '🤜' }[token.text];
+            const opener = token.text === '🍉' ? '🍇' : token.text === '🍆' ? '🐚🍿' : token.text === '🤛' ? '🤜' : undefined;
             if (['🍇', '🐚', '🍿', '🤜'].includes(token.text)) {
                 open.push(index);
             }
@@ -393,19 +414,20 @@ export class LearnerDocument {
         }
     }
 
-    /** Returns the piece at `offset`, and the section that explains it, or only the piece if code must be asked. */
-    explain(offset: number): { piece: Piece; section?: Section } | undefined {
+    /** Returns the piece at `offset` and the section that explains it, if any. `named` tells whether the piece may
+     * name a type or method of a package, which only the language server knows. */
+    explain(offset: number): { piece: Piece; section?: Section; named: boolean } | undefined {
         const piece = this.pieces.find((p) => p.start <= offset && offset < p.end);
         if (piece === undefined) return undefined;
         switch (piece.kind) {
             case 'string': case 'escape': case 'interpolation': case 'comment': case 'documentation':
             case 'packageDocumentation': case 'symbol': case 'number':
-                return { piece, section: S[piece.kind] };
+                return { piece, section: S[piece.kind], named: false };
             case 'word':
-                return { piece, section: S.variable };
+                return { piece, section: S.variable, named: false };
         }
         const name = this.classify(this.tokenIndex.get(piece)!);
-        return { piece, section: name && S[name] };
+        return { piece, section: name && S[name], named: name === undefined || NAMES.has(piece.text) };
     }
 
     /** Returns the section for the emoji token at `i`, or undefined if it is a name, e.g. of a method. */
@@ -436,9 +458,10 @@ export class LearnerDocument {
                 return 'else';
             }
             case '↩': return prev === '↩' || next === '↩' ? 'returnNothing' : 'return';
-            case '🚨': return this.head(i) === token ? 'raise' : 'errorType';
             case '🐇':
-                return next === '❗' || next === '❓' ? 'typeMethod' : 'defineClass';
+                return this.head(i) === token ? 'defineClass' : 'typeMethod';
+            case '🐊':
+                return this.inTypeBody(i) ? 'conformance' : 'defineProtocol';
             case '❗': case '❓':
                 if (this.head(i) === token) return t === '❗' ? 'declareMethod' : 'declareQuestion';
                 return t === '❗' ? 'call' : 'callQuestion';
@@ -447,18 +470,25 @@ export class LearnerDocument {
                 return this.head(i) === token && this.isInitializerDeclaration(i) ? 'declareInitializer' : 'instantiate';
             case '🖍':
                 if (next === '🆕') return this.inTypeBody(i) ? 'instanceVariable' : 'mutable';
-                return this.isDeclarationLine(i) ? 'mutating' : 'mutable';
+                if (this.isDeclarationLine(i)) return 'mutating';
+                return prev === '➡' ? 'assign' : 'mutable';
             case '▶':
-                return prev === '🆕' ? 'namedInitializer' : 'operator';
+                return this.namesInitializer(i) ? 'namedInitializer' : 'operator';
+            case '🚧':
+                // 🚧 is also the error type of the s package, e.g. in 🆕🚧 and in 🚧🚧.
+                if (prev === '🚧' || (prev === '🆕' && !(this.head(i - 1) === this.tokens[i - 1] &&
+                                                       this.isInitializerDeclaration(i - 1)))) {
+                    return undefined;
+                }
+                return 'errorType';
             case '➡': return this.arrow(i);
             case '⬅':
-                if (next !== undefined && OPERATORS.has(next) && this.tokens[i + 1].start === token.end) return 'operatorAssign';
+                // In code, ⬅️ is always followed by an operator, e.g. x ⬅️➕ 1.
                 return prev !== undefined && this.lineTokens(i).some((x) => x.text === '🆕') && this.inTypeBody(i)
-                    ? 'defaultValue' : 'assign';
+                    ? 'defaultValue' : 'operatorAssign';
         }
         if (OPERATORS.has(t)) {
-            // ⬅️➕ is an operator assignment, and ◀️🙌 is one operator.
-            if (prev === '⬅' && this.tokens[i - 1].end === token.start) return 'operatorAssign';
+            if (prev === '⬅') return 'operatorAssign';
             return 'operator';
         }
         return KEYWORDS[t];
@@ -482,7 +512,9 @@ export class LearnerDocument {
         while (j < line.length) {
             const t = line[j].text;
             const after = line[j + 1]?.text;
-            if (t === '🍉' || MODIFIERS.has(t) || (t === '🖍' && after !== '🆕') || (t === '🐇' && (after === '❗' || after === '❓'))) {
+            if ((t === '🍉' && !CONTINUATIONS.includes(after ?? '')) || (MODIFIERS.has(t) && !(t === '☣' && after === '🍇')) ||
+                (t === '🖍' && after !== '🆕') ||
+                (t === '🐇' && this.marksTypeMethod(line, j + 1))) {
                 j++;
             }
             else if (t === '🎍') {
@@ -493,6 +525,28 @@ export class LearnerDocument {
             }
         }
         return line[j];
+    }
+
+    /** Whether the tokens of `line` from `j` on are attributes of a method, i.e. a 🐇 before them makes it a type
+     * method. */
+    private marksTypeMethod(line: Token[], j: number): boolean {
+        while (j < line.length && (MODIFIERS.has(line[j].text) || line[j].text === '🖍' || line[j].text === '🎍')) {
+            j += line[j].text === '🎍' ? 2 : 1;
+        }
+        return line[j]?.text === '❗' || line[j]?.text === '❓';
+    }
+
+    /** Whether the ▶️ at `i` names an initializer, e.g. in 🆕🔡▶️👂🏼❗️ or 🆕 ▶️ 🦈 🍇, rather than comparing. */
+    private namesInitializer(i: number): boolean {
+        let j = i - 1;
+        const before = this.tokens[j];
+        if (before?.text === '🆕') return true;
+        // Otherwise ▶️ follows the type of an instantiation: 🆕, maybe 🔶 and a namespace, the type and maybe its
+        // generic arguments.
+        if (before?.text === '🍆' && before.partner !== undefined) j = before.partner - 1;
+        j--;
+        if (this.tokens[j]?.text !== '🆕' && this.tokens[j - 1]?.text === '🔶') j -= 2;
+        return this.tokens[j]?.text === '🆕';
     }
 
     /** Whether the line of token `i` declares a method or initializer. */
@@ -506,7 +560,7 @@ export class LearnerDocument {
     /** Whether the 🆕 at `i`, which starts its line, declares an initializer rather than creating an instance. */
     private isInitializerDeclaration(i: number): boolean {
         const next = this.tokens[i + 1];
-        if (next === undefined || next.line !== this.tokens[i].line) return false;
+        if (next === undefined || next.line !== this.tokens[i].line || !this.inTypeBody(i)) return false;
         return ['🍇', '▶', '🎍', '🍼', '🚧'].includes(next.text) || next.kind === 'word';
     }
 
@@ -534,8 +588,15 @@ export class LearnerDocument {
         const afterClose = close !== undefined ? this.tokens[close + 1] : undefined;
         // A closure is an expression, so a call or an operator can follow it.
         const continues = afterClose !== undefined && afterClose.line === this.tokens[close!].line &&
-            ['❗', '❓', '⁉', '➡', '🤛', '🍆'].includes(afterClose.text);
-        const heads = ['↪', '🙅', '🔂', '🔁', '🆗', '🏁', '❗', '❓', '🆕', '♻', '🐇', '🕊', '🐊', '🔘'];
+            CONTINUATIONS.includes(afterClose.text);
+        const previous = this.tokens[opener - 1];
+        if (head === token && token.enclosing === undefined && !continues && previous !== undefined && previous.text !== '🍉') {
+            // The body of a type or of 🏁 can start on the line after the declaration.
+            const declaration = this.head(opener - 1)?.text;
+            if (declaration === '🏁') return 'start';
+            if (declaration === '🐇' || declaration === '🕊' || declaration === '🐊' || declaration === '🔘') return 'typeBody';
+        }
+        const heads = ['↪', '🙅', '🔂', '🔁', '🆗', '🏁', '❗', '❓', '🆕', '♻', '🐇', '🕊', '🐊', '🔘', '☣'];
         if (head === undefined || head === token || !heads.includes(head.text) || continues || token.enclosing !== head.enclosing) {
             return 'closure';
         }
@@ -544,6 +605,7 @@ export class LearnerDocument {
         switch (head.text) {
             case '🏁': return 'start';
             case '♻': return 'deinitializer';
+            case '☣': return 'unsafe';
             case '🐇': case '🕊': case '🐊': case '🔘': return 'typeBody';
             case '❗': case '❓': case '🆕': {
                 // 🍇🔢🍉 in a declaration before its body is a callable type.
@@ -559,6 +621,8 @@ export class LearnerDocument {
     /** The section for ➡️ at `i`. */
     private arrow(i: number): SectionName {
         const token = this.tokens[i];
+        // ➡️ 🖍🆕 x declares a mutable variable, and ➡️ 🖍 x changes one.
+        if (this.tokens[i + 1]?.text === '🖍') return this.tokens[i + 2]?.text === '🆕' ? 'mutable' : 'assign';
         if (token.enclosing !== undefined) {
             const enclosing = this.tokens[token.enclosing];
             if (enclosing.text === '🍿') return 'dictionary';

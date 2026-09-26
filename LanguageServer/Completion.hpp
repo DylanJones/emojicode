@@ -54,7 +54,8 @@ public:
 private:
     /// Where in the grammar a position is.
     struct Place {
-        enum Kind { TopLevel, TypeBody, Code } kind;
+        /// Unknown if the lexer stopped at an invalid token before the position.
+        enum Kind { TopLevel, TypeBody, ProtocolBody, Code, Unknown } kind;
         /// Whether only attributes of a declaration come before the position on its line.
         bool statementStart;
     };
