@@ -58,6 +58,7 @@ compilation_tests = [
     "protocolValueType",
     "genericRecursion",
     "optionalGenericField",
+    "nestedOptionalGenericArgument",
     "remoteBoxRelease",
     "boxValueSemantics",
     "borrowedBoxes",

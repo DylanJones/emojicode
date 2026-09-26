@@ -276,8 +276,10 @@ std::vector<Type> Type::selfResolvedGenericArgs() const {
 }
 
 Type Type::rewrapped(Type wrapped) const {
-    if (type() == TypeType::Optional && wrapped.type() == TypeType::Box) {
-        return wrapped.optionalized();  // An optional must not contain a box, but a box an optional.
+    if (type() == TypeType::Optional && (wrapped.type() == TypeType::Box || wrapped.type() == TypeType::Optional)) {
+        // An optional must not contain a box, but a box an optional. Nor can an optional contain an optional, as 🍬🍬T
+        // is 🍬T, so that a generic argument 🍬🔢 in 🍬Element must not make it 🍬🍬🔢.
+        return wrapped.optionalized();
     }
     Type t = *this;
     t.genericArguments_[0] = type() == TypeType::Box ? wrapped.unboxed() : std::move(wrapped);
