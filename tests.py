@@ -49,6 +49,7 @@ compilation_tests = [
     "downcastClass",
     "castAny",
     "castGenericValueType",
+    "castBindingRemote",
     "castGenericClass",
     "protocolClass",
     "protocolSubclass",
