@@ -252,9 +252,9 @@ Type Type::resolveOnSuperArgumentsAndConstraints(const TypeContext &typeContext)
             t = c->superGenericArguments()[t.genericVariableIndex()];
         }
     }
-    while (t.unboxedType() == TypeType::LocalGenericVariable &&
-           typeContext.function() == t.localResolutionConstraint()) {
-        t = typeContext.function()->constraintForIndex(t.genericVariableIndex());
+    while (t.unboxedType() == TypeType::LocalGenericVariable && typeContext.function() != nullptr &&
+           typeContext.function()->isWithin(t.localResolutionConstraint())) {
+        t = t.localResolutionConstraint()->constraintForIndex(t.genericVariableIndex());
     }
     if (c != nullptr) {
         while (t.unboxedType() == TypeType::GenericVariable && c->canResolve(t.resolutionConstraint())) {

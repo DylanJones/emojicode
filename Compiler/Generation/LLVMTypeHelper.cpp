@@ -119,6 +119,9 @@ llvm::StructType* LLVMTypeHelper::llvmTypeForCapture(const Capture &capture, llv
                    [this, escaping](llvm::Type *type) -> llvm::Type* {
         return escaping ? type : pointer();
     });
+    if (capture.genericArgsOf != nullptr) {
+        types.emplace_back(pointer());
+    }
     return llvm::StructType::get(context_, types);
 }
 
@@ -131,14 +134,17 @@ llvm::Type* LLVMTypeHelper::typeForFunction(const Type &type, Function *function
         reifiContext_->providesActualTypeFor(type.genericVariableIndex())) {
         return llvmTypeFor(reifiContext_->actualType(type.genericVariableIndex()));
     }
+    // The local generic variable can belong to a function enclosing the closure function.
     if (type.type() == TypeType::LocalGenericVariable) {
-        return llvmTypeFor(function->constraintForIndex(type.genericVariableIndex()));
+        return llvmTypeFor(type.localResolutionConstraint()->constraintForIndex(type.genericVariableIndex()));
     }
     if (type.type() == TypeType::GenericVariable && function->owner()->canResolve(type.resolutionConstraint())) {
         return llvmTypeFor(function->owner()->constraintForIndex(type.genericVariableIndex()));
     }
     if (type.unoptionalized().type() == TypeType::LocalGenericVariable) {
-        return llvmTypeFor(function->constraintForIndex(type.unoptionalized().genericVariableIndex()).optionalized());
+        auto local = type.unoptionalized();
+        return llvmTypeFor(local.localResolutionConstraint()->constraintForIndex(local.genericVariableIndex())
+                           .optionalized());
     }
     if (type.unoptionalized().type() == TypeType::GenericVariable &&
         function->owner()->canResolve(type.unoptionalized().resolutionConstraint())) {
