@@ -1,0 +1,11 @@
+💭 A dictionary of values smaller than its entries, whose storage is copied before a mutation.
+🏁 🍇
+  🍿 🔤a🔤 ➡️ 💧1❗️ 🔤b🔤 ➡️ 💧2❗️ 🔤c🔤 ➡️ 💧3❗️ 🍆 ➡️ bytes
+  bytes ➡️ 🖍🆕 copy
+  💧9❗️ ➡️ 🐽copy 🔤d🔤❗️
+  ↪️ 🐽copy 🔤b🔤❗️ ➡️ b 🍇
+    😀 🔡 b❗️❗️
+  🍉
+  😀 🔡 📏bytes❓❗️❗️
+  😀 🔡 📏copy❓❗️❗️
+🍉

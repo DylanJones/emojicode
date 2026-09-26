@@ -1,4 +1,5 @@
-💭 A ☣️ block in a closure of a method keeps the method from being specialized.
+💭 A ☣️ block, also in a closure, can be specialized, as memory holds values of the type T stands for in generic
+💭 code too.
 🕊 📦🐚T ⚪🍆 🍇
   🖍🆕 memory 🧠
   🆕 🍇
@@ -22,7 +23,7 @@
   🍉
 🍉
 
-💭 ⚖️ keeps a method from being specialized, as it is the size of a box in generic code.
+💭 ⚖️T is the size of a value of the type T stands for, in generic code too.
 🕊 🧺🐚T ⚪️🍆 🍇
   🖍🆕 data 🧠
   🖍🆕 count 🔢

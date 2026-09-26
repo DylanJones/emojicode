@@ -20,12 +20,6 @@ namespace EmojicodeCompiler {
 ASTSizeOf::ASTSizeOf(std::unique_ptr<ASTType> type, const SourcePosition &p) : ASTExpr(p), type_(std::move(type)) {}
 
 Type ASTSizeOf::analyse(ExpressionAnalyser *analyser) {
-    auto function = analyser->typeContext().function();
-    if (function != nullptr && function->enclosingSpecialization() != nullptr) {
-        // Generic code uses the size of a box for values of generic types, which a specialization would not do. A
-        // size is typically used with memory that generic code also accesses.
-        throw CompilerError(position(), "A specialization cannot use ⚖️.");
-    }
     type_->analyseType(analyser->typeContext());
     analyser->usesGenericArgumentsOf(type_->type());
     return analyser->integer();
