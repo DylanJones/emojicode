@@ -148,7 +148,7 @@ llvm::Function* buildBoxMakeUnique(CodeGenerator *cg, const Type &type) {
     if (!cg->typeHelper().isRemote(type)) {
         return nullptr;
     }
-    auto fn = createFunction(cg, mangleTypeName(type) + ".boxMakeUnique");
+    auto fn = createFunction(cg, mangleBoxMakeUnique(type));
     FunctionCodeGenerator fg(fn, cg, std::make_unique<TypeContext>(type));
     fg.createEntry();
     fg.makeRemoteBoxValueUnique(fn->args().begin(), type);

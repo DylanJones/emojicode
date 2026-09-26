@@ -27,7 +27,6 @@ private:
 
     /// Consumes the tokens up to and including the name of the method declared at @p position.
     void skipToName(const SourcePosition &position);
-    void skipGenericParameters();
     void parseFunction(Function *specialization);
 };
 

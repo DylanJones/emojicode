@@ -189,6 +189,10 @@ std::string mangleBoxRelease(const Type &type) {
     return mangleTypeName(type) + ".boxRelease";
 }
 
+std::string mangleBoxMakeUnique(const Type &type) {
+    return mangleTypeName(type) + ".boxMakeUnique";
+}
+
 std::string mangleBoxInfoName(const Type &type) {
     return mangleTypeName(type) + ".boxInfo";
 }

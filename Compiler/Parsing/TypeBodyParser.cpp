@@ -52,12 +52,7 @@ void TypeBodyParser<TypeDef>::parseFunctionBody(Function *function) {
 
 template <typename TypeDef>
 void TypeBodyParser<TypeDef>::parseFunction(Function *function, bool inititalizer, bool escaping) {
-    parseGenericParameters(function);
-    parseParameters(function, inititalizer);
-    if (!inititalizer) {
-        parseReturnType(function);
-    }
-    bool errorProne = parseErrorType(function);
+    bool errorProne = parseFunctionSignature(function, inititalizer);
     if (errorProne && inititalizer && !std::is_same<TypeDef, Class>::value) {
         throw CompilerError(function->position(), "Only classes can have error-prone initializers.");
     }
