@@ -28,7 +28,10 @@ class Lexer {
 public:
     /// @param sourceCode The Emojicode source code that shall be analyzed.
     /// @param minimalMode In minimal mode comments and line endings are discarded.
-    Lexer(SourceFile *source, bool minimalMode);
+    /// @param recordLines Whether to record where each line of @p source begins (see SourceFile::lines()), which a
+    /// lexer does by default unless in minimal mode. The lines must only be recorded once.
+    Lexer(SourceFile *source, bool minimalMode, bool recordLines);
+    Lexer(SourceFile *source, bool minimalMode) : Lexer(source, minimalMode, !minimalMode) {}
 
     /// @returns The next token.
     /// @throws CompilerError if an error occurs during tokenization.
@@ -116,6 +119,7 @@ private:
     std::map<char32_t, TokenType> singleTokens_;
 
     const bool minimalMode_;
+    const bool recordLines_;
 
     TokenState continueIdentifierToken(Token *token, TokenConstructionState *constState) const;
     /// Called when an identifier token has ended. Turns it into a NoValue or Else token if appropriate.

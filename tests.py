@@ -209,6 +209,7 @@ host_tests = [
 # that is only generated in importers, like the bodies of inlined methods.
 importing_tests = [
     "inlineClosure",
+    "importedSpecialization",
 ]
 reject_tests = glob.glob(os.path.join(dist.source, "tests", "reject",
                                       "*.emojic"))
@@ -306,8 +307,12 @@ def specialization_test(name):
         with source_lock(source_path):
             run([emojicodec, source_path, '--emit-llvm', '-o', os.path.join(directory, name)], check=True)
         ir = open(os.path.join(directory, name + ".ll"), "r", encoding='utf-8').read()
+    check_specializations(name, ir, os.path.join(dist.source, "tests", "compilation", name + ".specializations"))
+
+
+def check_specializations(name, ir, exp_path):
+    """Checks that the specializations defined in the IR are those listed in the file at exp_path."""
     specializations = sorted(set(re.findall(r'^define internal [^@]*@"([^"]*\$s<[^"]*)"', ir, re.MULTILINE)))
-    exp_path = os.path.join(dist.source, "tests", "compilation", name + ".specializations")
     expected = open(exp_path, "r", encoding='utf-8').read().split()
     if specializations != expected:
         log("Missing specializations: " + ", ".join(sorted(set(expected) - set(specializations))))
@@ -373,6 +378,14 @@ def importing_test(name):
          os.path.join(directory, package + ".🍇"), '-O'], check=True)
     run([emojicodec, '-S', os.path.join(directory, "packages"), os.path.join(directory, name + ".emojic"), '-O'],
         check=True)
+    # The specializations of the package's functions that the program creates, if listed.
+    exp_path = os.path.join(directory, name + ".specializations")
+    if os.path.exists(exp_path):
+        with tempfile.TemporaryDirectory() as ir_directory:
+            run([emojicodec, '-S', os.path.join(directory, "packages"), os.path.join(directory, name + ".emojic"),
+                 '--emit-llvm', '-o', os.path.join(ir_directory, name)], check=True)
+            ir = open(os.path.join(ir_directory, name + ".ll"), "r", encoding='utf-8').read()
+        check_specializations(name, ir, exp_path)
     completed = run([os.path.join(directory, name)], stdout=PIPE)
     output = completed.stdout.decode('utf-8')
     if output != open(os.path.join(directory, name + ".txt"), "r", encoding='utf-8').read() or \

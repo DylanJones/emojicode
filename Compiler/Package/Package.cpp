@@ -90,7 +90,10 @@ std::pair<SourceFile*, TokenStream> Package::lexFile(const std::string &path) {
     }
 
     auto file = compiler()->sourceManager().read(path);
-    return std::make_pair(file, TokenStream(Lexer(file, isImported())));
+    // The lines of an imported interface are recorded too, as specializations of its inline functions parse it again,
+    // unless the file was already lexed.
+    auto recordLines = !isImported() || file->lines().size() == 1;
+    return std::make_pair(file, TokenStream(Lexer(file, isImported(), recordLines)));
 }
 
 void Package::includeDocument(const std::string &path, const std::string &relativePath) {
@@ -104,9 +107,6 @@ void Package::includeDocument(const std::string &path, const std::string &relati
         throw;
     }
     including_.pop_back();
-    if (isImported()) {
-        pair.first->clearContent();
-    }
 }
 
 void Package::addSpecialization(std::unique_ptr<Function> function) {

@@ -1,0 +1,41 @@
+💭 Generic code that importers specialize for their own types. Only inline functions (🥯 or short) have their bodies
+💭 in the interface.
+
+🌍 🕊 🎁🐚T 📈🐚T🍆🍆 🍇
+  🖍🆕 value T
+
+  🆕 🍼 value T 🍇🍉
+
+  🥯❗️ 🍹 other T ➡️ T 🍇
+    value ✖️ value ➡️ square
+    ↩️ square ➕ other
+  🍉
+
+  🥯🖍❗️ 📈 by T 🍇
+    value ⬅️➕ by
+  🍉
+
+  ❗️ 🔍 ➡️ T 🍇
+    ↩️ value
+  🍉
+
+  💭 Not inline, so importers call the erased version.
+  ❗️ 🧮 times 🔢 ➡️ T 🍇
+    value ➡️ 🖍🆕 result
+    🔂 i 🆕⏩ 1 times❗️ 🍇
+      result ⬅️➕ value
+    🍉
+    ↩️ result
+  🍉
+🍉
+
+🌍 🕊 🧰 🍇
+  🆕 🍇🍉
+
+  🥯🐇❗️ 🌗🐚A 📈🐚A🍆🍆 a A b A ➡️ A 🍇
+    ↪️ a ▶️ b 🍇
+      ↩️ a
+    🍉
+    ↩️ b
+  🍉
+🍉

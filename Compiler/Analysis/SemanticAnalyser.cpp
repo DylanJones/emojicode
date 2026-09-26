@@ -133,7 +133,10 @@ static bool appendConcreteArguments(const std::vector<Type> &types, std::vector<
 
 Function* SemanticAnalyser::specialize(Function *function, const Type &calleeType,
                                        const std::vector<Type> &genericArguments) {
-    if (!declarationsAnalysed_ || imported_ || function->package() != package_ || !isSpecializable(function)) {
+    // A function of an imported package can be specialized if its body is in the package's interface, i.e. it is
+    // inline. The specialization belongs to this package.
+    if (!declarationsAnalysed_ || imported_ || !isSpecializable(function) ||
+        (function->package() != package_ && !(function->package()->isImported() && function->isInline()))) {
         return nullptr;
     }
     auto owner = function->owner();
