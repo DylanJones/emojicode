@@ -1,0 +1,98 @@
+💭 A multiprotocol value is passed where one of its protocols is expected.
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+🐊 🔽 🍇
+  ❗️ 🔡 ➡️ 🔡
+🍉
+🐇 🐟 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ♻️ 🍇
+    😀 🔤deinit🔤❗️
+    😀 name❗️
+  🍉
+🍉
+🕊 🐘 🍇
+  🐊 🔼
+  🐊 🔽
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 fish 🐟
+  🆕 🍼 a 🔢 name 🔡 🍇
+    0 ➡️ 🖍b
+    0 ➡️ 🖍c
+    🆕🐟 name❗️ ➡️ 🖍fish
+  🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔤elephant🔤
+  🍉
+🍉
+🕊 🐭 🍇
+  🐊 🔼
+  🐊 🔽
+  🖍🆕 a 🔢
+  🆕 🍼 a 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔤mouse🔤
+  🍉
+🍉
+🐇 🧰 🍇
+  🐇❗️ 📐 value 🔼 ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+  🐇❗️ 📛 value 🔽 ➡️ 🔡 🍇
+    ↩️ 🔡 value❗️
+  🍉
+  🐇❗️ 🍪🐚T 🔼🍆 value T ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+  🐇❗️ 👣🐚T ⚪🍆 iterator 🍡🐚T🍆 ➡️ 🔢 🍇
+    0 ➡️ 🖍🆕 count
+    iterator ➡️ 🖍🆕 copy
+    🔁 🔽copy❓ 🍇
+      🔽copy❗️
+      count ⬅️➕ 1
+    🍉
+    ↩️ count
+  🍉
+  🐇❗️ 🔀 iterator 🍱🍡🐚🔢🍆🔂🐚🔢🍆🍱 ➡️ 🔢 🍇
+    ↩️ 👣🐇🧰 iterator❗️
+  🍉
+  🐇❗️ 🎈 value 🍬🍱🔼🔽🍱 ➡️ 🔢 🍇
+    🖍🆕 maybe 🍬🔼
+    value ➡️ 🖍maybe
+    ↪️ maybe ➡️ m 🍇
+      ↩️ 📏m❗️
+    🍉
+    ↩️ -1
+  🍉
+  🐇❗️ 🙈 value 🍱🔼🔽🍱 🍇
+    😀 🔡 🍪🐇🧰 value❗️❗️❗️
+    😀 🔡 🎈🐇🧰 value❗️❗️❗️
+    😀 🔡 📐🐇🧰 value❗️❗️❗️
+    😀 📛🐇🧰 value❗️❗️
+    🖍🆕 kept 🔼
+    value ➡️ 🖍kept
+    😀 🔡 📏kept❗️❗️❗️
+    🖍🆕 maybe 🍬🔽
+    value ➡️ 🖍maybe
+    ↪️ maybe ➡️ m 🍇
+      😀 🔡m❗️❗️
+    🍉
+  🍉
+🍉
+🏁 🍇
+  🙈🐇🧰 🆕🐘 10 🔤dumbo🔤❗️❗️
+  🙈🐇🧰 🆕🐭 20❗️❗️
+  😀 🔡 🔀🐇🧰 🍡🆕⏩ 0 4❗️❗️❗️❗️❗️
+  😀 🔡 🎈🐇🧰 🤷‍♀️❗️❗️❗️
+  😀 🔤end🔤❗️
+🍉

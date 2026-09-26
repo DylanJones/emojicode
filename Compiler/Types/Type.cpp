@@ -515,6 +515,11 @@ bool Type::isCompatibleToProtocol(const Type &to, const TypeContext &ct, Generic
     if (type() == TypeType::Protocol) {
         return this->typeDefinition() == to.typeDefinition() && identicalGenericArguments(to, ct, inf);
     }
+    if (type() == TypeType::MultiProtocol) {  // Reboxing takes the conformance to the protocol from the box.
+        return std::any_of(protocols().begin(), protocols().end(), [&](const Type &protocol) {
+            return protocol.isCompatibleToProtocol(to, ct, inf);
+        });
+    }
     return false;
 }
 
