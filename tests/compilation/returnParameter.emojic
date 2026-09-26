@@ -1,0 +1,79 @@
+💭 A returned parameter is retained, as the caller releases the result and still owns the argument.
+🐇 🐟 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ♻️ 🍇
+    😀 🔤deinit🔤❗️
+    😀 name❗️
+  🍉
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ name
+  🍉
+🍉
+
+💭 Too large to be stored in a box, so boxes store it in an object on the heap.
+🕊 🐘 🍇
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 fish 🐟
+  🆕 🍼 a 🔢 name 🔡 🍇
+    0 ➡️ 🖍b
+    0 ➡️ 🖍c
+    🆕🐟 name❗️ ➡️ 🖍fish
+  🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+🍉
+
+🐇 🔨 🍇
+  💭 Class methods are not specialized, so the optional is boxed.
+  🐇❗️ ↔️🐚T ⚪🍆 value 🍬T ➡️ 🍬T 🍇
+    ↩️ value
+  🍉
+  🐇❗️ 🔃 value 🍬🐟 ➡️ 🍬🐟 🍇
+    ↩️ value
+  🍉
+  🐇❗️ 🔄 value 🐟 ➡️ 🐟 🍇
+    ↩️ value
+  🍉
+  🐇❗️ 🔀 value 🐟 other 🐟 first 👌 ➡️ 🐟 🍇
+    ↪️ first 🍇
+      ↩️ value
+    🍉
+    ↩️ other
+  🍉
+🍉
+
+🏁 🍇
+  ↔️🐇🔨 🆕🐟 🔤discarded🔤❗️❗️
+  ↔️🐇🔨 🆕🐘 1 🔤discarded remote🔤❗️❗️
+  ↔️🐚🐟🍆🐇🔨 🤷‍♀️❗️
+  ↔️🐇🔨 🆕🐘 2 🔤kept remote🔤❗️❗️ ➡️ keptRemote
+  ↪️ keptRemote ➡️ elephant 🍇
+    😀 🔡 📏elephant❗️❗️❗️
+  🍉
+
+  🖍🆕 maybe 🍬🐟
+  🤷‍♀️ ➡️ 🖍maybe
+  ↔️🐇🔨 maybe❗️ ➡️ fromNone
+  ↪️ fromNone 🙌 🤷‍♀️ 🍇
+    😀 🔤none🔤❗️
+  🍉
+  🆕🐟 🔤generic optional🔤❗️ ➡️ 🖍maybe
+  ↔️🐇🔨 maybe❗️
+  ↔️🐇🔨 maybe❗️ ➡️ fromVariable
+  ↪️ fromVariable ➡️ f 🍇
+    😀 🔡f❗️❗️
+  🍉
+
+  🖍🆕 optional 🍬🐟
+  🆕🐟 🔤optional🔤❗️ ➡️ 🖍optional
+  🔃🐇🔨 optional❗️
+  🖍🆕 fish 🐟
+  🆕🐟 🔤plain🔤❗️ ➡️ 🖍fish
+  🔄🐇🔨 fish❗️
+  😀 🔡🔀🐇🔨 fish 🆕🐟 🔤other🔤❗️ 👎❗️❗️❗️
+  😀 🔤end🔤❗️
+🍉

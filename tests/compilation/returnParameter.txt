@@ -1,0 +1,19 @@
+deinit
+discarded
+deinit
+discarded remote
+2
+none
+generic optional
+other
+deinit
+other
+end
+deinit
+kept remote
+deinit
+generic optional
+deinit
+optional
+deinit
+plain
