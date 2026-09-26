@@ -34,6 +34,12 @@ void PackageCreator::generate() {
     for (auto &klass : package_->classes()) {
         createClass(klass.get());
     }
+    // The generic arguments of a specialization can be any type, which must have been created to declare it.
+    for (auto &valueType : package_->valueTypes()) {
+        for (auto &specialization : valueType->specializations()) {
+            createFunction(specialization.get());
+        }
+    }
     for (auto &function : package_->functions()) {
         createFunction(function.get());
     }
@@ -115,9 +121,6 @@ void ImportedPackageCreator::createClassInfo(Class *klass) {
 void PackageCreator::createValueType(ValueType *valueType) {
     valueType->createUnspecificReification();
     valueType->eachFunction([&](Function *function) { createFunction(function); });
-    for (auto &specialization : valueType->specializations()) {
-        createFunction(specialization.get());
-    }
 
     if (valueType == package_->compiler()->sWeak) {
         valueType->setDestructor(createMemoryFunction("ejcReleaseWeak", generator_, valueType));

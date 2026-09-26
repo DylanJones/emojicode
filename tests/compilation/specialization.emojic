@@ -20,8 +20,22 @@
   🍉
 🍉
 
+💭 🍓 and 🍑 are only created with inferred types, which does not make the compiler create them early.
+🐇 🍓 🍇
+  🐊 📦
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n
+  🍉
+🍉
+
 🕊 🧰 🍇
   🆕 🍇🍉
+
+  🐇❗️ 📐🐚T 📦🍆 x T ➡️ 🔢 🍇
+    ↩️ 📏 x❗️
+  🍉
 
   🐇❗️ 🔮🐚T ⚪🍆 x T ➡️ T 🍇
     ↩️ x
@@ -107,6 +121,16 @@
   🍉
 🍉
 
+💭 Declared after 🧰, so it is created after 🧰.
+🕊 🍑 🍇
+  🐊 📦
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n ✖️ 100
+  🍉
+🍉
+
 🏁 🍇
   😀 🔮🐚🔡🍆🕊🧰 🔤mirror🔤❗️❗️
   😀 🔡 🔮🕊🧰 42❗️❗️❗️
@@ -125,4 +149,10 @@
   🐻inbox 🔤first🔤❗️
   📥inbox 🍿 1 2 🍆 🍇 n 🔢 ➡️ 🔡 ↩️ 🔡 n❗️ 🍉❗️
   😀 🔡 📏inbox❓❗️❗️
+
+  😀 🔡 📐🕊🧰 🆕🍓 7❗️❗️❗️❗️
+  😀 🔡 📐🕊🧰 🆕🍑 8❗️❗️❗️❗️
+  🆕📮🐚🍓🍆❗️ ➡️ 🖍🆕 basket
+  🐻basket 🆕🍓 1❗️❗️
+  😀 🔡 📏basket❓❗️❗️
 🍉
