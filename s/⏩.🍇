@@ -64,7 +64,8 @@
   Iterator over a [[⏩]].
 
   Being a value type whose methods are inlined, iterating a range with 🔂
-  compiles to a plain counting loop.
+  compiles to a plain counting loop. Like other values, a copy of an iterator
+  is independent of it: iterating one copy does not advance the others.
 📗
 🌍 🕊 👣 🍇
   🐊 🍡🐚🔢🍆
@@ -80,6 +81,9 @@
   🍉
 
   🥯🖍❗️ 🔽 ➡️ 🔢 🍇
+    ↪️ index ▶️🙌 count 🎍🐌🍇
+      🤯🐇💻 🔤Iterated past the end of a ⏩ with 👣🔽❗️🔤❗️
+    🍉
     start ➕ index ✖️ step ➡️ value
     index ⬅️➕ 1
     ↩️ value
