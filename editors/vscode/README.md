@@ -1,7 +1,8 @@
 # Emojicode for Visual Studio Code
 
-Highlighting, bracket matching, folding and comment toggling for Emojicode. With the `emojicode-lsp` language
-server it also:
+Highlighting, bracket matching, folding and comment toggling for Emojicode. Like braces in other languages, typing
+🍇, 🤜, 🐚 or 🍿 in code adds the closing 🍉, 🤛 or 🍆, and typing 🔤, 📗 or 📘 adds the one that ends the string or
+documentation comment. Nothing is added in strings and comments. With the `emojicode-lsp` language server it also:
 
 - shows errors and warnings as you type,
 - shows types, method signatures and documentation on hover,
@@ -46,5 +47,6 @@ it. Without it the extension still highlights code.
 The grammar is generated: edit `syntaxes/generate.py` and run it, then `npm test`. The test tokenizes snippets with
 the same engine as VS Code and checks that every Emojicode file in the repository tokenizes without a runaway
 string or comment. `test/learnerDocs.test.js` checks which section the learner docs link each token to, and that
-the headings exist if the documentation's repository is next to this one. To try the extension, open
-this folder in VS Code and press F5.
+the headings exist if the documentation's repository is next to this one. `npm run test:integration` types into VS
+Code, with a fresh profile, to check that 🍇 and the other openings are closed. To try the extension, open this
+folder in VS Code and press F5.

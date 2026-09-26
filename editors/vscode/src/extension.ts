@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { LanguageClient, LanguageClientOptions, ServerOptions } from 'vscode-languageclient/node';
+import { registerAutoClose } from './autoClose';
 import { registerLearnerDocs } from './learnerHover';
 
 let client: LanguageClient | undefined;
@@ -10,6 +11,7 @@ let starting: Promise<void> | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
     registerLearnerDocs(context, () => client);
+    registerAutoClose(context);
     context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async (event) => {
         if (event.affectsConfiguration('emojicode.server') || event.affectsConfiguration('emojicode.packageSearchPaths')) {
             await stopClient();
