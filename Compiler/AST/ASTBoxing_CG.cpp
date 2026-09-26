@@ -124,25 +124,46 @@ Value* ASTSimpleToBox::generate(FunctionCodeGenerator *fg) const {
     }
     // The value is released as a temporary, but a heap object storing it is not. It is released after the value,
     // which is in it.
-    if (remoteObject_ != nullptr && !allocatesOnStack() && producesTemporaryObject()) {
-        fg->addTemporaryRemoteObject(remoteObject_);
+    if (remoteObject_ != nullptr) {
+        if (auto objectVariable = temporaryRemoteObjectVariable(fg)) {
+            fg->builder().CreateStore(remoteObject_, objectVariable);
+            fg->addTemporaryRemoteObject(objectVariable);
+        }
     }
     return fg->builder().CreateLoad(fg->typeHelper().box(), box);
 }
 
 Value* ASTSimpleOptionalToBox::generate(FunctionCodeGenerator *fg) const {
     auto value = expr_->generate(fg);
-
-
     auto hasNoValue = fg->buildOptionalHasNoValue(value, expr_->expressionType());
+    // An object is only allocated if there is a value.
+    auto objectVariable = temporaryRemoteObjectVariable(fg);
+    if (objectVariable != nullptr) {
+        fg->builder().CreateStore(llvm::ConstantPointerNull::get(fg->typeHelper().pointer()), objectVariable);
+    }
 
-    return fg->createIfElsePhi(hasNoValue, [&] {
+    auto result = fg->createIfElsePhi(hasNoValue, [&] {
         return fg->buildBoxWithoutValue();
     }, [&] {
         auto box = fg->createEntryAlloca(fg->typeHelper().box());
         getPutValueIntoBox(box, fg->buildGetOptionalValue(value, expr_->expressionType()), fg);
+        if (objectVariable != nullptr) {
+            fg->builder().CreateStore(remoteObject_, objectVariable);
+        }
         return fg->builder().CreateLoad(fg->typeHelper().box(), box);
     });
+    if (objectVariable != nullptr) {
+        fg->addTemporaryRemoteObject(objectVariable);
+    }
+    return result;
+}
+
+Value* ASTToBox::temporaryRemoteObjectVariable(FunctionCodeGenerator *fg) const {
+    auto containedType = expr_->expressionType().unboxed().unoptionalized();
+    if (!fg->typeHelper().isRemote(containedType) || allocatesOnStack() || !producesTemporaryObject()) {
+        return nullptr;
+    }
+    return fg->createEntryAlloca(fg->typeHelper().pointer());
 }
 
 Value* ASTToBox::buildStoreAddress(Value *box, FunctionCodeGenerator *fg) const {

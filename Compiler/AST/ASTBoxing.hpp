@@ -94,6 +94,10 @@ protected:
         ASTBoxing::analyseMemoryFlow(analyser, type);
     }
 
+    /// Returns a variable that will hold the heap object in which buildStoreAddress() stores a remote value, which is
+    /// released as a temporary, or nullptr if the value is not stored in such an object or it is not a temporary.
+    Value* temporaryRemoteObjectVariable(FunctionCodeGenerator *fg) const;
+
     /// The heap object that buildStoreAddress() allocated for a remote value, or nullptr.
     mutable Value *remoteObject_ = nullptr;
 };

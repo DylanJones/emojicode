@@ -15,4 +15,6 @@ second
 deinit
 third
 deinit
+optional
+deinit
 stored
