@@ -1,0 +1,10 @@
+# 🔍 and 🔎 of 🧰: 🤯 is called directly and nothing follows it.
+@ ^_\.vt_1f9f0\.type\.1f50[de]-
++ call void @sPanic\([^\n]*\n\s*unreachable
+# 💌 of 🧰: 💬 of 🚧 is 🔏.
+@ ^_\.vt_1f9f0\.type\.1f48c-
++ call ptr @s\.class_1f6a7\.1f4ac
+- dispatchFunc
+# 🏁: ⏲ is called on the class 🧵 named in the call.
+@ ^fn_1f3c1$
++ call void @sThreadDelay

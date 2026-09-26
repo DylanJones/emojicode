@@ -1,0 +1,54 @@
+🕊 🛤 🍇
+  🐊 🍡🐚🔢🍆
+  🖍🆕 index 🔢
+  🖍🆕 count 🔢
+  🆕 🍼 count 🔢 🍇
+    0 ➡️ 🖍index
+  🍉
+  🖍❗️ 🔽 ➡️ 🔢 🍇
+    index ⬅️➕ 1
+    ↩️ index
+  🍉
+  ❓ 🔽 ➡️ 👌 🍇
+    ↩️ index ◀️ count
+  🍉
+🍉
+
+🕊 🎢 🍇
+  🐊 🔂🐚🔢🍆
+  🖍🆕 count 🔢
+  🆕 🍼 count 🔢 🍇🍉
+  ❗️ 🍡 ➡️ 🛤 🍇
+    ↩️ 🆕🛤 count❗️
+  🍉
+🍉
+
+🏁 🍇
+  🔂 i 🆕🎢 3❗️ 🍇
+    😀 🔡 i❗️❗️
+  🍉
+
+  💭 Advances the iterator through a protocol box.
+  🖍🆕 iterable 🔂🐚🔢🍆
+  🆕🎢 2❗️ ➡️ 🖍iterable
+  🔂 i iterable 🍇
+    😀 🔡 i❗️❗️
+  🍉
+
+  🔂 i 🆕⏩ 5 0 -1❗️ 🍇
+    😀 🔡 i❗️❗️
+  🍉
+  💭 Without a step, a range only counts up.
+  🔂 i 🆕⏩ 5 0❗️ 🍇
+    😀 🔤Range without a step counted down🔤❗️
+  🍉
+  🔂 i 🆕⏩ 0 10 3❗️ 🍇
+    😀 🔡 i❗️❗️
+  🍉
+  🔂 i 🆕⏩ 10 0 -4❗️ 🍇
+    😀 🔡 i❗️❗️
+  🍉
+  🔂 i 🆕⏩ 3 3❗️ 🍇
+    😀 🔤Empty range iterated🔤❗️
+  🍉
+🍉
