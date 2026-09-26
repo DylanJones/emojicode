@@ -207,10 +207,14 @@ std::string mangleTypeName(const Type &type) {
     return stream.str();
 }
 
+/// The layout of protocol conformances, which is part of their names, so that code expecting another layout, e.g. a
+/// package compiled by an earlier version of the compiler, does not link.
+constexpr int kProtocolConformanceLayout = 2;
+
 std::string mangleProtocolConformance(const Type &type, const Type &protocol) {
     std::stringstream stream;
     mangleTypeName(stream, type);
-    stream << ".conformances.";
+    stream << ".conformances" << kProtocolConformanceLayout << ".";
     mangleTypeName(stream, protocol);
     return stream.str();
 }
