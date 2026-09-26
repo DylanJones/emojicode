@@ -10,3 +10,6 @@ not an integer
 33
 3
 3
+7
+800
+1
