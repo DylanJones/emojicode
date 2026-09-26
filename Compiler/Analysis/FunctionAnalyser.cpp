@@ -41,7 +41,10 @@ FunctionType FunctionAnalyser::functionType() const {
 void FunctionAnalyser::configureClosure(Function *closure) const {
     closure->setMutating(function()->mutating());
     closure->setOwner(function()->owner());
-    closure->setEnclosingFunction(function_);
+    // A C function captures nothing, so it has no generic arguments to describe the generic variables with.
+    if (!closure->isC()) {
+        closure->setEnclosingFunction(function_);
+    }
     auto functionType = function()->functionType();
     if (functionType == FunctionType::ObjectInitializer) {
         closure->setFunctionType(FunctionType::ObjectMethod);
