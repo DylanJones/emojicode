@@ -163,7 +163,7 @@ Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const
         }
         builtIn_ = BuiltInType::Multiprotocol;
         callType_ = CallType::DynamicProtocolDispatch;
-        return analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
+        return analyser->analyseFunctionCall(&args_, calleeType_, method_);
     }
     throw CompilerError(position(), "No type in ", calleeType_.toString(analyser->typeContext()),
                         " provides a method ", utf8(name), ".");

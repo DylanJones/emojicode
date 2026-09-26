@@ -15,7 +15,6 @@
 #include "Package/Package.hpp"
 #include "ThunkBuilder.hpp"
 #include "Parsing/SpecializationParser.hpp"
-#include "Functions/Initializer.hpp"
 #include "Types/Class.hpp"
 #include "Types/Protocol.hpp"
 #include "Types/TypeDefinition.hpp"
@@ -85,6 +84,7 @@ void SemanticAnalyser::analyse(bool executable) {
     if (auto observer = compiler()->analysisObserver()) {
         observer->analysingFunctions(package_);
     }
+    declarationsAnalysed_ = true;
     analyseQueue();
     checkStartFlagFunction(executable);
 }
@@ -107,25 +107,13 @@ static bool isSpecializable(Function *function) {
            function->functionType() == FunctionType::Function;
 }
 
-/// Appends @p types to @p arguments without reference and mutability. Returns false if one is not concrete.
+/// Appends @p types to @p arguments in the form in which they are written. Returns false if one is not concrete.
 static bool appendConcreteArguments(const std::vector<Type> &types, std::vector<Type> *arguments) {
     for (auto &argument : types) {
-        if (argument.containsGenericVariables()) {
+        if (argument.containsGenericVariables() || argument.isCompileTimeOnly()) {
             return false;
         }
-        switch (argument.unboxedType()) {
-            case TypeType::Invalid:
-            case TypeType::StorageExpectation:
-            case TypeType::IntegerLiteral:
-            case TypeType::RealLiteral:
-            case TypeType::ListLiteral:
-            case TypeType::DictionaryLiteral:
-            case TypeType::NoValueLiteral:
-                return false;  // Not a type that values can have.
-            default:
-                break;
-        }
-        Type type = argument;
+        Type type = argument.withMinimalBoxing();
         type.setReference(false);
         type.setMutable(false);
         arguments->emplace_back(type);
@@ -134,12 +122,12 @@ static bool appendConcreteArguments(const std::vector<Type> &types, std::vector<
 }
 
 Function* SemanticAnalyser::specialize(Function *function, const Type &calleeType,
-                                       const std::vector<Type> &genericArguments, Function *caller) {
-    if (imported_ || function->package() != package_ || !isSpecializable(function)) {
+                                       const std::vector<Type> &genericArguments) {
+    if (!declarationsAnalysed_ || imported_ || function->package() != package_ || !isSpecializable(function)) {
         return nullptr;
     }
     auto owner = function->owner();
-    auto callee = calleeType.unboxed();
+    auto callee = calleeType.unboxed().withMinimallyBoxedGenericArguments();
     callee.setReference(false);
     callee.setMutable(false);
     auto genericOwner = !owner->genericParameters().empty();
@@ -153,31 +141,28 @@ Function* SemanticAnalyser::specialize(Function *function, const Type &calleeTyp
         !appendConcreteArguments(genericArguments, &arguments)) {
         return nullptr;
     }
-    Function *existing;
-    if (function->findSpecialization(arguments, &existing)) {
-        return existing;
+    auto key = std::make_pair(function, arguments);
+    auto existing = specializations_.find(key);
+    if (existing != specializations_.end()) {
+        auto specialization = existing->second;
+        if (specialization != nullptr && !specializationStack_.empty() &&
+            unfinishedSpecializations_.count(specialization) > 0 && specialization != specializationStack_.back()) {
+            specializationDependencies_[specializationStack_.back()].insert(specialization);
+        }
+        return specialization;
     }
-    auto depth = caller == nullptr ? 1 : caller->specializationDepth() + 1;
-    if (depth > kMaxSpecializationDepth) {
+    if (specializationStack_.size() >= kMaxSpecializationDepth) {
         return nullptr;
     }
+    // A function could otherwise specialize itself with ever larger types, e.g. by calling itself with a list of its
+    // generic argument.
+    for (auto specialization : specializationStack_) {
+        if (specialization->specializedFunction() == function) {
+            return nullptr;
+        }
+    }
 
-    std::unique_ptr<Function> created;
-    if (auto initializer = dynamic_cast<Initializer *>(function)) {
-        created = std::make_unique<Initializer>(function->name(), function->accessLevel(), function->final(),
-                                                function->owner(), function->package(), function->position(), false,
-                                                function->documentation(), function->deprecated(),
-                                                initializer->required(), function->unsafe(),
-                                                function->functionType(), function->isInline());
-    }
-    else {
-        created = std::make_unique<Function>(function->name(), function->accessLevel(), function->final(),
-                                             function->owner(), function->package(), function->position(), false,
-                                             function->documentation(), function->deprecated(),
-                                             function->mutating(), function->mood(), function->unsafe(),
-                                             function->functionType(), function->isInline());
-    }
-    created->setMemoryFlowTypeForThis(function->memoryFlowTypeForThis());
+    auto created = function->makeSpecialization();
     size_t argument = 0;
     if (genericOwner) {
         for (auto &parameter : owner->genericParameters()) {
@@ -188,45 +173,87 @@ Function* SemanticAnalyser::specialize(Function *function, const Type &calleeTyp
         auto scope = std::make_unique<Scope>(ownerScope.maxVariableId());
         for (auto &pair : ownerScope.map()) {
             auto &var = pair.second;
-            scope->declareVariableWithId(var.name(), var.type().resolveOn(TypeContext(callee)), var.constant(),
-                                         var.id(), var.position());
+            auto type = var.type().resolveOn(TypeContext(callee)).withMinimallyBoxedGenericArguments();
+            scope->declareVariableWithId(var.name(), type, var.constant(), var.id(), var.position());
         }
         created->setSpecializedCallee(callee, std::move(scope));
     }
     for (auto &parameter : function->genericParameters()) {
         created->bindVariable(parameter.name, arguments[argument++]);
     }
-    created->setSpecializationOf(function, arguments, depth);
+    created->setSpecializationOf(function, arguments);
 
     // Registered before the analysis, so that a recursive call uses the specialization too.
     auto specialization = created.get();
-    function->setSpecialization(arguments, specialization);
-    auto first = pendingSpecializations_.size();
-    pendingSpecializations_.push_back(PendingSpecialization{ function, arguments, std::move(created) });
+    specializations_.emplace(key, specialization);
+    unfinishedSpecializations_.emplace(specialization, std::move(created));
+    specializationStack_.push_back(specialization);
+    auto compiled = analyseSpecialization(specialization);
+    specializationStack_.pop_back();
+    if (compiled) {
+        finishSpecialization(specialization);
+    }
+    else {
+        discardSpecialization(specialization, true);
+    }
+    if (specializationStack_.empty()) {
+        unusedSpecializations_.clear();
+    }
+    return compiled ? specialization : nullptr;
+}
 
-    if (!analyseSpecialization(specialization)) {
-        // The specializations created while analysing it are dropped too, as they may call it.
-        for (auto it = pendingSpecializations_.begin() + first; it != pendingSpecializations_.end(); it++) {
-            it->generic->eraseSpecialization(it->arguments);
-            unusedSpecializations_.emplace_back(std::move(it->specialization));
-        }
-        pendingSpecializations_.erase(pendingSpecializations_.begin() + first, pendingSpecializations_.end());
-        function->setSpecialization(arguments, nullptr);
-        return nullptr;
+void SemanticAnalyser::finishSpecialization(Function *specialization) {
+    auto dependencies = specializationDependencies_.find(specialization);
+    if (dependencies != specializationDependencies_.end() && !dependencies->second.empty()) {
+        return;
     }
-    if (specializationTrials_ == 0) {
-        for (auto &pending : pendingSpecializations_) {
-            pending.generic->owner()->addSpecialization(std::move(pending.specialization));
+    specializationDependencies_.erase(specialization);
+    auto owned = unfinishedSpecializations_.find(specialization);
+    package_->addSpecialization(std::move(owned->second));
+    unfinishedSpecializations_.erase(owned);
+
+    std::vector<Function *> waiting;
+    for (auto &pair : specializationDependencies_) {
+        if (pair.second.erase(specialization) > 0 && pair.second.empty()) {
+            waiting.emplace_back(pair.first);
         }
-        pendingSpecializations_.clear();
     }
-    return specialization;
+    for (auto function : waiting) {
+        if (std::find(specializationStack_.begin(), specializationStack_.end(), function) == specializationStack_.end()) {
+            finishSpecialization(function);
+        }
+    }
+}
+
+void SemanticAnalyser::discardSpecialization(Function *specialization, bool failed) {
+    auto key = std::make_pair(specialization->specializedFunction(), specialization->specializationArguments());
+    if (failed) {
+        specializations_[key] = nullptr;
+    }
+    else {
+        specializations_.erase(key);  // It may be used once the specialization it called is not.
+    }
+    specializationDependencies_.erase(specialization);
+    auto owned = unfinishedSpecializations_.find(specialization);
+    unusedSpecializations_.emplace_back(std::move(owned->second));
+    unfinishedSpecializations_.erase(owned);
+
+    std::vector<Function *> callers;
+    for (auto &pair : specializationDependencies_) {
+        if (pair.second.count(specialization) > 0) {
+            callers.emplace_back(pair.first);
+        }
+    }
+    for (auto caller : callers) {
+        if (unfinishedSpecializations_.count(caller) > 0) {
+            discardSpecialization(caller, false);
+        }
+    }
 }
 
 bool SemanticAnalyser::analyseSpecialization(Function *specialization) {
     auto trapped = compiler()->trapsErrors();
     compiler()->setTrapsErrors(true);
-    specializationTrials_++;
     bool compiled = true;
     try {
         SpecializationParser::parse(specialization->specializedFunction(), specialization);
@@ -239,7 +266,6 @@ bool SemanticAnalyser::analyseSpecialization(Function *specialization) {
     catch (Compiler::TrappedError &) {
         compiled = false;
     }
-    specializationTrials_--;
     compiler()->setTrapsErrors(trapped);
     return compiled;
 }

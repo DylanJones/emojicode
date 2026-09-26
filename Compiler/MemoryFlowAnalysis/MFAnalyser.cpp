@@ -22,15 +22,15 @@ void MFAnalyser::analyse() {
     for (auto &function : package_->functions()) {
         analyseFunction(function.get());
     }
+    for (auto &specialization : package_->specializations()) {
+        analyseFunction(specialization.get());
+    }
 }
 
 void MFAnalyser::analyseTypeDefinition(TypeDefinition *typeDef) {
     typeDef->eachFunction([this](Function *function) {
         analyseFunction(function);
     });
-    for (auto &specialization : typeDef->specializations()) {
-        analyseFunction(specialization.get());
-    }
 }
 
 void MFAnalyser::analyseFunction(Function *function) {

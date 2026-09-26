@@ -10,7 +10,7 @@
 namespace EmojicodeCompiler {
 
 void ASTUnsafeBlock::analyse(FunctionAnalyser *analyser) {
-    if (analyser->function()->specializedFunction() != nullptr) {
+    if (analyser->function()->enclosingSpecialization() != nullptr) {
         // Unsafe code can store values of generic types in memory that generic code reads, which expects them boxed.
         throw CompilerError(position(), "A specialization cannot contain ☣️ code.");
     }

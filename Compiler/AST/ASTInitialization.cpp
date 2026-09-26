@@ -41,12 +41,8 @@ Type ASTInitialization::analyse(ExpressionAnalyser *analyser) {
         initializer_ = init;
     }
 
-    if (initType_ == InitType::ValueType) {
-        analyser->analyseFunctionCall(&args_, type, init, &initializer_);
-    }
-    else {
-        analyser->analyseFunctionCall(&args_, type, init);
-    }
+    // Only value types are specialized, as classes dispatch initializers dynamically.
+    analyser->analyseFunctionCall(&args_, type, init, initType_ == InitType::ValueType ? &initializer_ : nullptr);
     ensureErrorIsHandled(analyser);
     if (type.type() == TypeType::ValueType && type.valueType()->declaresCRepresentation() &&
         init->externalName() == "ejcBuiltIn") {

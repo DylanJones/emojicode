@@ -23,11 +23,6 @@ TypeDefinition::TypeDefinition(std::u32string name, Package *p, SourcePosition p
 
 TypeDefinition::~TypeDefinition() = default;
 
-Function* TypeDefinition::addSpecialization(std::unique_ptr<Function> function) {
-    specializations_.emplace_back(std::move(function));
-    return specializations_.back().get();
-}
-
 void TypeDefinition::addInstanceVariable(const InstanceVariableDeclaration &variable) {
     auto duplicate = std::find_if(instanceVariables_.begin(), instanceVariables_.end(),
                                   [&variable](auto &b) { return variable.name == b.name; });

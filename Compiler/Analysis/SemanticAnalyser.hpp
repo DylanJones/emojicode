@@ -6,6 +6,8 @@
 #define EMOJICODE_SEMANTICANALYSER_HPP
 
 #include <queue>
+#include <vector>
+#include <map>
 #include <memory>
 #include <set>
 
@@ -44,9 +46,7 @@ public:
     /// cast of a value of a generic type is unnecessary with the concrete type, the generic function is used.
     /// @param calleeType The type on which @p function is called. A method of a generic value type is specialized for
     /// the generic arguments of this type too.
-    /// @param caller The function whose code calls @p function, or nullptr.
-    Function* specialize(Function *function, const Type &calleeType, const std::vector<Type> &genericArguments,
-                         Function *caller);
+    Function* specialize(Function *function, const Type &calleeType, const std::vector<Type> &genericArguments);
 
     /// Iff `type` is a literal type, returns the default inferred type for the literal type. Otherwise the type is
     /// returned.
@@ -71,6 +71,10 @@ private:
     void analyseQueue();
     /// Analyses @p specialization with trapped errors and returns whether it compiled.
     bool analyseSpecialization(Function *specialization);
+    /// Uses @p specialization once no specialization it calls is unfinished.
+    void finishSpecialization(Function *specialization);
+    /// Discards @p specialization and those that call it. If @p failed, it is not created anew.
+    void discardSpecialization(Function *specialization, bool failed);
     void enqueueFunctionsOfTypeDefinition(TypeDefinition *typeDef);
     void finalizeProtocols(const Type &type);
     void checkProtocolConformance(const Type &type);
@@ -79,18 +83,21 @@ private:
 
     Package *package_;
     std::queue<Function *> queue_;
-    struct PendingSpecialization {
-        Function *generic;
-        std::vector<Type> arguments;
-        std::unique_ptr<Function> specialization;
-    };
-    /// Specializations that were created while analysing a specialization. They are only used if that specialization
-    /// compiles, as they may call it.
-    std::vector<PendingSpecialization> pendingSpecializations_;
-    /// The number of specializations being analysed.
-    size_t specializationTrials_ = 0;
-    /// Specializations that are not used, which are kept as code analysed with them may refer to them.
+    /// The specializations by generic function and generic arguments, or nullptr if the function could not be
+    /// specialized with them.
+    std::map<std::pair<Function *, std::vector<Type>>, Function *> specializations_;
+    /// Specializations that are analysed or wait for specializations they call to be analysed. They are owned here until
+    /// they are used or discarded.
+    std::map<Function *, std::unique_ptr<Function>> unfinishedSpecializations_;
+    /// The specializations being analysed, the innermost last.
+    std::vector<Function *> specializationStack_;
+    /// The unfinished specializations that an unfinished specialization calls, which it can only be used with.
+    std::map<Function *, std::set<Function *>> specializationDependencies_;
+    /// Specializations that are not used, kept until no specialization is analysed as code analysed with them refers to
+    /// them.
     std::vector<std::unique_ptr<Function>> unusedSpecializations_;
+    /// Whether all declarations were analysed, before which no specialization can be analysed.
+    bool declarationsAnalysed_ = false;
     bool imported_;
 
     bool checkArgumentPromise(const Function *sub, const Function *super, const TypeContext &subContext,
