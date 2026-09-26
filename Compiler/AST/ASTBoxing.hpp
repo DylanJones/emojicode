@@ -68,6 +68,9 @@ class ASTRebox final : public ASTBoxing {
     using ASTBoxing::ASTBoxing;
     Value* generate(FunctionCodeGenerator *fg) const override;
     void toCode(PrettyStream &pretty) const override {}
+private:
+    /// Reboxes @p box, which must contain a value.
+    Value* rebox(Value *box, FunctionCodeGenerator *fg) const;
 };
 
 class ASTBoxToSimpleOptional final : public ASTBoxing {
