@@ -58,6 +58,7 @@ compilation_tests = [
     "valueTypeIterator",
     "listIterator",
     "specialization",
+    "typeSpecialization",
     "protocolValueTypeRemote",
     "protocolEnum",
     "protocolGenericLayerClass",

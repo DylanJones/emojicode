@@ -9,6 +9,7 @@
 #include "Compiler.hpp"
 #include "FunctionAnalyser.hpp"
 #include "AST/ASTExpr.hpp"
+#include "Scoping/Scope.hpp"
 #include "Scoping/SemanticScoper.hpp"
 #include "Types/TypeExpectation.hpp"
 #include "Package/Package.hpp"
@@ -91,9 +92,35 @@ void SemanticAnalyser::analyse(bool executable) {
 /// larger types, e.g. by calling itself with a list of its generic argument.
 constexpr size_t kMaxSpecializationDepth = 8;
 
+/// Whether generic code represents a value of @p type differently than code in which the generic variables are
+/// replaced with concrete types: A value of a generic type is boxed, and a callable takes and returns values of generic
+/// types boxed. Other types, like a list of a generic type, are represented the same.
+static bool representationDependsOnGenericArguments(const Type &type) {
+    auto unoptionalized = type.unboxed().unoptionalized();
+    if (unoptionalized.unboxedType() == TypeType::GenericVariable ||
+        unoptionalized.unboxedType() == TypeType::LocalGenericVariable) {
+        return true;
+    }
+    return unoptionalized.type() == TypeType::Callable && unoptionalized.containsGenericVariables();
+}
+
+/// Whether an instance variable of @p typeDef is represented differently in specialized methods, which therefore
+/// could not use the instance variables stored by generic code.
+static bool storesGenericValues(TypeDefinition *typeDef) {
+    return std::any_of(typeDef->instanceVariables().begin(), typeDef->instanceVariables().end(), [](auto &var) {
+        return representationDependsOnGenericArguments(var.type->type());
+    });
+}
+
 static bool isSpecializable(Function *function) {
-    if (function->genericParameters().empty() || function->isExternal() || function->ast() == nullptr ||
-        function->isC() || function->isClosure() || function->isThunk() || function->owner() == nullptr) {
+    if (function->isExternal() || function->ast() == nullptr || function->isC() || function->isClosure() ||
+        function->isThunk() || function->unsafe() || function->owner() == nullptr) {
+        return false;
+    }
+    if (function->genericParameters().empty() && function->owner()->genericParameters().empty()) {
+        return false;
+    }
+    if (!function->owner()->genericParameters().empty() && storesGenericValues(function->owner())) {
         return false;
     }
     // Only statically dispatched functions, as a virtual table has no entry per specialization.
@@ -101,20 +128,39 @@ static bool isSpecializable(Function *function) {
            function->functionType() == FunctionType::Function;
 }
 
-Function* SemanticAnalyser::specialize(Function *function, const std::vector<Type> &genericArguments,
-                                       Function *caller) {
-    if (imported_ || function->package() != package_ || !isSpecializable(function)) {
-        return nullptr;
-    }
-    std::vector<Type> arguments;
-    for (auto &argument : genericArguments) {
+/// Appends @p types to @p arguments without reference and mutability. Returns false if one is not concrete.
+static bool appendConcreteArguments(const std::vector<Type> &types, std::vector<Type> *arguments) {
+    for (auto &argument : types) {
         if (argument.containsGenericVariables()) {
-            return nullptr;
+            return false;
         }
         Type type = argument;
         type.setReference(false);
         type.setMutable(false);
-        arguments.emplace_back(type);
+        arguments->emplace_back(type);
+    }
+    return true;
+}
+
+Function* SemanticAnalyser::specialize(Function *function, const Type &calleeType,
+                                       const std::vector<Type> &genericArguments, Function *caller) {
+    if (imported_ || function->package() != package_ || !isSpecializable(function)) {
+        return nullptr;
+    }
+    auto owner = function->owner();
+    auto callee = calleeType.unboxed();
+    callee.setReference(false);
+    callee.setMutable(false);
+    auto genericOwner = !owner->genericParameters().empty();
+    if (genericOwner && (!callee.canHaveGenericArguments() || callee.typeDefinition() != owner)) {
+        return nullptr;
+    }
+
+    // The generic arguments of the type come first, followed by those of the function.
+    std::vector<Type> arguments;
+    if ((genericOwner && !appendConcreteArguments(callee.genericArguments(), &arguments)) ||
+        !appendConcreteArguments(genericArguments, &arguments)) {
+        return nullptr;
     }
     Function *existing;
     if (function->findSpecialization(arguments, &existing)) {
@@ -131,8 +177,23 @@ Function* SemanticAnalyser::specialize(Function *function, const std::vector<Typ
                                               function->mutating(), function->mood(), function->unsafe(),
                                               function->functionType(), function->isInline());
     created->setMemoryFlowTypeForThis(function->memoryFlowTypeForThis());
-    for (size_t i = 0; i < arguments.size(); i++) {
-        created->bindVariable(function->genericParameters()[i].name, arguments[i]);
+    size_t argument = 0;
+    if (genericOwner) {
+        for (auto &parameter : owner->genericParameters()) {
+            created->bindVariable(parameter.name, arguments[argument++]);
+        }
+        // The instance variables have the same storage, but their types are resolved on the concrete type.
+        auto &ownerScope = owner->instanceScope();
+        auto scope = std::make_unique<Scope>(ownerScope.maxVariableId());
+        for (auto &pair : ownerScope.map()) {
+            auto &var = pair.second;
+            scope->declareVariableWithId(var.name(), var.type().resolveOn(TypeContext(callee)), var.constant(),
+                                         var.id(), var.position());
+        }
+        created->setSpecializedCallee(callee, std::move(scope));
+    }
+    for (auto &parameter : function->genericParameters()) {
+        created->bindVariable(parameter.name, arguments[argument++]);
     }
     created->setSpecializationOf(function, arguments, depth);
 

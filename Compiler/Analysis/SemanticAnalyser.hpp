@@ -42,8 +42,11 @@ public:
     /// the generic function, or nullptr if it must call the generic function.
     /// A specialization is created and analysed if it does not exist yet. If its code does not compile, e.g. because a
     /// cast of a value of a generic type is unnecessary with the concrete type, the generic function is used.
+    /// @param calleeType The type on which @p function is called. A method of a generic value type is specialized for
+    /// the generic arguments of this type too.
     /// @param caller The function whose code calls @p function, or nullptr.
-    Function* specialize(Function *function, const std::vector<Type> &genericArguments, Function *caller);
+    Function* specialize(Function *function, const Type &calleeType, const std::vector<Type> &genericArguments,
+                         Function *caller);
 
     /// Iff `type` is a literal type, returns the default inferred type for the literal type. Otherwise the type is
     /// returned.
