@@ -111,6 +111,9 @@ public:
     /// the value into a new object if other boxes share the object storing it. Copies of a box share the object, so a
     /// value must be made unique before it is mutated in place.
     void makeRemoteBoxValueUnique(llvm::Value *box, const Type &type);
+    /// Makes the box to which @p box points store its value in @p object, a managable of type @p managable, and returns
+    /// a pointer to the value in the object.
+    llvm::Value* buildSetRemoteBoxObject(llvm::Value *box, llvm::StructType *managable, llvm::Value *object);
     /// Makes the value of the box to which @p box points unique, using the function of the protocol @p conformance,
     /// if the value is stored remotely. @p box must point to a variable that owns the box.
     void makeBoxValueUnique(llvm::Value *conformance, llvm::Value *box);

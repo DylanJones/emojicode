@@ -353,14 +353,20 @@ void FunctionCodeGenerator::makeRemoteBoxValueUnique(llvm::Value *box, const Typ
     auto isUnique = builder().CreateCall(generator()->runTime().isOnlyReference(), object);
     createIf(builder().CreateNot(isUnique), [&] {
         // The contents of the value are not retained, as this box's references to them move to the copy.
-        auto copy = alloc(mngType);
-        auto copyValuePtr = managableGetValuePtr(mngType, copy);
         auto value = builder().CreateLoad(llvmType, builder().CreateLoad(typeHelper().pointer(), valuePtrPtr));
-        builder().CreateStore(value, copyValuePtr);
-        builder().CreateStore(copyValuePtr, valuePtrPtr);
-        builder().CreateStore(copy, objectPtr);
+        builder().CreateStore(value, buildSetRemoteBoxObject(box, mngType, alloc(mngType)));
         builder().CreateCall(generator()->runTime().releaseWithoutDeinit(), object);
     });
+}
+
+llvm::Value* FunctionCodeGenerator::buildSetRemoteBoxObject(llvm::Value *box, llvm::StructType *managable,
+                                                            llvm::Value *object) {
+    auto valuePtr = managableGetValuePtr(managable, object);
+    // The first element in the value area is a direct pointer to the struct.
+    builder().CreateStore(valuePtr, buildGetBoxValuePtr(box));
+    // The second is a pointer to the object for management.
+    builder().CreateStore(object, buildGetBoxValuePtrAfter(box, typeHelper().pointer(), typeHelper().pointer()));
+    return valuePtr;
 }
 
 llvm::Value* FunctionCodeGenerator::managableGetValuePtr(llvm::StructType *managable, llvm::Value *managablePtr) {

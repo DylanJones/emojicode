@@ -170,16 +170,8 @@ Value* ASTToBox::buildStoreAddress(Value *box, FunctionCodeGenerator *fg) const 
     auto containedType = expr_->expressionType().unboxed().unoptionalized();
     if (fg->typeHelper().isRemote(containedType)) {
         auto mngType = fg->typeHelper().managable(fg->typeHelper().llvmTypeFor(containedType));
-        auto boxPtr1 = fg->buildGetBoxValuePtr(box);
-        auto boxPtr2 = fg->buildGetBoxValuePtrAfter(box, fg->typeHelper().pointer(), fg->typeHelper().pointer());
-        auto alloc = allocate(fg, mngType);
-        remoteObject_ = alloc;
-        auto valuePtr = fg->managableGetValuePtr(mngType, alloc);
-        // The first element in the value area is a direct pointer to the struct.
-        fg->builder().CreateStore(valuePtr, boxPtr1);
-        // The second is a pointer to the allocated object for management.
-        fg->builder().CreateStore(alloc, boxPtr2);
-        return valuePtr;
+        remoteObject_ = allocate(fg, mngType);
+        return fg->buildSetRemoteBoxObject(box, mngType, remoteObject_);
     }
     return getBoxValuePtr(box, fg);
 }
