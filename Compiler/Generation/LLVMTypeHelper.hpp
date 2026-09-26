@@ -85,6 +85,12 @@ public:
     /// A type description describes the reification of a (generic) type using RTTI (see runTimeTypeInfo()).
     /// It is used to store generic arguments inside an instantance and for operations involving types like casting.
     llvm::StructType* typeDescription() const { return typeDescription_; }
+    /// The operations on a value of a type in memory, which generic code performs without knowing the type: its size,
+    /// copying it into a box and back, and releasing it (see ValueWitnessBuilder). A type description points to one.
+    llvm::StructType* valueWitness() const { return valueWitness_; }
+    /// The type of the functions of a value witness that copy a value from memory into a box or back, taking a
+    /// pointer to the value and a pointer to the box.
+    llvm::FunctionType* valueWitnessCopy() const { return valueWitnessCopy_; }
     /// Describes a type. First value counts own generic parameters, second offset of own generic parameters and
     /// third is a flag describing the kind of type this is (see RunTimeTypeInfoFlag).
     llvm::StructType* runTimeTypeInfo() const { return runTimeTypeInfo_; }
@@ -116,6 +122,8 @@ private:
     llvm::StructType *protocolsTable_;
     llvm::StructType *callable_;
     llvm::StructType *typeDescription_;
+    llvm::StructType *valueWitness_;
+    llvm::FunctionType *valueWitnessCopy_;
     llvm::StructType *runTimeTypeInfo_;
     llvm::StructType *someobject_;
     llvm::FunctionType *boxRetainRelease_;

@@ -13,6 +13,7 @@
 #include "Types/Protocol.hpp"
 #include "Compiler.hpp"
 #include "Generation/RunTimeHelper.hpp"
+#include "Generation/ValueWitnessBuilder.hpp"
 
 namespace EmojicodeCompiler {
 
@@ -60,7 +61,8 @@ void TypeDescriptionGenerator::addType(const Type &type) {
 
     auto strct = llvm::ConstantStruct::get(fg_->typeHelper().typeDescription(), {
         genericInfo,
-        type.type() == TypeType::Optional ? llvm::ConstantInt::getTrue(fg_->ctx()) : llvm::ConstantInt::getFalse(fg_->ctx())
+        type.type() == TypeType::Optional ? llvm::ConstantInt::getTrue(fg_->ctx()) : llvm::ConstantInt::getFalse(fg_->ctx()),
+        fg_->generator()->valueWitnesses().witnessFor(type),
     });
     types_.emplace_back(strct);
 

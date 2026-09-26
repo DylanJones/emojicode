@@ -32,6 +32,7 @@ class TypeDefinition;
 class StringPool;
 class RunTimeHelper;
 class OptimizationManager;
+class ValueWitnessBuilder;
 struct Parameter;
 
 /// Returns the attribute C compilers put on an integer argument or return value of the type on the target @p triple,
@@ -62,6 +63,8 @@ public:
     LLVMTypeHelper& typeHelper() { return typeHelper_; }
     StringPool& stringPool() { return *pool_; }
     RunTimeHelper& runTime() { return *runTime_; }
+    /// Creates the value witnesses of types (see ValueWitnessBuilder).
+    ValueWitnessBuilder& valueWitnesses() { return *valueWitnesses_; }
     llvm::LLVMContext& context() { return context_; }
 
     Compiler* compiler() const;
@@ -91,6 +94,7 @@ private:
     std::unique_ptr<StringPool> pool_;
     std::unique_ptr<RunTimeHelper> runTime_;
     std::unique_ptr<OptimizationManager> optimizationManager_;
+    std::unique_ptr<ValueWitnessBuilder> valueWitnesses_;
 
     llvm::TargetMachine *targetMachine_ = nullptr;
 

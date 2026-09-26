@@ -197,6 +197,8 @@ struct RunTimeTypeInfo {
 struct TypeDescription {
     RunTimeTypeInfo *rtti;
     bool optional;
+    /// The operations on a value of the described type in memory (see ValueWitnessBuilder in the compiler).
+    void *valueWitness;
 };
 
 bool checkGenericArgs(TypeDescription **argsl, TypeDescription **argsr, int16_t argsCount, int16_t argsOffset) {

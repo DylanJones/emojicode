@@ -20,6 +20,7 @@
 #include "Types/Class.hpp"
 #include "Types/ValueType.hpp"
 #include "Types/TypeContext.hpp"
+#include "ValueWitnessBuilder.hpp"
 #include "Creator.hpp"
 #include "RunTimeTypeInfoFlags.hpp"
 #include <algorithm>
@@ -43,7 +44,8 @@ namespace EmojicodeCompiler {
 CodeGenerator::CodeGenerator(Compiler *compiler, bool optimize)
 : compiler_(compiler), typeHelper_(context(), this),
   module_(std::make_unique<llvm::Module>(compiler->mainPackage()->name(), context())),
-  pool_(std::make_unique<StringPool>(this)), runTime_(std::make_unique<RunTimeHelper>(this)) {
+  pool_(std::make_unique<StringPool>(this)), runTime_(std::make_unique<RunTimeHelper>(this)),
+  valueWitnesses_(std::make_unique<ValueWitnessBuilder>(this)) {
     runTime_->declareRunTime();
 
     llvm::InitializeAllTargetInfos();
