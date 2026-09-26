@@ -30,7 +30,7 @@ Type ASTCast::analyse(ExpressionAnalyser *analyser) {
     else if (!type.compatibleTo(originalType, analyser->typeContext())
              && !(originalType.unboxedType() == TypeType::Protocol && type.unboxedType() == TypeType::Protocol)) {
         auto typeString = type.toString(analyser->typeContext());
-        analyser->error(CompilerError(position(), "Cast to unrelated type ", typeString, " will always fail."));
+        throw CompilerError(position(), "Cast to unrelated type ", typeString, " will always fail.");
     }
 
     if (type.type() == TypeType::Class && (originalType.type() == TypeType::Someobject ||
