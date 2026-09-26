@@ -5,6 +5,7 @@
 !*.txt
 !*.emojii
 !*.c
+!*.specializations
 !*.ir
 
 !*/
