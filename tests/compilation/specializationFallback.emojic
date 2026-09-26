@@ -1,0 +1,95 @@
+💭 A ☣️ block, also in a closure, can be specialized, as memory holds values of the type T stands for in generic
+💭 code too.
+🕊 📦🐚T ⚪🍆 🍇
+  🖍🆕 memory 🧠
+  🆕 🍇
+    ☣️ 🍇
+      🆕🧠 64❗️ ➡️ 🖍memory
+    🍉
+  🍉
+  ❗️ 📥 value T 🍇
+    memory ➡️ m
+    🍇
+      ☣️ 🍇
+        value ➡️ 🐽🐚T🍆 m 0❗️
+      🍉
+    🍉 ➡️ store
+    ⁉️ store❗️
+  🍉
+  ❗️ 📤 ➡️ T 🍇
+    ☣️ 🍇
+      ↩️ 🐽🐚T🍆 memory 0❗️
+    🍉
+  🍉
+🍉
+
+💭 ⚖️T is the size of a value of the type T stands for, in generic code too.
+🕊 🧺🐚T ⚪️🍆 🍇
+  🖍🆕 data 🧠
+  🖍🆕 count 🔢
+  🆕 🍇
+    0 ➡️ 🖍count
+    ☣️ 🍇
+      🆕🧠 1❗️ ➡️ 🖍data
+    🍉
+  🍉
+  🖍❗️ 🐴 n 🔢 🍇
+    🥞👇 n✖️⚖️T❗️
+  🍉
+  🖍❗️ 🥞 bytes 🔢 🍇
+    ☣️ 🍇
+      🏗 data bytes❗️
+    🍉
+  🍉
+  🖍❗️ 🐻 value T 🍇
+    ☣️ 🍇
+      value ➡️🐽🐚T🍆 data count✖️⚖️T❗️
+    🍉
+    count ⬅️➕ 1
+  🍉
+  ❗️ 🐽 i 🔢 ➡️ T 🍇
+    ☣️ 🍇
+      ↩️ 🐽🐚T🍆 data i✖️⚖️T❗️
+    🍉
+  🍉
+🍉
+
+💭 A call of an overloaded method keeps the calling method from being specialized.
+🐇 🐟 🍇
+  🆕 🍇🍉
+  ❗️ 🙋 number 🔢 ➡️ 🔡 🍇
+    ↩️ 🔤a number🔤
+  🍉
+  ❗️ 🙋🐚A ⚪️🍆 number A ➡️ 🔡 🍇
+    ↩️ 🔤generic🔤
+  🍉
+🍉
+🕊 🧰 🍇
+  🐇❗️ 🍭🐚T ⚪️🍆 fish 🐟 x T ➡️ 🔡 🍇
+    ↩️ 🙋 fish x❗️
+  🍉
+🍉
+🕊 🎊🐚T ⚪️🍆 🍇
+  🖍🆕 v T
+  🆕 🍼 v T 🍇🍉
+  ❗️ 🍭 fish 🐟 ➡️ 🔡 🍇
+    ↩️ 🙋 fish v❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕📦🐚🔢🍆❗️ ➡️ 🖍🆕 numbers
+  📥numbers 42❗️
+  😀 🔡 📤numbers❗️❗️❗️
+  🆕🧺🐚🔢🍆❗️ ➡️ 🖍🆕b
+  🐴b 4❗️
+  🐻b 1❗️
+  🐻b 2❗️
+  🐻b 3❗️
+  🐻b 4❗️
+  😀 🔡 🐽b 3❗️❗️❗️
+  🆕🐟❗️ ➡️ f
+  😀 🍭🕊🧰 f 5❗️❗️
+  😀 🍭🆕🎊🐚🔢🍆 7❗️ f❗️❗️
+  😀 🙋 f 5❗️❗️
+🍉

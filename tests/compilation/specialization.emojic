@@ -1,0 +1,158 @@
+🐊 📦 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+
+🕊 🍎 🍇
+  🐊 📦
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n
+  🍉
+🍉
+
+🕊 🍐 🍇
+  🐊 📦
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n ✖️ 10
+  🍉
+🍉
+
+💭 🍓 and 🍑 are only created with inferred types, which does not make the compiler create them early.
+🐇 🍓 🍇
+  🐊 📦
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n
+  🍉
+🍉
+
+🕊 🧰 🍇
+  🆕 🍇🍉
+
+  🐇❗️ 📐🐚T 📦🍆 x T ➡️ 🔢 🍇
+    ↩️ 📏 x❗️
+  🍉
+
+  🐇❗️ 🔮🐚T ⚪🍆 x T ➡️ T 🍇
+    ↩️ x
+  🍉
+
+  🐇❗️ 🥡🐚T 📦🍆 items 🍨🐚T🍆 ➡️ 🔢 🍇
+    0 ➡️ 🖍🆕 sum
+    🔂 x items 🍇
+      sum ⬅️➕ 📏 x❗️
+    🍉
+    ↩️ sum
+  🍉
+
+  💭 The cast is unnecessary or always fails once T is concrete, so the generic method is used.
+  🐇❗️ 🔢🐚T ⚪🍆 x T ➡️ 🔡 🍇
+    ↪️ 🔲 x 🔢 ➡️ n 🍇
+      ↩️ 🔡 n❗️
+    🍉
+    ↩️ 🔤not an integer🔤
+  🍉
+
+  🐇❗️ 🔃🐚T ⚪🍆 x T n 🔢 ➡️ 🍨🐚T🍆 🍇
+    ↪️ n 🙌 0 🍇
+      ↩️ 🍿🍆
+    🍉
+    🔃🐚T🍆🕊🧰 x n ➖ 1❗️ ➡️ 🖍🆕 list
+    🐻list x❗️
+    ↩️ list
+  🍉
+
+  💭 Every call specializes with a larger type, which the specialization depth limit ends.
+  🐇❗️ 🎎🐚T ⚪🍆 x T n 🔢 ➡️ 🔢 🍇
+    ↪️ n 🙌 0 🍇
+      ↩️ 0
+    🍉
+    ↩️ 1 ➕ 🎎🐚🍨🐚T🍆🍆🕊🧰 🍿 x 🍆 n ➖ 1❗️
+  🍉
+
+  💭 No specialization of 🔀 compiles, but the one of 🔄 created while analysing it would. As it calls 🔀, it is
+  💭 not used either.
+  🐇❗️ 🔀🐚T ⚪🍆 x T n 🔢 ➡️ 🔢 🍇
+    ↪️ n 🙌 0 🍇
+      ↩️ 0
+    🍉
+    🔄🐚T🍆🕊🧰 x n❗️ ➡️ count
+    ↪️ 🔲 x 🔢 ➡️ integer 🍇
+      ↩️ count ➕ integer
+    🍉
+    ↩️ count
+  🍉
+
+  🐇❗️ 🔄🐚T ⚪🍆 x T n 🔢 ➡️ 🔢 🍇
+    ↩️ 1 ➕ 🔀🐚T🍆🕊🧰 x n ➖ 1❗️
+  🍉
+
+  🐇❗️ 🎁🐚T 📦🍆 x T ➡️ 🍇➡️🔢🍉 🍇
+    📏 x❗️ ➡️ size
+    ↩️ 🍇🎍🥡 ➡️ 🔢
+      ↩️ size
+    🍉
+  🍉
+🍉
+
+🕊 📮🐚Element ⚪🍆 🍇
+  🖍🆕 items 🍨🐚Element🍆
+
+  🆕 🍇
+    🍿🍆 ➡️ 🖍items
+  🍉
+
+  🖍❗️ 🐻 item Element 🍇
+    🐻items item❗️
+  🍉
+
+  🖍❗️ 📥🐚T ⚪🍆 values 🍨🐚T🍆 transform 🍇T➡️Element🍉 🍇
+    🔂 value values 🍇
+      🐻items ⁉️ transform value❗️❗️
+    🍉
+  🍉
+
+  ❓ 📏 ➡️ 🔢 🍇
+    ↩️ 📏items❓
+  🍉
+🍉
+
+💭 Declared after 🧰, so it is created after 🧰.
+🕊 🍑 🍇
+  🐊 📦
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n ✖️ 100
+  🍉
+🍉
+
+🏁 🍇
+  😀 🔮🐚🔡🍆🕊🧰 🔤mirror🔤❗️❗️
+  😀 🔡 🔮🕊🧰 42❗️❗️❗️
+  😀 🔡 🥡🕊🧰 🍿 🆕🍎 1❗️ 🆕🍎 2❗️ 🍆❗️❗️❗️
+  😀 🔡 🥡🕊🧰 🍿 🆕🍐 1❗️ 🆕🍐 2❗️ 🍆❗️❗️❗️
+  😀 🔢🕊🧰 5❗️❗️
+  😀 🔢🕊🧰 🔤a🔤❗️❗️
+  😀 🔡 📏 🔃🕊🧰 🔤x🔤 3❗️❓❗️❗️
+  😀 🔡 🎎🕊🧰 1 12❗️❗️❗️
+  😀 🔡 ⁉️ 🎁🕊🧰 🆕🍐 4❗️❗️❗️❗️❗️
+
+  😀 🔡 🔀🕊🧰 10 3❗️❗️❗️
+  😀 🔡 🔀🕊🧰 🔤a🔤 3❗️❗️❗️
+
+  🆕📮🐚🔡🍆❗️ ➡️ 🖍🆕 inbox
+  🐻inbox 🔤first🔤❗️
+  📥inbox 🍿 1 2 🍆 🍇 n 🔢 ➡️ 🔡 ↩️ 🔡 n❗️ 🍉❗️
+  😀 🔡 📏inbox❓❗️❗️
+
+  😀 🔡 📐🕊🧰 🆕🍓 7❗️❗️❗️❗️
+  😀 🔡 📐🕊🧰 🆕🍑 8❗️❗️❗️❗️
+  🆕📮🐚🍓🍆❗️ ➡️ 🖍🆕 basket
+  🐻basket 🆕🍓 1❗️❗️
+  😀 🔡 📏basket❓❗️❗️
+🍉

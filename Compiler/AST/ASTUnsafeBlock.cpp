@@ -3,6 +3,7 @@
 //
 
 #include "ASTUnsafeBlock.hpp"
+#include "Functions/Function.hpp"
 #include "Analysis/FunctionAnalyser.hpp"
 #include "CompilerError.hpp"
 

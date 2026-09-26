@@ -69,6 +69,8 @@ Steps:
    ninja tests
    ```
 
+   The tests run on all cores. Set `EMOJICODE_TEST_JOBS` to run fewer at once.
+
 5. The binaries are ready for use!
    You can the perform a magic installation right away
 

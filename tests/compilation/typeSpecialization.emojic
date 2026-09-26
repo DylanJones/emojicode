@@ -1,0 +1,281 @@
+🐊 📦 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+
+🐊 🧾 🍇
+  ❗️ 🧮 ➡️ 🔢
+🍉
+
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+  ❗️ ⬆️ ➡️ 🔢
+🍉
+
+🐇 🐟 🍇
+  🐊 🔼
+  🖍🆕 name 🔡
+  🖍🆕 size 🔢
+  🆕 🍼 name 🔡 🍼 size 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ size
+  🍉
+  ❗️ ⬆️ ➡️ 🔢 🍇
+    size ⬅️➕ 1
+    ↩️ size
+  🍉
+  ♻️ 🍇
+    😀 name❗️
+  🍉
+🍉
+
+💭 Too large to be stored in a box, so boxes store it on the heap.
+🕊 🐘 🍇
+  🐊 🔼
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 d 🔢
+  🖍🆕 e 🔡
+  🆕 🍼 a 🔢 🍇
+    0 ➡️ 🖍b
+    0 ➡️ 🖍c
+    0 ➡️ 🖍d
+    🔤e🔤 ➡️ 🖍e
+  🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+  🖍❗️ ⬆️ ➡️ 🔢 🍇
+    a ⬅️➕ 1
+    ↩️ a
+  🍉
+🍉
+
+🕊 🍋 🍇
+  🐊 🔼
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n
+  🍉
+  🖍❗️ ⬆️ ➡️ 🔢 🍇
+    n ⬅️➕ 1
+    ↩️ n
+  🍉
+🍉
+
+🕊 🍎 🍇
+  🐊 📦
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n
+  🍉
+🍉
+
+🕊 🍐 🍇
+  🐊 📦
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n ✖️ 10
+  🍉
+🍉
+
+💭 Its methods are specialized, as its instance variables are represented the same for every T.
+🕊 🔲🐚T 📦🍆 🍇
+  🐊 🧾
+  🖍🆕 values 🍨🐚T🍆
+
+  🆕 🍇
+    🍿🍆 ➡️ 🖍values
+  🍉
+
+  🖍❗️ 🐻 value T 🍇
+    🐻values value❗️
+  🍉
+
+  ❗️ 🧮 ➡️ 🔢 🍇
+    0 ➡️ 🖍🆕 sum
+    🔂 value values 🍇
+      sum ⬅️➕ 📏 value❗️
+    🍉
+    ↩️ sum
+  🍉
+
+  ❗️ 🔝 ➡️ 🔢 🍇
+    ↩️ 🧮👇❗️ ✖️ 2
+  🍉
+
+  ❗️ 🔀🐚U 📦🍆 other 🔲🐚U🍆 ➡️ 🔢 🍇
+    ↩️ 🧮👇❗️ ➕ 🧮other❗️
+  🍉
+
+  🐇❗️ 📐🐚U 📦🍆 value U ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+🍉
+
+💭 Stores T boxed, which its specialized methods read and write through the box.
+🕊 🎁🐚T 🔼🍆 🍇
+  🖍🆕 value T
+  🖍🆕 previous T
+  🆕 🍼 value T 🍇
+    value ➡️ 🖍previous
+  🍉
+  ❗️ 🔓 ➡️ T 🍇
+    ↩️ value
+  🍉
+  🖍❗️ 🔄 new T 🍇
+    value ➡️ 🖍previous
+    new ➡️ 🖍value
+  🍉
+  ❗️ 🧮 ➡️ 🔢 🍇
+    ↩️ 📏 value❗️ ➕ 📏 previous❗️
+  🍉
+  🖍❗️ 🆙 ➡️ 🔢 🍇
+    ↩️ ⬆️value❗️
+  🍉
+🍉
+
+💭 Stores an optional T boxed, like T.
+🕊 🎀🐚T 📦🍆 🍇
+  🖍🆕 value T
+  🖍🆕 spare 🍬T
+  🆕 🍼 value T 🍇
+    🤷‍♀️ ➡️ 🖍spare
+  🍉
+  ❗️ 🧮 ➡️ 🔢 🍇
+    ↪️ spare ➡️ s 🍇
+      ↩️ 📏 value❗️ ➕ 📏 s❗️
+    🍉
+    ↩️ 📏 value❗️
+  🍉
+  ❗️ 🔀 ➡️ 🍬T 🍇
+    ↩️ spare
+  🍉
+  🖍❗️ 🔄 new T 🍇
+    value ➡️ 🖍spare
+    new ➡️ 🖍value
+  🍉
+  🖍❗️ 🧹 🍇
+    🤷‍♀️ ➡️ 🖍spare
+  🍉
+🍉
+
+💭 Stores callables, which take and return T boxed, so specialized methods call them like generic code.
+🕊 🏭🐚T 📦🍆 🍇
+  🖍🆕 make 🍇🔢➡️T🍉
+  🖍🆕 check 🍇T➡️🔢🍉
+  🆕 🍼 make 🍇🔢➡️T🍉 🍼 check 🍇T➡️🔢🍉 🍇🍉
+  ❗️ 🔨 n 🔢 ➡️ 🔢 🍇
+    ⁉️ make n❗️ ➡️ made
+    ↩️ 📏 made❗️ ➕ ⁉️ check made❗️
+  🍉
+  🖍❗️ 🔧 🍇
+    make ➡️ old
+    🍇🎍🥡 n 🔢 ➡️ T
+      ↩️ ⁉️ old n ✖️ 2❗️
+    🍉 ➡️ 🖍make
+  🍉
+🍉
+
+💭 Its initializers are specialized too.
+🕊 🔳🐚T 🔼🍆 🍇
+  🖍🆕 first T
+  🖍🆕 values 🍨🐚T🍆
+  🖍🆕 count 🔢 ⬅️ 100
+
+  🆕 🍼 first T 🍇
+    🍿 first 🍆 ➡️ 🖍values
+  🍉
+
+  🆕 ▶️🔃 value T times 🔢 🍇
+    value ➡️ 🖍first
+    🍿🍆 ➡️ 🖍values
+    🔂 i 🆕⏩ 0 times❗️ 🍇
+      🐻values value❗️
+    🍉
+    📏 value❗️ ➡️ 🖍count
+  🍉
+
+  🆕 ▶️🔀🐚U 🔼🍆 value T other U 🍇
+    value ➡️ 🖍first
+    🍿 value 🍆 ➡️ 🖍values
+    📏 other❗️ ➡️ 🖍count
+  🍉
+
+  ❗️ 🧮 ➡️ 🔢 🍇
+    0 ➡️ 🖍🆕 sum
+    🔂 value values 🍇
+      sum ⬅️➕ 📏 value❗️
+    🍉
+    ↩️ sum ➕ 📏 first❗️ ➕ count
+  🍉
+🍉
+
+
+💭 Class methods are not specialized, so this reads values that specialized methods stored.
+🐇 🗄 🍇
+  🐇❗️ 🧮🐚T 📦🍆 grid 🔲🐚T🍆 ➡️ 🔢 🍇
+    ↩️ 🧮grid❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🔲🐚🍎🍆❗️ ➡️ 🖍🆕 apples
+  🐻apples 🆕🍎 1❗️❗️
+  🐻apples 🆕🍎 2❗️❗️
+  😀 🔡 🧮apples❗️❗️❗️
+  😀 🔡 🔝apples❗️❗️❗️
+
+  🆕🔲🐚🍐🍆❗️ ➡️ 🖍🆕 pears
+  🐻pears 🆕🍐 3❗️❗️
+  😀 🔡 🧮pears❗️❗️❗️
+  😀 🔡 🔀apples pears❗️❗️❗️
+  😀 🔡 📐🕊🔲🐚🍎🍆 🆕🍐 5❗️❗️❗️❗️
+
+  😀 🔡 🧮🐇🗄 apples❗️❗️❗️
+  🖍🆕 bill 🧾
+  apples ➡️ 🖍bill
+  😀 🔡 🧮bill❗️❗️❗️
+
+  🆕🎁🐚🐟🍆 🆕🐟 🔤one🔤 1❗️❗️ ➡️ 🖍🆕 fish
+  🔄fish 🆕🐟 🔤three🔤 3❗️❗️
+  😀 🔡 🧮fish❗️❗️❗️
+  🔄fish 🆕🐟 🔤five🔤 5❗️❗️
+  😀 🔡 🧮fish❗️❗️❗️
+  😀 🔡 📏 🔓fish❗️❗️❗️❗️
+
+  🆕🎁🐚🐘🍆 🆕🐘 1❗️❗️ ➡️ 🖍🆕 elephant
+  🔄elephant 🆕🐘 10❗️❗️
+  😀 🔡 🧮elephant❗️❗️❗️
+
+  💭 The mutation must change the instance variable, not a copy of it.
+  🆕🎁🐚🍋🍆 🆕🍋 1❗️❗️ ➡️ 🖍🆕 lemon
+  lemon ➡️ 🖍🆕 lime
+  😀 🔡 🆙lemon❗️❗️❗️
+  😀 🔡 🆙lime❗️❗️❗️
+  😀 🔡 🆙lemon❗️❗️❗️
+
+  🆕🎀🐚🍎🍆 🆕🍎 2❗️❗️ ➡️ 🖍🆕 ribbon
+  😀 🔡 🧮ribbon❗️❗️❗️
+  🔄ribbon 🆕🍎 5❗️❗️
+  😀 🔡 🧮ribbon❗️❗️❗️
+  ↪️ 🔀ribbon❗️ ➡️ spare 🍇
+    😀 🔡 📏 spare❗️❗️❗️
+  🍉
+  🧹ribbon❗️
+  😀 🔡 🧮ribbon❗️❗️❗️
+
+  🆕🏭🐚🍎🍆 🍇🎍🥡 n 🔢 ➡️ 🍎 ↩️ 🆕🍎 n❗️ 🍉 🍇🎍🥡 a 🍎 ➡️ 🔢 ↩️ 📏 a❗️ ✖️ 100 🍉❗️ ➡️ 🖍🆕 factory
+  😀 🔡 🔨factory 3❗️❗️❗️
+  🔧factory❗️
+  😀 🔡 🔨factory 3❗️❗️❗️
+
+  😀 🔡 🧮🆕🔳🐚🍋🍆 🆕🍋 1❗️❗️❗️❗️❗️
+  😀 🔡 🧮🆕🔳🐚🍋🍆 ▶️🔃 🆕🍋 2❗️ 3❗️❗️❗️❗️
+  😀 🔡 🧮🆕🔳🐚🍋🍆 ▶️🔀 🆕🍋 4❗️ 🆕🍋 1000❗️❗️❗️❗️❗️
+  🆕🔳🐚🐟🍆 ▶️🔃 🆕🐟 🔤fish🔤 6❗️ 2❗️ ➡️ fishes
+  😀 🔡 🧮fishes❗️❗️❗️
+🍉

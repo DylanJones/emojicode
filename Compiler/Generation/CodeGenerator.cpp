@@ -20,6 +20,7 @@
 #include "Types/Class.hpp"
 #include "Types/ValueType.hpp"
 #include "Types/TypeContext.hpp"
+#include "ValueWitnessBuilder.hpp"
 #include "Creator.hpp"
 #include "RunTimeTypeInfoFlags.hpp"
 #include <algorithm>
@@ -43,7 +44,8 @@ namespace EmojicodeCompiler {
 CodeGenerator::CodeGenerator(Compiler *compiler, bool optimize)
 : compiler_(compiler), typeHelper_(context(), this),
   module_(std::make_unique<llvm::Module>(compiler->mainPackage()->name(), context())),
-  pool_(std::make_unique<StringPool>(this)), runTime_(std::make_unique<RunTimeHelper>(this)) {
+  pool_(std::make_unique<StringPool>(this)), runTime_(std::make_unique<RunTimeHelper>(this)),
+  valueWitnesses_(std::make_unique<ValueWitnessBuilder>(this)) {
     runTime_->declareRunTime();
 
     llvm::InitializeAllTargetInfos();
@@ -137,7 +139,7 @@ void CodeGenerator::emit(bool ir, const std::string &outPath) {
         passBuilder.crossRegisterProxies(lam, fam, cgam, mam);
 
         llvm::ModulePassManager pass;
-        pass.addPass(llvm::VerifierPass(false));
+        pass.addPass(llvm::VerifierPass(true));
         pass.addPass(llvm::createModuleToFunctionPassAdaptor(llvm::PromotePass()));
         pass.addPass(llvm::StripDeadPrototypesPass());
         pass.run(*module(), mam);
@@ -145,7 +147,7 @@ void CodeGenerator::emit(bool ir, const std::string &outPath) {
     }
     else {
         llvm::legacy::PassManager pass;
-        pass.add(llvm::createVerifierPass(false));
+        pass.add(llvm::createVerifierPass(true));
         if (targetMachine_->addPassesToEmitFile(pass, dest, nullptr, llvm::CodeGenFileType::ObjectFile)) {
             throw std::domain_error("TargetMachine can't emit a file of this type");
         }
@@ -167,6 +169,9 @@ void CodeGenerator::generateFunctions(Package *package, bool imported) {
     }
     for (auto &function : package->functions()) {
         generateFunction(function.get());
+    }
+    for (auto &specialization : package->specializations()) {
+        generateFunction(specialization.get());
     }
 }
 
@@ -208,6 +213,10 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
     fn->addFnAttr(llvm::Attribute::NoUnwind);
     if (function->isInline()) {
         fn->addFnAttr(llvm::Attribute::InlineHint);
+    }
+    if (function->neverReturns()) {
+        fn->addFnAttr(llvm::Attribute::NoReturn);
+        fn->addFnAttr(llvm::Attribute::Cold);
     }
 
     size_t i = function->isClosure() && !function->isC() ? 1 : 0;
@@ -393,6 +402,10 @@ llvm::Function::LinkageTypes CodeGenerator::linkageForFunction(Function *functio
     // Closures, even those in imported inline functions, are generated in every module that uses them.
     if (function->isClosure()) {
         return llvm::Function::PrivateLinkage;
+    }
+    // Every module that uses a specialization creates its own, including of an imported inline function.
+    if (function->specializedFunction() != nullptr) {
+        return llvm::Function::InternalLinkage;
     }
     if (function->isInline() && function->package()->isImported()) {
         return llvm::Function::AvailableExternallyLinkage;

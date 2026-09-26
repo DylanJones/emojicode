@@ -58,6 +58,8 @@ public:
     llvm::Function* releaseCapture() const { return releaseCapture_; }
     /// Used to find a protocol conformance in an array of ProtocolConformanceEntries. (ejcFindProtocolConformance)
     llvm::Function* findProtocolConformance() const { return findProtocolConformance_; }
+    /// Returns the table of a multiprotocol box with the given conformances. (ejcMultiprotocolTable)
+    llvm::Function* multiprotocolTable() const { return multiprotocolTable_; }
 
     llvm::Function* malloc() const { return malloc_; }
     llvm::Function* free() const { return free_; }
@@ -91,6 +93,7 @@ private:
 
     llvm::Function *inheritsFrom_ = nullptr;
     llvm::Function *findProtocolConformance_ = nullptr;
+    llvm::Function *multiprotocolTable_ = nullptr;
     llvm::Function *checkGenericArgs_ = nullptr;
     llvm::Function *typeDescriptionLength_ = nullptr;
     llvm::Function *indexTypeDescription_ = nullptr;

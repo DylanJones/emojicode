@@ -41,8 +41,18 @@ LLVMTypeHelper::LLVMTypeHelper(llvm::LLVMContext &context, CodeGenerator *codeGe
         // Pointer to the generic type info of the described type.
         // The address itself is used to determine whether to types are equal!
         pointer(),
-        llvm::Type::getInt1Ty(context_)  // optional
+        llvm::Type::getInt1Ty(context_),  // optional
+        pointer(),  // value witness
     });
+
+    valueWitness_ = llvm::StructType::create({
+        llvm::Type::getInt64Ty(context_),  // size of a value in memory
+        pointer(),  // copies a value from memory into a box: void (ptr value, ptr box)
+        pointer(),  // copies the value in a box into memory: void (ptr value, ptr box)
+        pointer(),  // releases a value in memory: void (ptr value)
+    }, "valueWitness");
+    erasedReference_ = llvm::StructType::create({ pointer(), pointer() }, "erasedReference");
+    valueWitnessCopy_ = llvm::FunctionType::get(llvm::Type::getVoidTy(context_), { pointer(), pointer() }, false);
 
     boxInfoType_ = llvm::StructType::create(context_, "boxInfo");
     box_ = llvm::StructType::create(context_, "box");
@@ -53,7 +63,8 @@ LLVMTypeHelper::LLVMTypeHelper(llvm::LLVMContext &context, CodeGenerator *codeGe
         llvm::Type::getInt1Ty(context_),  // whether the boxed value itself is the callee (i.e. value type) or not
         pointer(),  // dispatch table
         pointer(),  // box info
-        pointer(), pointer()  // box retain and release
+        pointer(), pointer(),  // box retain and release
+        pointer(),  // makes the value of a box unique before a mutation, or null (see buildBoxMakeUnique)
     }, "protocolConformance");
     protocolConformanceEntry_ = llvm::StructType::create({ pointer(), pointer() }, "protocolConformanceEntry");
 
@@ -195,6 +206,9 @@ llvm::Type* LLVMTypeHelper::box() const {
 }
 
 bool LLVMTypeHelper::isDereferenceable(const Type &type) const {
+    if (isErasedReference(type)) {
+        return false;  // Not a pointer, and the value it refers to is of a size unknown at compile time.
+    }
     return ((type.type() == TypeType::Class || type.type() == TypeType::Someobject) &&
             type.storageType() != StorageType::Box) || type.isReference();
 }
@@ -213,7 +227,21 @@ llvm::Type* LLVMTypeHelper::genericArgsStore(const Type &calleeType) {
 llvm::Type* LLVMTypeHelper::llvmTypeFor(const Type &type) {
     auto llvmType = typeForOrdinaryType(type);
     assert(llvmType != nullptr);
-    return type.isReference() ? pointer() : llvmType;
+    if (type.isReference()) {
+        return isErasedReference(type) ? static_cast<llvm::Type *>(erasedReference_) : pointer();
+    }
+    return llvmType;
+}
+
+bool LLVMTypeHelper::isErasedReference(const Type &type) {
+    // Every reference to a box, as a reference to a box of e.g. 🔢 in a caller may be one to a value of a generic
+    // parameter of the callee.
+    return type.isReference() && type.type() == TypeType::Box;
+}
+
+bool LLVMTypeHelper::isErased(const Type &type) {
+    return !type.isReference() && type.type() == TypeType::Box &&
+        (type.unboxedType() == TypeType::GenericVariable || type.unboxedType() == TypeType::LocalGenericVariable);
 }
 
 llvm::Type* LLVMTypeHelper::llvmTypeForPointee(const Type &type) {

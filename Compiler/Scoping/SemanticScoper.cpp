@@ -28,6 +28,12 @@ Scope& SemanticScoper::pushArgumentsScope(PathAnalyser *analyser, const std::vec
 
 void SemanticScoper::popScope(PathAnalyser *pathAnalyser, Compiler *compiler) {
     currentScope().checkScope(pathAnalyser, compiler);
+    // Variables declared later reuse the IDs of this scope's variables, and must not be considered initialized.
+    std::set<size_t> ids;
+    for (auto &pair : currentScope().map()) {
+        ids.emplace(pair.second.id());
+    }
+    pathAnalyser->forgetVariables(ids);
 
     updateMaxVariableIdForPopping();
     scopes_.pop_front();
@@ -42,6 +48,9 @@ SemanticScopeStats SemanticScoper::createStats() const {
 
 SemanticScoper SemanticScoper::scoperForFunction(Function *function)  {
     if (hasInstanceScope(function->functionType())) {
+        if (auto scope = function->instanceScope()) {
+            return SemanticScoper(scope);
+        }
         return SemanticScoper(&function->owner()->instanceScope());
     }
     return SemanticScoper();

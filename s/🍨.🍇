@@ -1,5 +1,5 @@
 📗 The backing store of a list. 📗
-🎍🛢 🔏 🐇 🍧🐚Element ⚪🍆️ 🍇
+🔏 🐇 🍧🐚Element ⚪🍆️ 🍇
   🖍🆕 data 🧠
   🖍🆕 count 🔢
   🖍🆕 size 🔢
@@ -477,7 +477,7 @@
     🍉
 
     🐽👇 0❗️ ➡️ 🖍🆕 result
-    🍡❗ ➡️ it
+    🍡❗ ➡️ 🖍🆕 it
     🔽it❗️
 
     🔂 element it 🍇
@@ -527,8 +527,43 @@
   🍉
 
   📗 Returns an iterator to iterate over the elements of this list. 📗
-  ❗️ 🍡 ➡️ 🌳🐚Element🍆 🍇
-    ↩️ 🆕🌳🐚Element🍆👇❗️
+  ❗️ 🍡 ➡️ 🎠🐚Element🍆 🍇
+    ↩️ 🆕🎠🐚Element🍆 👇❗️
+  🍉
+🍉
+
+📗
+  Iterator over a [[🍨]].
+
+  Being a value type whose methods are inlined, iterating a list with 🔂
+  compiles to a loop over the list's storage. Like other values, a copy of an
+  iterator is independent of it: iterating one copy does not advance the
+  others.
+📗
+🌍 🕊 🎠🐚Element ⚪🍆️ 🍇
+  🐊 🍡🐚Element🍆
+  🐊 🔂🐚Element🍆
+
+  🖍🆕 list 🍨🐚Element🍆
+  🖍🆕 index 🔢
+
+  🥯🆕 🍼 list 🍨🐚Element🍆 🍇
+    0 ➡️ 🖍index
+  🍉
+
+  🥯🖍❗️ 🔽 ➡️ ✴️Element 🍇
+    index ⬅️➕ 1
+    ☣️ 🍇
+      ↩️ 🐽 list 🤜index ➖ 1🤛❗️
+    🍉
+  🍉
+
+  🥯❓ 🔽 ➡️ 👌 🍇
+    ↩️ index ◀️ 📏list❓
+  🍉
+
+  🥯❗️ 🍡 ➡️ 🎠🐚Element🍆 🍇
+    ↩️ 👇
   🍉
 🍉
 
@@ -560,7 +595,7 @@
     ↩️ array
   🍉
 
-  ❗️ 🍡 ➡️ 🌳🐚Element🍆 🍇
+  ❗️ 🍡 ➡️ 🎠🐚Element🍆 🍇
     ↩️ 🍡array❗️
   🍉
 🍉

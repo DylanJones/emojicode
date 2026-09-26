@@ -9,6 +9,7 @@
 #include "ASTTypeExpr.hpp"
 #include "Generation/RunTimeHelper.hpp"
 #include "Generation/FunctionCodeGenerator.hpp"
+#include "Generation/LLVMTypeHelper.hpp"
 #include "Types/ValueType.hpp"
 #include "Types/Class.hpp"
 #include "Generation/RunTimeTypeInfoFlags.hpp"
@@ -22,6 +23,15 @@ Value* ASTCast::generate(FunctionCodeGenerator *fg) const {
     }
 
     auto box = expr_->generate(fg);
+    if (box->getType() == fg->typeHelper().erasedReference()) {
+        // The cast borrows a copy of the value, which lives until the end of the statement like a temporary.
+        auto copy = fg->createEntryAlloca(fg->typeHelper().box());
+        fg->builder().CreateStore(fg->buildLoadErased(box, expr_->expressionType()), copy);
+        auto type = expr_->expressionType();
+        type.setReference(false);
+        fg->addTemporaryObject(copy, type);
+        box = copy;
+    }
     auto result = fg->builder().CreateCall(getCastFunction(fg->generator()),
                                            { typeExpr_->generate(fg), box, boxInfo(fg, box) });
     if (castsBorrowedValue_ && !isTemporary()) {

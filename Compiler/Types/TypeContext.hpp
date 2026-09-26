@@ -10,6 +10,7 @@
 #define TypeContext_hpp
 
 #include "Type.hpp"
+#include <functional>
 #include <vector>
 
 namespace EmojicodeCompiler {
@@ -41,15 +42,25 @@ public:
     TypeContext(Type callee, Function *p, const std::vector<Type> *args)
         : calleeType_(std::move(callee)), function_(p), functionGenericArguments_(args) {}
 
+    /// Constructs a TypeContext like @p context, in which analysing a type does not check its generic arguments
+    /// against their constraints yet, but appends the checks to @p checks. Generic parameters are analysed like
+    /// this, as a constraint can mention a generic parameter whose constraint is not analysed yet, even its own.
+    TypeContext(const TypeContext &context, std::vector<std::function<void()>> *checks) : TypeContext(context) {
+        deferredChecks_ = checks;
+    }
+
     const Type& calleeType() const { return calleeType_; }
     /// Returns the function in whose context the code is.
     /// @returns The function with which this TypeContext was constructed or @c nullptr if no function is provided.
     Function* function() const { return function_; }
     const std::vector<Type>* functionGenericArguments() const { return functionGenericArguments_; }
+    /// The checks to which checks of generic arguments are appended instead of being made, or nullptr.
+    std::vector<std::function<void()>>* deferredChecks() const { return deferredChecks_; }
 private:
     Type calleeType_;
     Function *function_ = nullptr;
     const std::vector<Type> *functionGenericArguments_ = nullptr;
+    std::vector<std::function<void()>> *deferredChecks_ = nullptr;
 };
 
 }  // namespace EmojicodeCompiler

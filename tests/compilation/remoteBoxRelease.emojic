@@ -1,0 +1,87 @@
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+
+🐇 🐡 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ♻️ 🍇
+    😀 🔤deinit🔤❗️
+    😀 name❗️
+  🍉
+🍉
+
+💭 Too large to be stored in a box, so boxes store it in an object on the heap.
+🕊 🐘 🍇
+  🐊 🔼
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 d 🔢
+  🖍🆕 fish 🐡
+  🆕 🍼 a 🔢 name 🔡 🍇
+    0 ➡️ 🖍b
+    0 ➡️ 🖍c
+    0 ➡️ 🖍d
+    🆕🐡 name❗️ ➡️ 🖍fish
+  🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+🍉
+
+🕊 🎁🐚T 🔼🍆 🍇
+  🖍🆕 value T
+  🖍🆕 previous T
+  🆕 🍼 value T 🍇
+    value ➡️ 🖍previous
+  🍉
+  🖍❗️ 🔄 new T 🍇
+    value ➡️ 🖍previous
+    new ➡️ 🖍value
+  🍉
+  ❗️ 🧮 ➡️ 🔢 🍇
+    ↩️ 📏 value❗️ ➕ 📏 previous❗️
+  🍉
+🍉
+
+💭 Its initializer is not specialized, so optional values are boxed for it.
+🐇 🎀🐚T ⚪🍆 🍇
+  🖍🆕 spare 🍬T
+  🆕 🍼 spare 🍬T 🍇🍉
+🍉
+
+🐇 🧰 🍇
+  🐇❗️ 👀🐚T 🔼🍆 value T ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+  🐇❗️ 🏭 a 🔢 name 🔡 ➡️ 🍬🐘 🍇
+    ↪️ a 🙌 0 🍇
+      ↩️ 🤷‍♀️
+    🍉
+    ↩️ 🆕🐘 a name❗️
+  🍉
+  🐇❗️ 📐 value 🔼 ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+🍉
+
+🏁 🍇
+  😀 🔡 👀🐇🧰 🆕🐘 1 🔤passed to a generic method🔤❗️❗️❗️❗️
+  😀 🔡 📐🐇🧰 🆕🐘 2 🔤passed as a protocol🔤❗️❗️❗️❗️
+
+  🆕🎁🐚🐘🍆 🆕🐘 10 🔤first🔤❗️❗️ ➡️ 🖍🆕 gift
+  🔄gift 🆕🐘 20 🔤second🔤❗️❗️
+  😀 🔡 🧮gift❗️❗️❗️
+  🔄gift 🆕🐘 30 🔤third🔤❗️❗️
+  😀 🔡 🧮gift❗️❗️❗️
+
+  🆕🎀🐚🐘🍆 🏭🐇🧰 5 🔤optional🔤❗️❗️ ➡️ present
+  🆕🎀🐚🐘🍆 🏭🐇🧰 0 🔤none🔤❗️❗️ ➡️ absent
+
+  🖍🆕 stored 🔼
+  🆕🐘 3 🔤stored🔤❗️ ➡️ 🖍stored
+  stored ➡️ copy
+  😀 🔡 📏copy❗️❗️❗️
+  😀 🔤end🔤❗️
+🍉

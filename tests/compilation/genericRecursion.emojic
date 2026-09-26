@@ -1,0 +1,26 @@
+💭 Class methods are not specialized, so this recursion goes through erased generics.
+🐇 🧰 🍇
+  🆕 🍇🍉
+
+  🐇❗️ 🔃🐚T ⚪🍆 x T n 🔢 ➡️ 🍨🐚T🍆 🍇
+    ↪️ n 🙌 0 🍇
+      ↩️ 🍿🍆
+    🍉
+    🔃🐚T🍆🐇🧰 x n ➖ 1❗️ ➡️ 🖍🆕 list
+    🐻list x❗️
+    ↩️ list
+  🍉
+
+  💭 Calls itself with a larger generic argument each time.
+  🐇❗️ 🎎🐚T ⚪🍆 x T n 🔢 ➡️ 🔢 🍇
+    ↪️ n 🙌 0 🍇
+      ↩️ 0
+    🍉
+    ↩️ 1 ➕ 🎎🐚🍨🐚T🍆🍆🐇🧰 🍿 x 🍆 n ➖ 1❗️
+  🍉
+🍉
+
+🏁 🍇
+  😀 🔡 📏 🔃🐇🧰 🔤x🔤 3❗️❓❗️❗️
+  😀 🔡 🎎🐇🧰 1 12❗️❗️❗️
+🍉

@@ -184,6 +184,15 @@ bool AbstractParser::parseErrorType(Function *function) {
     return false;
 }
 
+bool AbstractParser::parseFunctionSignature(Function *function, bool initializer, bool addGenericParameters) {
+    parseGenericParameters(addGenericParameters ? function : nullptr);
+    parseParameters(function, initializer);
+    if (!initializer) {
+        parseReturnType(function);
+    }
+    return parseErrorType(function);
+}
+
 std::u32string AbstractParser::parseInitializerName() {
     std::u32string name = kDefaultInitName;
     if (stream_.nextTokenIs(TokenType::Operator) &&

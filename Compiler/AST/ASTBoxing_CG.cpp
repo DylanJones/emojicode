@@ -9,6 +9,7 @@
 #include "ASTBoxing.hpp"
 #include "ASTInitialization.hpp"
 #include "Generation/FunctionCodeGenerator.hpp"
+#include "Generation/LLVMTypeHelper.hpp"
 #include "Generation/ProtocolsTableGenerator.hpp"
 #include "Generation/RunTimeHelper.hpp"
 #include "Types/Protocol.hpp"
@@ -114,6 +115,7 @@ Value* ASTSimpleToSimpleOptional::generate(FunctionCodeGenerator *fg) const {
 
 Value* ASTSimpleToBox::generate(FunctionCodeGenerator *fg) const {
     auto box = fg->createEntryAlloca(fg->typeHelper().box());
+    remoteObject_ = nullptr;
     if (isValueTypeInit()) {
         setBoxInfo(box, fg);
         valueTypeInit(fg, buildStoreAddress(box, fg));
@@ -121,37 +123,56 @@ Value* ASTSimpleToBox::generate(FunctionCodeGenerator *fg) const {
     else {
         getPutValueIntoBox(box, expr_->generate(fg), fg);
     }
+    // The value is released as a temporary, but a heap object storing it is not. It is released after the value,
+    // which is in it.
+    if (remoteObject_ != nullptr) {
+        if (auto objectVariable = temporaryRemoteObjectVariable(fg)) {
+            fg->builder().CreateStore(remoteObject_, objectVariable);
+            fg->addTemporaryRemoteObject(objectVariable);
+        }
+    }
     return fg->builder().CreateLoad(fg->typeHelper().box(), box);
 }
 
 Value* ASTSimpleOptionalToBox::generate(FunctionCodeGenerator *fg) const {
     auto value = expr_->generate(fg);
-
-
     auto hasNoValue = fg->buildOptionalHasNoValue(value, expr_->expressionType());
+    // An object is only allocated if there is a value.
+    auto objectVariable = temporaryRemoteObjectVariable(fg);
+    if (objectVariable != nullptr) {
+        fg->builder().CreateStore(llvm::ConstantPointerNull::get(fg->typeHelper().pointer()), objectVariable);
+    }
 
-    return fg->createIfElsePhi(hasNoValue, [&] {
+    auto result = fg->createIfElsePhi(hasNoValue, [&] {
         return fg->buildBoxWithoutValue();
     }, [&] {
         auto box = fg->createEntryAlloca(fg->typeHelper().box());
         getPutValueIntoBox(box, fg->buildGetOptionalValue(value, expr_->expressionType()), fg);
+        if (objectVariable != nullptr) {
+            fg->builder().CreateStore(remoteObject_, objectVariable);
+        }
         return fg->builder().CreateLoad(fg->typeHelper().box(), box);
     });
+    if (objectVariable != nullptr) {
+        fg->addTemporaryRemoteObject(objectVariable);
+    }
+    return result;
+}
+
+Value* ASTToBox::temporaryRemoteObjectVariable(FunctionCodeGenerator *fg) const {
+    auto containedType = expr_->expressionType().unboxed().unoptionalized();
+    if (!fg->typeHelper().isRemote(containedType) || allocatesOnStack() || !producesTemporaryObject()) {
+        return nullptr;
+    }
+    return fg->createEntryAlloca(fg->typeHelper().pointer());
 }
 
 Value* ASTToBox::buildStoreAddress(Value *box, FunctionCodeGenerator *fg) const {
     auto containedType = expr_->expressionType().unboxed().unoptionalized();
     if (fg->typeHelper().isRemote(containedType)) {
         auto mngType = fg->typeHelper().managable(fg->typeHelper().llvmTypeFor(containedType));
-        auto boxPtr1 = fg->buildGetBoxValuePtr(box);
-        auto boxPtr2 = fg->buildGetBoxValuePtrAfter(box, fg->typeHelper().pointer(), fg->typeHelper().pointer());
-        auto alloc = allocate(fg, mngType);
-        auto valuePtr = fg->managableGetValuePtr(mngType, alloc);
-        // The first element in the value area is a direct pointer to the struct.
-        fg->builder().CreateStore(valuePtr, boxPtr1);
-        // The second is a pointer to the allocated object for management.
-        fg->builder().CreateStore(alloc, boxPtr2);
-        return valuePtr;
+        remoteObject_ = allocate(fg, mngType);
+        return fg->buildSetRemoteBoxObject(box, mngType, remoteObject_);
     }
     return getBoxValuePtr(box, fg);
 }
@@ -186,23 +207,38 @@ Value* ASTStoreTemporarily::generate(FunctionCodeGenerator *fg) const {
     else {
         fg->builder().CreateStore(expr_->generate(fg), store);
     }
+    if (LLVMTypeHelper::isErasedReference(expressionType())) {
+        return fg->buildErasedReference(store);
+    }
     return store;
 }
 
 Value* ASTBoxReferenceToReference::generate(FunctionCodeGenerator *fg) const {
     auto containedType = expr_->expressionType().unboxed().unoptionalized();
-    if (fg->typeHelper().isRemote(containedType)) {
-        auto ptrPtr = fg->buildGetBoxValuePtr(expr_->generate(fg));
-        return fg->builder().CreateLoad(fg->typeHelper().pointer(), ptrPtr);
-    }
-    return fg->buildGetBoxValuePtr(expr_->generate(fg));
+    auto reference = expr_->generate(fg);
+    auto address = fg->buildErasedReferenceAddress(reference);
+    auto entry = fg->builder().CreateExtractValue(reference, 1);
+    // A reference to a value in memory refers to the value itself.
+    return fg->createIfElsePhi(fg->builder().CreateIsNull(entry), [&]() -> Value* {
+        if (fg->typeHelper().isRemote(containedType)) {
+            if (mutated_) {  // A mutation must not change copies of the box, which share the object storing the value.
+                fg->makeRemoteBoxValueUnique(address, containedType);
+            }
+            return fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxValuePtr(address));
+        }
+        return fg->buildGetBoxValuePtr(address);
+    }, [&] { return address; });
 }
 
 void ASTBoxReferenceToReference::mutateReference(ExpressionAnalyser *analyser) {
+    mutated_ = true;
     expr_->mutateReference(analyser);
 }
 
 Value* ASTDereference::generate(FunctionCodeGenerator *fg) const {
+    if (LLVMTypeHelper::isErasedReference(expr_->expressionType())) {
+        return handleResult(fg, fg->buildLoadErased(expr_->generate(fg), expressionType()));
+    }
     auto ptr = expr_->generate(fg);
     auto val = fg->builder().CreateLoad(fg->typeHelper().llvmTypeFor(expressionType()), ptr);
     if (expressionType().isManaged()) {
@@ -216,16 +252,18 @@ void ASTDereference::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCateg
 }
 
 Value* ASTBoxReferenceToSimple::generate(FunctionCodeGenerator *fg) const {
-    auto box = expr_->generate(fg);
+    auto reference = expr_->generate(fg);
+    auto box = fg->buildErasedReferenceAddress(reference);
+    auto entry = fg->builder().CreateExtractValue(reference, 1);
     auto containedType = expr_->expressionType().unboxed().unoptionalized();
-    llvm::Value *valuePtr;
 
-    if (fg->typeHelper().isRemote(containedType)) {
-        valuePtr = fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxValuePtr(box));
-    }
-    else {
-        valuePtr = getBoxValuePtr(box, fg);
-    }
+    // A reference to a value in memory refers to the value itself.
+    auto valuePtr = fg->createIfElsePhi(fg->builder().CreateIsNull(entry), [&]() -> Value* {
+        if (fg->typeHelper().isRemote(containedType)) {
+            return fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxValuePtr(box));
+        }
+        return getBoxValuePtr(box, fg);
+    }, [&] { return box; });
 
     auto val = fg->builder().CreateLoad(fg->typeHelper().llvmTypeFor(containedType), valuePtr);
     if (expressionType().isManaged()) {

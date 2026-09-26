@@ -9,10 +9,12 @@
 #include "Compiler.hpp"
 #include "FunctionAnalyser.hpp"
 #include "AST/ASTExpr.hpp"
+#include "Scoping/Scope.hpp"
 #include "Scoping/SemanticScoper.hpp"
 #include "Types/TypeExpectation.hpp"
 #include "Package/Package.hpp"
 #include "ThunkBuilder.hpp"
+#include "Parsing/SpecializationParser.hpp"
 #include "Types/Class.hpp"
 #include "Types/Protocol.hpp"
 #include "Types/TypeDefinition.hpp"
@@ -24,18 +26,32 @@ Compiler* SemanticAnalyser::compiler() const {
     return package_->compiler();
 }
 
+SemanticAnalyser::SemanticAnalyser(Package *package, bool imported) : package_(package), imported_(imported) {}
+
+SemanticAnalyser::~SemanticAnalyser() = default;
+
 void SemanticAnalyser::analyse(bool executable) {
+    // Constraints and protocol conformances can mention generic parameters and types whose constraints or
+    // conformances are not analysed yet (e.g. 🐊 📈🐚🎲🍆 with 🐊 📈🐚T 📈🐚T🍆🍆), so generic arguments are only
+    // checked against their constraints once all are analysed.
+    std::vector<std::function<void()>> constraintChecks;
+    for (auto &protocol : package_->protocols()) {
+        protocol->analyseConstraints(TypeContext(TypeContext(Type(protocol.get())), &constraintChecks));
+    }
     for (auto &vt : package_->valueTypes()) {
-        finalizeProtocols(Type(vt.get()));
-        vt->analyseConstraints(TypeContext(Type(vt.get())));
+        vt->analyseConstraints(TypeContext(TypeContext(Type(vt.get())), &constraintChecks));
+        finalizeProtocols(Type(vt.get()), &constraintChecks);
     }
     for (auto &klass : package_->classes()) {
         klass->analyseSuperType();
-        finalizeProtocols(Type(klass.get()));
-        klass->analyseConstraints(TypeContext(Type(klass.get())));
+        klass->analyseConstraints(TypeContext(TypeContext(Type(klass.get())), &constraintChecks));
+        finalizeProtocols(Type(klass.get()), &constraintChecks);
     }
 
     package_->recreateClassTypes();
+    for (auto &check : constraintChecks) {
+        check();
+    }
 
     // Now all types are ready to be used with compatibleTo
 
@@ -78,8 +94,198 @@ void SemanticAnalyser::analyse(bool executable) {
     if (auto observer = compiler()->analysisObserver()) {
         observer->analysingFunctions(package_);
     }
+    declarationsAnalysed_ = true;
     analyseQueue();
     checkStartFlagFunction(executable);
+}
+
+/// Bounds the specializations that specializations cause, as a function could otherwise specialize itself with ever
+/// larger types, e.g. by calling itself with a list of its generic argument.
+constexpr size_t kMaxSpecializationDepth = 8;
+
+static bool isSpecializable(Function *function) {
+    if (function->isExternal() || function->ast() == nullptr || function->isC() || function->isClosure() ||
+        function->isThunk() || function->owner() == nullptr) {
+        return false;
+    }
+    if (function->genericParameters().empty() && function->owner()->genericParameters().empty()) {
+        return false;
+    }
+    // Only statically dispatched functions, as a virtual table has no entry per specialization: those of value types,
+    // and methods of classes that cannot be overridden.
+    if (function->functionType() == FunctionType::ObjectMethod) {
+        auto klass = dynamic_cast<Class *>(function->owner());
+        return klass != nullptr && (function->final() || klass->final()) && function->superFunction() == nullptr;
+    }
+    return function->functionType() == FunctionType::ValueTypeMethod ||
+           function->functionType() == FunctionType::ValueTypeInitializer ||
+           function->functionType() == FunctionType::Function;
+}
+
+/// Appends @p types to @p arguments in the form in which they are written. Returns false if one is not concrete.
+static bool appendConcreteArguments(const std::vector<Type> &types, std::vector<Type> *arguments) {
+    for (auto &argument : types) {
+        if (argument.containsGenericVariables() || argument.isCompileTimeOnly()) {
+            return false;
+        }
+        Type type = argument.withMinimalBoxing();
+        type.setReference(false);
+        type.setMutable(false);
+        arguments->emplace_back(type);
+    }
+    return true;
+}
+
+Function* SemanticAnalyser::specialize(Function *function, const Type &calleeType,
+                                       const std::vector<Type> &genericArguments) {
+    // A function of an imported package can be specialized if its body is in the package's interface, i.e. it is
+    // inline. The specialization belongs to this package.
+    if (!declarationsAnalysed_ || imported_ || !isSpecializable(function) ||
+        (function->package() != package_ && !(function->package()->isImported() && function->isInline()))) {
+        return nullptr;
+    }
+    auto owner = function->owner();
+    auto callee = calleeType.unboxed().withMinimallyBoxedGenericArguments();
+    callee.setReference(false);
+    callee.setMutable(false);
+    auto genericOwner = !owner->genericParameters().empty();
+    if (genericOwner && (!callee.canHaveGenericArguments() || callee.typeDefinition() != owner)) {
+        return nullptr;
+    }
+
+    // The generic arguments of the type come first, followed by those of the function.
+    std::vector<Type> arguments;
+    if ((genericOwner && !appendConcreteArguments(callee.genericArguments(), &arguments)) ||
+        !appendConcreteArguments(genericArguments, &arguments)) {
+        return nullptr;
+    }
+    auto key = std::make_pair(function, arguments);
+    auto existing = specializations_.find(key);
+    if (existing != specializations_.end()) {
+        auto specialization = existing->second;
+        if (specialization != nullptr && !specializationStack_.empty() &&
+            unfinishedSpecializations_.count(specialization) > 0 && specialization != specializationStack_.back()) {
+            specializationDependencies_[specializationStack_.back()].insert(specialization);
+        }
+        return specialization;
+    }
+    if (specializationStack_.size() >= kMaxSpecializationDepth) {
+        return nullptr;
+    }
+    // A function could otherwise specialize itself with ever larger types, e.g. by calling itself with a list of its
+    // generic argument.
+    for (auto specialization : specializationStack_) {
+        if (specialization->specializedFunction() == function) {
+            return nullptr;
+        }
+    }
+
+    auto created = function->makeSpecialization();
+    size_t argument = 0;
+    if (genericOwner) {
+        for (auto &parameter : owner->genericParameters()) {
+            created->bindVariable(parameter.name, arguments[argument++]);
+        }
+        // The instance variables have the same storage, but their types are resolved on the concrete type.
+        auto &ownerScope = owner->instanceScope();
+        auto scope = std::make_unique<Scope>(ownerScope.maxVariableId());
+        for (auto &pair : ownerScope.map()) {
+            auto &var = pair.second;
+            auto type = var.type().resolveOn(TypeContext(callee)).withMinimallyBoxedGenericArguments();
+            scope->declareVariableWithId(var.name(), type, var.constant(), var.id(), var.position());
+        }
+        created->setSpecializedCallee(callee, std::move(scope));
+    }
+    for (auto &parameter : function->genericParameters()) {
+        created->bindVariable(parameter.name, arguments[argument++]);
+    }
+    created->setSpecializationOf(function, arguments);
+
+    // Registered before the analysis, so that a recursive call uses the specialization too.
+    auto specialization = created.get();
+    specializations_.emplace(key, specialization);
+    unfinishedSpecializations_.emplace(specialization, std::move(created));
+    specializationStack_.push_back(specialization);
+    auto compiled = analyseSpecialization(specialization);
+    specializationStack_.pop_back();
+    if (compiled) {
+        finishSpecialization(specialization);
+    }
+    else {
+        discardSpecialization(specialization, true);
+    }
+    if (specializationStack_.empty()) {
+        unusedSpecializations_.clear();
+    }
+    return compiled ? specialization : nullptr;
+}
+
+void SemanticAnalyser::finishSpecialization(Function *specialization) {
+    auto dependencies = specializationDependencies_.find(specialization);
+    if (dependencies != specializationDependencies_.end() && !dependencies->second.empty()) {
+        return;
+    }
+    specializationDependencies_.erase(specialization);
+    auto owned = unfinishedSpecializations_.find(specialization);
+    package_->addSpecialization(std::move(owned->second));
+    unfinishedSpecializations_.erase(owned);
+
+    std::vector<Function *> waiting;
+    for (auto &pair : specializationDependencies_) {
+        if (pair.second.erase(specialization) > 0 && pair.second.empty()) {
+            waiting.emplace_back(pair.first);
+        }
+    }
+    for (auto function : waiting) {
+        if (std::find(specializationStack_.begin(), specializationStack_.end(), function) == specializationStack_.end()) {
+            finishSpecialization(function);
+        }
+    }
+}
+
+void SemanticAnalyser::discardSpecialization(Function *specialization, bool failed) {
+    auto key = std::make_pair(specialization->specializedFunction(), specialization->specializationArguments());
+    if (failed) {
+        specializations_[key] = nullptr;
+    }
+    else {
+        specializations_.erase(key);  // It may be used once the specialization it called is not.
+    }
+    specializationDependencies_.erase(specialization);
+    auto owned = unfinishedSpecializations_.find(specialization);
+    unusedSpecializations_.emplace_back(std::move(owned->second));
+    unfinishedSpecializations_.erase(owned);
+
+    std::vector<Function *> callers;
+    for (auto &pair : specializationDependencies_) {
+        if (pair.second.count(specialization) > 0) {
+            callers.emplace_back(pair.first);
+        }
+    }
+    for (auto caller : callers) {
+        if (unfinishedSpecializations_.count(caller) > 0) {
+            discardSpecialization(caller, false);
+        }
+    }
+}
+
+bool SemanticAnalyser::analyseSpecialization(Function *specialization) {
+    auto trapped = compiler()->trapsErrors();
+    compiler()->setTrapsErrors(true);
+    bool compiled = true;
+    try {
+        SpecializationParser::parse(specialization->specializedFunction(), specialization);
+        analyseFunctionDeclaration(specialization);
+        FunctionAnalyser(specialization, this).analyse();
+    }
+    catch (CompilerError &) {
+        compiled = false;
+    }
+    catch (Compiler::TrappedError &) {
+        compiled = false;
+    }
+    compiler()->setTrapsErrors(trapped);
+    return compiled;
 }
 
 void SemanticAnalyser::checkStartFlagFunction(bool executable) {
@@ -145,7 +351,11 @@ void SemanticAnalyser::analyseFunctionDeclaration(Function *function) const {
         throw CompilerError(function->errorType()->position(), "Error type must be a subclass of 🚧.");
     }
 
-    function->analyseConstraints(context);
+    std::vector<std::function<void()>> constraintChecks;
+    function->analyseConstraints(TypeContext(context, &constraintChecks));
+    for (auto &check : constraintChecks) {
+        check();
+    }
     for (auto &param : function->parameters()) {
         param.type->analyseType(context);
         if (!function->externalName().empty() && !function->isC() &&
@@ -346,12 +556,12 @@ void SemanticAnalyser::checkProtocolConformance(const Type &type) {
     }
 }
 
-void SemanticAnalyser::finalizeProtocols(const Type &type) {
+void SemanticAnalyser::finalizeProtocols(const Type &type, std::vector<std::function<void()>> *constraintChecks) {
     // A type can conform to a protocol only once, even with different generic arguments.
     std::set<Protocol *> protocols;
 
     for (auto &protocol : type.typeDefinition()->protocols()) {
-        auto &protocolType = protocol.type->analyseType(TypeContext(type));
+        auto &protocolType = protocol.type->analyseType(TypeContext(TypeContext(type), constraintChecks));
         Type unboxed = protocolType.unboxed();
         if (!unboxed.is<TypeType::Protocol>()) {
             package_->compiler()->error(CompilerError(protocol.type->position(), "Type is not a protocol."));

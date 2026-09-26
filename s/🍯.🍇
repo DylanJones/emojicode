@@ -1,4 +1,4 @@
-🎍🛢 🔏 🐇 🐝🐚Key ⚪️ Element ⚪🍆️ 🍇
+🔏 🐇 🐝🐚Key ⚪️ Element ⚪🍆️ 🍇
   🖍🆕 next 🍬🐝🐚Key Element🍆
   🖍🆕 key Key
   🖍🆕 element Element
@@ -13,7 +13,7 @@
     🔑pair❗️ ➡️🖍key
     ⚗️pair❗️ ➡️🖍hash
 
-    ↪️ next ➡️ nextu 🍇
+    ↪️ ⏭pair❗️ ➡️ nextu 🍇
       🆕🐝🐚Key Element🍆 nextu❗️➡️🖍next
     🍉
   🍉
@@ -69,7 +69,7 @@
     🐴storage❓ ➡️ 🖍capacity
 
     ☣️ 🍇
-      🆕🧠 capacity✖️⚖️Element❗️ ➡️ 🖍data
+      🆕🧠 capacity✖️⚖️🍬🐝🐚🔡Element🍆❗️ ➡️ 🖍data
       🔂 i 🆕⏩ 0 capacity❗️ 🍇
         ↪️🐽🐚🍬🐝🐚🔡Element🍆🍆 🧠storage❗️ i✖️⚖️🍬🐝🐚🔡Element🍆❗️ ➡️ v 🍇
           🆕🐝🐚🔡Element🍆 v❗️➡️pair

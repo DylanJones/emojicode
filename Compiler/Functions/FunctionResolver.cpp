@@ -119,7 +119,8 @@ std::optional<GenericInferer> FunctionResolution<T>::checkCallSignature(Function
 template <typename T>
 bool FunctionResolution<T>::checkGenericArguments(Function *function, const std::vector<Type> &args) {
     for (size_t i = function->offset(); i < args.size(); i++) {
-        if (!args[i].compatibleTo(function->constraintForIndex(i), TypeContext(callee_, function))) {
+        auto constraint = function->constraintForIndex(i).resolveOn(TypeContext(callee_, function, &args));
+        if (!args[i].compatibleTo(constraint, TypeContext(callee_, function))) {
             nonCandidates_.emplace_back(function, NonCandidate::Reason::GenericArgument, i);
             return false;
         }
@@ -133,6 +134,7 @@ void FunctionResolution<T>::addResolver(const FunctionResolver<T> *res) {
     for (; res != nullptr; res = res->super_) {
         auto pos = res->map_.find(key_);
         if (pos != res->map_.end()) {
+            overloads_ += pos->second.size();
             for (auto &fn : pos->second) {
                 if (blocked.find(fn.get()) != blocked.end()) {
                     if (fn->overriding()) {
@@ -220,6 +222,11 @@ std::optional<Candidate<T>> FunctionResolution<T>::pick() {
 
 template <typename T>
 T* FunctionResolution<T>::resolveAndReificate(ASTArguments *args, Type *type) {
+    auto caller = typeContext_.function();
+    if (overloads_ > 1 && caller != nullptr && caller->enclosingSpecialization() != nullptr) {
+        // With concrete types in place of generic parameters, another overload could be chosen than in generic code.
+        throw CompilerError(p_, "A specialization cannot call an overloaded function.");
+    }
     auto candidate = resolve();
     if (!candidate.has_value()) {
         return nullptr;
@@ -229,7 +236,8 @@ T* FunctionResolution<T>::resolveAndReificate(ASTArguments *args, Type *type) {
     }
     if (candidate->genericInferer.inferringType()) {
         type->setGenericArguments(candidate->genericInferer.typeArguments());
-        type->typeDefinition()->requestReificationAndCheck(typeContext_, type->genericArguments(), args->position());
+        type->typeDefinition()->requestReificationAndCheck(typeContext_, TypeContext(*type), type->genericArguments(),
+                                                           args->position());
         *type = type->resolveOnSuperArgumentsAndConstraints(typeContext_);
     }
     candidate->genericInferer.issueWarning(args->position(), analyser_->compiler());

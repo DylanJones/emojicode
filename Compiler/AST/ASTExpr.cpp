@@ -7,6 +7,7 @@
 //
 
 #include "ASTExpr.hpp"
+#include "Functions/Function.hpp"
 #include "Compiler.hpp"
 #include "Analysis/ExpressionAnalyser.hpp"
 #include "MemoryFlowAnalysis/MFFunctionAnalyser.hpp"
@@ -20,6 +21,7 @@ ASTSizeOf::ASTSizeOf(std::unique_ptr<ASTType> type, const SourcePosition &p) : A
 
 Type ASTSizeOf::analyse(ExpressionAnalyser *analyser) {
     type_->analyseType(analyser->typeContext());
+    analyser->usesGenericArgumentsOf(type_->type());
     return analyser->integer();
 }
 

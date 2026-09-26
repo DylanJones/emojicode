@@ -13,8 +13,8 @@
 
 namespace EmojicodeCompiler {
 
-Lexer::Lexer(SourceFile *source, bool minimalMode)
-        : sourcePosition_(1, 1, source), source_(source), minimalMode_(minimalMode) {
+Lexer::Lexer(SourceFile *source, bool minimalMode, bool recordLines)
+        : sourcePosition_(1, 1, source), source_(source), minimalMode_(minimalMode), recordLines_(recordLines) {
     skipWhitespace();
 
     loadOperatorSingleTokens();
@@ -68,6 +68,18 @@ void Lexer::loadOperatorSingleTokens() {
     singleTokens_.emplace(E_RED_EXCLAMATION_MARK_AND_QUESTION_MARK, TokenType::Call);
 }
 
+void Lexer::seekLine(unsigned int line) {
+    auto &lines = source_->lines();  // The index at which each line begins.
+    if (line < 1 || line - 1 >= lines.size()) {
+        return;
+    }
+    i_ = lines[line - 1];
+    sourcePosition_.line = line;
+    sourcePosition_.character = 1;
+    continue_ = i_ < source_->file().size();
+    skipWhitespace();
+}
+
 void Lexer::skipWhitespace() {
     while (continue_ && detectWhitespace()) {
         nextCharOrEnd();
@@ -78,7 +90,7 @@ bool Lexer::detectWhitespace() {
     if (isNewline()) {
         sourcePosition_.character = 0;
         sourcePosition_.line++;
-        if (!minimalMode_) {
+        if (recordLines_) {
             source_->endLine(i_ + 1);
         }
         return false;

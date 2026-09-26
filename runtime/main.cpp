@@ -8,6 +8,11 @@
 
 #include "Runtime.h"
 #include "Internal.hpp"
+#include <map>
+#include <mutex>
+#include <vector>
+#include <memory>
+#include <algorithm>
 #include <cinttypes>
 #include <cstdlib>
 #include <cstring>
@@ -180,6 +185,21 @@ struct ProtocolConformanceEntry {
     void *protocolConformance;
 };
 
+/// Returns a table of the protocol conformances @p conformances, which a box of a multiprotocol points to. Tables with
+/// the same conformances are the same, and live as long as the program.
+extern "C" void** ejcMultiprotocolTable(void **conformances, runtime::Integer count) {
+    static std::mutex mutex;
+    static std::map<std::vector<void *>, std::unique_ptr<void *[]>> tables;
+    std::vector<void *> key(conformances, conformances + count);
+    std::lock_guard<std::mutex> lock(mutex);
+    auto &table = tables[key];
+    if (!table) {
+        table = std::make_unique<void *[]>(count);
+        std::copy(conformances, conformances + count, table.get());
+    }
+    return table.get();
+}
+
 extern "C" void* ejcFindProtocolConformance(ProtocolConformanceEntry *info, void *protocolId) {
     for (auto infoNew = info; infoNew->protocolId != nullptr; infoNew++) {
         if (infoNew->protocolId == protocolId) {
@@ -197,6 +217,8 @@ struct RunTimeTypeInfo {
 struct TypeDescription {
     RunTimeTypeInfo *rtti;
     bool optional;
+    /// The operations on a value of the described type in memory (see ValueWitnessBuilder in the compiler).
+    void *valueWitness;
 };
 
 bool checkGenericArgs(TypeDescription **argsl, TypeDescription **argsr, int16_t argsCount, int16_t argsOffset) {

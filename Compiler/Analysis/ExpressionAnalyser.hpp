@@ -88,7 +88,15 @@ public:
     /// Whether the methods of @p typeDef take and return values of generic types unboxed. True for the memory
     /// and pointer types 🧠, 📍 and 🕳, whose built-in methods work on the values directly.
     bool storesGenericValuesUnboxed(TypeDefinition *typeDef) const;
-    Type analyseFunctionCall(ASTArguments *node, const Type &type, Function *function);
+    /// Analyses the arguments of a call of @p function and returns its return type.
+    /// @param specialization If provided and the call can use a specialization of @p function, it is set to the
+    /// specialization, which the call must then call instead of @p function. It is left unchanged otherwise.
+    Type analyseFunctionCall(ASTArguments *node, const Type &type, Function *function,
+                             Function **specialization = nullptr);
+
+    /// Records that the code needs the type for which a generic parameter of the type in @p type stands at run time,
+    /// which it gets from 👇, so that a closure captures it.
+    void usesGenericArgumentsOf(const Type &type);
 
     Type integer() const;
     Type boolean() const;
@@ -122,7 +130,13 @@ private:
 
     Type upcast(Type exprType, const TypeExpectation &expectation, std::shared_ptr<ASTExpr> *node) const;
 
+    Type referenceBoxedVariable(Type exprType, const TypeExpectation &expectation,
+                                std::shared_ptr<ASTExpr> *node) const;
+
     Type complyReference(Type exprType, const TypeExpectation &expectation, std::shared_ptr<ASTExpr> *node) const;
+
+    /// Makes @p node provide a reference to the variable it gets, if it is an ASTGetVariable, and returns whether it is.
+    static bool referenceVariable(Type &exprType, std::shared_ptr<ASTExpr> *node);
 };
 
 }  // namespace EmojicodeCompiler

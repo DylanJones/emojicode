@@ -7,6 +7,7 @@
 //
 
 #include "Function.hpp"
+#include "Scoping/Scope.hpp"
 #include "AST/ASTStatements.hpp"
 #include "Compiler.hpp"
 #include "Types/TypeContext.hpp"
@@ -32,7 +33,7 @@ llvm::FunctionType* FunctionReification::functionType() {
 }
 
 TypeContext Function::typeContext() {
-    auto type = owner_ == nullptr ? Type::noReturn() : owner_->type();
+    auto type = owner_ == nullptr ? Type::noReturn() : specializedCalleeType_.value_or(owner_->type());
     if (type.type() == TypeType::ValueType || type.type() == TypeType::Enum) {
         type.setReference();
         type.setMutable(mutating());
@@ -53,6 +54,19 @@ bool Function::isInline() const {
 }
 
 Function::~Function() = default;
+
+std::unique_ptr<Function> Function::makeSpecialization() const {
+    auto function = std::make_unique<Function>(name(), accessLevel(), final(), owner(), package(), position(), false,
+                                               documentation(), deprecated(), mutating(), mood(), unsafe(),
+                                               functionType(), isInline());
+    function->setMemoryFlowTypeForThis(memoryFlowTypeForThis());
+    return function;
+}
+
+void Function::setSpecializedCallee(Type calleeType, std::unique_ptr<Scope> instanceScope) {
+    specializedCalleeType_ = std::move(calleeType);
+    instanceScope_ = std::move(instanceScope);
+}
 
 void Function::setAst(std::unique_ptr<ASTBlock> ast) {
     ast_ = std::move(ast);
