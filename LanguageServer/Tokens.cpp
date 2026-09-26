@@ -13,9 +13,7 @@ namespace EmojicodeLanguageServer {
 
 using EmojicodeCompiler::TokenType;
 
-/// Whether the lexer skips @p c between tokens. U+FE0F is whitespace to the lexer, but it belongs to the emoji
-/// before it, so it is kept in the token.
-static bool isSkipped(char32_t c) {
+bool isSkipped(char32_t c) {
     return c != 0xFE0F && (c == ' ' || (0x9 <= c && c <= 0xD) || c == 0x85 || c == 0xA0 || c == 0x1680 ||
                            (0x2000 <= c && c <= 0x200A) || c == 0x2028 || c == 0x2029 || c == 0x202F ||
                            c == 0x205F || c == 0x3000);

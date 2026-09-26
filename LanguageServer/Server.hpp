@@ -60,6 +60,9 @@ private:
     void didClose(const rapidjson::Value &params);
     void hover(const rapidjson::Value &id, const rapidjson::Value &params);
     void definition(const rapidjson::Value &id, const rapidjson::Value &params);
+    /// Answers emojicode/docs, a request with the parameters of a hover: where the package documentation describes
+    /// the symbol at the position, as {path, range}, or null.
+    void docs(const rapidjson::Value &id, const rapidjson::Value &params);
     void semanticTokens(const rapidjson::Value &id, const rapidjson::Value &params);
     void documentSymbols(const rapidjson::Value &id, const rapidjson::Value &params);
     void completion(const rapidjson::Value &id, const rapidjson::Value &params);

@@ -25,6 +25,10 @@ struct TokenSpan {
     bool unterminated = false;
 };
 
+/// Whether the lexer skips @p c between tokens. U+FE0F is whitespace to the lexer, but it belongs to the emoji
+/// before it, so it is kept in the token.
+bool isSkipped(char32_t c);
+
 /// Lexes @p text with the compiler's lexer. A string that the lexer rejects, e.g. because of an invalid escape
 /// sequence, is a string token without a value. If the text contains another invalid token, the tokens before it
 /// are returned. Line breaks are left out.

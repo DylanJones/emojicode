@@ -1,7 +1,7 @@
 {
   "name": "emojicode",
   "displayName": "Emojicode",
-  "description": "Emojicode language support: highlighting, errors, hover, go to definition and completion",
+  "description": "Emojicode language support: highlighting, errors, hover, go to definition, completion and links to the documentation for learners",
   "version": "0.1.0",
   "publisher": "emojicode",
   "license": "Artistic-2.0",
@@ -67,6 +67,16 @@
           ],
           "default": "off",
           "description": "Logs the messages between VS Code and the language server to the Emojicode output channel."
+        },
+        "emojicode.learnerDocs.enabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Link code to the section of the Emojicode documentation that explains it when you hover over it, e.g. 🔂 to *For In* or 😀 to its page in the `s` package. Toggle it with **Emojicode: Toggle Learner Docs** or the status bar."
+        },
+        "emojicode.learnerDocs.baseUrl": {
+          "type": "string",
+          "default": "https://www.emojicode.org/",
+          "markdownDescription": "The root of the documentation website that learner docs link to. Set it to `http://localhost:8080/` to use the documentation's `./serve`."
         }
       }
     },
@@ -78,15 +88,34 @@
           "other": true,
           "comments": false,
           "strings": false
+        },
+        "editor.unicodeHighlight.allowedCharacters": {
+          "️": true,
+          "➕": true,
+          "➖": true
         }
       }
-    }
+    },
+    "commands": [
+      {
+        "command": "emojicode.toggleLearnerDocs",
+        "title": "Toggle Learner Docs",
+        "category": "Emojicode"
+      },
+      {
+        "command": "emojicode.openLearnerDocs",
+        "title": "Open Documentation for Token at Cursor",
+        "category": "Emojicode",
+        "enablement": "editorLangId == emojicode"
+      }
+    ]
   },
   "scripts": {
     "compile": "tsc -p .",
     "watch": "tsc -watch -p .",
-    "test": "node test/grammar.test.js",
-    "package": "vsce package"
+    "test": "tsc -p . && node test/grammar.test.js && node test/learnerDocs.test.js",
+    "package": "vsce package",
+    "test:integration": "tsc -p . && test/integration/run.sh"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1"

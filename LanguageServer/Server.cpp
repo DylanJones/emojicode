@@ -117,6 +117,9 @@ void Server::handleRequest(const std::string &method, const Value &id, const Val
     else if (method == "textDocument/definition") {
         definition(id, params);
     }
+    else if (method == "emojicode/docs") {
+        docs(id, params);
+    }
     else if (method == "textDocument/semanticTokens/full") {
         semanticTokens(id, params);
     }
@@ -510,6 +513,25 @@ void Server::hover(const Value &id, const Value &params) {
             contents.AddMember("kind", "markdown", allocator);
             contents.AddMember("value", jsonString(symbol->first.hover, allocator), allocator);
             result.AddMember("contents", contents, allocator);
+            result.AddMember("range", range(navigator.source(), symbol->second->start, symbol->second->end, allocator),
+                             allocator);
+        }
+    }
+    respond(id, result, document);
+}
+
+void Server::docs(const Value &id, const Value &params) {
+    rapidjson::Document document;
+    auto &allocator = document.GetAllocator();
+    Value result;
+    auto position = documentPosition(params);
+    auto analysis = position ? analysisFor(position->first) : nullptr;
+    if (analysis != nullptr) {
+        auto navigator = this->navigator(*analysis, position->first, false);
+        auto symbol = navigator.symbolAt(position->second);
+        if (symbol && !symbol->first.docsPath.empty()) {
+            result.SetObject();
+            result.AddMember("path", jsonString(symbol->first.docsPath, allocator), allocator);
             result.AddMember("range", range(navigator.source(), symbol->second->start, symbol->second->end, allocator),
                              allocator);
         }

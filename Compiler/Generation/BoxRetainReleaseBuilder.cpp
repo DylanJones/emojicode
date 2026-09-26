@@ -102,7 +102,26 @@ std::pair<llvm::Function*, llvm::Function*> buildBoxRetainRelease(CodeGenerator 
     FunctionCodeGenerator retainFg(retain, cg, std::make_unique<TypeContext>(type));
     retainFg.createEntry();
 
-    if (type.isManaged()) {
+    if (cg->typeHelper().isRemote(type)) {
+        // The allocation of a remote value is counted even if the value has no managed contents.
+        auto ptr = cg->typeHelper().pointer();
+        auto mngType = cg->typeHelper().managable(cg->typeHelper().llvmTypeFor(type));
+
+        auto objPtr = releaseFg.buildGetBoxValuePtrAfter(release->args().begin(), ptr, ptr);
+        auto remotePtr = releaseFg.builder().CreateLoad(ptr, objPtr);
+        if (type.isManaged()) {
+            releaseFg.release(releaseFg.managableGetValuePtr(mngType, remotePtr), type);
+        }
+        releaseFg.builder().CreateCall(cg->runTime().releaseWithoutDeinit(), remotePtr);
+
+        auto objPtrRetain = retainFg.buildGetBoxValuePtrAfter(retain->args().begin(), ptr, ptr);
+        auto remotePtrRetain = retainFg.builder().CreateLoad(ptr, objPtrRetain);
+        if (type.isManaged()) {
+            retainFg.retain(retainFg.managableGetValuePtr(mngType, remotePtrRetain), type);
+        }
+        retainFg.builder().CreateCall(cg->runTime().retain(), remotePtrRetain);
+    }
+    else if (type.isManaged()) {
         if (!releaseFg.isManagedByReference(type)) {
             auto llvmType = cg->typeHelper().llvmTypeFor(type);
             auto objPtr = releaseFg.buildGetBoxValuePtr(release->args().begin());
@@ -110,20 +129,6 @@ std::pair<llvm::Function*, llvm::Function*> buildBoxRetainRelease(CodeGenerator 
 
             auto objPtrRetain = retainFg.buildGetBoxValuePtr(retain->args().begin());
             retainFg.retain(retainFg.builder().CreateLoad(llvmType, objPtrRetain), type);
-        }
-        else if (cg->typeHelper().isRemote(type)) {
-            auto ptr = cg->typeHelper().pointer();
-            auto mngType = cg->typeHelper().managable(cg->typeHelper().llvmTypeFor(type));
-
-            auto objPtr = releaseFg.buildGetBoxValuePtrAfter(release->args().begin(), ptr, ptr);
-            auto remotePtr = releaseFg.builder().CreateLoad(ptr, objPtr);
-            releaseFg.release(releaseFg.managableGetValuePtr(mngType, remotePtr), type);
-            releaseFg.builder().CreateCall(cg->runTime().releaseWithoutDeinit(), remotePtr);
-
-            auto objPtrRetain = retainFg.buildGetBoxValuePtrAfter(retain->args().begin(), ptr, ptr);
-            auto remotePtrRetain = retainFg.builder().CreateLoad(ptr, objPtrRetain);
-            retainFg.retain(retainFg.managableGetValuePtr(mngType, remotePtrRetain), type);
-            retainFg.builder().CreateCall(cg->runTime().retain(), remotePtrRetain);
         }
         else {
             auto objPtr = releaseFg.buildGetBoxValuePtr(release->args().begin());

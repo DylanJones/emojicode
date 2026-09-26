@@ -123,8 +123,11 @@ std::string ASTTypeValueType::toString(TokenType tokenType) {
 
 Type ASTGenericVariable::getType(const TypeContext &typeContext, bool allowGenericInference) const {
     Type type = Type::noReturn();
-    if (typeContext.function() != nullptr && typeContext.function()->fetchVariable(name_, &type)) {
-        return type;
+    // A closure can use the generic parameters of the functions it is written in.
+    for (auto function = typeContext.function(); function != nullptr; function = function->enclosingFunction()) {
+        if (function->fetchVariable(name_, &type)) {
+            return type;
+        }
     }
 
     auto callee = typeContext.calleeType().unboxed();

@@ -10,6 +10,7 @@
 #include "ASTInitialization.hpp"
 #include "Generation/FunctionCodeGenerator.hpp"
 #include "Generation/ProtocolsTableGenerator.hpp"
+#include "Generation/RunTimeHelper.hpp"
 #include "Types/Protocol.hpp"
 
 namespace EmojicodeCompiler {
@@ -72,6 +73,15 @@ Value* ASTBoxing::getGetValueFromBox(Value *box, FunctionCodeGenerator *fg) cons
     return fg->builder().CreateLoad(type, getBoxValuePtr(box, fg));
 }
 
+void ASTBoxing::releaseRemoteAllocationIfTaken(Value *box, FunctionCodeGenerator *fg) const {
+    if (isTemporary() || !fg->typeHelper().isRemote(expr_->expressionType().unboxed().unoptionalized())) {
+        return;
+    }
+    auto ptr = fg->typeHelper().pointer();
+    auto remote = fg->builder().CreateLoad(ptr, fg->buildGetBoxValuePtrAfter(box, ptr, ptr));
+    fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), remote);
+}
+
 void ASTBoxing::valueTypeInit(FunctionCodeGenerator *fg, Value *destination) const {
     auto init = std::dynamic_pointer_cast<ASTInitialization>(expr_);
     init->setDestination(destination);
@@ -79,7 +89,10 @@ void ASTBoxing::valueTypeInit(FunctionCodeGenerator *fg, Value *destination) con
 }
 
 Value* ASTBoxToSimple::generate(FunctionCodeGenerator *fg) const {
-    return getGetValueFromBox(getAllocaTheBox(fg), fg);
+    auto box = getAllocaTheBox(fg);
+    auto value = getGetValueFromBox(box, fg);
+    releaseRemoteAllocationIfTaken(box, fg);
+    return value;
 }
 
 Value* ASTBoxToSimpleOptional::generate(FunctionCodeGenerator *fg) const {
@@ -89,7 +102,9 @@ Value* ASTBoxToSimpleOptional::generate(FunctionCodeGenerator *fg) const {
     return fg->createIfElsePhi(hasNoValue, [this, fg]() {
         return getSimpleOptionalWithoutValue(fg);
     }, [this, box, fg]() {
-        return getSimpleOptional(getGetValueFromBox(box, fg), fg);
+        auto value = getGetValueFromBox(box, fg);
+        releaseRemoteAllocationIfTaken(box, fg);
+        return getSimpleOptional(value, fg);
     });
 }
 

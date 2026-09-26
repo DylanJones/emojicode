@@ -229,6 +229,7 @@ public:
 protected:
     virtual void declareArguments(llvm::Function *function);
     Function* function() const { return fn_; }
+    void setFunctionGenericArgs(llvm::Value *value) { functionGenericArgs_ = value; }
 
 private:
     Function *const fn_;

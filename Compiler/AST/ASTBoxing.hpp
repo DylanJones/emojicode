@@ -32,6 +32,10 @@ protected:
     Value* getSimpleOptionalWithoutValue(FunctionCodeGenerator *fg) const;
 
     Value* getGetValueFromBox(Value *box, FunctionCodeGenerator *fg) const;
+    /// A box stores a remote value type in an allocation of its own and holds a reference to it besides the
+    /// references to the value's contents. If the unboxed value is taken, i.e. owns the contents now, this releases
+    /// the reference of the box to the allocation, which is otherwise leaked.
+    void releaseRemoteAllocationIfTaken(Value *box, FunctionCodeGenerator *fg) const;
     /// Allocas space for a box and then calls ASTExpr::generate() of of ::expr_ and stores its value into the box.
     Value* getAllocaTheBox(FunctionCodeGenerator *fg) const;
 

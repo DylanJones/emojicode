@@ -1,0 +1,52 @@
+🕊 🥛🐚A⚪🍆 🍇
+  🖍🆕 a A
+  🆕 🍼 a A 🍇🍉
+  ❗️ 🅰️ ➡️ A 🍇
+    ↩️ a
+  🍉
+🍉
+
+💭 Too large to fit into a box, but without managed contents.
+🕊 🧱 🍇
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 d 🔢
+  🖍🆕 e 🔢
+  🆕 🍼 a 🔢 🍼 b 🔢 🍼 c 🔢 🍼 d 🔢 🍼 e 🔢 🍇🍉
+  ❗️ 🅰️ ➡️ 🔢 🍇
+    ↩️ a ➕ e
+  🍉
+🍉
+
+🕊 🏭 🍇
+  🐇❗️ 📦 text 🔡 ➡️ ⚪ 🍇
+    ↩️ 🆕🥛🐚🔡🍆 text❗️
+  🍉
+
+  🐇❗️ 🧱 x 🔢 ➡️ ⚪ 🍇
+    ↩️ 🆕🧱 x 2 3 4 x❗️
+  🍉
+🍉
+
+🏁 🍇
+  🖍🆕 milk ⚪
+  🆕🥛🐚🔡🍆 🔤borrowed🔤❗️ ➡️ 🖍milk
+  🖍🆕 brick ⚪
+  🧱🕊🏭 10❗️ ➡️ 🖍brick
+  🔂 i 🆕⏩ 0 3❗️ 🍇
+    ↪️ 🔲 milk 🥛🐚🔡🍆 ➡️ stringMilk 🍇
+      😀 🅰️ stringMilk❗️❗️
+    🍉
+    ↪️ 🔲 milk 🥛🐚🔢🍆 ➡️ numberMilk 🍇
+      😀 🔤Oops🔤❗️
+    🍉
+    ↪️ 🔲 📦🕊🏭 🔤temporary🔤❗️ 🥛🐚🔡🍆 ➡️ madeMilk 🍇
+      😀 🅰️ madeMilk❗️❗️
+    🍉
+    ↪️ 🔲 brick 🧱 ➡️ plainBrick 🍇
+      😀 🔡 🅰️ plainBrick❗️❗️❗️
+    🍉
+  🍉
+  😀 🅰️ 🍺 🔲 milk 🥛🐚🔡🍆❗️❗️
+🍉
