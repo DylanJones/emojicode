@@ -54,6 +54,22 @@ bool PathAnalyser::hasPotentially(PathAnalyserIncident incident) const {
     return false;
 }
 
+void PathAnalyser::forgetVariables(Branch *branch, const std::set<size_t> &ids) {
+    auto forget = [&ids](std::set<PathAnalyserIncident> &incidents) {
+        for (auto it = incidents.begin(); it != incidents.end();) {
+            auto initializesForgotten = std::any_of(ids.begin(), ids.end(), [it](size_t id) {
+                return it->initializes(id);
+            });
+            it = initializesForgotten ? incidents.erase(it) : std::next(it);
+        }
+    };
+    forget(branch->certainIncidents);
+    forget(branch->potentialIncidents);
+    for (auto &subbranch : branch->branches) {
+        forgetVariables(&subbranch, ids);
+    }
+}
+
 void PathAnalyser::copyPotentialIncidents() {
     for (auto branch : currentBranch_->branches) {
         currentBranch_->potentialIncidents.insert(branch.potentialIncidents.begin(),
