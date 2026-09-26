@@ -19,6 +19,12 @@ OptimizationManager::OptimizationManager(bool optimize, RunTimeHelper *runTime, 
     llvm::PipelineTuningOptions options;
     options.MergeFunctions = true;
     passBuilder_ = std::make_unique<llvm::PassBuilder>(targetMachine, options);
+    // Retains and releases of inlined code are only redundant after inlining, and they block loop optimizations
+    // until they are removed, so remove them whenever the pipeline cleans up instructions.
+    passBuilder_->registerPeepholeEPCallback([runTime](llvm::FunctionPassManager &fpm, llvm::OptimizationLevel) {
+        fpm.addPass(ConstantReferenceCountingPass(runTime));
+        fpm.addPass(RedundantReferenceCountingPass(runTime));
+    });
     passBuilder_->registerModuleAnalyses(mam_);
     passBuilder_->registerCGSCCAnalyses(cgam_);
     passBuilder_->registerFunctionAnalyses(fam_);
