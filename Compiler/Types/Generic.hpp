@@ -63,7 +63,7 @@ public:
         Type type = Type(n, static_cast<T *>(this));
         auto &parameter = genericParameters_[n - offset_];
         if (parameter.useBox) {
-            // A constraint that mentions its own generic parameter, like T 🧮🐚T🍆, would have to contain itself, so
+            // A constraint that mentions its own generic parameter, like T 📈🐚T🍆, would have to contain itself, so
             // there the parameter is boxed for ⚪, as a generic parameter of the protocol is too.
             type = type.boxedFor(parameter.constraint->wasAnalysed() ? parameter.constraint->type() : Type::something());
         }
@@ -88,7 +88,7 @@ public:
 
     /// Checks @p args against the constraints and requests a reification for them.
     /// @param instanceContext A context in which the generic parameters resolve to @p args, as a constraint can
-    /// mention them (e.g. T 🧮🐚T🍆).
+    /// mention them (e.g. T 📈🐚T🍆).
     void requestReificationAndCheck(const TypeContext &typeContext, const TypeContext &instanceContext,
                                     const std::vector<Type> &args, const SourcePosition &p) {
         if (args.size() - offset_ != genericParameters().size()) {

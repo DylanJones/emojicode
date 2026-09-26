@@ -32,7 +32,7 @@ SemanticAnalyser::~SemanticAnalyser() = default;
 
 void SemanticAnalyser::analyse(bool executable) {
     // Constraints and protocol conformances can mention generic parameters and types whose constraints or
-    // conformances are not analysed yet (e.g. 🐊 🧮🐚🎲🍆 with 🐊 🧮🐚T 🧮🐚T🍆🍆), so generic arguments are only
+    // conformances are not analysed yet (e.g. 🐊 📈🐚🎲🍆 with 🐊 📈🐚T 📈🐚T🍆🍆), so generic arguments are only
     // checked against their constraints once all are analysed.
     std::vector<std::function<void()>> constraintChecks;
     for (auto &protocol : package_->protocols()) {

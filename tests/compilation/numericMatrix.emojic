@@ -1,0 +1,81 @@
+💭 A matrix generic over the numbers conforming to 📈, specialized for 🔢, 💯 and 💧.
+
+🕊 🎛🐚T 📈🐚T🍆🍆 🍇
+  🖍🆕 values 🍨🐚T🍆
+  🖍🆕 rows 🔢
+  🖍🆕 columns 🔢
+
+  🆕 🍼 rows 🔢 🍼 columns 🔢 fill T 🍇
+    🆕🍨🐚T🍆 fill rows ✖️ columns❗️ ➡️ 🖍values
+  🍉
+
+  ❓ 📊 ➡️ 🔢 🍇
+    ↩️ columns
+  🍉
+
+  ❗️ 📍 row 🔢 column 🔢 ➡️ T 🍇
+    ↩️ 🐽values row ✖️ columns ➕ column❗️
+  🍉
+
+  🖍❗️ 📌 value T row 🔢 column 🔢 🍇
+    value ➡️ 🐽values row ✖️ columns ➕ column❗️
+  🍉
+
+  💭 The product of this matrix and *other*. Starting each sum with its first term needs no zero of T.
+  ✖️ other 🎛🐚T🍆 ➡️ 🎛🐚T🍆 🍇
+    🆕🎛🐚T🍆 rows 📊other❓ 📍👇 0 0❗️❗️ ➡️ 🖍🆕 result
+    🔂 i 🆕⏩ 0 rows❗️ 🍇
+      🔂 j 🆕⏩ 0 📊other❓❗️ 🍇
+        📍👇 i 0❗️ ✖️ 📍other 0 j❗️ ➡️ 🖍🆕 sum
+        🔂 k 🆕⏩ 1 columns❗️ 🍇
+          sum ⬅️➕ 📍👇 i k❗️ ✖️ 📍other k j❗️
+        🍉
+        📌result sum i j❗️
+      🍉
+    🍉
+    ↩️ result
+  🍉
+
+  ❗️ 🖨 describe 🍇T➡️🔡🍉 🍇
+    🔂 i 🆕⏩ 0 rows❗️ 🍇
+      🔂 j 🆕⏩ 0 columns❗️ 🍇
+        😀 ⁉️describe 📍👇 i j❗️❗️❗️
+      🍉
+    🍉
+  🍉
+🍉
+
+🕊 🧰 🍇
+  🆕 🍇🍉
+
+  💭 The largest of *values*, compared with 📈's ▶️.
+  🐇❗️ 🔝🐚T 📈🐚T🍆🍆 values 🍨🐚T🍆 ➡️ T 🍇
+    🐽values 0❗️ ➡️ 🖍🆕 largest
+    🔂 value values 🍇
+      ↪️ value ▶️ largest 🍇
+        value ➡️ 🖍largest
+      🍉
+    🍉
+    ↩️ largest
+  🍉
+🍉
+
+🏁 🍇
+  🆕🎛🐚🔢🍆 2 2 0❗️ ➡️ 🖍🆕 a
+  📌a 1 0 0❗️
+  📌a 2 0 1❗️
+  📌a 3 1 0❗️
+  📌a 4 1 1❗️
+  🖨a ✖️ a 🍇 x 🔢 ➡️ 🔡 ↩️ 🔡x❗️ 🍉❗️
+
+  🆕🎛🐚💯🍆 2 3 0.5❗️ ➡️ 🖍🆕 b
+  📌b 2.0 1 2❗️
+  🆕🎛🐚💯🍆 3 1 2.0❗️ ➡️ c
+  🖨b ✖️ c 🍇 x 💯 ➡️ 🔡 ↩️ 🔡x 1❗️ 🍉❗️
+
+  🆕🎛🐚💧🍆 1 1 💧7❗️❗️ ➡️ d
+  🖨d ✖️ d 🍇 x 💧 ➡️ 🔡 ↩️ 🔡x❗️ 🍉❗️
+
+  😀 🔡 🔝🕊🧰 🍿 3 9 4 🍆❗️❗️❗️
+  😀 🔡 🔝🕊🧰 🍿 1.5 -2.0 🍆❗️❗️❗️
+🍉

@@ -65,6 +65,7 @@ compilation_tests = [
     "specializationScoping",
     "specializationMangling",
     "selfConstraint",
+    "numericMatrix",
     "directCalls",
     "protocolValueTypeRemote",
     "protocolEnum",
@@ -189,6 +190,7 @@ specialization_tests = [
     "specializationMangling",
     "genericRecursion",
     "selfConstraint",
+    "numericMatrix",
 ]
 # Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions
 # whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies. Lines

@@ -1,0 +1,36 @@
+📗
+  Protocol for numbers, which provide arithmetic and comparisons.
+
+  🔢, 💯 and 💧 conform to 📈 with themselves as T. Generic code can use a
+  generic parameter constrained to 📈 of itself, like `T 📈🐚T🍆`, to compute
+  with any of them:
+
+  ```
+  🐇❗️ 🧃🐚T 📈🐚T🍆🍆 a T b T ➡️ T 🍇
+    ↩️ a ✖️ a ➕ b ✖️ b
+  🍉
+  ```
+
+  Such code is specialized for each type it is used with, so that it computes
+  as fast as code written for that type.
+📗
+🌍 🐊 📈🐚T⚪🍆 🍇
+  📗 Returns the receiver plus *other*. 📗
+  ➕ other T ➡️ T
+  📗 Returns the receiver minus *other*. 📗
+  ➖ other T ➡️ T
+  📗 Returns the receiver multiplied by *other*. 📗
+  ✖️ other T ➡️ T
+  📗 Returns the receiver divided by *other*. 📗
+  ➗ other T ➡️ T
+  📗 Returns the receiver modulus *other*. 📗
+  🚮 other T ➡️ T
+  📗 Returns true if the receiver is smaller than *other*. 📗
+  ◀️ other T ➡️ 👌
+  📗 Returns true if the receiver is greater than *other*. 📗
+  ▶️ other T ➡️ 👌
+  📗 Returns true if the receiver is smaller than or equal to *other*. 📗
+  ◀️🙌 other T ➡️ 👌
+  📗 Returns true if the receiver is greater than or equal to *other*. 📗
+  ▶️🙌 other T ➡️ 👌
+🍉

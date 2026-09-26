@@ -1,12 +1,12 @@
-💭 Generic parameters whose constraints mention themselves (T 🧮🐚T🍆), including F-bounded protocols, and
+💭 Generic parameters whose constraints mention themselves (T 🎚🐚T🍆), including F-bounded protocols, and
 💭 constraints that mention other generic parameters.
-🐊 🧮🐚T 🧮🐚T🍆🍆 🍇
+🐊 🎚🐚T 🎚🐚T🍆🍆 🍇
   ➕ other T ➡️ T
   ✖️ other T ➡️ T
 🍉
 
 🕊 🎲 🍇
-  🐊 🧮🐚🎲🍆
+  🐊 🎚🐚🎲🍆
   🖍🆕 n 🔢
   🆕 🍼 n 🔢 🍇🍉
   ➕ other 🎲 ➡️ 🎲 🍇
@@ -20,7 +20,7 @@
   🍉
 🍉
 
-🕊 📦🐚T 🧮🐚T🍆🍆 🍇
+🕊 📦🐚T 🎚🐚T🍆🍆 🍇
   🖍🆕 a T
   🖍🆕 b T
   🆕 🍼 a T 🍼 b T 🍇🍉
@@ -32,7 +32,7 @@
   🍉
 🍉
 
-🐇 🧺🐚T 🧮🐚T🍆🍆 🍇
+🐇 🧺🐚T 🎚🐚T🍆🍆 🍇
   🖍🆕 a T
   🆕 🍼 a T 🍇🍉
   ❗️ 🧾 ➡️ T 🍇
@@ -50,7 +50,7 @@
 
 🕊 🧰 🍇
   🆕 🍇🍉
-  🐇❗️ 🥨🐚T 🧮🐚T🍆🍆 a T b T ➡️ T 🍇
+  🐇❗️ 🥨🐚T 🎚🐚T🍆🍆 a T b T ➡️ T 🍇
     ↩️ a ✖️ b ➕ b
   🍉
 🍉
