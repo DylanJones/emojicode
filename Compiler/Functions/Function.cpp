@@ -55,6 +55,14 @@ bool Function::isInline() const {
 
 Function::~Function() = default;
 
+std::unique_ptr<Function> Function::makeSpecialization() const {
+    auto function = std::make_unique<Function>(name(), accessLevel(), final(), owner(), package(), position(), false,
+                                               documentation(), deprecated(), mutating(), mood(), unsafe(),
+                                               functionType(), isInline());
+    function->setMemoryFlowTypeForThis(memoryFlowTypeForThis());
+    return function;
+}
+
 void Function::setSpecializedCallee(Type calleeType, std::unique_ptr<Scope> instanceScope) {
     specializedCalleeType_ = std::move(calleeType);
     instanceScope_ = std::move(instanceScope);

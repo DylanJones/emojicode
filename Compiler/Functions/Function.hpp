@@ -170,6 +170,16 @@ public:
     /// written in a function or is a C function (🎍🌊). The code of a closure may use the generic parameters of the functions enclosing it.
     Function* enclosingFunction() const { return enclosingFunction_; }
     void setEnclosingFunction(Function *function) { enclosingFunction_ = function; }
+    /// Returns the specialization that this function is or in which this closure is written, possibly nested in other
+    /// closures, or nullptr if there is none.
+    const Function* enclosingSpecialization() const {
+        for (auto f = this; f != nullptr; f = f->enclosingFunction_) {
+            if (f->specializedFunction_ != nullptr) {
+                return f;
+            }
+        }
+        return nullptr;
+    }
     /// Whether this is @p function or a closure written, possibly nested in other closures, in @p function.
     bool isWithin(const Function *function) const {
         for (auto f = this; f != nullptr; f = f->enclosingFunction_) {
@@ -186,36 +196,19 @@ public:
     void setMemoryFlowAnalysed() { memoryFlowAnalysed_ = true; }
     void setMemoryFlowTypeForThis(MFFlowCategory type) { memoryFlowTypeThis_ = type; }
 
-    /// Whether this initializer might return an error.
     /// The generic function of which this function is a specialization, or nullptr if it is not one.
     /// A specialization is a copy of a generic function whose code is analysed with concrete generic arguments, so
     /// that it neither boxes values of generic types nor dispatches their methods dynamically.
     Function* specializedFunction() const { return specializedFunction_; }
     /// The generic arguments with which the specialized function is specialized by this function.
     const std::vector<Type>& specializationArguments() const { return specializationArguments_; }
-    /// The number of specializations that caused the creation of this specialization, including itself.
-    size_t specializationDepth() const { return specializationDepth_; }
-    void setSpecializationOf(Function *function, std::vector<Type> arguments, size_t depth) {
+    void setSpecializationOf(Function *function, std::vector<Type> arguments) {
         specializedFunction_ = function;
         specializationArguments_ = std::move(arguments);
-        specializationDepth_ = depth;
     }
-    /// Returns whether a specialization of this function for @p arguments was created, and sets @p specialization to
-    /// it, or to nullptr if it could not be used because its code does not compile with these arguments.
-    bool findSpecialization(const std::vector<Type> &arguments, Function **specialization) const {
-        auto it = specializations_.find(arguments);
-        if (it == specializations_.end()) {
-            return false;
-        }
-        *specialization = it->second;
-        return true;
-    }
-    /// Records @p specialization for @p arguments, or nullptr if the specialization could not be used.
-    void setSpecialization(const std::vector<Type> &arguments, Function *specialization) {
-        specializations_[arguments] = specialization;
-    }
-    /// Forgets the specialization for @p arguments, so that it is created anew if it is needed again.
-    void eraseSpecialization(const std::vector<Type> &arguments) { specializations_.erase(arguments); }
+    /// Returns a function declared like this one, but without parameters, return type or body, which a specialization
+    /// of this function is made from.
+    virtual std::unique_ptr<Function> makeSpecialization() const;
 
     /// Makes this function, a specialization of a method of a generic type, a function of @p calleeType, the type with
     /// the concrete generic arguments, with @p instanceScope, whose variables have types resolved on @p calleeType.
@@ -223,6 +216,7 @@ public:
     /// The instance scope of this function if it has its own, see setSpecializedCallee(), or nullptr.
     Scope* instanceScope() const { return instanceScope_.get(); }
 
+    /// Whether this function might raise an error.
     bool errorProne() const { return errorType_ != nullptr && errorType_->type().type() != TypeType::NoReturn; }
     ASTType* errorType() const { return errorType_.get(); }
     void setErrorType(std::unique_ptr<ASTType> type) { errorType_ = std::move(type); }
@@ -254,8 +248,6 @@ private:
     Function *enclosingFunction_ = nullptr;
     Function *specializedFunction_ = nullptr;
     std::vector<Type> specializationArguments_;
-    size_t specializationDepth_ = 0;
-    std::map<std::vector<Type>, Function *> specializations_;
     std::optional<Type> specializedCalleeType_;
     std::unique_ptr<Scope> instanceScope_;
 

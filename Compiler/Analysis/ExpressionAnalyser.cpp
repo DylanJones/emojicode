@@ -123,8 +123,7 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
 
     function->requestReificationAndCheck(TypeContext(type, function, &genericArgs), genericArgs, node->position());
     if (specialization != nullptr) {
-        if (auto specialized = semanticAnalyser()->specialize(function, type, genericArgs,
-                                                                    typeContext().function())) {
+        if (auto specialized = semanticAnalyser()->specialize(function, type, genericArgs)) {
             *specialization = function = specialized;
             genericArgs.clear();
             node->clearGenericArguments();

@@ -137,7 +137,7 @@ void CodeGenerator::emit(bool ir, const std::string &outPath) {
         passBuilder.crossRegisterProxies(lam, fam, cgam, mam);
 
         llvm::ModulePassManager pass;
-        pass.addPass(llvm::VerifierPass(false));
+        pass.addPass(llvm::VerifierPass(true));
         pass.addPass(llvm::createModuleToFunctionPassAdaptor(llvm::PromotePass()));
         pass.addPass(llvm::StripDeadPrototypesPass());
         pass.run(*module(), mam);
@@ -145,7 +145,7 @@ void CodeGenerator::emit(bool ir, const std::string &outPath) {
     }
     else {
         llvm::legacy::PassManager pass;
-        pass.add(llvm::createVerifierPass(false));
+        pass.add(llvm::createVerifierPass(true));
         if (targetMachine_->addPassesToEmitFile(pass, dest, nullptr, llvm::CodeGenFileType::ObjectFile)) {
             throw std::domain_error("TargetMachine can't emit a file of this type");
         }
@@ -168,10 +168,8 @@ void CodeGenerator::generateFunctions(Package *package, bool imported) {
     for (auto &function : package->functions()) {
         generateFunction(function.get());
     }
-    for (auto &valueType : package->valueTypes()) {
-        for (auto &specialization : valueType->specializations()) {
-            generateFunction(specialization.get());
-        }
+    for (auto &specialization : package->specializations()) {
+        generateFunction(specialization.get());
     }
 }
 

@@ -109,6 +109,10 @@ void Package::includeDocument(const std::string &path, const std::string &relati
     }
 }
 
+void Package::addSpecialization(std::unique_ptr<Function> function) {
+    specializations_.emplace_back(std::move(function));
+}
+
 bool Package::isIncluding(const std::string &path) const {
     return std::find(including_.begin(), including_.end(), canonicalPath(path)) != including_.end();
 }

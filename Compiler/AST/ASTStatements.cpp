@@ -7,6 +7,7 @@
 //
 
 #include "ASTStatements.hpp"
+#include "ASTBoxing.hpp"
 #include "Analysis/AnalysisObserver.hpp"
 #include "ASTUnsafeBlock.hpp"
 #include "Analysis/FunctionAnalyser.hpp"
@@ -120,6 +121,14 @@ void ASTReturn::returnReference(FunctionAnalyser *analyser, Type type) {
         varNode->setReference();
         type.setReference(true);
         varNode->setExpressionType(type);
+        // An instance variable of a generic type is boxed, but a specialization returns a reference to its value.
+        if (type.storageType() == StorageType::Box &&
+            analyser->function()->returnType()->type().storageType() != StorageType::Box) {
+            insertNode<ASTBoxReferenceToReference>(&value_, type.unboxed().referenced());
+            if (analyser->function()->mutating()) {
+                value_->mutateReference(analyser);  // The value can be mutated through the returned reference.
+            }
+        }
         return;
     }
     if (type.isReference()) {

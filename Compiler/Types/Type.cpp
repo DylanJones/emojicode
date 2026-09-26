@@ -640,6 +640,52 @@ bool Type::containsGenericVariables() const {
     });
 }
 
+Type Type::withMinimalBoxing() const {
+    Type type = unboxed();
+    if (type.type() == TypeType::Optional || type.canHaveGenericArguments()) {
+        for (auto &argument : type.genericArguments_) {
+            argument = argument.withMinimalBoxing();
+        }
+    }
+    if (type.type() == TypeType::Optional && type.genericArguments_[0].type() == TypeType::Box) {
+        return type.genericArguments_[0].optionalized();  // An optional must not contain a box, but a box an optional.
+    }
+    return type.applyMinimalBoxing();
+}
+
+Type Type::withMinimallyBoxedGenericArguments() const {
+    Type type = *this;
+    if (type.type() == TypeType::Box || type.type() == TypeType::Optional) {
+        type.genericArguments_[0] = type.genericArguments_[0].withMinimallyBoxedGenericArguments();
+    }
+    else if (type.type() == TypeType::Callable) {
+        for (auto &argument : type.genericArguments_) {
+            argument = argument.withMinimallyBoxedGenericArguments();
+        }
+    }
+    else if (type.canHaveGenericArguments()) {
+        for (auto &argument : type.genericArguments_) {
+            argument = argument.withMinimalBoxing();
+        }
+    }
+    return type;
+}
+
+bool Type::isCompileTimeOnly() const {
+    switch (unboxedType()) {
+        case TypeType::Invalid:
+        case TypeType::StorageExpectation:
+        case TypeType::IntegerLiteral:
+        case TypeType::RealLiteral:
+        case TypeType::ListLiteral:
+        case TypeType::DictionaryLiteral:
+        case TypeType::NoValueLiteral:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool Type::isManaged() const {
     return type() == TypeType::Class || type() == TypeType::Someobject || type() == TypeType::Box ||
         (type() == TypeType::Callable && !cCallable_) ||

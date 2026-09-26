@@ -330,6 +330,16 @@ public:
     /// Whether this type or any type it is composed of, like a generic argument, is a generic variable, i.e. whether
     /// the type depends on the generic arguments with which the code using it runs.
     bool containsGenericVariables() const;
+    /// Returns this type with no more boxes than values of it need (see applyMinimalBoxing()), also in its optional
+    /// and its generic arguments, i.e. in the form in which it is written. Callables are left unchanged, as boxes
+    /// determine how they take and return values.
+    Type withMinimalBoxing() const;
+    /// Returns this type with its generic arguments, and those of the types it is composed of, in the form of
+    /// withMinimalBoxing(), but keeps its own boxes and those of optionals and callables, which determine how values
+    /// are stored.
+    Type withMinimallyBoxedGenericArguments() const;
+    /// Whether this is a type that is only used during analysis and that no value can have, like a literal type.
+    bool isCompileTimeOnly() const;
     /// Whether this is a value type whose C representation is a pointer, like 📍 and 🕳 of the c package.
     bool isCPointer() const;
     /// Whether this is a C function pointer type, 🍇🎍🌊 … 🍉. Values of such types are plain function pointers
