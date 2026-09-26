@@ -311,9 +311,10 @@ enum-member         ::= documentation-comment? '🥯'? '⚠'? '🐇'? '☣'? '�
                       | documentation-comment? '🆕' initializer-name?               /* enum value */
                       | protocol-conformance
 
-/* Protocol methods accept all member attributes and an access level, but ignore everything except ⚠. As they
- * have no body, a ➡ after a method without a return type is read as its return type: the next method cannot start
- * with ➡. */
+/* Protocol methods accept all member attributes and an access level, but ignore everything except ⚠ and 🖍. A 🖍
+ * method can only be called on a mutable value, and a 🖍 method of a value type can only implement a 🖍 protocol
+ * method. As they have no body, a ➡ after a method without a return type is read as its return type: the next method
+ * cannot start with ➡. */
 protocol-body       ::= '🍇' protocol-methods? '🍉'
 protocol-methods    ::= protocol-method return-type protocol-methods?
                       | protocol-method ( protocol-methods - ( '➡' tokens ) )?

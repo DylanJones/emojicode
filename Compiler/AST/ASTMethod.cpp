@@ -33,7 +33,7 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
     determineCalleeType(analyser, name, callee, otype);
 
     if (calleeType_.unboxedType() == TypeType::MultiProtocol) {
-        return analyseMultiProtocolCall(analyser, name);
+        return analyseMultiProtocolCall(analyser, name, callee);
     }
     if (calleeType_.type() == TypeType::TypeAsValue) {
         return analyseTypeMethodCall(analyser, name, callee);
@@ -100,7 +100,10 @@ void ASTMethodable::determineCallType(const ExpressionAnalyser *analyser) {
 }
 
 void ASTMethodable::checkMutation(ExpressionAnalyser *analyser, const std::shared_ptr<ASTExpr> &callee) const {
-    if (calleeType_.type() == TypeType::ValueType && method_->mutating()) {
+    // A 🖍 protocol method may be implemented by a 🖍 method of a value type.
+    auto mutatesValue = calleeType_.type() == TypeType::ValueType || calleeType_.unboxedType() == TypeType::Protocol ||
+        calleeType_.unboxedType() == TypeType::MultiProtocol;
+    if (mutatesValue && method_->mutating()) {
         try {
             callee->mutateReference(analyser);
             if (!calleeType_.isMutable()) {
@@ -142,20 +145,26 @@ Type ASTMethodable::analyseTypeMethodCall(ExpressionAnalyser *analyser, const st
     return analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
 }
 
-Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const std::u32string &name) {
-    auto resolution = FunctionResolution<Function>(name, args_.mood(), &args_, calleeType_, analyser, position());
-    for (auto &protocol : calleeType_.protocols()) {
-        resolution.addResolver(&protocol.protocol()->methods());
+Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const std::u32string &name,
+                                             const std::shared_ptr<ASTExpr> &callee) {
+    std::vector<Type> argTypes;
+    for (auto &arg : args_.args()) {
+        argTypes.emplace_back(analyser->analyse(arg));
     }
-    if ((method_ = resolution.resolveAndReificate(&args_, &calleeType_)) != nullptr) {
-        for (; multiprotocolN_ < calleeType_.protocols().size(); multiprotocolN_++) {
-            if (calleeType_.protocols()[multiprotocolN_].protocol() == method_->owner()) {
-                break;
-            }
+    auto genericArgs = transformTypeAstVector(args_.genericArguments(), analyser->typeContext());
+    // The generic parameters of a method, e.g. Element in 🍡🐚🔢🍆, are resolved on the protocol that declares it.
+    for (multiprotocolN_ = 0; multiprotocolN_ < calleeType_.protocols().size(); multiprotocolN_++) {
+        auto protocol = calleeType_.protocols()[multiprotocolN_];
+        auto resolution = FunctionResolution<Function>(name, args_.mood(), argTypes, genericArgs, protocol,
+                                                       analyser->typeContext(), analyser->semanticAnalyser(),
+                                                       position());
+        resolution.addResolver(&protocol.protocol()->methods());
+        if ((method_ = resolution.resolveAndReificate(&args_, &protocol)) != nullptr) {
+            builtIn_ = BuiltInType::Multiprotocol;
+            callType_ = CallType::DynamicProtocolDispatch;
+            checkMutation(analyser, callee);
+            return analyser->analyseFunctionCall(&args_, protocol, method_);
         }
-        builtIn_ = BuiltInType::Multiprotocol;
-        callType_ = CallType::DynamicProtocolDispatch;
-        return analyser->analyseFunctionCall(&args_, calleeType_, method_);
     }
     throw CompilerError(position(), "No type in ", calleeType_.toString(analyser->typeContext()),
                         " provides a method ", utf8(name), ".");

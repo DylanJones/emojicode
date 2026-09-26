@@ -18,6 +18,7 @@
 #include "Types/Class.hpp"
 #include "Types/Protocol.hpp"
 #include "Types/TypeDefinition.hpp"
+#include "Types/Enum.hpp"
 #include "Types/ValueType.hpp"
 
 namespace EmojicodeCompiler {
@@ -524,6 +525,16 @@ void SemanticAnalyser::finalizeProtocol(const Type &type, ProtocolConformance &c
                                   " does not conform to protocol ", protocol.toString(TypeContext()),
                                   ": Method ", utf8(method->name()), " not provided."));
             continue;
+        }
+
+        // Methods of enums, which cannot mutate their value, and classes are marked as mutating anyway.
+        auto valueType = type.type() == TypeType::ValueType && dynamic_cast<Enum *>(type.typeDefinition()) == nullptr;
+        if (valueType && implementation->mutating() && !method->mutating()) {
+            // It would mutate values through the protocol that are not mutable.
+            package_->compiler()->error(
+                    CompilerError(implementation->position(), utf8(implementation->name()), " is marked 🖍 but ",
+                                  utf8(method->name()), " of ", protocol.toString(TypeContext()),
+                                  ", which it implements, is not."));
         }
 
         if (imported_) {

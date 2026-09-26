@@ -12,6 +12,7 @@
 #include "StorageType.hpp"
 #include <string>
 #include <utility>
+#include <optional>
 #include <vector>
 #include <tuple>
 #include <cassert>
@@ -362,6 +363,11 @@ private:
 
     /// Returns this optional or box with @p wrapped as the type it contains. A box stays outside of an optional.
     Type rewrapped(Type wrapped) const;
+    /// Resolves this generic variable to what it stands for in @p tc, i.e. a super argument or constraint.
+    /// @returns Nothing if it cannot be resolved there, e.g. as it is a variable of another function.
+    std::optional<Type> resolvedGenericVariable(const TypeContext &tc) const;
+    /// Checks the compatibility to the generic variable @p to, which is resolved in @p tc first.
+    bool compatibleToResolved(const Type &to, const TypeContext &tc, GenericInferer *inf) const;
 
     Type(TypeType typeType, std::vector<Type> genArgs)
         : typeContent_(typeType), genericArguments_(std::move(genArgs)) {}

@@ -11,7 +11,7 @@
     Returns the next object. Call this method only if 🔽❓ previously
     returned 👍.
   📗
-  ❗️ 🔽 ➡️ Element
+  🖍❗️ 🔽 ➡️ Element
   📗
     Whether the iterator has more elements to provide.
   📗

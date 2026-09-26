@@ -121,8 +121,10 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
                                              Function **specialization) {
     auto genericArgs = transformTypeAstVector(node->genericArguments(), typeContext());
 
-    TypeContext context(type, function, &genericArgs);
-    function->requestReificationAndCheck(context, context, genericArgs, node->position());
+    // The generic arguments are types of the calling code, e.g. its own generic parameters, so they must be checked
+    // in its context. Only the constraints are resolved in the context of the callee.
+    function->requestReificationAndCheck(typeContext(), TypeContext(type, function, &genericArgs), genericArgs,
+                                         node->position());
     if (specialization != nullptr) {
         if (auto specialized = semanticAnalyser()->specialize(function, type, genericArgs)) {
             *specialization = function = specialized;

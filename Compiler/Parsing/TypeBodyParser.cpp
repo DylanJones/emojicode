@@ -285,9 +285,11 @@ template<>
 void TypeBodyParser<Protocol>::parseMethod(const std::u32string &name, TypeBodyAttributeParser attributes,
                                            const Documentation &documentation, AccessLevel access, Mood mood,
                                            const SourcePosition &p) {
+    // A 🖍 method may mutate a value type that conforms, so it can only be called on a mutable value.
     auto method = std::make_unique<Function>(name, AccessLevel::Public, false, typeDef_, package_,
                                              p, false, documentation.get(),
-                                             attributes.has(Attribute::Deprecated), false, mood, false,
+                                             attributes.has(Attribute::Deprecated),
+                                             attributes.has(Attribute::Mutating), mood, false,
                                              FunctionType::ObjectMethod, false);
     parseParameters(method.get(), false);
     parseReturnType(method.get());

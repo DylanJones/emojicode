@@ -7,6 +7,7 @@
 //
 
 #include "ASTBoxing.hpp"
+#include <algorithm>
 #include "ASTInitialization.hpp"
 #include "Generation/FunctionCodeGenerator.hpp"
 #include "Generation/ProtocolsTableGenerator.hpp"
@@ -28,21 +29,41 @@ ASTBoxing::ASTBoxing(std::shared_ptr<ASTExpr> expr, const SourcePosition &p, con
 }
 
 Value* ASTRebox::generate(FunctionCodeGenerator *fg) const {
+    auto box = expr_->generate(fg);
+    if (expressionType().unboxedType() != TypeType::Optional) {
+        return rebox(box, fg);
+    }
+    // A box without a value has neither box info nor conformance to rebox.
+    return fg->createIfElsePhi(fg->buildHasNoValueBox(box), [box]() { return box; },
+                               [this, box, fg]() { return rebox(box, fg); });
+}
+
+Value* ASTRebox::rebox(Value *box, FunctionCodeGenerator *fg) const {
+    auto &from = expr_->expressionType();
+    auto boxInfo = fg->builder().CreateExtractValue(box, 0);
     if (expressionType().boxedFor().type() == TypeType::Something) {
-        auto box = expr_->generate(fg);
-        auto pct = fg->typeHelper().protocolConformance();
-        auto pc = fg->builder().CreateExtractValue(box, 0);
-        auto bi = fg->builder().CreateLoad(fg->typeHelper().pointer(),
-                                           fg->builder().CreateConstInBoundsGEP2_32(pct, pc, 0, 2));
-        return fg->builder().CreateInsertValue(box, bi, 0);
+        return fg->builder().CreateInsertValue(box, fg->buildGetValueBoxInfo(boxInfo, from), 0);
     }
 
-    auto box = getAllocaTheBox(fg);
-    auto protocolRtti = expressionType().boxedFor().protocol()->rtti();
-    auto boxInfo = fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxInfoPtr(box));
-    auto conformance = fg->buildFindProtocolConformance(box, boxInfo, protocolRtti);
-    fg->builder().CreateStore(conformance, fg->buildGetBoxInfoPtr(box));
-    return fg->builder().CreateLoad(fg->typeHelper().box(), box);
+    auto protocol = expressionType().boxedFor().protocol();
+    if (from.boxedFor().type() == TypeType::MultiProtocol) {
+        // The box already has the conformance to each protocol of the multiprotocol.
+        auto &protocols = from.boxedFor().protocols();
+        auto it = std::find_if(protocols.begin(), protocols.end(), [protocol](auto &t) {
+            return t.protocol() == protocol;
+        });
+        if (it != protocols.end()) {
+            auto conformance = fg->buildGetBoxConformance(boxInfo, from, it - protocols.begin());
+            return fg->builder().CreateInsertValue(box, conformance, 0);
+        }
+    }
+
+    auto boxPtr = fg->createEntryAlloca(fg->typeHelper().box());
+    fg->builder().CreateStore(box, boxPtr);
+    auto conformance = fg->buildFindProtocolConformance(boxPtr, fg->buildGetValueBoxInfo(boxInfo, from),
+                                                        protocol->rtti());
+    fg->builder().CreateStore(conformance, fg->buildGetBoxInfoPtr(boxPtr));
+    return fg->builder().CreateLoad(fg->typeHelper().box(), boxPtr);
 }
 
 Value* ASTBoxing::getBoxValuePtr(Value *box, FunctionCodeGenerator *fg) const {
@@ -183,18 +204,20 @@ void ASTToBox::getPutValueIntoBox(Value *box, Value *value, FunctionCodeGenerato
 
 void ASTToBox::setBoxInfo(Value *box, FunctionCodeGenerator *fg) const {
     auto boxedFor = expressionType().boxedFor();
+    // ASTSimpleOptionalToBox only calls this if there is a value, which is of the type the optional contains.
+    auto valueType = expr_->expressionType().unoptionalized();
     if (boxedFor.type() == TypeType::Protocol || boxedFor.type() == TypeType::MultiProtocol) {
         llvm::Value *table;
         if (boxedFor.type() == TypeType::MultiProtocol) {
-            table = ProtocolsTableGenerator(fg->generator()).multiprotocol(boxedFor, expr_->expressionType());
+            table = ProtocolsTableGenerator(fg->generator()).multiprotocol(boxedFor, valueType);
         }
         else {
-            table = expr_->expressionType().typeDefinition()->protocolTableFor(boxedFor);
+            table = valueType.typeDefinition()->protocolTableFor(boxedFor);
         }
         fg->builder().CreateStore(table, fg->buildGetBoxInfoPtr(box));
         return;
     }
-    auto boxInfo = fg->boxInfoFor(expr_->expressionType().unoptionalized());
+    auto boxInfo = fg->boxInfoFor(valueType);
     fg->builder().CreateStore(boxInfo, fg->buildGetBoxInfoPtr(box));
 }
 

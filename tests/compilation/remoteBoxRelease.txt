@@ -8,6 +8,10 @@ passed as a protocol
 deinit
 first
 50
+5
+-1
+some
+none
 3
 end
 deinit

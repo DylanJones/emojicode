@@ -107,6 +107,13 @@ public:
     /// Gets a pointer to the value field of a box.
     /// @param box Pointer to a box.
     llvm::Value* buildGetBoxValuePtr(llvm::Value *box);
+    /// Gets the protocol conformance from the box info field @p boxInfo of a box of @p type, which must be a box for a
+    /// protocol or a multiprotocol. The box info field of a box for a multiprotocol points to the conformances to each
+    /// of its protocols, of which the one to protocol number @p multiprotocolN is returned.
+    llvm::Value* buildGetBoxConformance(llvm::Value *boxInfo, const Type &type, size_t multiprotocolN = 0);
+    /// Gets the box info of the type of the value from the box info field @p boxInfo of a box of @p type. A box for a
+    /// protocol or a multiprotocol holds a protocol conformance there, which points to the box info.
+    llvm::Value* buildGetValueBoxInfo(llvm::Value *boxInfo, const Type &type);
     /// Ensures that the box to which @p box points is the only box storing its value of the remote @p type, by copying
     /// the value into a new object if other boxes share the object storing it. Copies of a box share the object, so a
     /// value must be made unique before it is mutated in place.

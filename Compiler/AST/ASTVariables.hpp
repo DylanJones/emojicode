@@ -92,8 +92,8 @@ public:
 
 private:
     bool reference_ = false;
-    /// Set to true if the value created by the expression is returned. If it is returned, the value of the variable
-    /// must not be retained.
+    /// Set to true if the value of the local variable, which is not a parameter, is returned. It must then not be
+    /// retained, as the reference of the variable is returned with it.
     bool returned_ = false;
 };
 
