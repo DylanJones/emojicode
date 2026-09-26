@@ -162,6 +162,19 @@ public:
 
     void setClosure() { closure_ = true; }
     bool isClosure() const { return closure_; }
+    /// The function in whose body this closure is written, or nullptr if this is no closure, the closure is not
+    /// written in a function or is a C function (🎍🌊). The code of a closure may use the generic parameters of the functions enclosing it.
+    Function* enclosingFunction() const { return enclosingFunction_; }
+    void setEnclosingFunction(Function *function) { enclosingFunction_ = function; }
+    /// Whether this is @p function or a closure written, possibly nested in other closures, in @p function.
+    bool isWithin(const Function *function) const {
+        for (auto f = this; f != nullptr; f = f->enclosingFunction_) {
+            if (f == function) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     MFFlowCategory memoryFlowTypeForThis() const { return memoryFlowTypeThis_; }
     /// Whether Memory Flow Analysis has been performed on the body of this function.
@@ -198,6 +211,7 @@ private:
 
     Function *virtualTableThunk_ = nullptr;
     Function *superFunction_ = nullptr;
+    Function *enclosingFunction_ = nullptr;
 
     std::string externalName_;
     AccessLevel access_;
