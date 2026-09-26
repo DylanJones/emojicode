@@ -116,6 +116,12 @@ public:
 
     bool unsafe() const { return unsafe_; }
 
+    /// Whether a call to this function never returns. Only 🤯 of 💻 never returns, which the compiler knows (see
+    /// Compiler::assignSTypes()). It cannot be declared, as a function declared so that did return would be undefined
+    /// behavior.
+    bool neverReturns() const { return neverReturns_; }
+    void setNeverReturns() { neverReturns_ = true; }
+
     /// Whether the function uses the C calling convention (🎍🌊). Such a function has no hidden parameters and
     /// only C types in its signature.
     bool isC() const { return c_; }
@@ -234,6 +240,7 @@ private:
     Mood mood_;
     bool unsafe_;
     bool forceInline_ = false;
+    bool neverReturns_ = false;
     bool thunk_ = false;
 
     bool mutating_;

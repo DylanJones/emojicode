@@ -22,6 +22,7 @@
 #include <llvm/Support/StringSaver.h>
 #include <llvm/Support/raw_ostream.h>
 #include "MemoryFlowAnalysis/MFAnalyser.hpp"
+#include "Types/Class.hpp"
 #include "Types/ValueType.hpp"
 #include "Functions/Function.hpp"
 #include <utility>
@@ -336,6 +337,13 @@ void Compiler::assignSTypes(Package *s) {
     sList->constructibleFrom_ = TypeType::ListLiteral;
     sDictionary = getStandardValueType(U"🍯", s);
     sDictionary->constructibleFrom_ = TypeType::DictionaryLiteral;
+
+    // 🤯 aborts the program, so code after a call to it is never executed.
+    for (auto function : getStandardClass(U"💻", s)->typeMethods().list()) {
+        if (function->name() == U"🤯") {
+            function->setNeverReturns();
+        }
+    }
 
     sInterpolateable = getStandardProtocol(U"↘🔸🔡", s);
     sEnumerable = getStandardProtocol(

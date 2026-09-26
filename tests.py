@@ -71,6 +71,7 @@ compilation_tests = [
     "specializationMangling",
     "selfConstraint",
     "numericMatrix",
+    "directCalls",
     "protocolValueTypeRemote",
     "protocolEnum",
     "protocolGenericLayerClass",
@@ -191,6 +192,12 @@ specialization_tests = [
     "selfConstraint",
     "numericMatrix",
 ]
+# Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions
+# whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies. Lines
+# starting with # are comments.
+ir_tests = [
+    "directCalls",
+]
 # Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
 host_tests = [
     "ffiHostLib",
@@ -256,6 +263,34 @@ def specialization_test(name):
         print("Missing specializations: " + ", ".join(sorted(set(expected) - set(specializations))))
         print("Unexpected specializations: " + ", ".join(sorted(set(specializations) - set(expected))))
         fail_test(name + " (specializations)")
+
+
+def ir_test(name):
+    source_path = test_paths(name, 'compilation')[0]
+    with tempfile.TemporaryDirectory() as directory:
+        run([emojicodec, source_path, '--emit-llvm', '-o', os.path.join(directory, name)], check=True)
+        ir = open(os.path.join(directory, name + ".ll"), "r", encoding='utf-8').read()
+    functions = {m.group(1): m.group(2) for m in
+                 re.finditer(r'^define [^\n]*@"?([^"(\s]+)"?\([^\n]*\{\n(.*?)^\}', ir, re.S | re.M)}
+    bodies = []
+    failed = False
+    check_path = os.path.join(dist.source, "tests", "compilation", name + ".ir")
+    for line in open(check_path, "r", encoding='utf-8').read().splitlines():
+        if not line or line.startswith('#'):
+            continue
+        kind, pattern = line[0], line[2:]
+        if kind == '@':
+            bodies = [(n, b) for n, b in functions.items() if re.search(pattern, n)]
+            if not bodies:
+                print("No function matches " + pattern)
+                failed = True
+            continue
+        for function_name, body in bodies:
+            if (re.search(pattern, body) is not None) != (kind == '+'):
+                print("{0}: {1} {2}".format(function_name, "missing" if kind == '+' else "unexpected", pattern))
+                failed = True
+    if failed:
+        fail_test(name + " (IR)")
 
 
 def host_test(name):
@@ -355,6 +390,9 @@ def test():
         compilation_test(test, optimize=False)
     for test in specialization_tests:
         specialization_test(test)
+
+    for test in ir_tests:
+        ir_test(test)
 
     for test in host_tests:
         host_test(test)
