@@ -76,6 +76,7 @@ compilation_tests = [
     "numericMatrix",
     "directCalls",
     "genericStorage",
+    "dictionaryOfBytes",
     "protocolValueTypeRemote",
     "protocolEnum",
     "protocolGenericLayerClass",
@@ -195,6 +196,7 @@ specialization_tests = [
     "specializationMangling",
     "genericRecursion",
     "selfConstraint",
+    "specializationFallback",
     "numericMatrix",
 ]
 # Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions

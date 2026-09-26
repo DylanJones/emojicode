@@ -253,7 +253,10 @@ Type ExpressionAnalyser::box(Type exprType, const TypeExpectation &expectation, 
             insertNode<ASTBoxReferenceToSimple>(node, exprType);
             return exprType;
         }
-        if (!expectation.isReference()) {
+        // A reference is only kept where one is useful, if one is merely allowed. E.g. a specialization of 🐽 of 🍨 for
+        // 🔡 returns a reference to a 🔡, on which a method is called with the 🔡 itself.
+        if (!expectation.isReference() ||
+            (expectation.type() == TypeType::StorageExpectation && !exprType.isReferenceUseful())) {
             exprType.setReference(false);
             insertNode<ASTDereference>(node, exprType);
         }
@@ -301,6 +304,11 @@ void ExpressionAnalyser::makeIntoSimple(Type &exprType, std::shared_ptr<ASTExpr>
 
 void ExpressionAnalyser::makeIntoBox(Type &exprType, const TypeExpectation &expectation,
                                    std::shared_ptr<ASTExpr> *node) const {
+    if (exprType.isReference() && exprType.storageType() != StorageType::Box) {
+        // A box holds a copy of the value, e.g. the 🔢 to which 🐽 of a 🍨🐚🔢🍆 returns a reference (ASTInterpolationLiteral).
+        exprType.setReference(false);
+        insertNode<ASTDereference>(node, exprType);
+    }
     switch (exprType.storageType()) {
         case StorageType::Box:
             if (expectation.type() == TypeType::Box &&

@@ -105,13 +105,18 @@ constexpr size_t kMaxSpecializationDepth = 8;
 
 static bool isSpecializable(Function *function) {
     if (function->isExternal() || function->ast() == nullptr || function->isC() || function->isClosure() ||
-        function->isThunk() || function->unsafe() || function->owner() == nullptr) {
+        function->isThunk() || function->owner() == nullptr) {
         return false;
     }
     if (function->genericParameters().empty() && function->owner()->genericParameters().empty()) {
         return false;
     }
-    // Only statically dispatched functions, as a virtual table has no entry per specialization.
+    // Only statically dispatched functions, as a virtual table has no entry per specialization: those of value types,
+    // and methods of classes that cannot be overridden.
+    if (function->functionType() == FunctionType::ObjectMethod) {
+        auto klass = dynamic_cast<Class *>(function->owner());
+        return klass != nullptr && (function->final() || klass->final()) && function->superFunction() == nullptr;
+    }
     return function->functionType() == FunctionType::ValueTypeMethod ||
            function->functionType() == FunctionType::ValueTypeInitializer ||
            function->functionType() == FunctionType::Function;
