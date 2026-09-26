@@ -1,0 +1,17 @@
+10
+10
+10
+elephant
+10
+elephant
+deinit
+dumbo
+20
+20
+20
+mouse
+20
+mouse
+4
+-1
+end
