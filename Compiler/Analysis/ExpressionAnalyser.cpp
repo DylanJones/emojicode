@@ -121,7 +121,8 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
                                              Function **specialization) {
     auto genericArgs = transformTypeAstVector(node->genericArguments(), typeContext());
 
-    function->requestReificationAndCheck(TypeContext(type, function, &genericArgs), genericArgs, node->position());
+    TypeContext context(type, function, &genericArgs);
+    function->requestReificationAndCheck(context, context, genericArgs, node->position());
     if (specialization != nullptr) {
         if (auto specialized = semanticAnalyser()->specialize(function, type, genericArgs)) {
             *specialization = function = specialized;

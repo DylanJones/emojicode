@@ -1,0 +1,66 @@
+💭 Generic parameters whose constraints mention themselves (T 🧮🐚T🍆), including F-bounded protocols, and
+💭 constraints that mention other generic parameters.
+🐊 🧮🐚T 🧮🐚T🍆🍆 🍇
+  ➕ other T ➡️ T
+  ✖️ other T ➡️ T
+🍉
+
+🕊 🎲 🍇
+  🐊 🧮🐚🎲🍆
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ➕ other 🎲 ➡️ 🎲 🍇
+    ↩️ 🆕🎲 n ➕ 🥕 other❗️❗️
+  🍉
+  ✖️ other 🎲 ➡️ 🎲 🍇
+    ↩️ 🆕🎲 n ✖️ 🥕 other❗️❗️
+  🍉
+  ❗️ 🥕 ➡️ 🔢 🍇
+    ↩️ n
+  🍉
+🍉
+
+🕊 📦🐚T 🧮🐚T🍆🍆 🍇
+  🖍🆕 a T
+  🖍🆕 b T
+  🆕 🍼 a T 🍼 b T 🍇🍉
+  ❗️ 🧾 ➡️ T 🍇
+    ↩️ a ✖️ b ➕ a
+  🍉
+  ❗️ 🌀 ➡️ 📦🐚T🍆 🍇
+    ↩️ 🆕📦🐚T🍆 b a❗️
+  🍉
+🍉
+
+🐇 🧺🐚T 🧮🐚T🍆🍆 🍇
+  🖍🆕 a T
+  🆕 🍼 a T 🍇🍉
+  ❗️ 🧾 ➡️ T 🍇
+    ↩️ a ➕ a
+  🍉
+🍉
+
+🕊 🍐🐚A ⚪ B 🍨🐚A🍆🍆 🍇
+  🖍🆕 b B
+  🆕 🍼 b B 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ 📏 b❓
+  🍉
+🍉
+
+🕊 🧰 🍇
+  🆕 🍇🍉
+  🐇❗️ 🥨🐚T 🧮🐚T🍆🍆 a T b T ➡️ T 🍇
+    ↩️ a ✖️ b ➕ b
+  🍉
+🍉
+
+🏁 🍇
+  🆕📦🐚🎲🍆 🆕🎲 3❗️ 🆕🎲 4❗️❗️ ➡️ box
+  😀 🔡 🥕 🧾box❗️❗️❗️❗️
+  😀 🔡 🥕 🧾 🌀box❗️❗️❗️❗️❗️
+  😀 🔡 🥕 🧾🆕🧺🐚🎲🍆 🆕🎲 5❗️❗️❗️❗️❗️❗️
+  😀 🔡 📏 🆕🍐🐚🔢 🍨🐚🔢🍆🍆 🍿 1 2 🍆❗️❗️❗️❗️
+  😀 🔡 🥕 🥨🕊🧰 🆕🎲 2❗️ 🆕🎲 6❗️❗️❗️❗️❗️
+  😀 🔡 🥕 🥨🐚🎲🍆🕊🧰 🆕🎲 2❗️ 🆕🎲 7❗️❗️❗️❗️❗️
+🍉

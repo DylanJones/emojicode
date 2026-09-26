@@ -7,6 +7,7 @@
 
 #include <queue>
 #include <vector>
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -76,7 +77,9 @@ private:
     /// Discards @p specialization and those that call it. If @p failed, it is not created anew.
     void discardSpecialization(Function *specialization, bool failed);
     void enqueueFunctionsOfTypeDefinition(TypeDefinition *typeDef);
-    void finalizeProtocols(const Type &type);
+    /// Analyses the protocols to which @p type conforms. Their generic arguments are checked by appending checks to
+    /// @p constraintChecks.
+    void finalizeProtocols(const Type &type, std::vector<std::function<void()>> *constraintChecks);
     void checkProtocolConformance(const Type &type);
     void finalizeProtocol(const Type &type, ProtocolConformance &conformance);
     void checkStartFlagFunction(bool executable);

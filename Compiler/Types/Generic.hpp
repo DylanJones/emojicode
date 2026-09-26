@@ -61,8 +61,11 @@ public:
     Type typeForVariable(size_t n) {
         assert(offset_ <= n && n < offset_ + genericParameters_.size());
         Type type = Type(n, static_cast<T *>(this));
-        if (genericParameters_[n - offset_].useBox) {
-            type = type.boxedFor(constraintForIndex(n));
+        auto &parameter = genericParameters_[n - offset_];
+        if (parameter.useBox) {
+            // A constraint that mentions its own generic parameter, like T 🧮🐚T🍆, would have to contain itself, so
+            // there the parameter is boxed for ⚪, as a generic parameter of the protocol is too.
+            type = type.boxedFor(parameter.constraint->wasAnalysed() ? parameter.constraint->type() : Type::something());
         }
         return type;
     }
@@ -83,18 +86,22 @@ public:
         parameterVariables_.emplace(variableName, parameterVariables_.size());
     }
 
-    void requestReificationAndCheck(const TypeContext &typeContext, const std::vector<Type> &args,
-                                    const SourcePosition &p) {
+    /// Checks @p args against the constraints and requests a reification for them.
+    /// @param instanceContext A context in which the generic parameters resolve to @p args, as a constraint can
+    /// mention them (e.g. T 🧮🐚T🍆).
+    void requestReificationAndCheck(const TypeContext &typeContext, const TypeContext &instanceContext,
+                                    const std::vector<Type> &args, const SourcePosition &p) {
         if (args.size() - offset_ != genericParameters().size()) {
             throw CompilerError(p, "Expected ", genericParameters().size(), " generic arguments, but ",
                                 args.size(), " are provided.");
         }
 
         for (size_t i = offset_; i < args.size(); i++) {
-            if (!args[i].compatibleTo(constraintForIndex(i), typeContext)) {
+            auto constraint = constraintForIndex(i).resolveOn(instanceContext);
+            if (!args[i].compatibleTo(constraint, typeContext)) {
                 throw CompilerError(p, "Generic argument ", i + 1, " of type ",
                                     args[i].toString(typeContext), " is not compatible to constraint ",
-                                    constraintForIndex(offset_ + i).toString(typeContext), ".");
+                                    constraint.toString(typeContext), ".");
             }
         }
 
