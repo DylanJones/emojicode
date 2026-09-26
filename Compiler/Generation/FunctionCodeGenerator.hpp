@@ -28,10 +28,10 @@ public:
     void addTemporaryObject(llvm::Value *value, const Type &type) {
         temporaryObjects_.emplace_back(value, type, false);
     }
-    /// Registers the heap object that stores a remote value in a temporary box. The object is released without
-    /// deinitialization, as the value in it is a temporary of its own.
-    void addTemporaryRemoteObject(llvm::Value *object) {
-        temporaryObjects_.emplace_back(object, Type::noReturn(), true);
+    /// Registers a variable that holds the heap object storing a remote value in a temporary box, or null if no object
+    /// was allocated. The object is released without deinitialization, as the value in it is a temporary of its own.
+    void addTemporaryRemoteObject(llvm::Value *objectVariable) {
+        temporaryObjects_.emplace_back(objectVariable, Type::noReturn(), true);
     }
 
     void releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast);
@@ -210,8 +210,8 @@ public:
     void addTemporaryObject(llvm::Value *value, const Type &type) {
         tom_.addTemporaryObject(value, type);
     }
-    void addTemporaryRemoteObject(llvm::Value *object) {
-        tom_.addTemporaryRemoteObject(object);
+    void addTemporaryRemoteObject(llvm::Value *objectVariable) {
+        tom_.addTemporaryRemoteObject(objectVariable);
     }
     /// Releases all temporary values that were previously registered with addTemporaryObject() in the order
     /// they were added.

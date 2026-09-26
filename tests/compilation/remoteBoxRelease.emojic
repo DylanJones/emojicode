@@ -45,9 +45,21 @@
   🍉
 🍉
 
+💭 Its initializer is not specialized, so optional values are boxed for it.
+🐇 🎀🐚T ⚪🍆 🍇
+  🖍🆕 spare 🍬T
+  🆕 🍼 spare 🍬T 🍇🍉
+🍉
+
 🐇 🧰 🍇
   🐇❗️ 👀🐚T 🔼🍆 value T ➡️ 🔢 🍇
     ↩️ 📏 value❗️
+  🍉
+  🐇❗️ 🏭 a 🔢 name 🔡 ➡️ 🍬🐘 🍇
+    ↪️ a 🙌 0 🍇
+      ↩️ 🤷‍♀️
+    🍉
+    ↩️ 🆕🐘 a name❗️
   🍉
   🐇❗️ 📐 value 🔼 ➡️ 🔢 🍇
     ↩️ 📏 value❗️
@@ -63,6 +75,9 @@
   😀 🔡 🧮gift❗️❗️❗️
   🔄gift 🆕🐘 30 🔤third🔤❗️❗️
   😀 🔡 🧮gift❗️❗️❗️
+
+  🆕🎀🐚🐘🍆 🏭🐇🧰 5 🔤optional🔤❗️❗️ ➡️ present
+  🆕🎀🐚🐘🍆 🏭🐇🧰 0 🔤none🔤❗️❗️ ➡️ absent
 
   🖍🆕 stored 🔼
   🆕🐘 3 🔤stored🔤❗️ ➡️ 🖍stored

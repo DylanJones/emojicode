@@ -381,7 +381,10 @@ void TemporaryObjectsManager::releaseTemporaryObjects(FunctionCodeGenerator *fg,
     auto end = skipLast ? temporaryObjects_.end() - 1 : temporaryObjects_.end();
     for (auto it = temporaryObjects_.begin(); it < end; it++) {
         if (it->remoteObject) {
-            fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), it->value);
+            auto object = fg->builder().CreateLoad(fg->typeHelper().pointer(), it->value);
+            fg->createIf(fg->builder().CreateIsNotNull(object), [&] {
+                fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), object);
+            });
         }
         else {
             fg->release(it->value, it->type);
