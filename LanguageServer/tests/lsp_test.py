@@ -701,8 +701,8 @@ class CompletionTests(ServerTestCase):
         self.assertEqual(items[0]["textEdit"]["newText"], "🔢")
 
     def test_keyword_without_snippet_support(self):
-        items = self.complete("class")
-        self.assertEqual(items[0]["textEdit"]["newText"], "🐇")
+        items = self.complete("if")
+        self.assertEqual(items[0]["textEdit"]["newText"], "↪️")
         self.assertNotIn("insertTextFormat", items[0])
 
     def test_no_completion_in_unterminated_string(self):
@@ -754,9 +754,60 @@ class CompletionTests(ServerTestCase):
 
 
     def test_keyword_snippet(self):
-        items = self.complete("class", snippets=True)
+        items = self.complete("if", snippets=True)
         self.assertEqual(items[0]["insertTextFormat"], 2)
-        self.assertTrue(items[0]["textEdit"]["newText"].startswith("🐇 ${1:🐟} 🍇"))
+        self.assertTrue(items[0]["textEdit"]["newText"].startswith("↪️ ${1:condition} 🍇"))
+
+    def complete_at(self, text):
+        """Returns the labels of the completion items at the | in text, a file of its own."""
+        offset = text.index("|")
+        text = text.replace("|", "")
+        path = self.write("place.emojic", text)
+        if self.client is None:
+            self.start()
+        self.client.open(path, text)
+        self.client.diagnostics(path)
+        line = text.count("\n", 0, offset)
+        character = utf16_length(text[text.rfind("\n", 0, offset) + 1:offset])
+        result = self.client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
+                                                                 "position": {"line": line, "character": character}})
+        return [item["label"] for item in result["items"]]
+
+    def test_members_at_the_start_of_a_line_in_a_type(self):
+        for text in ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n",
+                     "🌍 🐇 🐟 🍇\n  🖍🆕 a 🔢\n  ❗️ 🐽 🍇\n  🍉\n  |\n🍉\n🏁 🍇🍉\n",
+                     "🕊 🐟 🍇\n  📗 Docs. 📗\n  🔓 |\n🍉\n🏁 🍇🍉\n"):
+            labels = self.complete_at(text)
+            self.assertIn("❗️ method function func def", labels, text)
+            self.assertIn("🆕 initializer init constructor", labels, text)
+            self.assertIn("🖍🆕 variable var let mutable declare", labels, text)
+            self.assertNotIn("↪️ if", labels, text)
+            self.assertNotIn("🐇 class", labels, text)
+            self.assertFalse([label for label in labels if label.startswith("🔢")], text)
+
+    def test_member_by_keyword(self):
+        self.assertEqual(self.complete_at("🐇 🐟 🍇\n  meth|\n🍉\n🏁 🍇🍉\n")[0], "❗️ method function func def")
+
+    def test_types_in_a_declaration(self):
+        labels = self.complete_at("🐇 🐟 🍇\n  🖍🆕 a |\n🍉\n🏁 🍇🍉\n")
+        self.assertIn("🔢", labels)
+        self.assertIn("🍬 optional maybe", labels)
+        self.assertFalse([label for label in labels if "  " in label], "no methods")
+        self.assertNotIn("❗️ method function func def", labels)
+
+    def test_declarations_at_the_top_level(self):
+        labels = self.complete_at("🐇 🐟 🍇\n🍉\n|\n🏁 🍇🍉\n")
+        self.assertIn("🐇 class", labels)
+        self.assertIn("🏁 start main", labels)
+        self.assertIn("📦 import package", labels)
+        self.assertNotIn("❗️ method function func def", labels)
+        self.assertFalse([label for label in labels if label.startswith("🔢")])
+
+    def test_code_in_a_method(self):
+        labels = self.complete_at("🐇 🐟 🍇\n  ❗️ 🐽 🍇\n    5 ➡️ five\n    |\n  🍉\n🍉\n🏁 🍇🍉\n")
+        self.assertEqual(labels[0], "five")
+        self.assertIn("🔢", labels)
+        self.assertNotIn("❗️ method function func def", labels)
 
 
 class RobustnessTests(ServerTestCase):

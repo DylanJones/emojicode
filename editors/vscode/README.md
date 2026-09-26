@@ -9,8 +9,10 @@ documentation comment. Nothing is added in strings and comments. With the `emoji
 - goes to definitions (F12), also into the standard library,
 - lists the types and methods of a file in the outline,
 - highlights types, methods and variables by what they are,
-- completes code. Type a word and pick what it describes: `grapes` inserts 🍇, `append` finds the methods whose
-  documentation mentions it, `class` or `if` insert the construct, and variable names complete as usual.
+- completes what can be written where the cursor is, e.g. methods and instance variables at the start of a line in
+  a type, and types after them. Type a word and pick what it describes: `grapes` inserts 🍇, `append` finds the
+  methods whose documentation mentions it, `class` or `if` insert the construct, and variable names complete as
+  usual.
 
 ## Learner docs
 

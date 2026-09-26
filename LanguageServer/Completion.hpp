@@ -52,9 +52,18 @@ public:
     std::vector<CompletionItem> complete(size_t start, size_t offset, size_t limit) const;
 
 private:
+    /// Where in the grammar a position is.
+    struct Place {
+        enum Kind { TopLevel, TypeBody, Code } kind;
+        /// Whether only attributes of a declaration come before the position on its line.
+        bool statementStart;
+    };
+    Place place(size_t offset) const;
+
     void addVariables(size_t offset, const std::string &word, std::vector<CompletionItem> *items) const;
-    void addKeywords(const std::string &word, std::vector<CompletionItem> *items) const;
-    void addTypesAndMethods(const std::string &word, std::vector<CompletionItem> *items) const;
+    /// Adds the keywords that can be written in one of @p places, a combination of Places flags.
+    void addKeywords(const std::string &word, int places, std::vector<CompletionItem> *items) const;
+    void addTypesAndMethods(const std::string &word, bool methods, std::vector<CompletionItem> *items) const;
     void addEmoji(const std::string &word, std::vector<CompletionItem> *items) const;
 
     const Analysis *analysis_;
