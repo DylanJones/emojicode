@@ -70,6 +70,7 @@ compilation_tests = [
     "specializationScoping",
     "specializationMangling",
     "selfConstraint",
+    "numericMatrix",
     "protocolValueTypeRemote",
     "protocolEnum",
     "protocolGenericLayerClass",
@@ -188,6 +189,7 @@ specialization_tests = [
     "specializationMangling",
     "genericRecursion",
     "selfConstraint",
+    "numericMatrix",
 ]
 # Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
 host_tests = [
