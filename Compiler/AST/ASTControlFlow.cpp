@@ -134,6 +134,10 @@ void ASTErrorHandler::analyseMemoryFlow(MFFunctionAnalyser *analyser) {
 }
 
 void ASTForIn::analyse(FunctionAnalyser *analyser) {
+    // The branch keeps the iterator variable's initialization from outliving its scope. A variable declared after
+    // the loop reuses its ID and would otherwise be considered initialized, so its first assignment would release
+    // garbage.
+    analyser->pathAnalyser().beginBranch();
     analyser->scoper().pushScope();
 
     ASTBlock newBlock(position());
@@ -155,6 +159,8 @@ void ASTForIn::analyse(FunctionAnalyser *analyser) {
     block_ = std::move(newBlock);
     block_.analyse(analyser);
     block_.popScope(analyser);
+    analyser->pathAnalyser().endBranch();
+    analyser->pathAnalyser().finishUncertainBranches();
 }
 
 void ASTForIn::analyseMemoryFlow(MFFunctionAnalyser *analyser) {
