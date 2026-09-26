@@ -169,8 +169,24 @@ Type ExpressionAnalyser::comply(const TypeExpectation &expectation, std::shared_
 
     exprType = upcast(std::move(exprType), expectation, node);
     exprType = callableBox(std::move(exprType), expectation, node);
+    exprType = referenceBoxedVariable(std::move(exprType), expectation, node);
     exprType = box(std::move(exprType), expectation, node);
     return complyReference(std::move(exprType), expectation, node);
+}
+
+Type ExpressionAnalyser::referenceBoxedVariable(Type exprType, const TypeExpectation &expectation,
+                                                std::shared_ptr<ASTExpr> *node) const {
+    // A reference to the value in a boxed variable, e.g. an instance variable of a generic type in a specialization,
+    // must point into the box. box() would otherwise copy the value out, so that a mutation would be lost.
+    if (!exprType.isReference() && expectation.isReference() && exprType.storageType() == StorageType::Box &&
+        expectation.simplifyType(exprType) == StorageType::Simple && exprType.unboxed().isReferenceUseful()) {
+        if (auto varNode = std::dynamic_pointer_cast<ASTGetVariable>(*node)) {
+            exprType.setReference(true);
+            varNode->setReference();
+            varNode->setExpressionType(exprType);
+        }
+    }
+    return exprType;
 }
 
 Type ExpressionAnalyser::complyReference(Type exprType, const TypeExpectation &expectation,

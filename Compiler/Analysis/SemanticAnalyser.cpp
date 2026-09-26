@@ -92,23 +92,18 @@ void SemanticAnalyser::analyse(bool executable) {
 /// larger types, e.g. by calling itself with a list of its generic argument.
 constexpr size_t kMaxSpecializationDepth = 8;
 
-/// Whether generic code represents a value of @p type differently than code in which the generic variables are
-/// replaced with concrete types: A value of a generic type is boxed, and a callable takes and returns values of generic
-/// types boxed. Other types, like a list of a generic type, are represented the same.
-static bool representationDependsOnGenericArguments(const Type &type) {
-    auto unoptionalized = type.unboxed().unoptionalized();
-    if (unoptionalized.unboxedType() == TypeType::GenericVariable ||
-        unoptionalized.unboxedType() == TypeType::LocalGenericVariable) {
-        return true;
-    }
-    return unoptionalized.type() == TypeType::Callable && unoptionalized.containsGenericVariables();
-}
-
-/// Whether an instance variable of @p typeDef is represented differently in specialized methods, which therefore
-/// could not use the instance variables stored by generic code.
+/// Whether specialized methods cannot use an instance variable of @p typeDef as generic code stores it.
+///
+/// An instance variable of a generic type stores its value boxed. Specialized methods read and write it with the
+/// concrete type through the box, so this works. But a callable taking or returning values of generic types takes and
+/// returns them boxed, which a specialized method would not do, and an optional of a generic type is not supported.
 static bool storesGenericValues(TypeDefinition *typeDef) {
     return std::any_of(typeDef->instanceVariables().begin(), typeDef->instanceVariables().end(), [](auto &var) {
-        return representationDependsOnGenericArguments(var.type->type());
+        auto type = var.type->type().unboxed();
+        if (type.type() == TypeType::Optional) {
+            return type.unoptionalized().unboxedType() == TypeType::GenericVariable;
+        }
+        return type.type() == TypeType::Callable && type.containsGenericVariables();
     });
 }
 

@@ -6,6 +6,64 @@
   ❗️ 🧮 ➡️ 🔢
 🍉
 
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+  ❗️ ⬆️ ➡️ 🔢
+🍉
+
+🐇 🐟 🍇
+  🐊 🔼
+  🖍🆕 name 🔡
+  🖍🆕 size 🔢
+  🆕 🍼 name 🔡 🍼 size 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ size
+  🍉
+  ❗️ ⬆️ ➡️ 🔢 🍇
+    size ⬅️➕ 1
+    ↩️ size
+  🍉
+  ♻️ 🍇
+    😀 name❗️
+  🍉
+🍉
+
+💭 Too large to be stored in a box, so boxes store it on the heap.
+🕊 🐘 🍇
+  🐊 🔼
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 d 🔢
+  🖍🆕 e 🔡
+  🆕 🍼 a 🔢 🍇
+    0 ➡️ 🖍b
+    0 ➡️ 🖍c
+    0 ➡️ 🖍d
+    🔤e🔤 ➡️ 🖍e
+  🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+  🖍❗️ ⬆️ ➡️ 🔢 🍇
+    a ⬅️➕ 1
+    ↩️ a
+  🍉
+🍉
+
+🕊 🍋 🍇
+  🐊 🔼
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n
+  🍉
+  🖍❗️ ⬆️ ➡️ 🔢 🍇
+    n ⬅️➕ 1
+    ↩️ n
+  🍉
+🍉
+
 🕊 🍎 🍇
   🐊 📦
   🖍🆕 n 🔢
@@ -58,10 +116,35 @@
   🍉
 🍉
 
-💭 Stores a T boxed, which its specialized methods could not read, so they are not specialized.
-🕊 🎁🐚T ⚪🍆 🍇
+💭 Stores T boxed, which its specialized methods read and write through the box.
+🕊 🎁🐚T 🔼🍆 🍇
   🖍🆕 value T
-  🆕 🍼 value T 🍇🍉
+  🖍🆕 previous T
+  🆕 🍼 value T 🍇
+    value ➡️ 🖍previous
+  🍉
+  ❗️ 🔓 ➡️ T 🍇
+    ↩️ value
+  🍉
+  🖍❗️ 🔄 new T 🍇
+    value ➡️ 🖍previous
+    new ➡️ 🖍value
+  🍉
+  ❗️ 🧮 ➡️ 🔢 🍇
+    ↩️ 📏 value❗️ ➕ 📏 previous❗️
+  🍉
+  🖍❗️ 🆙 ➡️ 🔢 🍇
+    ↩️ ⬆️value❗️
+  🍉
+🍉
+
+💭 Stores an optional T, which specialized methods do not support, so they are not specialized.
+🕊 🎀🐚T ⚪🍆 🍇
+  🖍🆕 value T
+  🖍🆕 spare 🍬T
+  🆕 🍼 value T 🍇
+    🤷‍♀️ ➡️ 🖍spare
+  🍉
   ❗️ 🔓 ➡️ T 🍇
     ↩️ value
   🍉
@@ -101,6 +184,24 @@
   apples ➡️ 🖍bill
   😀 🔡 🧮bill❗️❗️❗️
 
-  😀 🔓🆕🎁🐚🔡🍆 🔤boxed🔤❗️❗️❗️
+  🆕🎁🐚🐟🍆 🆕🐟 🔤one🔤 1❗️❗️ ➡️ 🖍🆕 fish
+  🔄fish 🆕🐟 🔤three🔤 3❗️❗️
+  😀 🔡 🧮fish❗️❗️❗️
+  🔄fish 🆕🐟 🔤five🔤 5❗️❗️
+  😀 🔡 🧮fish❗️❗️❗️
+  😀 🔡 📏 🔓fish❗️❗️❗️❗️
+
+  🆕🎁🐚🐘🍆 🆕🐘 1❗️❗️ ➡️ 🖍🆕 elephant
+  🔄elephant 🆕🐘 10❗️❗️
+  😀 🔡 🧮elephant❗️❗️❗️
+
+  💭 The mutation must change the instance variable, not a copy of it.
+  🆕🎁🐚🍋🍆 🆕🍋 1❗️❗️ ➡️ 🖍🆕 lemon
+  lemon ➡️ 🖍🆕 lime
+  😀 🔡 🆙lemon❗️❗️❗️
+  😀 🔡 🆙lime❗️❗️❗️
+  😀 🔡 🆙lemon❗️❗️❗️
+
+  😀 🔓🆕🎀🐚🔡🍆 🔤boxed🔤❗️❗️❗️
   😀 🔨🆕🏭🐚🔡🍆 🍇🎍🥡 n 🔢 ➡️ 🔡 ↩️ 🔡 n❗️ 🍉❗️ 7❗️❗️
 🍉

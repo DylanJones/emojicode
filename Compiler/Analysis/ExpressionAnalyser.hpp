@@ -126,6 +126,9 @@ private:
 
     Type upcast(Type exprType, const TypeExpectation &expectation, std::shared_ptr<ASTExpr> *node) const;
 
+    Type referenceBoxedVariable(Type exprType, const TypeExpectation &expectation,
+                                std::shared_ptr<ASTExpr> *node) const;
+
     Type complyReference(Type exprType, const TypeExpectation &expectation, std::shared_ptr<ASTExpr> *node) const;
 };
 
