@@ -105,6 +105,7 @@ bool RedundantReferenceCountingPass::findCounterpart(llvm::CallInst *release,
     toBeDeleted_.emplace_back(it->second.back());
     toBeDeleted_.emplace_back(release);
     it->second.pop_back();
+    modified_ = true;
     return true;
 }
 

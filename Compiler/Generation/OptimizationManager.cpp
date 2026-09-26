@@ -22,7 +22,6 @@ OptimizationManager::OptimizationManager(bool optimize, RunTimeHelper *runTime, 
     // Retains and releases of inlined code are only redundant after inlining, and they block loop optimizations
     // until they are removed, so remove them whenever the pipeline cleans up instructions.
     passBuilder_->registerPeepholeEPCallback([runTime](llvm::FunctionPassManager &fpm, llvm::OptimizationLevel) {
-        fpm.addPass(ConstantReferenceCountingPass(runTime));
         fpm.addPass(RedundantReferenceCountingPass(runTime));
     });
     passBuilder_->registerModuleAnalyses(mam_);
