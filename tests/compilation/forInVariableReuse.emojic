@@ -1,0 +1,27 @@
+🐇 🐟 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ❗️ 🗣 🍇
+    😀 name❗️
+  🍉
+
+  ♻️ 🍇
+    😀 🔤Deinit🔤❗️
+    😀 name❗️
+  🍉
+🍉
+
+🏁 🍇
+  🔂 i 🆕⏩ 0 2❗️ 🍇
+    😀 🔡 i❗️❗️
+  🍉
+
+  💭 Declared after the loop, so it reuses the ID of the loop’s hidden iterator variable.
+  🖍🆕 fish 🐟
+  🆕🐟 🔤Nemo🔤❗️ ➡️ 🖍fish
+  🗣fish❗️
+  🆕🐟 🔤Dory🔤❗️ ➡️ 🖍fish
+  🗣fish❗️
+🍉
