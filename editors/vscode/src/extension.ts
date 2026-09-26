@@ -2,12 +2,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { LanguageClient, LanguageClientOptions, ServerOptions } from 'vscode-languageclient/node';
+import { registerLearnerDocs } from './learnerHover';
 
 let client: LanguageClient | undefined;
 /** The start of the client, while it is in progress. */
 let starting: Promise<void> | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
+    registerLearnerDocs(context, () => client);
     context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(async (event) => {
         if (event.affectsConfiguration('emojicode.server') || event.affectsConfiguration('emojicode.packageSearchPaths')) {
             await stopClient();

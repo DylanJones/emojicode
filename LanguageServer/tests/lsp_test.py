@@ -459,6 +459,19 @@ class NavigationTests(ServerTestCase):
     def test_hover_standard_library(self):
         self.assertIn("😀", self.hover("😀"))
 
+    def docs(self, needle, occurrence=1):
+        result = self.request("emojicode/docs", needle, occurrence)
+        return result["path"] if result else None
+
+    def test_docs_of_standard_library(self):
+        self.assertEqual(self.docs("😀"), "docs/packages/s/1f521.html#s.class_1f521.1f600")
+        self.assertEqual(self.docs("🔢"), "docs/packages/s/1f522.html")
+
+    def test_no_docs_of_own_code(self):
+        self.assertIsNone(self.docs("🏊", 2))
+        self.assertIsNone(self.docs("🐟", 2))
+        self.assertIsNone(self.docs("fish", 2))
+
     def test_no_hover_on_compiler_generated_code(self):
         self.assertIsNone(self.hover("🔂"))
 

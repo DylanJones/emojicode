@@ -11,6 +11,15 @@ server it also:
 - completes code. Type a word and pick what it describes: `grapes` inserts 🍇, `append` finds the methods whose
   documentation mentions it, `class` or `if` insert the construct, and variable names complete as usual.
 
+## Learner docs
+
+For learning the language, turn on **Emojicode: Toggle Learner Docs** (or click *Learner docs* in the status bar).
+Hovering over code then links to the section of the documentation that explains it: 🔂 to *For In*, ❗️ to
+*Methods* where it declares a method and to *Calling Methods* where it calls one, and a 😀 in 🔤…🔤 to *String
+Literals*, since it is just text there. With the language server, methods and types of packages such as 😀 or 🔢 link
+to their page in the package documentation. **Emojicode: Open Documentation for Token at Cursor** opens the link
+directly.
+
 ## Installing
 
 ```bash
@@ -28,9 +37,14 @@ it. Without it the extension still highlights code.
 - `emojicode.server.path`: the language server executable (default `emojicode-lsp`).
 - `emojicode.packageSearchPaths`: more directories to search for packages, like the compiler's `-S`.
 - `emojicode.trace.server`: log the messages between VS Code and the server.
+- `emojicode.learnerDocs.enabled`: link code to the documentation on hover (default off).
+- `emojicode.learnerDocs.baseUrl`: the documentation website (default `https://www.emojicode.org/`). Set it to
+  `http://localhost:8080/` to use the documentation's `./serve`.
 
 ## Developing
 
 The grammar is generated: edit `syntaxes/generate.py` and run it, then `npm test`. The test tokenizes snippets with
 the same engine as VS Code and checks that every Emojicode file in the repository tokenizes without a runaway
-string or comment. To try the extension, open this folder in VS Code and press F5.
+string or comment. `test/learnerDocs.test.js` checks which section the learner docs link each token to, and that
+the headings exist if the documentation's repository is next to this one. To try the extension, open
+this folder in VS Code and press F5.
