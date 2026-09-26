@@ -130,6 +130,9 @@ private:
                                 std::shared_ptr<ASTExpr> *node) const;
 
     Type complyReference(Type exprType, const TypeExpectation &expectation, std::shared_ptr<ASTExpr> *node) const;
+
+    /// Makes @p node provide a reference to the variable it gets, if it is an ASTGetVariable, and returns whether it is.
+    static bool referenceVariable(Type &exprType, std::shared_ptr<ASTExpr> *node);
 };
 
 }  // namespace EmojicodeCompiler

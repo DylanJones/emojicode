@@ -6,7 +6,6 @@
 #include "SpecializationParser.hpp"
 #include "AST/ASTStatements.hpp"
 #include "CompilerError.hpp"
-#include "Emojis.h"
 #include "FunctionParser.hpp"
 #include "Functions/Function.hpp"
 #include "Functions/Initializer.hpp"
@@ -44,30 +43,9 @@ void SpecializationParser::skipToName(const SourcePosition &position) {
     throw CompilerError(position, "Could not find the source of the generic function to specialize.");
 }
 
-void SpecializationParser::skipGenericParameters() {
-    if (!stream_.consumeTokenIf(TokenType::Generic)) {
-        return;
-    }
-    size_t depth = 1;
-    while (depth > 0) {
-        auto token = stream_.consumeToken();
-        if (token.type() == TokenType::Generic) {
-            depth++;
-        }
-        else if (token.type() == TokenType::Identifier && token.value()[0] == E_AUBERGINE) {
-            depth--;
-        }
-    }
-}
-
 void SpecializationParser::parseFunction(Function *specialization) {
-    auto initializer = dynamic_cast<Initializer *>(specialization) != nullptr;
-    skipGenericParameters();
-    parseParameters(specialization, initializer);
-    if (!initializer) {
-        parseReturnType(specialization);
-    }
-    parseErrorType(specialization);
+    // The generic parameters of the specialization are bound to its arguments instead.
+    parseFunctionSignature(specialization, dynamic_cast<Initializer *>(specialization) != nullptr, false);
     stream_.consumeToken(TokenType::BlockBegin);
     specialization->setAst(FunctionParser(package_, stream_).parse());
 }

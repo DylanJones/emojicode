@@ -173,32 +173,34 @@ Type ExpressionAnalyser::comply(const TypeExpectation &expectation, std::shared_
     return complyReference(std::move(exprType), expectation, node);
 }
 
+bool ExpressionAnalyser::referenceVariable(Type &exprType, std::shared_ptr<ASTExpr> *node) {
+    auto varNode = std::dynamic_pointer_cast<ASTGetVariable>(*node);
+    if (varNode == nullptr) {
+        return false;
+    }
+    exprType.setReference(true);
+    varNode->setReference();
+    varNode->setExpressionType(exprType);
+    return true;
+}
+
 Type ExpressionAnalyser::referenceBoxedVariable(Type exprType, const TypeExpectation &expectation,
                                                 std::shared_ptr<ASTExpr> *node) const {
     // A reference to the value in a boxed variable, e.g. an instance variable of a generic type in a specialization,
     // must point into the box. box() would otherwise copy the value out, so that a mutation would be lost.
     if (!exprType.isReference() && expectation.isReference() && exprType.storageType() == StorageType::Box &&
         expectation.simplifyType(exprType) == StorageType::Simple && exprType.unboxed().isReferenceUseful()) {
-        if (auto varNode = std::dynamic_pointer_cast<ASTGetVariable>(*node)) {
-            exprType.setReference(true);
-            varNode->setReference();
-            varNode->setExpressionType(exprType);
-        }
+        referenceVariable(exprType, node);
     }
     return exprType;
 }
 
 Type ExpressionAnalyser::complyReference(Type exprType, const TypeExpectation &expectation,
                                            std::shared_ptr<ASTExpr> *node) const {
-    if (!exprType.isReference() && expectation.isReference() && exprType.isReferenceUseful()) {
+    if (!exprType.isReference() && expectation.isReference() && exprType.isReferenceUseful() &&
+        !referenceVariable(exprType, node)) {
         exprType.setReference(true);
-        if (auto varNode = std::dynamic_pointer_cast<ASTGetVariable>(*node)) {
-            varNode->setReference();
-            varNode->setExpressionType(exprType);
-        }
-        else {
-            insertNode<ASTStoreTemporarily>(node, exprType);
-        }
+        insertNode<ASTStoreTemporarily>(node, exprType);
     }
     return exprType;
 }

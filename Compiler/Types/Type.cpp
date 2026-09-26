@@ -634,8 +634,8 @@ Type Type::withMinimalBoxing() const {
             argument = argument.withMinimalBoxing();
         }
     }
-    if (type.type() == TypeType::Optional && type.genericArguments_[0].type() == TypeType::Box) {
-        return type.genericArguments_[0].optionalized();  // An optional must not contain a box, but a box an optional.
+    if (type.type() == TypeType::Optional) {
+        return type.rewrapped(type.genericArguments_[0]);
     }
     return type.applyMinimalBoxing();
 }
