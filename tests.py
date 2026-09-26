@@ -4,6 +4,7 @@ import os
 import dist
 import sys
 import re
+import tempfile
 
 quick = len(sys.argv) > 1 and sys.argv[1] == 'quick'
 valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
@@ -162,6 +163,27 @@ library_tests = [
     "jsonTest",
     "fileTest"
 ]
+# Compilation tests that are also compiled and run without optimizations, which inline code that tests otherwise
+# only test inlined.
+unoptimized_tests = [
+    "valueTypeIterator",
+    "listIterator",
+    "specialization",
+    "typeSpecialization",
+    "specializationFallback",
+    "specializationScoping",
+    "remoteBoxRelease",
+    "boxValueSemantics",
+    "borrowedBoxes",
+]
+# Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
+# NAME.specializations. A function that is not specialized, but called generically, does not change what a program
+# prints.
+specialization_tests = [
+    "specialization",
+    "typeSpecialization",
+    "specializationScoping",
+]
 # Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
 host_tests = [
     "ffiHostLib",
@@ -204,15 +226,29 @@ def library_test(name):
         print(completed.stdout.decode('utf-8'))
 
 
-def compilation_test(name):
+def compilation_test(name, optimize=True):
     source_path, binary_path = test_paths(name, 'compilation')
-    run([emojicodec, source_path, '-O'], check=True)
+    run([emojicodec, source_path] + (['-O'] if optimize else []), check=True)
     completed = run([binary_path], stdout=PIPE)
     exp_path = os.path.join(dist.source, "tests", "compilation", name + ".txt")
     output = completed.stdout.decode('utf-8')
     if output != open(exp_path, "r", encoding='utf-8').read() or completed.returncode != 0:
         print(output)
         fail_test(name)
+
+
+def specialization_test(name):
+    source_path = test_paths(name, 'compilation')[0]
+    with tempfile.TemporaryDirectory() as directory:
+        run([emojicodec, source_path, '--emit-llvm', '-o', os.path.join(directory, name)], check=True)
+        ir = open(os.path.join(directory, name + ".ll"), "r", encoding='utf-8').read()
+    specializations = sorted(set(re.findall(r'^define internal [^@]*@"([^"]*\$s<[^"]*)"', ir, re.MULTILINE)))
+    exp_path = os.path.join(dist.source, "tests", "compilation", name + ".specializations")
+    expected = open(exp_path, "r", encoding='utf-8').read().split()
+    if specializations != expected:
+        print("Missing specializations: " + ", ".join(sorted(set(expected) - set(specializations))))
+        print("Unexpected specializations: " + ", ".join(sorted(set(specializations) - set(expected))))
+        fail_test(name + " (specializations)")
 
 
 def host_test(name):
@@ -307,6 +343,11 @@ def test():
         run([emojicodec, '--format', source_path], check=True)
         compilation_test('includer')
         os.rename(source_path + '_original', source_path)
+
+    for test in unoptimized_tests:
+        compilation_test(test, optimize=False)
+    for test in specialization_tests:
+        specialization_test(test)
 
     for test in host_tests:
         host_test(test)
