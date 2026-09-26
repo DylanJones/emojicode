@@ -120,7 +120,7 @@ template <typename T>
 bool FunctionResolution<T>::checkGenericArguments(Function *function, const std::vector<Type> &args) {
     for (size_t i = function->offset(); i < args.size(); i++) {
         auto constraint = function->constraintForIndex(i).resolveOn(TypeContext(callee_, function, &args));
-        if (!args[i].compatibleTo(constraint, TypeContext(callee_, function))) {
+        if (!args[i].compatibleTo(constraint, typeContext_)) {  // The arguments are types of the calling code.
             nonCandidates_.emplace_back(function, NonCandidate::Reason::GenericArgument, i);
             return false;
         }
