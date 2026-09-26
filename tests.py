@@ -48,6 +48,7 @@ compilation_tests = [
     "compareNoValue",
     "downcastClass",
     "castAny",
+    "somethingParameters",
     "castGenericValueType",
     "castBindingRemote",
     "castGenericClass",

@@ -15,6 +15,7 @@
 #include "Types/ValueType.hpp"
 #include "Types/Protocol.hpp"
 #include <sstream>
+#include <stdexcept>
 
 namespace EmojicodeCompiler {
 
@@ -78,9 +79,21 @@ void mangleTypeName(std::stringstream &stream, const Type &typeb) {
                 mangleTypeName(stream, proto);
             }
             return;
-        default:
-            stream << "ty_";
-            break;
+        case TypeType::Something:
+            stream << "something";
+            return;
+        case TypeType::Someobject:
+            stream << "someobject";
+            return;
+        case TypeType::Invalid:
+        case TypeType::Box:  // Removed by unboxed() above.
+        case TypeType::StorageExpectation:
+        case TypeType::IntegerLiteral:
+        case TypeType::RealLiteral:
+        case TypeType::ListLiteral:
+        case TypeType::DictionaryLiteral:
+        case TypeType::NoValueLiteral:
+            throw std::logic_error("Cannot mangle compile-time type.");
     }
     mangleIdentifier(stream, type.typeDefinition()->name());
 }
