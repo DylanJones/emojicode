@@ -142,7 +142,8 @@ void ASTForIn::analyse(FunctionAnalyser *analyser) {
 
     auto getIterator = std::make_shared<ASTMethod>(std::u32string(1, E_DANGO), std::move(iteratee_),
                                                    ASTArguments(position()), position());
-    newBlock.appendNode(std::make_unique<ASTConstantVariable>(iteratorVar, getIterator, position()));
+    // Mutable so that value-type iterators can advance with a 🖍 🔽 instead of being allocated as objects.
+    newBlock.appendNode(std::make_unique<ASTVariableDeclareAndAssign>(iteratorVar, getIterator, position()));
     auto getNext = std::make_shared<ASTMethod>(std::u32string(1, 0x1F53D),
                                                std::make_shared<ASTGetVariable>(iteratorVar, position()),
                                                ASTArguments(position()), position());
@@ -154,6 +155,8 @@ void ASTForIn::analyse(FunctionAnalyser *analyser) {
     newBlock.appendNode(std::make_unique<ASTRepeatWhile>(hasNext, std::move(block_), position()));
     block_ = std::move(newBlock);
     block_.analyse(analyser);
+    // Class iterators never mutate the variable, which would otherwise warn about a variable the user did not write.
+    analyser->scoper().currentScope().getLocalVariable(iteratorVar).mutate(position());
     block_.popScope(analyser);
 }
 
