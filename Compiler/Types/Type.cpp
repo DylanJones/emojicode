@@ -339,6 +339,21 @@ bool Type::identicalGenericArguments(Type to, const TypeContext &typeContext, Ge
     return true;
 }
 
+std::optional<Type> Type::resolvedGenericVariable(const TypeContext &tc) const {
+    auto resolved = resolveOnSuperArgumentsAndConstraints(tc);
+    if (resolved.unboxedType() == type() && resolved.genericVariableIndex() == genericVariableIndex() &&
+        (type() == TypeType::GenericVariable ? resolved.resolutionConstraint() == resolutionConstraint()
+                                             : resolved.localResolutionConstraint() == localResolutionConstraint())) {
+        return std::nullopt;
+    }
+    return resolved;
+}
+
+bool Type::compatibleToResolved(const Type &to, const TypeContext &tc, GenericInferer *inf) const {
+    auto toResolved = to.resolvedGenericVariable(tc);
+    return toResolved && compatibleTo(*toResolved, tc, inf);
+}
+
 bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *inf) const {
     if (type() == TypeType::Box) {
         return unboxed().compatibleTo(to, tc, inf);
@@ -385,18 +400,32 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
 
     if ((this->type() == TypeType::GenericVariable && to.type() == TypeType::GenericVariable) ||
         (this->type() == TypeType::LocalGenericVariable && to.type() == TypeType::LocalGenericVariable)) {
-        return (this->genericVariableIndex() == to.genericVariableIndex() &&
-                this->typeDefinition_ == to.typeDefinition_) ||
-        this->resolveOnSuperArgumentsAndConstraints(tc)
-        .compatibleTo(to.resolveOnSuperArgumentsAndConstraints(tc), tc, inf);
+        // A variable of the calling code, e.g. its own generic parameter, can be inferred for one of the callee.
+        if (to.type() == TypeType::GenericVariable && inf != nullptr && inf->inferringType()) {
+            inf->addType(to.genericVariableIndex(), *this, tc);
+            return true;
+        }
+        if (to.type() == TypeType::LocalGenericVariable && inf != nullptr && inf->inferringLocal()) {
+            inf->addLocal(to.genericVariableIndex(), *this, tc);
+            return true;
+        }
+        if (this->genericVariableIndex() == to.genericVariableIndex() && this->typeDefinition_ == to.typeDefinition_ &&
+            this->localResolutionConstraint_ == to.localResolutionConstraint_) {
+            return true;
+        }
+        auto resolved = resolvedGenericVariable(tc);
+        auto toResolved = to.resolvedGenericVariable(tc);
+        if (!resolved && !toResolved) {
+            return false;
+        }
+        return resolved.value_or(*this).compatibleTo(toResolved.value_or(to), tc, inf);
     }
-    if (type() == TypeType::GenericVariable) {
-        return (inf != nullptr && inf->inferringType()) ||
-                resolveOnSuperArgumentsAndConstraints(tc).compatibleTo(to, tc, inf);
-    }
-    if (type() == TypeType::LocalGenericVariable) {
-        return (inf != nullptr && inf->inferringLocal()) ||
-                resolveOnSuperArgumentsAndConstraints(tc).compatibleTo(to, tc, inf);
+    if (type() == TypeType::GenericVariable || type() == TypeType::LocalGenericVariable) {
+        if (inf != nullptr && (type() == TypeType::GenericVariable ? inf->inferringType() : inf->inferringLocal())) {
+            return true;
+        }
+        auto resolved = resolvedGenericVariable(tc);
+        return resolved && resolved->compatibleTo(to, tc, inf);
     }
 
     switch (to.type()) {
@@ -407,13 +436,13 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
                 inf->addType(to.genericVariableIndex(), *this, tc);
                 return true;
             }
-            return compatibleTo(to.resolveOnSuperArgumentsAndConstraints(tc), tc, inf);
+            return compatibleToResolved(to, tc, inf);
         case TypeType::LocalGenericVariable:
             if (inf != nullptr && inf->inferringLocal()) {
                 inf->addLocal(to.genericVariableIndex(), *this, tc);
                 return true;
             }
-            return compatibleTo(to.resolveOnSuperArgumentsAndConstraints(tc), tc, inf);
+            return compatibleToResolved(to, tc, inf);
         case TypeType::Class:
             return type() == TypeType::Class && klass()->inheritsFrom(to.klass()) &&
                 identicalGenericArguments(to, tc, inf);

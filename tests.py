@@ -87,6 +87,7 @@ compilation_tests = [
     "genericProtocolValueType",
     "genericTypeMethod",
     "genericLocalAsArgToGeneric",
+    "genericArgumentOfCaller",
     "genericToConstraintOptional",
     "genericsInferenceValueType",
     "genericsInferenceClass",
