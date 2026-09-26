@@ -59,6 +59,7 @@ compilation_tests = [
     "optionalGenericField",
     "remoteBoxRelease",
     "boxValueSemantics",
+    "borrowedBoxes",
     "forInVariableReuse",
     "valueTypeIterator",
     "listIterator",
