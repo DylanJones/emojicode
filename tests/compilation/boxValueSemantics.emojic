@@ -1,5 +1,5 @@
 🐊 🔼 🍇
-  ❗️ ⬆️ ➡️ 🔢
+  🖍❗️ ⬆️ ➡️ 🔢
 🍉
 
 🐇 🐡 🍇
@@ -44,7 +44,8 @@
   🐇❗️ 🆙🐚T 🔼🍆 value T ➡️ 🔢 🍇
     value ➡️ 🖍🆕 copy
     ⬆️copy❗️
-    ↩️ ⬆️value❗️
+    value ➡️ 🖍🆕 other
+    ↩️ ⬆️other❗️
   🍉
 🍉
 
