@@ -185,6 +185,7 @@ specialization_tests = [
     "typeSpecialization",
     "specializationScoping",
     "specializationMangling",
+    "genericRecursion",
 ]
 # Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
 host_tests = [
