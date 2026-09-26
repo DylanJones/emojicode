@@ -55,6 +55,7 @@ compilation_tests = [
     "protocolValueType",
     "genericRecursion",
     "optionalGenericField",
+    "remoteBoxRelease",
     "forInVariableReuse",
     "valueTypeIterator",
     "listIterator",

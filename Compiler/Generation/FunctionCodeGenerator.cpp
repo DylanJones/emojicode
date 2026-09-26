@@ -361,7 +361,12 @@ void TemporaryObjectsManager::releaseTemporaryObjects(FunctionCodeGenerator *fg,
     if (temporaryObjects_.empty()) return;
     auto end = skipLast ? temporaryObjects_.end() - 1 : temporaryObjects_.end();
     for (auto it = temporaryObjects_.begin(); it < end; it++) {
-        fg->release(it->value, it->type);
+        if (it->remoteObject) {
+            fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), it->value);
+        }
+        else {
+            fg->release(it->value, it->type);
+        }
     }
     if (clearQueue) {
         temporaryObjects_.clear();

@@ -26,16 +26,23 @@ struct SourcePosition;
 class TemporaryObjectsManager {
 public:
     void addTemporaryObject(llvm::Value *value, const Type &type) {
-        temporaryObjects_.emplace_back(value, type);
+        temporaryObjects_.emplace_back(value, type, false);
+    }
+    /// Registers the heap object that stores a remote value in a temporary box. The object is released without
+    /// deinitialization, as the value in it is a temporary of its own.
+    void addTemporaryRemoteObject(llvm::Value *object) {
+        temporaryObjects_.emplace_back(object, Type::noReturn(), true);
     }
 
     void releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast);
 
 private:
     struct Temporary {
-        Temporary(llvm::Value *value, Type type) : value(value), type(type) {}
+        Temporary(llvm::Value *value, Type type, bool remoteObject)
+            : value(value), type(std::move(type)), remoteObject(remoteObject) {}
         llvm::Value *value;
         Type type;
+        bool remoteObject;
     };
 
     std::vector<Temporary> temporaryObjects_;
@@ -195,6 +202,9 @@ public:
     /// @param type The type of the value.
     void addTemporaryObject(llvm::Value *value, const Type &type) {
         tom_.addTemporaryObject(value, type);
+    }
+    void addTemporaryRemoteObject(llvm::Value *object) {
+        tom_.addTemporaryRemoteObject(object);
     }
     /// Releases all temporary values that were previously registered with addTemporaryObject() in the order
     /// they were added.
