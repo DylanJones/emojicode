@@ -15,6 +15,7 @@
 #include "Package/Package.hpp"
 #include "ThunkBuilder.hpp"
 #include "Parsing/SpecializationParser.hpp"
+#include "Functions/Initializer.hpp"
 #include "Types/Class.hpp"
 #include "Types/Protocol.hpp"
 #include "Types/TypeDefinition.hpp"
@@ -92,21 +93,6 @@ void SemanticAnalyser::analyse(bool executable) {
 /// larger types, e.g. by calling itself with a list of its generic argument.
 constexpr size_t kMaxSpecializationDepth = 8;
 
-/// Whether specialized methods cannot use an instance variable of @p typeDef as generic code stores it.
-///
-/// An instance variable of a generic type stores its value boxed. Specialized methods read and write it with the
-/// concrete type through the box, so this works. But a callable taking or returning values of generic types takes and
-/// returns them boxed, which a specialized method would not do, and an optional of a generic type is not supported.
-static bool storesGenericValues(TypeDefinition *typeDef) {
-    return std::any_of(typeDef->instanceVariables().begin(), typeDef->instanceVariables().end(), [](auto &var) {
-        auto type = var.type->type().unboxed();
-        if (type.type() == TypeType::Optional) {
-            return type.unoptionalized().unboxedType() == TypeType::GenericVariable;
-        }
-        return type.type() == TypeType::Callable && type.containsGenericVariables();
-    });
-}
-
 static bool isSpecializable(Function *function) {
     if (function->isExternal() || function->ast() == nullptr || function->isC() || function->isClosure() ||
         function->isThunk() || function->unsafe() || function->owner() == nullptr) {
@@ -115,11 +101,9 @@ static bool isSpecializable(Function *function) {
     if (function->genericParameters().empty() && function->owner()->genericParameters().empty()) {
         return false;
     }
-    if (!function->owner()->genericParameters().empty() && storesGenericValues(function->owner())) {
-        return false;
-    }
     // Only statically dispatched functions, as a virtual table has no entry per specialization.
     return function->functionType() == FunctionType::ValueTypeMethod ||
+           function->functionType() == FunctionType::ValueTypeInitializer ||
            function->functionType() == FunctionType::Function;
 }
 
@@ -128,6 +112,18 @@ static bool appendConcreteArguments(const std::vector<Type> &types, std::vector<
     for (auto &argument : types) {
         if (argument.containsGenericVariables()) {
             return false;
+        }
+        switch (argument.unboxedType()) {
+            case TypeType::Invalid:
+            case TypeType::StorageExpectation:
+            case TypeType::IntegerLiteral:
+            case TypeType::RealLiteral:
+            case TypeType::ListLiteral:
+            case TypeType::DictionaryLiteral:
+            case TypeType::NoValueLiteral:
+                return false;  // Not a type that values can have.
+            default:
+                break;
         }
         Type type = argument;
         type.setReference(false);
@@ -166,11 +162,21 @@ Function* SemanticAnalyser::specialize(Function *function, const Type &calleeTyp
         return nullptr;
     }
 
-    auto created = std::make_unique<Function>(function->name(), function->accessLevel(), function->final(),
-                                              function->owner(), function->package(), function->position(), false,
-                                              function->documentation(), function->deprecated(),
-                                              function->mutating(), function->mood(), function->unsafe(),
-                                              function->functionType(), function->isInline());
+    std::unique_ptr<Function> created;
+    if (auto initializer = dynamic_cast<Initializer *>(function)) {
+        created = std::make_unique<Initializer>(function->name(), function->accessLevel(), function->final(),
+                                                function->owner(), function->package(), function->position(), false,
+                                                function->documentation(), function->deprecated(),
+                                                initializer->required(), function->unsafe(),
+                                                function->functionType(), function->isInline());
+    }
+    else {
+        created = std::make_unique<Function>(function->name(), function->accessLevel(), function->final(),
+                                             function->owner(), function->package(), function->position(), false,
+                                             function->documentation(), function->deprecated(),
+                                             function->mutating(), function->mood(), function->unsafe(),
+                                             function->functionType(), function->isInline());
+    }
     created->setMemoryFlowTypeForThis(function->memoryFlowTypeForThis());
     size_t argument = 0;
     if (genericOwner) {
