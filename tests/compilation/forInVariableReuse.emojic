@@ -24,4 +24,17 @@
   🗣fish❗️
   🆕🐟 🔤Dory🔤❗️ ➡️ 🖍fish
   🗣fish❗️
+
+  💭 Both branches declare a variable, which would make one declared after them seem initialized.
+  ↪️ 👍 🍇
+    🆕🐟 🔤Marlin🔤❗️ ➡️ inThen
+    🗣inThen❗️
+  🍉
+  🙅 🍇
+    🆕🐟 🔤Crush🔤❗️ ➡️ inElse
+    🗣inElse❗️
+  🍉
+  🖍🆕 other 🐟
+  🆕🐟 🔤Bruce🔤❗️ ➡️ 🖍other
+  🗣other❗️
 🍉

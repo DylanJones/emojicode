@@ -134,10 +134,6 @@ void ASTErrorHandler::analyseMemoryFlow(MFFunctionAnalyser *analyser) {
 }
 
 void ASTForIn::analyse(FunctionAnalyser *analyser) {
-    // The branch keeps the iterator variable's initialization from outliving its scope. A variable declared after
-    // the loop reuses its ID and would otherwise be considered initialized, so its first assignment would release
-    // garbage.
-    analyser->pathAnalyser().beginBranch();
     analyser->scoper().pushScope();
 
     ASTBlock newBlock(position());
@@ -162,8 +158,6 @@ void ASTForIn::analyse(FunctionAnalyser *analyser) {
     // Class iterators never mutate the variable, which would otherwise warn about a variable the user did not write.
     analyser->scoper().currentScope().getLocalVariable(iteratorVar).mutate(position());
     block_.popScope(analyser);
-    analyser->pathAnalyser().endBranch();
-    analyser->pathAnalyser().finishUncertainBranches();
 }
 
 void ASTForIn::analyseMemoryFlow(MFFunctionAnalyser *analyser) {
