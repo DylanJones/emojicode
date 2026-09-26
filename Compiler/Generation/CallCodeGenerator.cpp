@@ -19,6 +19,13 @@
 
 namespace EmojicodeCompiler {
 
+/// Whether @p calleeType is a reference to a mutable variable, which owns its box. The method called on it may mutate
+/// its value. Protocols do not tell which of their methods mutate, and the value of a box stored in memory other code
+/// owns, like a parameter or this of a method that does not mutate, must not be touched.
+static bool isMutableVariable(const Type &calleeType) {
+    return calleeType.isReference() && calleeType.isMutable();
+}
+
 CallCodeGenerator::CallCodeGenerator(FunctionCodeGenerator *fg, CallType callType) : fg_(fg), callType_(callType) {}
 CallCodeGenerator::~CallCodeGenerator() = default;
 
@@ -56,7 +63,8 @@ llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, 
                 conformance = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
                                                          fg()->buildGetBoxInfoPtr(args.front()));
             }
-            return createDynamicProtocolDispatch(function, args, astArgs.genericArgumentTypes(), conformance);
+            return createDynamicProtocolDispatch(function, args, astArgs.genericArgumentTypes(), conformance,
+                                                 isMutableVariable(type));
         }
         case CallType::None:
             throw std::domain_error("CallType::None is not a valid call type");
@@ -135,7 +143,8 @@ llvm::Value *MultiprotocolCallCodeGenerator::generate(llvm::Value *callee, const
         conformance = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
                                                  fg()->builder().CreateConstGEP2_32(mpt, mpl, 0, multiprotocolN));
     }
-    return createDynamicProtocolDispatch(function, std::move(argsv), args.genericArgumentTypes(), conformance);
+    return createDynamicProtocolDispatch(function, std::move(argsv), args.genericArgumentTypes(), conformance,
+                                         isMutableVariable(calleeType));
 }
 
 llvm::Value *CallCodeGenerator::dispatchFromVirtualTable(Function *function, llvm::Value *virtualTable,
@@ -172,19 +181,23 @@ llvm::Value *CallCodeGenerator::createDynamicDispatch(Function *function, const 
 
 llvm::Value *CallCodeGenerator::createDynamicProtocolDispatch(Function *function, std::vector<llvm::Value *> args,
                                                               const std::vector<Type> &genericArgs,
-                                                              llvm::Value *conformance) {
-    args.front() = getProtocolCallee(args, conformance);
+                                                              llvm::Value *conformance, bool uniqueBox) {
+    args.front() = getProtocolCallee(args, conformance, uniqueBox);
 
     auto tablePtr = fg()->builder().CreateConstGEP2_32(fg()->typeHelper().protocolConformance(), conformance, 0, 1);
     auto table = fg()->builder().CreateLoad(fg()->typeHelper().pointer(), tablePtr, "table");
     return dispatchFromVirtualTable(function, table, args, genericArgs);
 }
 
-llvm::Value *CallCodeGenerator::getProtocolCallee(std::vector<Value *> &args, llvm::Value *conformance) const {
+llvm::Value *CallCodeGenerator::getProtocolCallee(std::vector<Value *> &args, llvm::Value *conformance,
+                                                  bool uniqueBox) const {
     auto shouldLoadPtr = fg()->builder().CreateConstGEP2_32(fg()->typeHelper().protocolConformance(),
                                                             conformance, 0, 0);
     auto shouldLoad = fg()->builder().CreateLoad(llvm::Type::getInt1Ty(fg()->ctx()), shouldLoadPtr, "shouldLoad");
-    return fg()->createIfElsePhi(shouldLoad, [this, &args]() {
+    return fg()->createIfElsePhi(shouldLoad, [this, &args, conformance, uniqueBox]() {
+        if (uniqueBox) {
+            fg()->makeBoxValueUnique(conformance, args.front());
+        }
         return fg()->builder().CreateLoad(fg()->typeHelper().pointer(), fg()->buildGetBoxValuePtr(args.front()));
     }, [this, &args]() {
         return fg()->buildGetBoxValuePtr(args.front());
