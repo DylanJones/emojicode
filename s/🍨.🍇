@@ -536,7 +536,9 @@
   Iterator over a [[🍨]].
 
   Being a value type whose methods are inlined, iterating a list with 🔂
-  compiles to a loop over the list's storage.
+  compiles to a loop over the list's storage. Like other values, a copy of an
+  iterator is independent of it: iterating one copy does not advance the
+  others.
 📗
 🌍 🕊 🎠🐚Element ⚪🍆️ 🍇
   🐊 🍡🐚Element🍆
