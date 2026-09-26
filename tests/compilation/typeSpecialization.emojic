@@ -138,26 +138,82 @@
   🍉
 🍉
 
-💭 Stores an optional T, which specialized methods do not support, so they are not specialized.
-🕊 🎀🐚T ⚪🍆 🍇
+💭 Stores an optional T boxed, like T.
+🕊 🎀🐚T 📦🍆 🍇
   🖍🆕 value T
   🖍🆕 spare 🍬T
   🆕 🍼 value T 🍇
     🤷‍♀️ ➡️ 🖍spare
   🍉
-  ❗️ 🔓 ➡️ T 🍇
-    ↩️ value
+  ❗️ 🧮 ➡️ 🔢 🍇
+    ↪️ spare ➡️ s 🍇
+      ↩️ 📏 value❗️ ➕ 📏 s❗️
+    🍉
+    ↩️ 📏 value❗️
+  🍉
+  ❗️ 🔀 ➡️ 🍬T 🍇
+    ↩️ spare
+  🍉
+  🖍❗️ 🔄 new T 🍇
+    value ➡️ 🖍spare
+    new ➡️ 🖍value
+  🍉
+  🖍❗️ 🧹 🍇
+    🤷‍♀️ ➡️ 🖍spare
   🍉
 🍉
 
-💭 Stores a closure that takes a boxed T, so its methods are not specialized.
-🕊 🏭🐚T ⚪🍆 🍇
+💭 Stores callables, which take and return T boxed, so specialized methods call them like generic code.
+🕊 🏭🐚T 📦🍆 🍇
   🖍🆕 make 🍇🔢➡️T🍉
-  🆕 🍼 make 🍇🔢➡️T🍉 🍇🍉
-  ❗️ 🔨 n 🔢 ➡️ T 🍇
-    ↩️ ⁉️ make n❗️
+  🖍🆕 check 🍇T➡️🔢🍉
+  🆕 🍼 make 🍇🔢➡️T🍉 🍼 check 🍇T➡️🔢🍉 🍇🍉
+  ❗️ 🔨 n 🔢 ➡️ 🔢 🍇
+    ⁉️ make n❗️ ➡️ made
+    ↩️ 📏 made❗️ ➕ ⁉️ check made❗️
+  🍉
+  🖍❗️ 🔧 🍇
+    make ➡️ old
+    🍇🎍🥡 n 🔢 ➡️ T
+      ↩️ ⁉️ old n ✖️ 2❗️
+    🍉 ➡️ 🖍make
   🍉
 🍉
+
+💭 Its initializers are specialized too.
+🕊 🔳🐚T 🔼🍆 🍇
+  🖍🆕 first T
+  🖍🆕 values 🍨🐚T🍆
+  🖍🆕 count 🔢 ⬅️ 100
+
+  🆕 🍼 first T 🍇
+    🍿 first 🍆 ➡️ 🖍values
+  🍉
+
+  🆕 ▶️🔃 value T times 🔢 🍇
+    value ➡️ 🖍first
+    🍿🍆 ➡️ 🖍values
+    🔂 i 🆕⏩ 0 times❗️ 🍇
+      🐻values value❗️
+    🍉
+    📏 value❗️ ➡️ 🖍count
+  🍉
+
+  🆕 ▶️🔀🐚U 🔼🍆 value T other U 🍇
+    value ➡️ 🖍first
+    🍿 value 🍆 ➡️ 🖍values
+    📏 other❗️ ➡️ 🖍count
+  🍉
+
+  ❗️ 🧮 ➡️ 🔢 🍇
+    0 ➡️ 🖍🆕 sum
+    🔂 value values 🍇
+      sum ⬅️➕ 📏 value❗️
+    🍉
+    ↩️ sum ➕ 📏 first❗️ ➕ count
+  🍉
+🍉
+
 
 💭 Class methods are not specialized, so this reads values that specialized methods stored.
 🐇 🗄 🍇
@@ -202,6 +258,24 @@
   😀 🔡 🆙lime❗️❗️❗️
   😀 🔡 🆙lemon❗️❗️❗️
 
-  😀 🔓🆕🎀🐚🔡🍆 🔤boxed🔤❗️❗️❗️
-  😀 🔨🆕🏭🐚🔡🍆 🍇🎍🥡 n 🔢 ➡️ 🔡 ↩️ 🔡 n❗️ 🍉❗️ 7❗️❗️
+  🆕🎀🐚🍎🍆 🆕🍎 2❗️❗️ ➡️ 🖍🆕 ribbon
+  😀 🔡 🧮ribbon❗️❗️❗️
+  🔄ribbon 🆕🍎 5❗️❗️
+  😀 🔡 🧮ribbon❗️❗️❗️
+  ↪️ 🔀ribbon❗️ ➡️ spare 🍇
+    😀 🔡 📏 spare❗️❗️❗️
+  🍉
+  🧹ribbon❗️
+  😀 🔡 🧮ribbon❗️❗️❗️
+
+  🆕🏭🐚🍎🍆 🍇🎍🥡 n 🔢 ➡️ 🍎 ↩️ 🆕🍎 n❗️ 🍉 🍇🎍🥡 a 🍎 ➡️ 🔢 ↩️ 📏 a❗️ ✖️ 100 🍉❗️ ➡️ 🖍🆕 factory
+  😀 🔡 🔨factory 3❗️❗️❗️
+  🔧factory❗️
+  😀 🔡 🔨factory 3❗️❗️❗️
+
+  😀 🔡 🧮🆕🔳🐚🍋🍆 🆕🍋 1❗️❗️❗️❗️❗️
+  😀 🔡 🧮🆕🔳🐚🍋🍆 ▶️🔃 🆕🍋 2❗️ 3❗️❗️❗️❗️
+  😀 🔡 🧮🆕🔳🐚🍋🍆 ▶️🔀 🆕🍋 4❗️ 🆕🍋 1000❗️❗️❗️❗️❗️
+  🆕🔳🐚🐟🍆 ▶️🔃 🆕🐟 🔤fish🔤 6❗️ 2❗️ ➡️ fishes
+  😀 🔡 🧮fishes❗️❗️❗️
 🍉

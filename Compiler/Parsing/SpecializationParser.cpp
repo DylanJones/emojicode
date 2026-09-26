@@ -9,6 +9,7 @@
 #include "Emojis.h"
 #include "FunctionParser.hpp"
 #include "Functions/Function.hpp"
+#include "Functions/Initializer.hpp"
 #include "Lex/Lexer.hpp"
 #include "Lex/TokenStream.hpp"
 
@@ -27,8 +28,12 @@ void SpecializationParser::skipToName(const SourcePosition &position) {
     while (stream_.hasMoreTokens()) {
         auto token = stream_.consumeToken();
         if (token.position().line == position.line && token.position().character == position.character) {
-            // A method is declared at the token of its mood, which its name follows, unless it is an operator.
-            if (token.type() != TokenType::Operator) {
+            // An initializer is declared at 🆕, which its name can follow, and a method at the token of its mood,
+            // which its name follows, unless it is an operator.
+            if (token.type() == TokenType::New) {
+                parseInitializerName();
+            }
+            else if (token.type() != TokenType::Operator) {
                 stream_.consumeToken();
             }
             return;
@@ -54,9 +59,12 @@ void SpecializationParser::skipGenericParameters() {
 }
 
 void SpecializationParser::parseFunction(Function *specialization) {
+    auto initializer = dynamic_cast<Initializer *>(specialization) != nullptr;
     skipGenericParameters();
-    parseParameters(specialization, false);
-    parseReturnType(specialization);
+    parseParameters(specialization, initializer);
+    if (!initializer) {
+        parseReturnType(specialization);
+    }
     parseErrorType(specialization);
     stream_.consumeToken(TokenType::BlockBegin);
     specialization->setAst(FunctionParser(package_, stream_).parse());

@@ -41,7 +41,12 @@ Type ASTInitialization::analyse(ExpressionAnalyser *analyser) {
         initializer_ = init;
     }
 
-    analyser->analyseFunctionCall(&args_, type, init);
+    if (initType_ == InitType::ValueType) {
+        analyser->analyseFunctionCall(&args_, type, init, &initializer_);
+    }
+    else {
+        analyser->analyseFunctionCall(&args_, type, init);
+    }
     ensureErrorIsHandled(analyser);
     if (type.type() == TypeType::ValueType && type.valueType()->declaresCRepresentation() &&
         init->externalName() == "ejcBuiltIn") {
