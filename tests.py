@@ -55,6 +55,7 @@ compilation_tests = [
     "protocolValueType",
     "forInVariableReuse",
     "valueTypeIterator",
+    "listIterator",
     "protocolValueTypeRemote",
     "protocolEnum",
     "protocolGenericLayerClass",
