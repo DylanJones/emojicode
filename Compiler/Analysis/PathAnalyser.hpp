@@ -41,6 +41,9 @@ public:
     PathAnalyserIncident(bool inInstance, size_t id) : type_(inInstance ? PathAnalyserIncident::InstanceVarInit :
                                                              PathAnalyserIncident::VariableInit), value_(id) {}
 
+    /// Whether this is the initialization of the local variable with the ID @p id.
+    bool initializes(size_t id) const { return type_ == VariableInit && value_ == id; }
+
     inline bool operator<(const PathAnalyserIncident &rhs) const {
         if (type_ < rhs.type_) return true;
         if ((type_ == VariableInit && rhs.type_ == VariableInit) ||
@@ -98,6 +101,10 @@ public:
     /// @throws CompilerError
     void uninitalizedError(const ResolvedVariable &rvar, const SourcePosition &p) const;
 
+    /// Forgets the initializations of the local variables with @p ids in the current branch, e.g. as their scope ended.
+    /// Variables declared later reuse the IDs, and must not be considered initialized.
+    void forgetVariables(const std::set<size_t> &ids) { forgetVariables(currentBranch_, ids); }
+
     /// Determines if the incident described by `incident` has certainly occured until now.
     bool hasCertainly(PathAnalyserIncident incident) const;
     /// Determines if the incident described by `incident` has probably occured until now.
@@ -111,6 +118,7 @@ public:
     }
 
 private:
+    void forgetVariables(Branch *branch, const std::set<size_t> &ids);
     void copyPotentialIncidents();
     void copyCertainIncidents();
 

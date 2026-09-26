@@ -34,6 +34,10 @@ void PackageCreator::generate() {
     for (auto &klass : package_->classes()) {
         createClass(klass.get());
     }
+    // The generic arguments of a specialization can be any type, which must have been created to declare it.
+    for (auto &specialization : package_->specializations()) {
+        createFunction(specialization.get());
+    }
     for (auto &function : package_->functions()) {
         createFunction(function.get());
     }
@@ -139,6 +143,7 @@ void ImportedPackageCreator::createDestructorRetain(ValueType *valueType) {}
 void PackageCreator::createBoxInfo(ValueType *valueType) {
     valueType->setBoxInfo(generator_->runTime().declareBoxInfo(mangleBoxInfoName(Type(valueType))));
     valueType->setBoxRetainRelease(buildBoxRetainRelease(generator_, Type(valueType)));
+    valueType->setBoxMakeUnique(buildBoxMakeUnique(generator_, Type(valueType)));
     createProtocolTables(Type(valueType));
     valueType->boxInfo()->setInitializer(llvm::ConstantStruct::get(generator_->typeHelper().boxInfo(), {
         generator_->runTime().createRtti(valueType, generator_->typeHelper().isRemote(Type(valueType)) ?

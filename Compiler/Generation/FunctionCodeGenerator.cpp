@@ -344,6 +344,31 @@ llvm::Value* FunctionCodeGenerator::stackAlloc(llvm::Type *type) {
     return object;
 }
 
+void FunctionCodeGenerator::makeRemoteBoxValueUnique(llvm::Value *box, const Type &type) {
+    auto llvmType = typeHelper().llvmTypeFor(type);
+    auto mngType = typeHelper().managable(llvmType);
+    auto valuePtrPtr = buildGetBoxValuePtr(box);
+    auto objectPtr = buildGetBoxValuePtrAfter(box, typeHelper().pointer(), typeHelper().pointer());
+    auto object = builder().CreateLoad(typeHelper().pointer(), objectPtr);
+    auto isUnique = builder().CreateCall(generator()->runTime().isOnlyReference(), object);
+    createIf(builder().CreateNot(isUnique), [&] {
+        // The contents of the value are not retained, as this box's references to them move to the copy.
+        auto value = builder().CreateLoad(llvmType, builder().CreateLoad(typeHelper().pointer(), valuePtrPtr));
+        builder().CreateStore(value, buildSetRemoteBoxObject(box, mngType, alloc(mngType)));
+        builder().CreateCall(generator()->runTime().releaseWithoutDeinit(), object);
+    });
+}
+
+llvm::Value* FunctionCodeGenerator::buildSetRemoteBoxObject(llvm::Value *box, llvm::StructType *managable,
+                                                            llvm::Value *object) {
+    auto valuePtr = managableGetValuePtr(managable, object);
+    // The first element in the value area is a direct pointer to the struct.
+    builder().CreateStore(valuePtr, buildGetBoxValuePtr(box));
+    // The second is a pointer to the object for management.
+    builder().CreateStore(object, buildGetBoxValuePtrAfter(box, typeHelper().pointer(), typeHelper().pointer()));
+    return valuePtr;
+}
+
 llvm::Value* FunctionCodeGenerator::managableGetValuePtr(llvm::StructType *managable, llvm::Value *managablePtr) {
     return builder().CreateConstInBoundsGEP2_32(managable, managablePtr, 0, 1);
 }
@@ -361,7 +386,15 @@ void TemporaryObjectsManager::releaseTemporaryObjects(FunctionCodeGenerator *fg,
     if (temporaryObjects_.empty()) return;
     auto end = skipLast ? temporaryObjects_.end() - 1 : temporaryObjects_.end();
     for (auto it = temporaryObjects_.begin(); it < end; it++) {
-        fg->release(it->value, it->type);
+        if (it->remoteObject) {
+            auto object = fg->builder().CreateLoad(fg->typeHelper().pointer(), it->value);
+            fg->createIf(fg->builder().CreateIsNotNull(object), [&] {
+                fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), object);
+            });
+        }
+        else {
+            fg->release(it->value, it->type);
+        }
     }
     if (clearQueue) {
         temporaryObjects_.clear();
@@ -446,6 +479,16 @@ void FunctionCodeGenerator::retain(llvm::Value *value, const Type &otype) {
             manageBox(true, boxInfo, value, type);
         }
     }
+}
+
+void FunctionCodeGenerator::makeBoxValueUnique(llvm::Value *conformance, llvm::Value *box) {
+    auto fnPtr = builder().CreateConstInBoundsGEP2_32(typeHelper().protocolConformance(), conformance, 0, 5);
+    auto fn = builder().CreateLoad(typeHelper().pointer(), fnPtr, "makeUnique");
+    createIf(builder().CreateIsNotNull(fn), [&] {
+        auto call = builder().CreateCall(typeHelper().boxRetainRelease(), fn, box);
+        call->addParamAttr(0, llvm::Attribute::getWithCaptureInfo(call->getContext(), llvm::CaptureInfo::none()));
+        call->addFnAttr(llvm::Attribute::NoUnwind);
+    });
 }
 
 void FunctionCodeGenerator::manageBox(bool retain, llvm::Value *boxInfo, llvm::Value *value, const Type &type) {

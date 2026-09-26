@@ -125,6 +125,8 @@ private:
     std::optional<Candidate<T>> pick();
 
     std::vector<Candidate<T>> candidates_;
+    /// The number of functions declared with the name, mood and number of parameters of the call.
+    size_t overloads_ = 0;
     std::vector<NonCandidate> nonCandidates_;
     std::map<std::pair<Function*, Function*>, bool> moreSpecific_;
 };

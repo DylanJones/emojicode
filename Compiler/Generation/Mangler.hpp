@@ -30,6 +30,7 @@ std::string mangleProtocolRunTimeTypeInfo(Protocol *protocol);
 std::string mangleMultiprotocolConformance(const Type &multi, const Type &conformer);
 std::string mangleBoxRetain(const Type &type);
 std::string mangleBoxRelease(const Type &type);
+std::string mangleBoxMakeUnique(const Type &type);
 std::string mangleCopyRetain(const Type &type);
 std::string mangleDestructor(const Type &type);
 

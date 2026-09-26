@@ -16,6 +16,8 @@
 #include "MemoryFlowAnalysis/MFFlowCategory.hpp"
 #include <memory>
 #include <utility>
+#include <map>
+#include <optional>
 #include <vector>
 
 namespace llvm {
@@ -24,6 +26,8 @@ class FunctionType;
 }  // namespace llvm
 
 namespace EmojicodeCompiler {
+
+class Scope;
 
 class ASTBlock;
 class ASTType;
@@ -112,6 +116,12 @@ public:
 
     bool unsafe() const { return unsafe_; }
 
+    /// Whether a call to this function never returns. Only 🤯 of 💻 never returns, which the compiler knows (see
+    /// Compiler::assignSTypes()). It cannot be declared, as a function declared so that did return would be undefined
+    /// behavior.
+    bool neverReturns() const { return neverReturns_; }
+    void setNeverReturns() { neverReturns_ = true; }
+
     /// Whether the function uses the C calling convention (🎍🌊). Such a function has no hidden parameters and
     /// only C types in its signature.
     bool isC() const { return c_; }
@@ -166,6 +176,16 @@ public:
     /// written in a function or is a C function (🎍🌊). The code of a closure may use the generic parameters of the functions enclosing it.
     Function* enclosingFunction() const { return enclosingFunction_; }
     void setEnclosingFunction(Function *function) { enclosingFunction_ = function; }
+    /// Returns the specialization that this function is or in which this closure is written, possibly nested in other
+    /// closures, or nullptr if there is none.
+    const Function* enclosingSpecialization() const {
+        for (auto f = this; f != nullptr; f = f->enclosingFunction_) {
+            if (f->specializedFunction_ != nullptr) {
+                return f;
+            }
+        }
+        return nullptr;
+    }
     /// Whether this is @p function or a closure written, possibly nested in other closures, in @p function.
     bool isWithin(const Function *function) const {
         for (auto f = this; f != nullptr; f = f->enclosingFunction_) {
@@ -182,7 +202,27 @@ public:
     void setMemoryFlowAnalysed() { memoryFlowAnalysed_ = true; }
     void setMemoryFlowTypeForThis(MFFlowCategory type) { memoryFlowTypeThis_ = type; }
 
-    /// Whether this initializer might return an error.
+    /// The generic function of which this function is a specialization, or nullptr if it is not one.
+    /// A specialization is a copy of a generic function whose code is analysed with concrete generic arguments, so
+    /// that it neither boxes values of generic types nor dispatches their methods dynamically.
+    Function* specializedFunction() const { return specializedFunction_; }
+    /// The generic arguments with which the specialized function is specialized by this function.
+    const std::vector<Type>& specializationArguments() const { return specializationArguments_; }
+    void setSpecializationOf(Function *function, std::vector<Type> arguments) {
+        specializedFunction_ = function;
+        specializationArguments_ = std::move(arguments);
+    }
+    /// Returns a function declared like this one, but without parameters, return type or body, which a specialization
+    /// of this function is made from.
+    virtual std::unique_ptr<Function> makeSpecialization() const;
+
+    /// Makes this function, a specialization of a method of a generic type, a function of @p calleeType, the type with
+    /// the concrete generic arguments, with @p instanceScope, whose variables have types resolved on @p calleeType.
+    void setSpecializedCallee(Type calleeType, std::unique_ptr<Scope> instanceScope);
+    /// The instance scope of this function if it has its own, see setSpecializedCallee(), or nullptr.
+    Scope* instanceScope() const { return instanceScope_.get(); }
+
+    /// Whether this function might raise an error.
     bool errorProne() const { return errorType_ != nullptr && errorType_->type().type() != TypeType::NoReturn; }
     ASTType* errorType() const { return errorType_.get(); }
     void setErrorType(std::unique_ptr<ASTType> type) { errorType_ = std::move(type); }
@@ -200,6 +240,7 @@ private:
     Mood mood_;
     bool unsafe_;
     bool forceInline_ = false;
+    bool neverReturns_ = false;
     bool thunk_ = false;
 
     bool mutating_;
@@ -212,6 +253,10 @@ private:
     Function *virtualTableThunk_ = nullptr;
     Function *superFunction_ = nullptr;
     Function *enclosingFunction_ = nullptr;
+    Function *specializedFunction_ = nullptr;
+    std::vector<Type> specializationArguments_;
+    std::optional<Type> specializedCalleeType_;
+    std::unique_ptr<Scope> instanceScope_;
 
     std::string externalName_;
     AccessLevel access_;

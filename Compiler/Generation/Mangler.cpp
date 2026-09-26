@@ -32,8 +32,20 @@ void mangleIdentifier(std::stringstream &stream, const std::u32string &string) {
     }
 }
 
-void mangleTypeName(std::stringstream &stream, const Type &typeb) {
+/// Mangles @p typeb. If @p withGenericArguments, the generic arguments of the types it is composed of are mangled too
+/// and every type it is composed of is delimited, so that the name identifies the type. Otherwise the name is the one
+/// used for the type definition, e.g. in the names of its functions.
+void mangleTypeName(std::stringstream &stream, const Type &typeb, bool withGenericArguments = false) {
     auto type = typeb.unboxed();
+    auto mangleComponent = [&stream, withGenericArguments](const Type &component) {
+        if (withGenericArguments) {
+            stream << '<';
+        }
+        mangleTypeName(stream, component, withGenericArguments);
+        if (withGenericArguments) {
+            stream << '>';
+        }
+    };
     stream << type.typePackage() << ".";
     switch (type.type()) {
         case TypeType::ValueType:
@@ -51,10 +63,14 @@ void mangleTypeName(std::stringstream &stream, const Type &typeb) {
         case TypeType::Callable:
             stream << (type.isCCallable() ? "ccallable_" : "callable_");
             for (auto it = type.parameters(); it < type.parametersEnd(); it++) {
-                mangleTypeName(stream, *it);
+                mangleComponent(*it);
             }
             stream << "__";
-            mangleTypeName(stream, type.returnType());
+            mangleComponent(type.returnType());
+            if (withGenericArguments && type.errorType().type() != TypeType::NoReturn) {
+                stream << "__";
+                mangleComponent(type.errorType());
+            }
             return;
         case TypeType::NoReturn:
             stream << "no_return";
@@ -67,16 +83,16 @@ void mangleTypeName(std::stringstream &stream, const Type &typeb) {
             return;
         case TypeType::Optional:
             stream << "op_";
-            mangleTypeName(stream, type.unoptionalized());
+            mangleComponent(type.unoptionalized());
             return;
         case TypeType::TypeAsValue:
             stream << "tv_";
-            mangleTypeName(stream, type.typeOfTypeValue());
+            mangleComponent(type.typeOfTypeValue());
             return;
         case TypeType::MultiProtocol:
             stream << "mp_";
             for (auto &proto : type.protocols()) {
-                mangleTypeName(stream, proto);
+                mangleComponent(proto);
             }
             return;
         case TypeType::Something:
@@ -96,6 +112,11 @@ void mangleTypeName(std::stringstream &stream, const Type &typeb) {
             throw std::logic_error("Cannot mangle compile-time type.");
     }
     mangleIdentifier(stream, type.typeDefinition()->name());
+    if (withGenericArguments) {
+        for (auto &argument : type.genericArguments()) {
+            mangleComponent(argument);
+        }
+    }
 }
 
 void mangleGenericArguments(std::stringstream &stream, const std::map<size_t, Type> &genericArgs) {
@@ -145,6 +166,14 @@ std::string mangleFunction(Function *function, const std::map<size_t, Type> &gen
         stream << "_assign";
     }
     mangleGenericArguments(stream, genericArgs);
+    if (function->specializedFunction() != nullptr) {
+        stream << "$s";
+        for (auto &argument : function->specializationArguments()) {
+            stream << '<';
+            mangleTypeName(stream, argument, true);
+            stream << '>';
+        }
+    }
     for (auto &param : function->parameters()) {
         stream << '-';
         mangleTypeName(stream, param.type->type());
@@ -158,6 +187,10 @@ std::string mangleBoxRetain(const Type &type) {
 
 std::string mangleBoxRelease(const Type &type) {
     return mangleTypeName(type) + ".boxRelease";
+}
+
+std::string mangleBoxMakeUnique(const Type &type) {
+    return mangleTypeName(type) + ".boxMakeUnique";
 }
 
 std::string mangleBoxInfoName(const Type &type) {
@@ -178,10 +211,14 @@ std::string mangleTypeName(const Type &type) {
     return stream.str();
 }
 
+/// The layout of protocol conformances, which is part of their names, so that code expecting another layout, e.g. a
+/// package compiled by an earlier version of the compiler, does not link.
+constexpr int kProtocolConformanceLayout = 2;
+
 std::string mangleProtocolConformance(const Type &type, const Type &protocol) {
     std::stringstream stream;
     mangleTypeName(stream, type);
-    stream << ".conformances.";
+    stream << ".conformances" << kProtocolConformanceLayout << ".";
     mangleTypeName(stream, protocol);
     return stream.str();
 }

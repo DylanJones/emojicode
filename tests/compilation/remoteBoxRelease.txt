@@ -1,0 +1,20 @@
+1
+deinit
+passed to a generic method
+2
+deinit
+passed as a protocol
+30
+deinit
+first
+50
+3
+end
+deinit
+second
+deinit
+third
+deinit
+optional
+deinit
+stored

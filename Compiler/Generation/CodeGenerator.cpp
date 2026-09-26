@@ -137,7 +137,7 @@ void CodeGenerator::emit(bool ir, const std::string &outPath) {
         passBuilder.crossRegisterProxies(lam, fam, cgam, mam);
 
         llvm::ModulePassManager pass;
-        pass.addPass(llvm::VerifierPass(false));
+        pass.addPass(llvm::VerifierPass(true));
         pass.addPass(llvm::createModuleToFunctionPassAdaptor(llvm::PromotePass()));
         pass.addPass(llvm::StripDeadPrototypesPass());
         pass.run(*module(), mam);
@@ -145,7 +145,7 @@ void CodeGenerator::emit(bool ir, const std::string &outPath) {
     }
     else {
         llvm::legacy::PassManager pass;
-        pass.add(llvm::createVerifierPass(false));
+        pass.add(llvm::createVerifierPass(true));
         if (targetMachine_->addPassesToEmitFile(pass, dest, nullptr, llvm::CodeGenFileType::ObjectFile)) {
             throw std::domain_error("TargetMachine can't emit a file of this type");
         }
@@ -167,6 +167,9 @@ void CodeGenerator::generateFunctions(Package *package, bool imported) {
     }
     for (auto &function : package->functions()) {
         generateFunction(function.get());
+    }
+    for (auto &specialization : package->specializations()) {
+        generateFunction(specialization.get());
     }
 }
 
@@ -208,6 +211,10 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
     fn->addFnAttr(llvm::Attribute::NoUnwind);
     if (function->isInline()) {
         fn->addFnAttr(llvm::Attribute::InlineHint);
+    }
+    if (function->neverReturns()) {
+        fn->addFnAttr(llvm::Attribute::NoReturn);
+        fn->addFnAttr(llvm::Attribute::Cold);
     }
 
     size_t i = function->isClosure() && !function->isC() ? 1 : 0;
@@ -396,6 +403,10 @@ llvm::Function::LinkageTypes CodeGenerator::linkageForFunction(Function *functio
     }
     if (function->isInline() && function->package()->isImported()) {
         return llvm::Function::AvailableExternallyLinkage;
+    }
+    // Every module that uses a specialization creates its own.
+    if (function->specializedFunction() != nullptr) {
+        return llvm::Function::InternalLinkage;
     }
     if ((function->accessLevel() == AccessLevel::Private && !function->isExternal() &&
          (function->owner() == nullptr || !function->owner()->exported())) || function->isClosure()) {

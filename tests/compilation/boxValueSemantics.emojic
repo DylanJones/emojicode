@@ -1,0 +1,70 @@
+🐊 🔼 🍇
+  ❗️ ⬆️ ➡️ 🔢
+🍉
+
+🐇 🐡 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ♻️ 🍇
+    😀 🔤deinit🔤❗️
+    😀 name❗️
+  🍉
+🍉
+
+💭 Too large to be stored in a box, so copies of a box share the object on the heap that stores it.
+🕊 🐘 🍇
+  🐊 🔼
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 d 🔢
+  🖍🆕 fish 🐡
+  🆕 🍼 a 🔢 name 🔡 🍇
+    0 ➡️ 🖍b
+    0 ➡️ 🖍c
+    0 ➡️ 🖍d
+    🆕🐡 name❗️ ➡️ 🖍fish
+  🍉
+  🖍❗️ ⬆️ ➡️ 🔢 🍇
+    a ⬅️➕ 1
+    ↩️ a
+  🍉
+🍉
+
+🕊 🎁🐚T 🔼🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+  🖍❗️ 🆙 ➡️ 🔢 🍇
+    ↩️ ⬆️value❗️
+  🍉
+🍉
+
+💭 Class methods are not specialized, so this mutates through protocol calls.
+🐇 🧰 🍇
+  🐇❗️ 🆙🐚T 🔼🍆 value T ➡️ 🔢 🍇
+    value ➡️ 🖍🆕 copy
+    ⬆️copy❗️
+    ↩️ ⬆️value❗️
+  🍉
+🍉
+
+🏁 🍇
+  🖍🆕 p 🔼
+  🆕🐘 1 🔤protocol🔤❗️ ➡️ 🖍p
+  🖍🆕 q 🔼
+  p ➡️ 🖍q
+  q ➡️ 🖍🆕 r
+  😀 🔡 ⬆️p❗️❗️❗️
+  😀 🔡 ⬆️q❗️❗️❗️
+  😀 🔡 ⬆️p❗️❗️❗️
+  😀 🔡 ⬆️r❗️❗️❗️
+
+  🆕🎁🐚🐘🍆 🆕🐘 10 🔤generic🔤❗️❗️ ➡️ 🖍🆕 a
+  a ➡️ 🖍🆕 b
+  😀 🔡 🆙a❗️❗️❗️
+  😀 🔡 🆙b❗️❗️❗️
+  😀 🔡 🆙a❗️❗️❗️
+
+  😀 🔡 🆙🐇🧰 🆕🐘 30 🔤erased🔤❗️❗️❗️❗️
+  😀 🔤end🔤❗️
+🍉

@@ -133,6 +133,7 @@ void FunctionResolution<T>::addResolver(const FunctionResolver<T> *res) {
     for (; res != nullptr; res = res->super_) {
         auto pos = res->map_.find(key_);
         if (pos != res->map_.end()) {
+            overloads_ += pos->second.size();
             for (auto &fn : pos->second) {
                 if (blocked.find(fn.get()) != blocked.end()) {
                     if (fn->overriding()) {
@@ -220,6 +221,11 @@ std::optional<Candidate<T>> FunctionResolution<T>::pick() {
 
 template <typename T>
 T* FunctionResolution<T>::resolveAndReificate(ASTArguments *args, Type *type) {
+    auto caller = typeContext_.function();
+    if (overloads_ > 1 && caller != nullptr && caller->enclosingSpecialization() != nullptr) {
+        // With concrete types in place of generic parameters, another overload could be chosen than in generic code.
+        throw CompilerError(p_, "A specialization cannot call an overloaded function.");
+    }
     auto candidate = resolve();
     if (!candidate.has_value()) {
         return nullptr;

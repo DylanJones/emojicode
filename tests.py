@@ -4,6 +4,7 @@ import os
 import dist
 import sys
 import re
+import tempfile
 
 quick = len(sys.argv) > 1 and sys.argv[1] == 'quick'
 valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
@@ -35,6 +36,7 @@ compilation_tests = [
     "optionalParameter",
     "returnInBlock",
     "returnInIf",
+    "forInVariableReuse",
     "identityOperator",
     "typesAsValues",
     "class",
@@ -55,6 +57,14 @@ compilation_tests = [
     "protocolClass",
     "protocolSubclass",
     "protocolValueType",
+    "valueTypeIterator",
+    "listIterator",
+    "specialization",
+    "typeSpecialization",
+    "specializationFallback",
+    "specializationScoping",
+    "specializationMangling",
+    "directCalls",
     "protocolValueTypeRemote",
     "protocolEnum",
     "protocolGenericLayerClass",
@@ -73,6 +83,8 @@ compilation_tests = [
     "genericToConstraintOptional",
     "genericsInferenceValueType",
     "genericsInferenceClass",
+    "genericRecursion",
+    "optionalGenericField",
     "variableInitAndScoping",
     "varInitPath",
     "valueTypeRemoteAdditional",
@@ -93,6 +105,9 @@ compilation_tests = [
     "errorHandlerDiscardMem",
     "valueTypeCopySelf",
     "valueTypeBoxCopySelf",
+    "remoteBoxRelease",
+    "boxValueSemantics",
+    "borrowedBoxes",
     "includer",
     "threads",
     "linkHints",
@@ -150,6 +165,35 @@ library_tests = [
     "jsonTest",
     "fileTest"
 ]
+# Compilation tests that are also compiled and run without optimizations, which inline code that tests otherwise
+# only test inlined.
+unoptimized_tests = [
+    "valueTypeIterator",
+    "listIterator",
+    "specialization",
+    "typeSpecialization",
+    "specializationFallback",
+    "specializationScoping",
+    "remoteBoxRelease",
+    "boxValueSemantics",
+    "borrowedBoxes",
+]
+# Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
+# NAME.specializations. A function that is not specialized, but called generically, does not change what a program
+# prints.
+specialization_tests = [
+    "specialization",
+    "typeSpecialization",
+    "specializationScoping",
+    "specializationMangling",
+    "genericRecursion",
+]
+# Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions
+# whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies. Lines
+# starting with # are comments.
+ir_tests = [
+    "directCalls",
+]
 # Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
 host_tests = [
     "ffiHostLib",
@@ -192,15 +236,57 @@ def library_test(name):
         print(completed.stdout.decode('utf-8'))
 
 
-def compilation_test(name):
+def compilation_test(name, optimize=True):
     source_path, binary_path = test_paths(name, 'compilation')
-    run([emojicodec, source_path, '-O'], check=True)
+    run([emojicodec, source_path] + (['-O'] if optimize else []), check=True)
     completed = run([binary_path], stdout=PIPE)
     exp_path = os.path.join(dist.source, "tests", "compilation", name + ".txt")
     output = completed.stdout.decode('utf-8')
     if output != open(exp_path, "r", encoding='utf-8').read() or completed.returncode != 0:
         print(output)
         fail_test(name)
+
+
+def specialization_test(name):
+    source_path = test_paths(name, 'compilation')[0]
+    with tempfile.TemporaryDirectory() as directory:
+        run([emojicodec, source_path, '--emit-llvm', '-o', os.path.join(directory, name)], check=True)
+        ir = open(os.path.join(directory, name + ".ll"), "r", encoding='utf-8').read()
+    specializations = sorted(set(re.findall(r'^define internal [^@]*@"([^"]*\$s<[^"]*)"', ir, re.MULTILINE)))
+    exp_path = os.path.join(dist.source, "tests", "compilation", name + ".specializations")
+    expected = open(exp_path, "r", encoding='utf-8').read().split()
+    if specializations != expected:
+        print("Missing specializations: " + ", ".join(sorted(set(expected) - set(specializations))))
+        print("Unexpected specializations: " + ", ".join(sorted(set(specializations) - set(expected))))
+        fail_test(name + " (specializations)")
+
+
+def ir_test(name):
+    source_path = test_paths(name, 'compilation')[0]
+    with tempfile.TemporaryDirectory() as directory:
+        run([emojicodec, source_path, '--emit-llvm', '-o', os.path.join(directory, name)], check=True)
+        ir = open(os.path.join(directory, name + ".ll"), "r", encoding='utf-8').read()
+    functions = {m.group(1): m.group(2) for m in
+                 re.finditer(r'^define [^\n]*@"?([^"(\s]+)"?\([^\n]*\{\n(.*?)^\}', ir, re.S | re.M)}
+    bodies = []
+    failed = False
+    check_path = os.path.join(dist.source, "tests", "compilation", name + ".ir")
+    for line in open(check_path, "r", encoding='utf-8').read().splitlines():
+        if not line or line.startswith('#'):
+            continue
+        kind, pattern = line[0], line[2:]
+        if kind == '@':
+            bodies = [(n, b) for n, b in functions.items() if re.search(pattern, n)]
+            if not bodies:
+                print("No function matches " + pattern)
+                failed = True
+            continue
+        for function_name, body in bodies:
+            if (re.search(pattern, body) is not None) != (kind == '+'):
+                print("{0}: {1} {2}".format(function_name, "missing" if kind == '+' else "unexpected", pattern))
+                failed = True
+    if failed:
+        fail_test(name + " (IR)")
 
 
 def host_test(name):
@@ -295,6 +381,14 @@ def test():
         run([emojicodec, '--format', source_path], check=True)
         compilation_test('includer')
         os.rename(source_path + '_original', source_path)
+
+    for test in unoptimized_tests:
+        compilation_test(test, optimize=False)
+    for test in specialization_tests:
+        specialization_test(test)
+
+    for test in ir_tests:
+        ir_test(test)
 
     for test in host_tests:
         host_test(test)

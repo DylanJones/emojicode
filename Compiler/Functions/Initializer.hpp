@@ -28,6 +28,14 @@ public:
     /// Whether all subclassess are required to implement this initializer as well. Never true for non-class types.
     bool required() const { return required_; }
 
+    std::unique_ptr<Function> makeSpecialization() const override {
+        auto initializer = std::make_unique<Initializer>(name(), accessLevel(), final(), owner(), package(),
+                                                         position(), false, documentation(), deprecated(), required_,
+                                                         unsafe(), functionType(), isInline());
+        initializer->setMemoryFlowTypeForThis(memoryFlowTypeForThis());
+        return initializer;
+    }
+
     /// Returns the actual type constructed with this initializer for the given initialized type @c type
     Type constructedType(Type type) const {
         return type.unboxed();

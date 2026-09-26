@@ -73,14 +73,18 @@ protected:
     /// Reads a $type$ and fetches it
     std::unique_ptr<ASTType> parseType();
 
-    /// Parses $generic-parameters$
+    /// Parses $generic-parameters$ and adds them to @p generic, unless it is null.
     template<typename T, typename E>
     void parseGenericParameters(Generic <T, E> *generic) {
         if (stream_.consumeTokenIf(TokenType::Generic)) {
             while (stream_.nextTokenIsEverythingBut(E_AUBERGINE)) {
                 bool rejectBoxing = stream_.consumeTokenIf(TokenType::Unsafe);
                 auto variable = stream_.consumeToken(TokenType::Variable);
-                generic->addGenericParameter(variable.value(), parseType(), rejectBoxing, variable.position());
+                auto constraint = parseType();
+                if (generic != nullptr) {
+                    generic->addGenericParameter(variable.value(), std::move(constraint), rejectBoxing,
+                                                 variable.position());
+                }
             }
             stream_.consumeToken();
         }
@@ -104,6 +108,11 @@ protected:
     void parseReturnType(Function *function);
 
     bool parseErrorType(Function *function);
+
+    /// Parses the $generic-parameters$, $parameters$, $return-type$ (unless @p initializer is true) and $error-type$ of
+    /// @p function. The generic parameters are only added to @p function if @p addGenericParameters is true.
+    /// @returns Whether an error type was declared.
+    bool parseFunctionSignature(Function *function, bool initializer, bool addGenericParameters = true);
 
     /// Parses an $initializer-name$ or returns
     std::u32string parseInitializerName();

@@ -117,11 +117,20 @@ bool ExpressionAnalyser::storesGenericValuesUnboxed(TypeDefinition *typeDef) con
                                   typeDef == compiler()->cVoidPointer);
 }
 
-Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &type, Function *function) {
+Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &type, Function *function,
+                                             Function **specialization) {
     auto genericArgs = transformTypeAstVector(node->genericArguments(), typeContext());
 
+    function->requestReificationAndCheck(TypeContext(type, function, &genericArgs), genericArgs, node->position());
+    if (specialization != nullptr) {
+        if (auto specialized = semanticAnalyser()->specialize(function, type, genericArgs)) {
+            *specialization = function = specialized;
+            genericArgs.clear();
+            node->clearGenericArguments();
+        }
+    }
+
     TypeContext typeContext = TypeContext(type, function, &genericArgs);
-    function->requestReificationAndCheck(typeContext, genericArgs, node->position());
 
     for (size_t i = 0; i < function->parameters().size(); i++) {
         auto &paramType = function->parameters()[i].type->type();
@@ -159,21 +168,39 @@ Type ExpressionAnalyser::comply(const TypeExpectation &expectation, std::shared_
 
     exprType = upcast(std::move(exprType), expectation, node);
     exprType = callableBox(std::move(exprType), expectation, node);
+    exprType = referenceBoxedVariable(std::move(exprType), expectation, node);
     exprType = box(std::move(exprType), expectation, node);
     return complyReference(std::move(exprType), expectation, node);
 }
 
+bool ExpressionAnalyser::referenceVariable(Type &exprType, std::shared_ptr<ASTExpr> *node) {
+    auto varNode = std::dynamic_pointer_cast<ASTGetVariable>(*node);
+    if (varNode == nullptr) {
+        return false;
+    }
+    exprType.setReference(true);
+    varNode->setReference();
+    varNode->setExpressionType(exprType);
+    return true;
+}
+
+Type ExpressionAnalyser::referenceBoxedVariable(Type exprType, const TypeExpectation &expectation,
+                                                std::shared_ptr<ASTExpr> *node) const {
+    // A reference to the value in a boxed variable, e.g. an instance variable of a generic type in a specialization,
+    // must point into the box. box() would otherwise copy the value out, so that a mutation would be lost.
+    if (!exprType.isReference() && expectation.isReference() && exprType.storageType() == StorageType::Box &&
+        expectation.simplifyType(exprType) == StorageType::Simple && exprType.unboxed().isReferenceUseful()) {
+        referenceVariable(exprType, node);
+    }
+    return exprType;
+}
+
 Type ExpressionAnalyser::complyReference(Type exprType, const TypeExpectation &expectation,
                                            std::shared_ptr<ASTExpr> *node) const {
-    if (!exprType.isReference() && expectation.isReference() && exprType.isReferenceUseful()) {
+    if (!exprType.isReference() && expectation.isReference() && exprType.isReferenceUseful() &&
+        !referenceVariable(exprType, node)) {
         exprType.setReference(true);
-        if (auto varNode = std::dynamic_pointer_cast<ASTGetVariable>(*node)) {
-            varNode->setReference();
-            varNode->setExpressionType(exprType);
-        }
-        else {
-            insertNode<ASTStoreTemporarily>(node, exprType);
-        }
+        insertNode<ASTStoreTemporarily>(node, exprType);
     }
     return exprType;
 }

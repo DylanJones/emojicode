@@ -1,0 +1,30 @@
+💭 Specializations for types that differ only in nested generic arguments or error types must be distinct.
+🐇 🐫 🚧 🍇
+🍉
+🐇 🦒 🚧 🍇
+🍉
+
+🕊 🧰 🍇
+  🆕 🍇🍉
+
+  🐇❗️ 🔮🐚T ⚪🍆 x T ➡️ 🔢 🍇
+    ↩️ 1
+  🍉
+
+  💭 Never called, as values of multiprotocols are not fully supported, but its calls are specialized anyway.
+  🐇❗️ 🙈 a 🍱🍡🐚🔢🍆🔂🐚🔢🍆🍱 b 🍱🍡🐚🔡🍆🔂🐚🔡🍆🍱 🍇
+    😀 🔡 🔮🐚🍱🍡🐚🔢🍆🔂🐚🔢🍆🍱🍆🕊🧰 a❗️❗️❗️
+    😀 🔡 🔮🐚🍱🍡🐚🔡🍆🔂🐚🔡🍆🍱🍆🕊🧰 b❗️❗️❗️
+  🍉
+🍉
+
+🏁 🍇
+  🍇 ➡️ 🔢 🚧🐫
+    ↩️ 1
+  🍉 ➡️ camel
+  🍇 ➡️ 🔢 🚧🦒
+    ↩️ 2
+  🍉 ➡️ giraffe
+  😀 🔡 🔮🕊🧰 camel❗️❗️❗️
+  😀 🔡 🔮🕊🧰 giraffe❗️❗️❗️
+🍉

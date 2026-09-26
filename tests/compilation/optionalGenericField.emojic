@@ -1,0 +1,57 @@
+🕊 🍋 🍇
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔡 n❗️
+  🍉
+🍉
+
+🕊 🎁🐚T ⚪🍆 🍇
+  🖍🆕 spare 🍬T
+
+  🆕 🍼 spare 🍬T 🍇🍉
+
+  ❗️ 🔓 ➡️ T 🍇
+    ↩️ 🍺spare
+  🍉
+
+  ❗️ 🔍 ➡️ 👌 🍇
+    ↪️ spare ➡️ value 🍇
+      ↩️ 👍
+    🍉
+    ↩️ 👎
+  🍉
+
+  ❗️ 🔀 ➡️ 🍬T 🍇
+    ↩️ spare
+  🍉
+
+  🖍❗️ 🔄 value 🍬T 🍇
+    value ➡️ 🖍spare
+  🍉
+🍉
+
+🏁 🍇
+  😀 🔓🆕🎁🐚🔡🍆 🔤text🔤❗️❗️❗️
+  😀 🔡 🔓🆕🎁🐚🔢🍆 42❗️❗️❗️❗️
+  😀 🔡🔓🆕🎁🐚🍋🍆 🆕🍋 7❗️❗️❗️❗️❗️
+
+  🆕🎁🐚🔡🍆 🤷‍♀️❗️ ➡️ 🖍🆕 empty
+  ↪️ 🔍empty❗️ 🍇
+    😀 🔤unexpected value🔤❗️
+  🍉
+  🙅 🍇
+    😀 🔤no value🔤❗️
+  🍉
+  🔄empty 🔤filled🔤❗️
+  ↪️ 🔍empty❗️ 🍇
+    😀 🔓empty❗️❗️
+  🍉
+  🔄empty 🤷‍♀️❗️
+  ↪️ 🔀empty❗️ ➡️ value 🍇
+    😀 value❗️
+  🍉
+  🙅 🍇
+    😀 🔤no value again🔤❗️
+  🍉
+🍉

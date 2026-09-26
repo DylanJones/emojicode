@@ -1,0 +1,92 @@
+💭 A generic parameter of a method shadows one of its type with the same name.
+🕊 🎁🐚T ⚪🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+  ❗️ 🔀🐚T ⚪🍆 other T ➡️ T 🍇
+    ↩️ other
+  🍉
+🍉
+
+💭 Returns a reference to the value in a boxed instance variable.
+🕊 🍋 🍇
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n
+  🍉
+  🖍❗️ 🆙 🍇
+    n ⬅️➕ 1
+  🍉
+🍉
+🕊 🎀🐚T ⚪️🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+  🖍❗️ 🥥 ➡️ ✴️T 🍇
+    ↩️ value
+  🍉
+  ❗️ 🥝 ➡️ T 🍇
+    ↩️ value
+  🍉
+🍉
+
+💭 Generic arguments are specialized for without boxes.
+🕊 🎉🐚T ⚪️🍆 🍇
+  🖍🆕 list 🍨🐚T🍆
+  🆕 🍇
+    🆕🍨🐚T🍆❗️ ➡️ 🖍list
+  🍉
+  🖍❗️ 🐣 value T 🍇
+    🍿 value 🍆 ➡️ 🖍list
+  🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ 📏list❓
+  🍉
+🍉
+
+💭 A default value of an instance variable is analysed before other declarations.
+🕊 🅰️ 🍇
+  🖍🆕 x 🔢 ⬅️ 🔧🐚🔢🍆🕊🅰️ 5❗️
+  🆕 🍇🍉
+  ❗️ 🍩 ➡️ 🔢 🍇
+    ↩️ x
+  🍉
+  🐇❗️ 🔧🐚T ⚪🍆 v T ➡️ 🔢 🍇
+    🆕🅱️❗️ ➡️ b
+    ↩️ 🍩b❗️
+  🍉
+🍉
+🕊 🅱️ 🍇
+  🖍🆕 y 🔢 ⬅️ 7
+  🆕 🍇🍉
+  ❗️ 🍩 ➡️ 🔢 🍇
+    ↩️ y
+  🍉
+🍉
+
+💭 The depth of specializations is bounded in closures too.
+🕊 🛠 🍇
+  🆕 🍇🍉
+  🐇❗️ 🎎🐚T ⚪🍆 x T n 🔢 ➡️ 🔢 🍇
+    ↪️ n 🙌 0 🍇
+      ↩️ 0
+    🍉
+    🍇 ➡️ 🔢
+      ↩️ 1 ➕ 🎎🐚🍨🐚T🍆🍆🕊🛠 🍿 x 🍆 n ➖ 1❗️
+    🍉 ➡️ recurse
+    ↩️ ⁉️recurse❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🎁🐚🔢🍆 42❗️ ➡️ gift
+  🔀gift 🔤text🔤❗️ ➡️ result
+  😀 🔤🧲result🧲🔤❗️
+  🆕🎀🐚🍋🍆 🆕🍋 1❗️❗️ ➡️ 🖍🆕 g
+  🆙 🥥g❗️❗️
+  😀 🔡 📏 🥝g❗️❗️❗️❗️
+  🆕🎉🐚🍬🔢🍆❗️ ➡️ 🖍🆕 b
+  🐣b 5❗️
+  😀 🔡 📏b❗️❗️❗️
+  😀 🔡 🍩🆕🅰️❗️❗️❗️❗️
+  😀 🔡 🎎🕊🛠 1 12❗️❗️❗️
+🍉

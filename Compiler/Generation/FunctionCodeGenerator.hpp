@@ -26,16 +26,23 @@ struct SourcePosition;
 class TemporaryObjectsManager {
 public:
     void addTemporaryObject(llvm::Value *value, const Type &type) {
-        temporaryObjects_.emplace_back(value, type);
+        temporaryObjects_.emplace_back(value, type, false);
+    }
+    /// Registers a variable that holds the heap object storing a remote value in a temporary box, or null if no object
+    /// was allocated. The object is released without deinitialization, as the value in it is a temporary of its own.
+    void addTemporaryRemoteObject(llvm::Value *objectVariable) {
+        temporaryObjects_.emplace_back(objectVariable, Type::noReturn(), true);
     }
 
     void releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast);
 
 private:
     struct Temporary {
-        Temporary(llvm::Value *value, Type type) : value(value), type(type) {}
+        Temporary(llvm::Value *value, Type type, bool remoteObject)
+            : value(value), type(std::move(type)), remoteObject(remoteObject) {}
         llvm::Value *value;
         Type type;
+        bool remoteObject;
     };
 
     std::vector<Temporary> temporaryObjects_;
@@ -100,6 +107,16 @@ public:
     /// Gets a pointer to the value field of a box.
     /// @param box Pointer to a box.
     llvm::Value* buildGetBoxValuePtr(llvm::Value *box);
+    /// Ensures that the box to which @p box points is the only box storing its value of the remote @p type, by copying
+    /// the value into a new object if other boxes share the object storing it. Copies of a box share the object, so a
+    /// value must be made unique before it is mutated in place.
+    void makeRemoteBoxValueUnique(llvm::Value *box, const Type &type);
+    /// Makes the box to which @p box points store its value in @p object, a managable of type @p managable, and returns
+    /// a pointer to the value in the object.
+    llvm::Value* buildSetRemoteBoxObject(llvm::Value *box, llvm::StructType *managable, llvm::Value *object);
+    /// Makes the value of the box to which @p box points unique, using the function of the protocol @p conformance,
+    /// if the value is stored remotely. @p box must point to a variable that owns the box.
+    void makeBoxValueUnique(llvm::Value *conformance, llvm::Value *box);
     /// Gets a pointer to a value of type `llvmType` that is stored after a value of type `after` in the value field
     /// of a box.
     /// @param box Pointer to a box.
@@ -195,6 +212,9 @@ public:
     /// @param type The type of the value.
     void addTemporaryObject(llvm::Value *value, const Type &type) {
         tom_.addTemporaryObject(value, type);
+    }
+    void addTemporaryRemoteObject(llvm::Value *objectVariable) {
+        tom_.addTemporaryRemoteObject(objectVariable);
     }
     /// Releases all temporary values that were previously registered with addTemporaryObject() in the order
     /// they were added.

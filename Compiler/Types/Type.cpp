@@ -225,17 +225,13 @@ Function* Type::localResolutionConstraint() const {
 }
 
 Type Type::resolveOnSuperArgumentsAndConstraints(const TypeContext &typeContext) const {
+    if (type() == TypeType::Optional || type() == TypeType::Box) {
+        return rewrapped(genericArguments_[0].resolveOnSuperArgumentsAndConstraints(typeContext));
+    }
+
     Type t = *this;
     bool ref = isReference();
     bool mut = mutable_;
-    if (type() == TypeType::Optional) {
-        t.genericArguments_[0] = genericArguments_[0].resolveOnSuperArgumentsAndConstraints(typeContext);
-        return t;
-    }
-    if (type() == TypeType::Box) {
-        t.genericArguments_[0] = genericArguments_[0].resolveOnSuperArgumentsAndConstraints(typeContext).unboxed();
-        return t;
-    }
 
     TypeDefinition *c = nullptr;
     if (typeContext.calleeType().canHaveGenericArguments()) {
@@ -279,22 +275,36 @@ std::vector<Type> Type::selfResolvedGenericArgs() const {
     return args;
 }
 
-Type Type::resolveOn(const TypeContext &typeContext) const {
-    Type t = *this;
-    bool ref = isReference();
-    bool mut = mutable_;
-    if (type() == TypeType::Optional) {
-        t.genericArguments_[0] = genericArguments_[0].resolveOn(typeContext);
-        return t;
+Type Type::rewrapped(Type wrapped) const {
+    if (type() == TypeType::Optional && wrapped.type() == TypeType::Box) {
+        return wrapped.optionalized();  // An optional must not contain a box, but a box an optional.
     }
-    if (type() == TypeType::Box) {
-        t.genericArguments_[0] = genericArguments_[0].resolveOn(typeContext).unboxed();
-        return t;
+    Type t = *this;
+    t.genericArguments_[0] = type() == TypeType::Box ? wrapped.unboxed() : std::move(wrapped);
+    return t;
+}
+
+Type Type::resolveOn(const TypeContext &typeContext) const {
+    if (type() == TypeType::Optional || type() == TypeType::Box) {
+        return rewrapped(genericArguments_[0].resolveOn(typeContext));
     }
 
-    while (t.unboxedType() == TypeType::LocalGenericVariable && typeContext.function() == t.localResolutionConstraint()
-           && typeContext.functionGenericArguments() != nullptr) {
-        t = (*typeContext.functionGenericArguments())[t.genericVariableIndex()];
+    Type t = *this;
+    auto keepStorage = [ref = isReference(), mut = mutable_](Type t) {
+        if (ref) {
+            t.setReference();
+        }
+        if (mut) {
+            t.setMutable(true);
+        }
+        return t;
+    };
+
+    if (t.unboxedType() == TypeType::LocalGenericVariable && typeContext.function() == t.localResolutionConstraint()
+        && typeContext.functionGenericArguments() != nullptr) {
+        // The generic arguments are types of the calling code, which must not be resolved again. A recursive call
+        // with its own generic variable would otherwise resolve it forever.
+        return keepStorage((*typeContext.functionGenericArguments())[t.genericVariableIndex()]);
     }
 
     if (typeContext.calleeType().canHaveGenericArguments()) {
@@ -315,13 +325,7 @@ Type Type::resolveOn(const TypeContext &typeContext) const {
             arg = arg.resolveOn(typeContext);
         }
     }
-    if (ref) {
-        t.setReference();
-    }
-    if (mut) {
-        t.setMutable(true);
-    }
-    return t;
+    return keepStorage(std::move(t));
 }
 
 bool Type::identicalGenericArguments(Type to, const TypeContext &typeContext, GenericInferer *inf) const {
@@ -611,6 +615,61 @@ std::string Type::typePackage() const {
             throw std::logic_error("typePackage for StorageExpectation");
         default:
             return "";
+    }
+}
+
+bool Type::containsGenericVariables() const {
+    if (type() == TypeType::GenericVariable || type() == TypeType::LocalGenericVariable) {
+        return true;
+    }
+    return std::any_of(genericArguments_.begin(), genericArguments_.end(), [](const Type &type) {
+        return type.containsGenericVariables();
+    });
+}
+
+Type Type::withMinimalBoxing() const {
+    Type type = unboxed();
+    if (type.type() == TypeType::Optional || type.canHaveGenericArguments()) {
+        for (auto &argument : type.genericArguments_) {
+            argument = argument.withMinimalBoxing();
+        }
+    }
+    if (type.type() == TypeType::Optional) {
+        return type.rewrapped(type.genericArguments_[0]);
+    }
+    return type.applyMinimalBoxing();
+}
+
+Type Type::withMinimallyBoxedGenericArguments() const {
+    Type type = *this;
+    if (type.type() == TypeType::Box || type.type() == TypeType::Optional) {
+        type.genericArguments_[0] = type.genericArguments_[0].withMinimallyBoxedGenericArguments();
+    }
+    else if (type.type() == TypeType::Callable) {
+        for (auto &argument : type.genericArguments_) {
+            argument = argument.withMinimallyBoxedGenericArguments();
+        }
+    }
+    else if (type.canHaveGenericArguments()) {
+        for (auto &argument : type.genericArguments_) {
+            argument = argument.withMinimalBoxing();
+        }
+    }
+    return type;
+}
+
+bool Type::isCompileTimeOnly() const {
+    switch (unboxedType()) {
+        case TypeType::Invalid:
+        case TypeType::StorageExpectation:
+        case TypeType::IntegerLiteral:
+        case TypeType::RealLiteral:
+        case TypeType::ListLiteral:
+        case TypeType::DictionaryLiteral:
+        case TypeType::NoValueLiteral:
+            return true;
+        default:
+            return false;
     }
 }
 

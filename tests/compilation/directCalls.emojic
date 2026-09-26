@@ -1,0 +1,46 @@
+💭 Calls that are made directly instead of through a dispatch table, and 🤯, which the compiler knows never returns.
+
+🐇 🐭 🚧 🍇
+  🆕 🍇
+    ⤴️🆕 🔤squeak🔤❗️
+  🍉
+🍉
+
+🕊 🧰 🍇
+  🆕 🍇🍉
+
+  💭 A function with a return type may end with 🤯.
+  🐇❗️ 🔍 n 🔢 ➡️ 🔢 🍇
+    ↪️ n ▶️🙌 0 🍇
+      ↩️ n ✖️ 2
+    🍉
+    🤯🐇💻 🔤negative🔤❗️
+  🍉
+
+  💭 🤯 ends a branch as ↩️ does, so this returns on all paths.
+  🐇❗️ 🔎 n 🔢 ➡️ 🔡 🍇
+    ↪️ n 🙌 1 🍇
+      ↩️ 🔤one🔤
+    🍉
+    🙅↪️ n 🙌 2 🍇
+      ↩️ 🔤two🔤
+    🍉
+    🙅 🍇
+      🤯🐇💻 🔤too large🔤❗️
+    🍉
+  🍉
+
+  💭 🚧 is exported and has subclasses, but 💬 is 🔏.
+  🐇❗️ 💌 error 🚧 ➡️ 🔡 🍇
+    ↩️ 💬error❗️
+  🍉
+🍉
+
+🏁 🍇
+  😀 🔡 🔍🕊🧰 21❗️❗️❗️
+  😀 🔎🕊🧰 2❗️❗️
+  😀 💌🕊🧰 🆕🐭❗️❗️❗️
+  💭 🧵 is exported and not 🔏, but a class named in the call cannot be a subclass.
+  ⏲🐇🧵 1❗️
+  😀 🔤end🔤❗️
+🍉

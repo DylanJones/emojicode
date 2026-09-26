@@ -45,6 +45,11 @@ public:
      * @returns Whether the variable could be found or not. @c type is untouched if @c false was returned.
      */
     bool fetchVariable(const std::u32string &name, Type *destType) {
+        auto bound = boundVariables_.find(name);
+        if (bound != boundVariables_.end()) {
+            *destType = bound->second;
+            return true;
+        }
         auto it = parameterVariables_.find(name);
         if (it != parameterVariables_.end()) {
             *destType = typeForVariable(it->second);
@@ -126,6 +131,11 @@ public:
         });
     }
 
+    /// Makes fetchVariable() return @p type for @p name, which then no longer names a generic parameter. Used by
+    /// specializations, whose code is analysed with concrete types in place of the generic parameters. A later binding
+    /// of the same name replaces an earlier one, as a method's generic parameter shadows one of its type.
+    void bindVariable(const std::u32string &name, const Type &type) { boundVariables_.insert_or_assign(name, type); }
+
     /// Returns the type constraint of the generic parameter at the index.
     /// @pre The index must be greater than the offset passed to offsetIndicesBy() (e.g. the number of super generic
     /// arguments for a TypeDefinition) if applicable.
@@ -183,6 +193,7 @@ private:
     std::vector<GenericParameter> genericParameters_;
     /** Generic type arguments as variables */
     std::map<std::u32string, size_t> parameterVariables_;
+    std::map<std::u32string, Type> boundVariables_;
 
     std::map<std::vector<Type>, Reification> reifications_;
 

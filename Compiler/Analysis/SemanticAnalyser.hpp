@@ -6,6 +6,8 @@
 #define EMOJICODE_SEMANTICANALYSER_HPP
 
 #include <queue>
+#include <vector>
+#include <map>
 #include <memory>
 #include <set>
 
@@ -26,7 +28,8 @@ class ValueType;
 
 class SemanticAnalyser {
 public:
-    explicit SemanticAnalyser(Package *package, bool imported) : package_(package), imported_(imported) {}
+    explicit SemanticAnalyser(Package *package, bool imported);
+    ~SemanticAnalyser();
 
     /// Analyses the package.
     /// @throws CompilerError if an unrecoverable error occurs, e.g. if the start flag function is not present but
@@ -36,6 +39,14 @@ public:
     void analyse(bool executable);
 
     void enqueueFunction(Function *);
+
+    /// Returns the specialization of @p function for @p genericArguments, which the caller should call instead of
+    /// the generic function, or nullptr if it must call the generic function.
+    /// A specialization is created and analysed if it does not exist yet. If its code does not compile, e.g. because a
+    /// cast of a value of a generic type is unnecessary with the concrete type, the generic function is used.
+    /// @param calleeType The type on which @p function is called. A method of a generic value type is specialized for
+    /// the generic arguments of this type too.
+    Function* specialize(Function *function, const Type &calleeType, const std::vector<Type> &genericArguments);
 
     /// Iff `type` is a literal type, returns the default inferred type for the literal type. Otherwise the type is
     /// returned.
@@ -58,6 +69,12 @@ public:
 
 private:
     void analyseQueue();
+    /// Analyses @p specialization with trapped errors and returns whether it compiled.
+    bool analyseSpecialization(Function *specialization);
+    /// Uses @p specialization once no specialization it calls is unfinished.
+    void finishSpecialization(Function *specialization);
+    /// Discards @p specialization and those that call it. If @p failed, it is not created anew.
+    void discardSpecialization(Function *specialization, bool failed);
     void enqueueFunctionsOfTypeDefinition(TypeDefinition *typeDef);
     void finalizeProtocols(const Type &type);
     void checkProtocolConformance(const Type &type);
@@ -66,6 +83,21 @@ private:
 
     Package *package_;
     std::queue<Function *> queue_;
+    /// The specializations by generic function and generic arguments, or nullptr if the function could not be
+    /// specialized with them.
+    std::map<std::pair<Function *, std::vector<Type>>, Function *> specializations_;
+    /// Specializations that are analysed or wait for specializations they call to be analysed. They are owned here until
+    /// they are used or discarded.
+    std::map<Function *, std::unique_ptr<Function>> unfinishedSpecializations_;
+    /// The specializations being analysed, the innermost last.
+    std::vector<Function *> specializationStack_;
+    /// The unfinished specializations that an unfinished specialization calls, which it can only be used with.
+    std::map<Function *, std::set<Function *>> specializationDependencies_;
+    /// Specializations that are not used, kept until no specialization is analysed as code analysed with them refers to
+    /// them.
+    std::vector<std::unique_ptr<Function>> unusedSpecializations_;
+    /// Whether all declarations were analysed, before which no specialization can be analysed.
+    bool declarationsAnalysed_ = false;
     bool imported_;
 
     bool checkArgumentPromise(const Function *sub, const Function *super, const TypeContext &subContext,
