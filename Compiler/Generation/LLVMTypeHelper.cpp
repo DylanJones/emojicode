@@ -53,7 +53,8 @@ LLVMTypeHelper::LLVMTypeHelper(llvm::LLVMContext &context, CodeGenerator *codeGe
         llvm::Type::getInt1Ty(context_),  // whether the boxed value itself is the callee (i.e. value type) or not
         pointer(),  // dispatch table
         pointer(),  // box info
-        pointer(), pointer()  // box retain and release
+        pointer(), pointer(),  // box retain and release
+        pointer(),  // makes the value of a box unique before a mutation, or null (see buildBoxMakeUnique)
     }, "protocolConformance");
     protocolConformanceEntry_ = llvm::StructType::create({ pointer(), pointer() }, "protocolConformanceEntry");
 

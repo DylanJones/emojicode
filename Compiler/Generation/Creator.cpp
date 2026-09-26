@@ -142,6 +142,7 @@ void ImportedPackageCreator::createDestructorRetain(ValueType *valueType) {}
 void PackageCreator::createBoxInfo(ValueType *valueType) {
     valueType->setBoxInfo(generator_->runTime().declareBoxInfo(mangleBoxInfoName(Type(valueType))));
     valueType->setBoxRetainRelease(buildBoxRetainRelease(generator_, Type(valueType)));
+    valueType->setBoxMakeUnique(buildBoxMakeUnique(generator_, Type(valueType)));
     createProtocolTables(Type(valueType));
     valueType->boxInfo()->setInitializer(llvm::ConstantStruct::get(generator_->typeHelper().boxInfo(), {
         generator_->runTime().createRtti(valueType, generator_->typeHelper().isRemote(Type(valueType)) ?

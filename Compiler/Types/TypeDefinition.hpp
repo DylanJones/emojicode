@@ -122,6 +122,9 @@ public:
 
     const std::pair<llvm::Function*, llvm::Function*>& boxRetainRelease() const { return boxRetainRelease_; }
     void setBoxRetainRelease(std::pair<llvm::Function*, llvm::Function*> pair) { boxRetainRelease_ = pair; }
+    /// The function that makes the value of a box unique before a mutation, or nullptr. @see buildBoxMakeUnique
+    llvm::Function* boxMakeUnique() const { return boxMakeUnique_; }
+    void setBoxMakeUnique(llvm::Function *function) { boxMakeUnique_ = function; }
 
     /// Contains the type’s instance variables. In a class, this will also contain inherited instance variables after
     /// calling Class::inherit().
@@ -154,6 +157,7 @@ private:
     FunctionResolver<Initializer> inits_;
 
     std::pair<llvm::Function*, llvm::Function*> boxRetainRelease_;
+    llvm::Function *boxMakeUnique_ = nullptr;
 
     bool exported_;
     bool genericDynamismDisabled_ = false;

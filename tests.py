@@ -56,6 +56,7 @@ compilation_tests = [
     "genericRecursion",
     "optionalGenericField",
     "remoteBoxRelease",
+    "boxValueSemantics",
     "forInVariableReuse",
     "valueTypeIterator",
     "listIterator",
