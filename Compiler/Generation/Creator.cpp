@@ -115,6 +115,9 @@ void ImportedPackageCreator::createClassInfo(Class *klass) {
 void PackageCreator::createValueType(ValueType *valueType) {
     valueType->createUnspecificReification();
     valueType->eachFunction([&](Function *function) { createFunction(function); });
+    for (auto &specialization : valueType->specializations()) {
+        createFunction(specialization.get());
+    }
 
     if (valueType == package_->compiler()->sWeak) {
         valueType->setDestructor(createMemoryFunction("ejcReleaseWeak", generator_, valueType));

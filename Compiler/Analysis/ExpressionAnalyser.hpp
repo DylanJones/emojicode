@@ -88,7 +88,11 @@ public:
     /// Whether the methods of @p typeDef take and return values of generic types unboxed. True for the memory
     /// and pointer types 🧠, 📍 and 🕳, whose built-in methods work on the values directly.
     bool storesGenericValuesUnboxed(TypeDefinition *typeDef) const;
-    Type analyseFunctionCall(ASTArguments *node, const Type &type, Function *function);
+    /// Analyses the arguments of a call of @p function and returns its return type.
+    /// @param specialization If provided and the call can use a specialization of @p function, it is set to the
+    /// specialization, which the call must then call instead of @p function. It is left unchanged otherwise.
+    Type analyseFunctionCall(ASTArguments *node, const Type &type, Function *function,
+                             Function **specialization = nullptr);
 
     Type integer() const;
     Type boolean() const;

@@ -275,11 +275,17 @@ void Compiler::parseInterface(Package *pkg, const SourcePosition &p) {
 }
 
 void Compiler::error(const CompilerError &ce) {
+    if (trapsErrors_) {
+        throw TrappedError();
+    }
     hasError_ = true;
     delegate_->error(this, ce);
 }
 
 void Compiler::warn(const SourcePosition &p, const std::string &warning) {
+    if (trapsErrors_) {
+        return;
+    }
     delegate_->warn(this, warning, p);
 }
 

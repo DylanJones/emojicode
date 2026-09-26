@@ -13,6 +13,7 @@
 #include "Types/TypeExpectation.hpp"
 #include "Package/Package.hpp"
 #include "ThunkBuilder.hpp"
+#include "Parsing/SpecializationParser.hpp"
 #include "Types/Class.hpp"
 #include "Types/Protocol.hpp"
 #include "Types/TypeDefinition.hpp"
@@ -23,6 +24,10 @@ namespace EmojicodeCompiler {
 Compiler* SemanticAnalyser::compiler() const {
     return package_->compiler();
 }
+
+SemanticAnalyser::SemanticAnalyser(Package *package, bool imported) : package_(package), imported_(imported) {}
+
+SemanticAnalyser::~SemanticAnalyser() = default;
 
 void SemanticAnalyser::analyse(bool executable) {
     for (auto &vt : package_->valueTypes()) {
@@ -80,6 +85,101 @@ void SemanticAnalyser::analyse(bool executable) {
     }
     analyseQueue();
     checkStartFlagFunction(executable);
+}
+
+/// Bounds the specializations that specializations cause, as a function could otherwise specialize itself with ever
+/// larger types, e.g. by calling itself with a list of its generic argument.
+constexpr size_t kMaxSpecializationDepth = 8;
+
+static bool isSpecializable(Function *function) {
+    if (function->genericParameters().empty() || function->isExternal() || function->ast() == nullptr ||
+        function->isC() || function->isClosure() || function->isThunk() || function->owner() == nullptr) {
+        return false;
+    }
+    // Only statically dispatched functions, as a virtual table has no entry per specialization.
+    return function->functionType() == FunctionType::ValueTypeMethod ||
+           function->functionType() == FunctionType::Function;
+}
+
+Function* SemanticAnalyser::specialize(Function *function, const std::vector<Type> &genericArguments,
+                                       Function *caller) {
+    if (imported_ || function->package() != package_ || !isSpecializable(function)) {
+        return nullptr;
+    }
+    std::vector<Type> arguments;
+    for (auto &argument : genericArguments) {
+        if (argument.containsGenericVariables()) {
+            return nullptr;
+        }
+        Type type = argument;
+        type.setReference(false);
+        type.setMutable(false);
+        arguments.emplace_back(type);
+    }
+    Function *existing;
+    if (function->findSpecialization(arguments, &existing)) {
+        return existing;
+    }
+    auto depth = caller == nullptr ? 1 : caller->specializationDepth() + 1;
+    if (depth > kMaxSpecializationDepth) {
+        return nullptr;
+    }
+
+    auto created = std::make_unique<Function>(function->name(), function->accessLevel(), function->final(),
+                                              function->owner(), function->package(), function->position(), false,
+                                              function->documentation(), function->deprecated(),
+                                              function->mutating(), function->mood(), function->unsafe(),
+                                              function->functionType(), function->isInline());
+    created->setMemoryFlowTypeForThis(function->memoryFlowTypeForThis());
+    for (size_t i = 0; i < arguments.size(); i++) {
+        created->bindVariable(function->genericParameters()[i].name, arguments[i]);
+    }
+    created->setSpecializationOf(function, arguments, depth);
+
+    // Registered before the analysis, so that a recursive call uses the specialization too.
+    auto specialization = created.get();
+    function->setSpecialization(arguments, specialization);
+    auto first = pendingSpecializations_.size();
+    pendingSpecializations_.push_back(PendingSpecialization{ function, arguments, std::move(created) });
+
+    if (!analyseSpecialization(specialization)) {
+        // The specializations created while analysing it are dropped too, as they may call it.
+        for (auto it = pendingSpecializations_.begin() + first; it != pendingSpecializations_.end(); it++) {
+            it->generic->eraseSpecialization(it->arguments);
+            unusedSpecializations_.emplace_back(std::move(it->specialization));
+        }
+        pendingSpecializations_.erase(pendingSpecializations_.begin() + first, pendingSpecializations_.end());
+        function->setSpecialization(arguments, nullptr);
+        return nullptr;
+    }
+    if (specializationTrials_ == 0) {
+        for (auto &pending : pendingSpecializations_) {
+            pending.generic->owner()->addSpecialization(std::move(pending.specialization));
+        }
+        pendingSpecializations_.clear();
+    }
+    return specialization;
+}
+
+bool SemanticAnalyser::analyseSpecialization(Function *specialization) {
+    auto trapped = compiler()->trapsErrors();
+    compiler()->setTrapsErrors(true);
+    specializationTrials_++;
+    bool compiled = true;
+    try {
+        SpecializationParser::parse(specialization->specializedFunction(), specialization);
+        analyseFunctionDeclaration(specialization);
+        FunctionAnalyser(specialization, this).analyse();
+    }
+    catch (CompilerError &) {
+        compiled = false;
+    }
+    catch (Compiler::TrappedError &) {
+        compiled = false;
+    }
+    specializationTrials_--;
+    compiler()->setTrapsErrors(trapped);
+    return compiled;
 }
 
 void SemanticAnalyser::checkStartFlagFunction(bool executable) {

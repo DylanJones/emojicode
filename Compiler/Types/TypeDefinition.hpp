@@ -96,6 +96,12 @@ public:
     /// type methods and initializers.
     void eachFunctionWithoutInitializers(const std::function<void(Function *)>& cb) const;
 
+    /// Takes ownership of a specialization of one of the functions of this type definition.
+    /// Specializations are not included in eachFunction(), as they are no declarations of the type definition.
+    Function* addSpecialization(std::unique_ptr<Function> function);
+    /// The specializations of the functions of this type definition, in the order in which they were created.
+    const std::vector<std::unique_ptr<Function>>& specializations() const { return specializations_; }
+
     /// @retunrs A reference to the instance scope for SemanticAnalysis.
     Scope& instanceScope() { return *scope_; }
 
@@ -141,6 +147,7 @@ protected:
 
 private:
     std::unique_ptr<Scope> scope_;
+    std::vector<std::unique_ptr<Function>> specializations_;
 
     FunctionResolver<Function> methods_;
     FunctionResolver<Function> typeMethods_;

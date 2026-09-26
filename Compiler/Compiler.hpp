@@ -193,7 +193,15 @@ public:
 
     /// Sets an observer that is told about the results of the semantic analysis. It is not owned by the compiler.
     void setAnalysisObserver(AnalysisObserver *observer) { analysisObserver_ = observer; }
-    AnalysisObserver* analysisObserver() const { return analysisObserver_; }
+    AnalysisObserver* analysisObserver() const { return trapsErrors_ ? nullptr : analysisObserver_; }
+
+    /// Thrown by error() while errors are trapped.
+    struct TrappedError {};
+    /// While errors are trapped, error() throws TrappedError instead of reporting the error, warnings are dropped and
+    /// no AnalysisObserver is notified. Specializations are analysed like this, as their code was already reported on
+    /// in its generic form, and a specialization that does not compile is not used.
+    bool trapsErrors() const { return trapsErrors_; }
+    void setTrapsErrors(bool traps) { trapsErrors_ = traps; }
 
     /// Issues a compiler warning. The compilation is continued normally.
     /// @param args All arguments will be concatenated.
@@ -259,6 +267,7 @@ private:
     std::unique_ptr<RecordingPackage> mainPackage_;
     SourceManager sourceManager_;
     AnalysisObserver *analysisObserver_ = nullptr;
+    bool trapsErrors_ = false;
 };
 
 }  // namespace EmojicodeCompiler

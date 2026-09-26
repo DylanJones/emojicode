@@ -117,11 +117,20 @@ bool ExpressionAnalyser::storesGenericValuesUnboxed(TypeDefinition *typeDef) con
                                   typeDef == compiler()->cVoidPointer);
 }
 
-Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &type, Function *function) {
+Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &type, Function *function,
+                                             Function **specialization) {
     auto genericArgs = transformTypeAstVector(node->genericArguments(), typeContext());
 
+    function->requestReificationAndCheck(TypeContext(type, function, &genericArgs), genericArgs, node->position());
+    if (specialization != nullptr) {
+        if (auto specialized = semanticAnalyser()->specialize(function, genericArgs, typeContext().function())) {
+            *specialization = function = specialized;
+            genericArgs.clear();
+            node->clearGenericArguments();
+        }
+    }
+
     TypeContext typeContext = TypeContext(type, function, &genericArgs);
-    function->requestReificationAndCheck(typeContext, genericArgs, node->position());
 
     for (size_t i = 0; i < function->parameters().size(); i++) {
         auto &paramType = function->parameters()[i].type->type();

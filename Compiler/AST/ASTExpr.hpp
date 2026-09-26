@@ -161,6 +161,11 @@ public:
 
     const std::vector<Type>& genericArgumentTypes() const { return genericArgumentsTypes_; }
     void setGenericArgumentTypes(std::vector<Type> types) { genericArgumentsTypes_ = std::move(types); }
+    /// Removes the generic arguments, as the call uses a specialization, which takes none.
+    void clearGenericArguments() {
+        genericArguments_.clear();
+        genericArgumentsTypes_.clear();
+    }
 
     ~ASTArguments();
 

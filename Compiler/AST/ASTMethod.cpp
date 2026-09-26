@@ -50,7 +50,7 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
 
     checkMutation(analyser, callee);
     ensureErrorIsHandled(analyser);
-    auto rt = analyser->analyseFunctionCall(&args_, calleeType_, method_);
+    auto rt = analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
     if (!analyser->storesGenericValuesUnboxed(method_->owner()) &&
         (method_->returnType()->type().is<TypeType::GenericVariable>() ||
          method_->returnType()->type().is<TypeType::LocalGenericVariable>() ||
@@ -139,7 +139,7 @@ Type ASTMethodable::analyseTypeMethodCall(ExpressionAnalyser *analyser, const st
         callType_ = CallType::StaticDispatch;
     }
     ensureErrorIsHandled(analyser);
-    return analyser->analyseFunctionCall(&args_, calleeType_, method_);
+    return analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
 }
 
 Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const std::u32string &name) {
@@ -155,7 +155,7 @@ Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const
         }
         builtIn_ = BuiltInType::Multiprotocol;
         callType_ = CallType::DynamicProtocolDispatch;
-        return analyser->analyseFunctionCall(&args_, calleeType_, method_);
+        return analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
     }
     throw CompilerError(position(), "No type in ", calleeType_.toString(analyser->typeContext()),
                         " provides a method ", utf8(name), ".");

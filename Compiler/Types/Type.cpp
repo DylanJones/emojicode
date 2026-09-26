@@ -623,6 +623,15 @@ std::string Type::typePackage() const {
     }
 }
 
+bool Type::containsGenericVariables() const {
+    if (type() == TypeType::GenericVariable || type() == TypeType::LocalGenericVariable) {
+        return true;
+    }
+    return std::any_of(genericArguments_.begin(), genericArguments_.end(), [](const Type &type) {
+        return type.containsGenericVariables();
+    });
+}
+
 bool Type::isManaged() const {
     return type() == TypeType::Class || type() == TypeType::Someobject || type() == TypeType::Box ||
         (type() == TypeType::Callable && !cCallable_) ||
