@@ -1,0 +1,106 @@
+🐊 📦 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+
+🐊 🧾 🍇
+  ❗️ 🧮 ➡️ 🔢
+🍉
+
+🕊 🍎 🍇
+  🐊 📦
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n
+  🍉
+🍉
+
+🕊 🍐 🍇
+  🐊 📦
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ n ✖️ 10
+  🍉
+🍉
+
+💭 Its methods are specialized, as its instance variables are represented the same for every T.
+🕊 🔲🐚T 📦🍆 🍇
+  🐊 🧾
+  🖍🆕 values 🍨🐚T🍆
+
+  🆕 🍇
+    🍿🍆 ➡️ 🖍values
+  🍉
+
+  🖍❗️ 🐻 value T 🍇
+    🐻values value❗️
+  🍉
+
+  ❗️ 🧮 ➡️ 🔢 🍇
+    0 ➡️ 🖍🆕 sum
+    🔂 value values 🍇
+      sum ⬅️➕ 📏 value❗️
+    🍉
+    ↩️ sum
+  🍉
+
+  ❗️ 🔝 ➡️ 🔢 🍇
+    ↩️ 🧮👇❗️ ✖️ 2
+  🍉
+
+  ❗️ 🔀🐚U 📦🍆 other 🔲🐚U🍆 ➡️ 🔢 🍇
+    ↩️ 🧮👇❗️ ➕ 🧮other❗️
+  🍉
+
+  🐇❗️ 📐🐚U 📦🍆 value U ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+🍉
+
+💭 Stores a T boxed, which its specialized methods could not read, so they are not specialized.
+🕊 🎁🐚T ⚪🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+  ❗️ 🔓 ➡️ T 🍇
+    ↩️ value
+  🍉
+🍉
+
+💭 Stores a closure that takes a boxed T, so its methods are not specialized.
+🕊 🏭🐚T ⚪🍆 🍇
+  🖍🆕 make 🍇🔢➡️T🍉
+  🆕 🍼 make 🍇🔢➡️T🍉 🍇🍉
+  ❗️ 🔨 n 🔢 ➡️ T 🍇
+    ↩️ ⁉️ make n❗️
+  🍉
+🍉
+
+💭 Class methods are not specialized, so this reads values that specialized methods stored.
+🐇 🗄 🍇
+  🐇❗️ 🧮🐚T 📦🍆 grid 🔲🐚T🍆 ➡️ 🔢 🍇
+    ↩️ 🧮grid❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🔲🐚🍎🍆❗️ ➡️ 🖍🆕 apples
+  🐻apples 🆕🍎 1❗️❗️
+  🐻apples 🆕🍎 2❗️❗️
+  😀 🔡 🧮apples❗️❗️❗️
+  😀 🔡 🔝apples❗️❗️❗️
+
+  🆕🔲🐚🍐🍆❗️ ➡️ 🖍🆕 pears
+  🐻pears 🆕🍐 3❗️❗️
+  😀 🔡 🧮pears❗️❗️❗️
+  😀 🔡 🔀apples pears❗️❗️❗️
+  😀 🔡 📐🕊🔲🐚🍎🍆 🆕🍐 5❗️❗️❗️❗️
+
+  😀 🔡 🧮🐇🗄 apples❗️❗️❗️
+  🖍🆕 bill 🧾
+  apples ➡️ 🖍bill
+  😀 🔡 🧮bill❗️❗️❗️
+
+  😀 🔓🆕🎁🐚🔡🍆 🔤boxed🔤❗️❗️❗️
+  😀 🔨🆕🏭🐚🔡🍆 🍇🎍🥡 n 🔢 ➡️ 🔡 ↩️ 🔡 n❗️ 🍉❗️ 7❗️❗️
+🍉

@@ -17,6 +17,7 @@
 #include <memory>
 #include <utility>
 #include <map>
+#include <optional>
 #include <vector>
 
 namespace llvm {
@@ -25,6 +26,8 @@ class FunctionType;
 }  // namespace llvm
 
 namespace EmojicodeCompiler {
+
+class Scope;
 
 class ASTBlock;
 class ASTType;
@@ -220,6 +223,12 @@ public:
     /// Forgets the specialization for @p arguments, so that it is created anew if it is needed again.
     void eraseSpecialization(const std::vector<Type> &arguments) { specializations_.erase(arguments); }
 
+    /// Makes this function, a specialization of a method of a generic type, a function of @p calleeType, the type with
+    /// the concrete generic arguments, with @p instanceScope, whose variables have types resolved on @p calleeType.
+    void setSpecializedCallee(Type calleeType, std::unique_ptr<Scope> instanceScope);
+    /// The instance scope of this function if it has its own, see setSpecializedCallee(), or nullptr.
+    Scope* instanceScope() const { return instanceScope_.get(); }
+
     bool errorProne() const { return errorType_ != nullptr && errorType_->type().type() != TypeType::NoReturn; }
     ASTType* errorType() const { return errorType_.get(); }
     void setErrorType(std::unique_ptr<ASTType> type) { errorType_ = std::move(type); }
@@ -254,6 +263,8 @@ private:
     std::vector<Type> specializationArguments_;
     size_t specializationDepth_ = 0;
     std::map<std::vector<Type>, Function *> specializations_;
+    std::optional<Type> specializedCalleeType_;
+    std::unique_ptr<Scope> instanceScope_;
 
     std::string externalName_;
     AccessLevel access_;

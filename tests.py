@@ -60,6 +60,7 @@ compilation_tests = [
     "valueTypeIterator",
     "listIterator",
     "specialization",
+    "typeSpecialization",
     "directCalls",
     "protocolValueTypeRemote",
     "protocolEnum",
