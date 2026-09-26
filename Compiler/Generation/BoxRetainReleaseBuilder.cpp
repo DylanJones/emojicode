@@ -144,4 +144,16 @@ std::pair<llvm::Function*, llvm::Function*> buildBoxRetainRelease(CodeGenerator 
     return std::make_pair(retain, release);
 }
 
+llvm::Function* buildBoxMakeUnique(CodeGenerator *cg, const Type &type) {
+    if (!cg->typeHelper().isRemote(type)) {
+        return nullptr;
+    }
+    auto fn = createFunction(cg, mangleTypeName(type) + ".boxMakeUnique");
+    FunctionCodeGenerator fg(fn, cg, std::make_unique<TypeContext>(type));
+    fg.createEntry();
+    fg.makeRemoteBoxValueUnique(fn->args().begin(), type);
+    fg.builder().CreateRetVoid();
+    return fn;
+}
+
 }

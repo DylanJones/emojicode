@@ -220,8 +220,10 @@ Value* ASTStoreTemporarily::generate(FunctionCodeGenerator *fg) const {
 Value* ASTBoxReferenceToReference::generate(FunctionCodeGenerator *fg) const {
     auto containedType = expr_->expressionType().unboxed().unoptionalized();
     if (fg->typeHelper().isRemote(containedType)) {
-        auto ptrPtr = fg->buildGetBoxValuePtr(expr_->generate(fg));
-        return fg->builder().CreateLoad(fg->typeHelper().pointer(), ptrPtr);
+        // The reference can be used to mutate the value, which must not change copies of the box.
+        auto box = expr_->generate(fg);
+        fg->makeRemoteBoxValueUnique(box, containedType);
+        return fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxValuePtr(box));
     }
     return fg->buildGetBoxValuePtr(expr_->generate(fg));
 }

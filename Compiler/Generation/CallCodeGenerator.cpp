@@ -184,7 +184,14 @@ llvm::Value *CallCodeGenerator::getProtocolCallee(std::vector<Value *> &args, ll
     auto shouldLoadPtr = fg()->builder().CreateConstGEP2_32(fg()->typeHelper().protocolConformance(),
                                                             conformance, 0, 0);
     auto shouldLoad = fg()->builder().CreateLoad(llvm::Type::getInt1Ty(fg()->ctx()), shouldLoadPtr, "shouldLoad");
-    return fg()->createIfElsePhi(shouldLoad, [this, &args]() {
+    return fg()->createIfElsePhi(shouldLoad, [this, &args, conformance]() {
+        // The method may mutate the value, which must not change copies of the box.
+        auto makeUniquePtr = fg()->builder().CreateConstGEP2_32(fg()->typeHelper().protocolConformance(),
+                                                                conformance, 0, 5);
+        auto makeUnique = fg()->builder().CreateLoad(fg()->typeHelper().pointer(), makeUniquePtr, "makeUnique");
+        fg()->createIf(fg()->builder().CreateIsNotNull(makeUnique), [&] {
+            fg()->builder().CreateCall(fg()->typeHelper().boxRetainRelease(), makeUnique, args.front());
+        });
         return fg()->builder().CreateLoad(fg()->typeHelper().pointer(), fg()->buildGetBoxValuePtr(args.front()));
     }, [this, &args]() {
         return fg()->buildGetBoxValuePtr(args.front());

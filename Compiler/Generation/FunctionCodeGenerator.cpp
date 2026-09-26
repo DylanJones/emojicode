@@ -344,6 +344,25 @@ llvm::Value* FunctionCodeGenerator::stackAlloc(llvm::Type *type) {
     return object;
 }
 
+void FunctionCodeGenerator::makeRemoteBoxValueUnique(llvm::Value *box, const Type &type) {
+    auto llvmType = typeHelper().llvmTypeFor(type);
+    auto mngType = typeHelper().managable(llvmType);
+    auto valuePtrPtr = buildGetBoxValuePtr(box);
+    auto objectPtr = buildGetBoxValuePtrAfter(box, typeHelper().pointer(), typeHelper().pointer());
+    auto object = builder().CreateLoad(typeHelper().pointer(), objectPtr);
+    auto isUnique = builder().CreateCall(generator()->runTime().isOnlyReference(), object);
+    createIf(builder().CreateNot(isUnique), [&] {
+        // The contents of the value are not retained, as this box's references to them move to the copy.
+        auto copy = alloc(mngType);
+        auto copyValuePtr = managableGetValuePtr(mngType, copy);
+        auto value = builder().CreateLoad(llvmType, builder().CreateLoad(typeHelper().pointer(), valuePtrPtr));
+        builder().CreateStore(value, copyValuePtr);
+        builder().CreateStore(copyValuePtr, valuePtrPtr);
+        builder().CreateStore(copy, objectPtr);
+        builder().CreateCall(generator()->runTime().releaseWithoutDeinit(), object);
+    });
+}
+
 llvm::Value* FunctionCodeGenerator::managableGetValuePtr(llvm::StructType *managable, llvm::Value *managablePtr) {
     return builder().CreateConstInBoundsGEP2_32(managable, managablePtr, 0, 1);
 }
