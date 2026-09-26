@@ -475,6 +475,16 @@ void FunctionCodeGenerator::retain(llvm::Value *value, const Type &otype) {
     }
 }
 
+void FunctionCodeGenerator::makeBoxValueUnique(llvm::Value *conformance, llvm::Value *box) {
+    auto fnPtr = builder().CreateConstInBoundsGEP2_32(typeHelper().protocolConformance(), conformance, 0, 5);
+    auto fn = builder().CreateLoad(typeHelper().pointer(), fnPtr, "makeUnique");
+    createIf(builder().CreateIsNotNull(fn), [&] {
+        auto call = builder().CreateCall(typeHelper().boxRetainRelease(), fn, box);
+        call->addParamAttr(0, llvm::Attribute::getWithCaptureInfo(call->getContext(), llvm::CaptureInfo::none()));
+        call->addFnAttr(llvm::Attribute::NoUnwind);
+    });
+}
+
 void FunctionCodeGenerator::manageBox(bool retain, llvm::Value *boxInfo, llvm::Value *value, const Type &type) {
     llvm::Value *fnPtr;
     if (type.boxedFor().type() == TypeType::Protocol) {

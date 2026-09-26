@@ -59,9 +59,11 @@ protected:
     std::vector<llvm::Value *> createArgsVector(llvm::Value *callee, const ASTArguments &args,
                                                 llvm::Value *errorPointer, const std::vector<llvm::Value *> &supplArgs);
     FunctionCodeGenerator* fg() const { return fg_; }
+    /// @param uniqueBox Whether the callee box is a mutable variable whose value must be made unique, as the method
+    /// may mutate it (see FunctionCodeGenerator::makeBoxValueUnique()).
     llvm::Value *createDynamicProtocolDispatch(Function *function, std::vector<llvm::Value *> args,
                                                const std::vector<Type> &genericArgs,
-                                               llvm::Value *conformance);
+                                               llvm::Value *conformance, bool uniqueBox);
     llvm::Value* buildFindProtocolConformance(const std::vector<llvm::Value *> &args, const Type &protocol);
 private:
     /// Calls the trampoline of a 🎍🌊 function that takes or returns C structs by value. @see needsCTrampoline()
@@ -76,7 +78,7 @@ private:
     CallType callType_;
     std::unique_ptr<TypeDescriptionGenerator> tdg_;
 
-    llvm::Value *getProtocolCallee(std::vector<llvm::Value *> &args, llvm::Value *conformance) const;
+    llvm::Value *getProtocolCallee(std::vector<llvm::Value *> &args, llvm::Value *conformance, bool uniqueBox) const;
 };
 
 class MultiprotocolCallCodeGenerator : protected CallCodeGenerator {

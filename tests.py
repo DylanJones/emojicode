@@ -95,6 +95,7 @@ compilation_tests = [
     "valueTypeBoxCopySelf",
     "remoteBoxRelease",
     "boxValueSemantics",
+    "borrowedBoxes",
     "includer",
     "threads",
     "linkHints",

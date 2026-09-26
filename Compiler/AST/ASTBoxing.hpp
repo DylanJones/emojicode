@@ -131,6 +131,10 @@ class ASTBoxReferenceToReference final : public ASTBoxing {
     Value* generate(FunctionCodeGenerator *fg) const override;
     void toCode(PrettyStream &pretty) const override {}
     void mutateReference(ExpressionAnalyser *analyser) override;
+
+private:
+    /// Whether the value is mutated through the reference, which is only possible if the box is a mutable variable.
+    bool mutated_ = false;
 };
 
 class ASTDereference : public ASTBoxing {
