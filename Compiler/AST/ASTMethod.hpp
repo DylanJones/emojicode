@@ -83,7 +83,8 @@ private:
     /// Recognizes the built-in methods of types with a C representation declared in source.
     bool builtInC(ExpressionAnalyser *analyser, const Type &type, const std::u32string &name);
 
-    Type analyseMultiProtocolCall(ExpressionAnalyser *analyser, const std::u32string &name);
+    Type analyseMultiProtocolCall(ExpressionAnalyser *analyser, const std::u32string &name,
+                                  const std::shared_ptr<ASTExpr> &callee);
 
     void checkMutation(ExpressionAnalyser *analyser, const std::shared_ptr<ASTExpr> &callee) const;
     void determineCallType(const ExpressionAnalyser *analyser);

@@ -33,7 +33,7 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
     determineCalleeType(analyser, name, callee, otype);
 
     if (calleeType_.unboxedType() == TypeType::MultiProtocol) {
-        return analyseMultiProtocolCall(analyser, name);
+        return analyseMultiProtocolCall(analyser, name, callee);
     }
     if (calleeType_.type() == TypeType::TypeAsValue) {
         return analyseTypeMethodCall(analyser, name, callee);
@@ -100,7 +100,10 @@ void ASTMethodable::determineCallType(const ExpressionAnalyser *analyser) {
 }
 
 void ASTMethodable::checkMutation(ExpressionAnalyser *analyser, const std::shared_ptr<ASTExpr> &callee) const {
-    if (calleeType_.type() == TypeType::ValueType && method_->mutating()) {
+    // A 🖍 protocol method may be implemented by a 🖍 method of a value type.
+    auto mutatesValue = calleeType_.type() == TypeType::ValueType || calleeType_.unboxedType() == TypeType::Protocol ||
+        calleeType_.unboxedType() == TypeType::MultiProtocol;
+    if (mutatesValue && method_->mutating()) {
         try {
             callee->mutateReference(analyser);
             if (!calleeType_.isMutable()) {
@@ -142,7 +145,8 @@ Type ASTMethodable::analyseTypeMethodCall(ExpressionAnalyser *analyser, const st
     return analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
 }
 
-Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const std::u32string &name) {
+Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const std::u32string &name,
+                                             const std::shared_ptr<ASTExpr> &callee) {
     std::vector<Type> argTypes;
     for (auto &arg : args_.args()) {
         argTypes.emplace_back(analyser->analyse(arg));
@@ -158,6 +162,7 @@ Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const
         if ((method_ = resolution.resolveAndReificate(&args_, &protocol)) != nullptr) {
             builtIn_ = BuiltInType::Multiprotocol;
             callType_ = CallType::DynamicProtocolDispatch;
+            checkMutation(analyser, callee);
             return analyser->analyseFunctionCall(&args_, protocol, method_);
         }
     }
