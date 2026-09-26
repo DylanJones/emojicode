@@ -35,6 +35,7 @@ compilation_tests = [
     "optionalParameter",
     "returnInBlock",
     "returnInIf",
+    "forInVariableReuse",
     "identityOperator",
     "typesAsValues",
     "class",
