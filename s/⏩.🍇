@@ -13,7 +13,7 @@
   📗
     Creates a range from *start* to *stop*.
   📗
-  🆕 🍼 start 🔢 🍼 stop 🔢 🍇
+  🥯🆕 🍼 start 🔢 🍼 stop 🔢 🍇
     1 ➡️ 🖍step
     ↪️ stop ◀️ start 🍇
       -1 ➡️ 🖍step
@@ -23,7 +23,7 @@
   📗
     Creates a range from *start* to *stop* with the provided *step*.
   📗
-  🆕 🍼 start 🔢 🍼 stop 🔢 🍼 step 🔢 🍇🍉
+  🥯🆕 🍼 start 🔢 🍼 stop 🔢 🍼 step 🔢 🍇🍉
 
   📗
     Returns the *n*th element of the range. *n* is only valid if
@@ -55,7 +55,41 @@
   🍉
 
   📗 Returns an iterator to iterate over integers in this range. 📗
-  ❗️ 🍡 ➡️ 🌳🐚🔢🍆 🍇
-    ↩️ 🆕🌳🐚🔢🍆👇❗️
+  ❗️ 🍡 ➡️ 👣 🍇
+    ↩️ 🆕👣 start step 📏👇❓❗️
+  🍉
+🍉
+
+📗
+  Iterator over a [[⏩]].
+
+  Being a value type whose methods are inlined, iterating a range with 🔂
+  compiles to a plain counting loop.
+📗
+🌍 🕊 👣 🍇
+  🐊 🍡🐚🔢🍆
+  🐊 🔂🐚🔢🍆
+
+  🖍🆕 start 🔢
+  🖍🆕 step 🔢
+  🖍🆕 count 🔢
+  🖍🆕 index 🔢
+
+  🥯🆕 🍼 start 🔢 🍼 step 🔢 🍼 count 🔢 🍇
+    0 ➡️ 🖍index
+  🍉
+
+  🥯🖍❗️ 🔽 ➡️ 🔢 🍇
+    start ➕ index ✖️ step ➡️ value
+    index ⬅️➕ 1
+    ↩️ value
+  🍉
+
+  🥯❓ 🔽 ➡️ 👌 🍇
+    ↩️ index ◀️ count
+  🍉
+
+  🥯❗️ 🍡 ➡️ 👣 🍇
+    ↩️ 👇
   🍉
 🍉
