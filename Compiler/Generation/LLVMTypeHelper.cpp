@@ -41,8 +41,17 @@ LLVMTypeHelper::LLVMTypeHelper(llvm::LLVMContext &context, CodeGenerator *codeGe
         // Pointer to the generic type info of the described type.
         // The address itself is used to determine whether to types are equal!
         pointer(),
-        llvm::Type::getInt1Ty(context_)  // optional
+        llvm::Type::getInt1Ty(context_),  // optional
+        pointer(),  // value witness
     });
+
+    valueWitness_ = llvm::StructType::create({
+        llvm::Type::getInt64Ty(context_),  // size of a value in memory
+        pointer(),  // copies a value from memory into a box: void (ptr value, ptr box)
+        pointer(),  // copies the value in a box into memory: void (ptr value, ptr box)
+        pointer(),  // releases a value in memory: void (ptr value)
+    }, "valueWitness");
+    valueWitnessCopy_ = llvm::FunctionType::get(llvm::Type::getVoidTy(context_), { pointer(), pointer() }, false);
 
     boxInfoType_ = llvm::StructType::create(context_, "boxInfo");
     box_ = llvm::StructType::create(context_, "box");
