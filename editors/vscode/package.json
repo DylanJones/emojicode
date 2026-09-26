@@ -88,6 +88,11 @@
           "other": true,
           "comments": false,
           "strings": false
+        },
+        "editor.unicodeHighlight.allowedCharacters": {
+          "️": true,
+          "➕": true,
+          "➖": true
         }
       }
     },
