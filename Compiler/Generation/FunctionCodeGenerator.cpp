@@ -132,6 +132,27 @@ llvm::Value* FunctionCodeGenerator::buildGetClassInfoFromObject(llvm::Value *obj
     return builder().CreateLoad(typeHelper().pointer(), buildGetClassInfoPtrFromObject(object), "info");
 }
 
+llvm::Value* FunctionCodeGenerator::buildGetBoxConformance(llvm::Value *boxInfo, const Type &type,
+                                                           size_t multiprotocolN) {
+    if (type.boxedFor().type() == TypeType::MultiProtocol) {
+        auto table = typeHelper().multiprotocolConformance(type.boxedFor());
+        return builder().CreateLoad(typeHelper().pointer(),
+                                    builder().CreateConstInBoundsGEP2_32(table, boxInfo, 0, multiprotocolN));
+    }
+    assert(type.boxedFor().type() == TypeType::Protocol);
+    return boxInfo;
+}
+
+llvm::Value* FunctionCodeGenerator::buildGetValueBoxInfo(llvm::Value *boxInfo, const Type &type) {
+    if (type.boxedFor().type() != TypeType::Protocol && type.boxedFor().type() != TypeType::MultiProtocol) {
+        return boxInfo;
+    }
+    auto conformance = buildGetBoxConformance(boxInfo, type);
+    return builder().CreateLoad(typeHelper().pointer(),
+                                builder().CreateConstInBoundsGEP2_32(typeHelper().protocolConformance(),
+                                                                     conformance, 0, 2));
+}
+
 llvm::Value* FunctionCodeGenerator::buildHasNoValueBoxPtr(llvm::Value *box) {
     return builder().CreateIsNull(builder().CreateLoad(typeHelper().pointer(), buildGetBoxInfoPtr(box)));
 }
@@ -493,8 +514,9 @@ void FunctionCodeGenerator::makeBoxValueUnique(llvm::Value *conformance, llvm::V
 
 void FunctionCodeGenerator::manageBox(bool retain, llvm::Value *boxInfo, llvm::Value *value, const Type &type) {
     llvm::Value *fnPtr;
-    if (type.boxedFor().type() == TypeType::Protocol) {
-        fnPtr = builder().CreateConstInBoundsGEP2_32(typeHelper().protocolConformance(), boxInfo, 0, retain ? 3 : 4);
+    if (type.boxedFor().type() == TypeType::Protocol || type.boxedFor().type() == TypeType::MultiProtocol) {
+        fnPtr = builder().CreateConstInBoundsGEP2_32(typeHelper().protocolConformance(),
+                                                     buildGetBoxConformance(boxInfo, type), 0, retain ? 3 : 4);
     }
     else {
         fnPtr = builder().CreateConstInBoundsGEP2_32(typeHelper().boxInfo(), boxInfo, 0, retain ? 1 : 2);

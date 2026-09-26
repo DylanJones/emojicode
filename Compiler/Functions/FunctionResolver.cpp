@@ -245,6 +245,13 @@ T* FunctionResolution<T>::resolveAndReificate(ASTArguments *args, Type *type) {
 }
 
 template <typename T>
+FunctionResolution<T>::FunctionResolution(const std::u32string &name, Mood mood, const std::vector<Type> &args,
+                                          std::vector<Type> genericArgs, const Type &callee,
+                                          const TypeContext &typeContext, SemanticAnalyser *analyser, SourcePosition p)
+        : key_(name, mood, args.size()), callee_(callee), args_(args), genericArgs_(std::move(genericArgs)),
+          typeContext_(typeContext), analyser_(analyser), p_(p) {}
+
+template <typename T>
 void FunctionResolution<T>::explain(CompilerError *error) const {
     for (auto &nc : nonCandidates_) {
         switch (nc.reason) {

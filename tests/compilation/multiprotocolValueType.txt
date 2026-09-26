@@ -1,0 +1,26 @@
+0
+1
+2
+the copy is independent
+x
+y
+10
+9
+elephant
+not a mouse
+an elephant again
+9
+20
+19
+mouse
+a mouse again
+19
+29
+29
+giraffe
+not a mouse
+29
+end
+deinit
+dumbo
+deinit giraffe

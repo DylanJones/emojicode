@@ -54,13 +54,8 @@ Value* ASTCast::downcast(FunctionCodeGenerator *fg) const {
 }
 
 Value* ASTCast::boxInfo(FunctionCodeGenerator *fg, Value *box) const {
-    if (expr_->expressionType().boxedFor().type() == TypeType::Protocol) {
-        auto protocolConPtr = fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxInfoPtr(box));
-        return fg->builder().CreateLoad(fg->typeHelper().pointer(),
-                                        fg->builder().CreateConstInBoundsGEP2_32(fg->typeHelper().protocolConformance(),
-                                                                                 protocolConPtr, 0, 2));
-    }
-    return fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxInfoPtr(box));
+    auto boxInfo = fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxInfoPtr(box));
+    return fg->buildGetValueBoxInfo(boxInfo, expr_->expressionType());
 }
 
 llvm::Function* ASTCast::kFunction = nullptr;

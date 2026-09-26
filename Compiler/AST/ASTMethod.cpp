@@ -143,19 +143,23 @@ Type ASTMethodable::analyseTypeMethodCall(ExpressionAnalyser *analyser, const st
 }
 
 Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const std::u32string &name) {
-    auto resolution = FunctionResolution<Function>(name, args_.mood(), &args_, calleeType_, analyser, position());
-    for (auto &protocol : calleeType_.protocols()) {
-        resolution.addResolver(&protocol.protocol()->methods());
+    std::vector<Type> argTypes;
+    for (auto &arg : args_.args()) {
+        argTypes.emplace_back(analyser->analyse(arg));
     }
-    if ((method_ = resolution.resolveAndReificate(&args_, &calleeType_)) != nullptr) {
-        for (; multiprotocolN_ < calleeType_.protocols().size(); multiprotocolN_++) {
-            if (calleeType_.protocols()[multiprotocolN_].protocol() == method_->owner()) {
-                break;
-            }
+    auto genericArgs = transformTypeAstVector(args_.genericArguments(), analyser->typeContext());
+    // The generic parameters of a method, e.g. Element in 🍡🐚🔢🍆, are resolved on the protocol that declares it.
+    for (multiprotocolN_ = 0; multiprotocolN_ < calleeType_.protocols().size(); multiprotocolN_++) {
+        auto protocol = calleeType_.protocols()[multiprotocolN_];
+        auto resolution = FunctionResolution<Function>(name, args_.mood(), argTypes, genericArgs, protocol,
+                                                       analyser->typeContext(), analyser->semanticAnalyser(),
+                                                       position());
+        resolution.addResolver(&protocol.protocol()->methods());
+        if ((method_ = resolution.resolveAndReificate(&args_, &protocol)) != nullptr) {
+            builtIn_ = BuiltInType::Multiprotocol;
+            callType_ = CallType::DynamicProtocolDispatch;
+            return analyser->analyseFunctionCall(&args_, protocol, method_);
         }
-        builtIn_ = BuiltInType::Multiprotocol;
-        callType_ = CallType::DynamicProtocolDispatch;
-        return analyser->analyseFunctionCall(&args_, calleeType_, method_);
     }
     throw CompilerError(position(), "No type in ", calleeType_.toString(analyser->typeContext()),
                         " provides a method ", utf8(name), ".");

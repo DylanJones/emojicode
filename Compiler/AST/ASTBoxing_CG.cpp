@@ -7,6 +7,7 @@
 //
 
 #include "ASTBoxing.hpp"
+#include <algorithm>
 #include "ASTInitialization.hpp"
 #include "Generation/FunctionCodeGenerator.hpp"
 #include "Generation/ProtocolsTableGenerator.hpp"
@@ -38,19 +39,29 @@ Value* ASTRebox::generate(FunctionCodeGenerator *fg) const {
 }
 
 Value* ASTRebox::rebox(Value *box, FunctionCodeGenerator *fg) const {
+    auto &from = expr_->expressionType();
+    auto boxInfo = fg->builder().CreateExtractValue(box, 0);
     if (expressionType().boxedFor().type() == TypeType::Something) {
-        auto pct = fg->typeHelper().protocolConformance();
-        auto pc = fg->builder().CreateExtractValue(box, 0);
-        auto bi = fg->builder().CreateLoad(fg->typeHelper().pointer(),
-                                           fg->builder().CreateConstInBoundsGEP2_32(pct, pc, 0, 2));
-        return fg->builder().CreateInsertValue(box, bi, 0);
+        return fg->builder().CreateInsertValue(box, fg->buildGetValueBoxInfo(boxInfo, from), 0);
+    }
+
+    auto protocol = expressionType().boxedFor().protocol();
+    if (from.boxedFor().type() == TypeType::MultiProtocol) {
+        // The box already has the conformance to each protocol of the multiprotocol.
+        auto &protocols = from.boxedFor().protocols();
+        auto it = std::find_if(protocols.begin(), protocols.end(), [protocol](auto &t) {
+            return t.protocol() == protocol;
+        });
+        if (it != protocols.end()) {
+            auto conformance = fg->buildGetBoxConformance(boxInfo, from, it - protocols.begin());
+            return fg->builder().CreateInsertValue(box, conformance, 0);
+        }
     }
 
     auto boxPtr = fg->createEntryAlloca(fg->typeHelper().box());
     fg->builder().CreateStore(box, boxPtr);
-    auto protocolRtti = expressionType().boxedFor().protocol()->rtti();
-    auto boxInfo = fg->builder().CreateLoad(fg->typeHelper().pointer(), fg->buildGetBoxInfoPtr(boxPtr));
-    auto conformance = fg->buildFindProtocolConformance(boxPtr, boxInfo, protocolRtti);
+    auto conformance = fg->buildFindProtocolConformance(boxPtr, fg->buildGetValueBoxInfo(boxInfo, from),
+                                                        protocol->rtti());
     fg->builder().CreateStore(conformance, fg->buildGetBoxInfoPtr(boxPtr));
     return fg->builder().CreateLoad(fg->typeHelper().box(), boxPtr);
 }

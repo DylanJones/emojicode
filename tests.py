@@ -77,6 +77,7 @@ compilation_tests = [
     "protocolGenericLayerClass",
     "protocolGenericLayerValueType",
     "protocolMulti",
+    "multiprotocolValueType",
     "reboxToSomething",
     "castOwnership",
     "assignmentByCallProtocol",
