@@ -51,6 +51,7 @@ LLVMTypeHelper::LLVMTypeHelper(llvm::LLVMContext &context, CodeGenerator *codeGe
         pointer(),  // copies the value in a box into memory: void (ptr value, ptr box)
         pointer(),  // releases a value in memory: void (ptr value)
     }, "valueWitness");
+    erasedReference_ = llvm::StructType::create({ pointer(), pointer() }, "erasedReference");
     valueWitnessCopy_ = llvm::FunctionType::get(llvm::Type::getVoidTy(context_), { pointer(), pointer() }, false);
 
     boxInfoType_ = llvm::StructType::create(context_, "boxInfo");
@@ -205,6 +206,9 @@ llvm::Type* LLVMTypeHelper::box() const {
 }
 
 bool LLVMTypeHelper::isDereferenceable(const Type &type) const {
+    if (isErasedReference(type)) {
+        return false;  // Not a pointer, and the value it refers to is of a size unknown at compile time.
+    }
     return ((type.type() == TypeType::Class || type.type() == TypeType::Someobject) &&
             type.storageType() != StorageType::Box) || type.isReference();
 }
@@ -223,7 +227,21 @@ llvm::Type* LLVMTypeHelper::genericArgsStore(const Type &calleeType) {
 llvm::Type* LLVMTypeHelper::llvmTypeFor(const Type &type) {
     auto llvmType = typeForOrdinaryType(type);
     assert(llvmType != nullptr);
-    return type.isReference() ? pointer() : llvmType;
+    if (type.isReference()) {
+        return isErasedReference(type) ? static_cast<llvm::Type *>(erasedReference_) : pointer();
+    }
+    return llvmType;
+}
+
+bool LLVMTypeHelper::isErasedReference(const Type &type) {
+    // Every reference to a box, as a reference to a box of e.g. 🔢 in a caller may be one to a value of a generic
+    // parameter of the callee.
+    return type.isReference() && type.type() == TypeType::Box;
+}
+
+bool LLVMTypeHelper::isErased(const Type &type) {
+    return !type.isReference() && type.type() == TypeType::Box &&
+        (type.unboxedType() == TypeType::GenericVariable || type.unboxedType() == TypeType::LocalGenericVariable);
 }
 
 llvm::Type* LLVMTypeHelper::llvmTypeForPointee(const Type &type) {

@@ -94,6 +94,10 @@ public:
     Type analyseFunctionCall(ASTArguments *node, const Type &type, Function *function,
                              Function **specialization = nullptr);
 
+    /// Records that the code needs the type for which a generic parameter of the type in @p type stands at run time,
+    /// which it gets from 👇, so that a closure captures it.
+    void usesGenericArgumentsOf(const Type &type);
+
     Type integer() const;
     Type boolean() const;
     Type real() const;

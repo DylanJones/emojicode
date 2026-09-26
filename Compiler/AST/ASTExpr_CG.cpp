@@ -10,6 +10,7 @@
 #include "ASTTypeExpr.hpp"
 #include "Generation/CallCodeGenerator.hpp"
 #include "Generation/FunctionCodeGenerator.hpp"
+#include "Generation/LLVMTypeHelper.hpp"
 #include "Types/Class.hpp"
 
 namespace EmojicodeCompiler {
@@ -40,6 +41,9 @@ bool ASTExpr::producesTemporaryObject() const {
 }
 
 Value* ASTSizeOf::generate(FunctionCodeGenerator *fg) const {
+    if (LLVMTypeHelper::isErased(type_->type())) {  // The size of the type T stands for.
+        return fg->buildValueSize(fg->buildTypeDescriptionEntry(type_->type()));
+    }
     return fg->sizeOf(fg->typeHelper().llvmTypeFor(type_->type()));
 }
 

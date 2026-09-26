@@ -91,6 +91,9 @@ public:
     void mutateReference(ExpressionAnalyser *analyser) override;
 
 private:
+    /// Returns the reference to the variable at @p address, which is an erased reference if it is a box.
+    Value* reference(FunctionCodeGenerator *fg, Value *address) const;
+
     bool reference_ = false;
     /// Set to true if the value of the local variable, which is not a parameter, is returned. It must then not be
     /// retained, as the reference of the variable is returned with it.

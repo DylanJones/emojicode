@@ -27,6 +27,7 @@ Type ASTSizeOf::analyse(ExpressionAnalyser *analyser) {
         throw CompilerError(position(), "A specialization cannot use ⚖️.");
     }
     type_->analyseType(analyser->typeContext());
+    analyser->usesGenericArgumentsOf(type_->type());
     return analyser->integer();
 }
 

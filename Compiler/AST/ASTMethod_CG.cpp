@@ -10,6 +10,7 @@
 #include "ASTType.hpp"
 #include "Generation/CallCodeGenerator.hpp"
 #include "Generation/FunctionCodeGenerator.hpp"
+#include "Generation/LLVMTypeHelper.hpp"
 #include "Generation/TypeDescriptionGenerator.hpp"
 #include "Functions/Function.hpp"
 #include "Types/TypeDefinition.hpp"
@@ -60,6 +61,10 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
                 auto type = args_.genericArguments().front()->type();
                 auto ptr = buildMemoryAddress(fg, v, args_.args()[1]->generate(fg), type);
                 auto val = args_.args().front()->generate(fg);
+                if (LLVMTypeHelper::isErased(type)) {  // The memory holds a value of the type T stands for.
+                    fg->buildStoreErased(ptr, fg->buildTypeDescriptionEntry(type), val, type);
+                    return nullptr;
+                }
                 auto store = fg->builder().CreateStore(val, ptr);
                 if (fg->typeHelper().shouldAddTbaa(type)) {
                     auto tbaa = fg->typeHelper().tbaaNodeFor(type, false);
@@ -73,11 +78,22 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
             }
             case BuiltInType::Load: {
                 auto type = args_.genericArguments().front()->type();
-                return buildMemoryAddress(fg, v, args_.args().front()->generate(fg), type);
+                auto ptr = buildMemoryAddress(fg, v, args_.args().front()->generate(fg), type);
+                if (LLVMTypeHelper::isErased(type)) {
+                    return fg->buildErasedReference(ptr, fg->buildTypeDescriptionEntry(type));
+                }
+                if (LLVMTypeHelper::isErasedReference(expressionType())) {
+                    return fg->buildErasedReference(ptr);  // A box in memory, e.g. of ⚪.
+                }
+                return ptr;
             }
             case BuiltInType::Release: {
                 auto type = args_.genericArguments().front()->type();
-                if (type.isManaged()) {
+                if (LLVMTypeHelper::isErased(type)) {
+                    auto ptr = buildMemoryAddress(fg, v, args_.args().front()->generate(fg), type);
+                    fg->buildReleaseErased(ptr, fg->buildTypeDescriptionEntry(type));
+                }
+                else if (type.isManaged()) {
                     auto ptr = buildMemoryAddress(fg, v, args_.args().front()->generate(fg), type);
                     fg->releaseByReference(ptr, type);
                 }

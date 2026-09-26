@@ -117,9 +117,34 @@ bool ExpressionAnalyser::storesGenericValuesUnboxed(TypeDefinition *typeDef) con
                                   typeDef == compiler()->cVoidPointer);
 }
 
+static bool containsTypeGenericVariable(const Type &type) {
+    auto unboxed = type.unboxed().unoptionalized();
+    if (unboxed.type() == TypeType::GenericVariable) {
+        return true;
+    }
+    if (unboxed.canHaveGenericArguments()) {
+        for (auto &argument : unboxed.genericArguments()) {
+            if (containsTypeGenericVariable(argument)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void ExpressionAnalyser::usesGenericArgumentsOf(const Type &type) {
+    if (containsTypeGenericVariable(type)) {
+        pathAnalyser().record(PathAnalyserIncident::UsedSelf);
+    }
+}
+
 Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &type, Function *function,
                                              Function **specialization) {
     auto genericArgs = transformTypeAstVector(node->genericArguments(), typeContext());
+    // The generic arguments are passed as type descriptions, which describe those of the type with those in 👇.
+    for (auto &argument : genericArgs) {
+        usesGenericArgumentsOf(argument);
+    }
 
     // The generic arguments are types of the calling code, e.g. its own generic parameters, so they must be checked
     // in its context. Only the constraints are resolved in the context of the callee.

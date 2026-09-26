@@ -11,6 +11,7 @@
 #include "ASTVariables.hpp"
 #include "Generation/RunTimeHelper.hpp"
 #include "Generation/FunctionCodeGenerator.hpp"
+#include "Generation/LLVMTypeHelper.hpp"
 #include "Types/ValueType.hpp"
 
 namespace EmojicodeCompiler {
@@ -45,11 +46,18 @@ void AccessesAnyVariable::setTbaaMetadata(FunctionCodeGenerator *fg, llvm::Instr
     storeOrLoad->setMetadata(llvm::LLVMContext::MD_tbaa, accessTag);
 }
 
+Value* ASTGetVariable::reference(FunctionCodeGenerator *fg, Value *address) const {
+    if (LLVMTypeHelper::isErasedReference(expressionType())) {
+        return fg->buildErasedReference(address);
+    }
+    return address;
+}
+
 Value* ASTGetVariable::generate(FunctionCodeGenerator *fg) const {
     if (inInstanceScope()) {
         auto ptr = instanceVariablePointer(fg);
         if (reference_) {
-            return ptr;
+            return reference(fg, ptr);
         }
         auto val = fg->builder().CreateLoad(fg->instanceVariableType(id()), ptr);
         setTbaaMetadata(fg, val);
@@ -64,7 +72,7 @@ Value* ASTGetVariable::generate(FunctionCodeGenerator *fg) const {
 
     auto &localVariable = fg->scoper().getVariable(id());
     if (reference_) {
-        return localVariable.ptr;
+        return reference(fg, localVariable.ptr);
     }
 
     auto val = fg->builder().CreateLoad(localVariable.type, localVariable.ptr);
