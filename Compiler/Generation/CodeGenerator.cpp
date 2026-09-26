@@ -401,12 +401,12 @@ llvm::Function::LinkageTypes CodeGenerator::linkageForFunction(Function *functio
     if (function->isClosure()) {
         return llvm::Function::PrivateLinkage;
     }
-    if (function->isInline() && function->package()->isImported()) {
-        return llvm::Function::AvailableExternallyLinkage;
-    }
-    // Every module that uses a specialization creates its own.
+    // Every module that uses a specialization creates its own, including of an imported inline function.
     if (function->specializedFunction() != nullptr) {
         return llvm::Function::InternalLinkage;
+    }
+    if (function->isInline() && function->package()->isImported()) {
+        return llvm::Function::AvailableExternallyLinkage;
     }
     if ((function->accessLevel() == AccessLevel::Private && !function->isExternal() &&
          (function->owner() == nullptr || !function->owner()->exported())) || function->isClosure()) {
