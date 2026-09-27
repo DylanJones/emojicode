@@ -13,6 +13,7 @@
 #include "Functions/Initializer.hpp"
 #include "Types/Protocol.hpp"
 #include "Types/TypeDefinition.hpp"
+#include "Generation/LLVMTypeHelper.hpp"
 #include "Generation/TypeDescriptionGenerator.hpp"
 #include <llvm/Support/raw_ostream.h>
 #include <stdexcept>
@@ -42,8 +43,28 @@ llvm::Value* CallCodeGenerator::markNeverReturning(llvm::Value *value, Function 
 llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, const ASTArguments &astArgs,
                                          Function *function, llvm::Value *errorPointer,
                                          const std::vector<llvm::Value *> &supplArgs) {
+    if (callee != nullptr && callee->getType() == fg_->typeHelper().erasedReference()) {
+        // The method is called on a box with the value, which is written back if the method mutates it.
+        auto box = fg_->buildErasedReferenceBox(callee, type);
+        auto value = generate(box, type, astArgs, function, errorPointer, supplArgs);
+        fg_->buildErasedReferenceWriteBack(callee, box, type, function->mutating());
+        return value;
+    }
     auto args = createArgsVector(callee, astArgs, errorPointer, supplArgs);
+    auto value = dispatch(function, type, astArgs, args);
+    restoreStack(function);
+    return value;
+}
 
+void CallCodeGenerator::restoreStack(Function *function) {
+    auto returnType = function->returnType();
+    if (tdg_ != nullptr && (returnType == nullptr || !LLVMTypeHelper::isErasedReference(returnType->type()))) {
+        tdg_->restoreStack();
+    }
+}
+
+llvm::Value* CallCodeGenerator::dispatch(Function *function, const Type &type, const ASTArguments &astArgs,
+                                         const std::vector<llvm::Value *> &args) {
     assert(function != nullptr);
     switch (callType_) {
         case CallType::StaticContextfreeDispatch:
@@ -78,11 +99,9 @@ llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, 
                                                  isMutableVariable(type) && function->mutating());
         }
         case CallType::None:
-            throw std::domain_error("CallType::None is not a valid call type");
+            break;
     }
-    if (tdg_ != nullptr) {
-        tdg_->restoreStack();
-    }
+    throw std::domain_error("CallType::None is not a valid call type");
 }
 
 llvm::Value* CallCodeGenerator::generateCTrampolineCall(Function *function, llvm::Function *trampoline,
@@ -142,6 +161,12 @@ llvm::Value *MultiprotocolCallCodeGenerator::generate(llvm::Value *callee, const
                                                       llvm::Value *errorPointer, size_t multiprotocolN) {
     assert(calleeType.type() == TypeType::Box);
     assert(function != nullptr);
+    if (callee->getType() == fg()->typeHelper().erasedReference()) {
+        auto box = fg()->buildErasedReferenceBox(callee, calleeType);
+        auto value = generate(box, calleeType, args, function, errorPointer, multiprotocolN);
+        fg()->buildErasedReferenceWriteBack(callee, box, calleeType, function->mutating());
+        return value;
+    }
 
     auto argsv = createArgsVector(callee, args, errorPointer, {});
 
@@ -154,8 +179,10 @@ llvm::Value *MultiprotocolCallCodeGenerator::generate(llvm::Value *callee, const
                                                   fg()->buildGetBoxInfoPtr(argsv.front()));
         conformance = fg()->buildGetBoxConformance(boxInfo, calleeType, multiprotocolN);
     }
-    return createDynamicProtocolDispatch(function, std::move(argsv), args.genericArgumentTypes(), conformance,
-                                         isMutableVariable(calleeType) && function->mutating());
+    auto value = createDynamicProtocolDispatch(function, std::move(argsv), args.genericArgumentTypes(), conformance,
+                                               isMutableVariable(calleeType) && function->mutating());
+    restoreStack(function);
+    return value;
 }
 
 llvm::Value *CallCodeGenerator::dispatchFromVirtualTable(Function *function, llvm::Value *virtualTable,

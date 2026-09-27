@@ -51,6 +51,10 @@ void RunTimeHelper::declareRunTime() {
     findProtocolConformance_->addParamAttr(0, llvm::Attribute::NonNull);
     findProtocolConformance_->addParamAttr(1, llvm::Attribute::NonNull);
 
+    multiprotocolTable_ = declareRunTimeFunction("ejcMultiprotocolTable", generator_->typeHelper().pointer(), {
+        generator_->typeHelper().pointer(), llvm::Type::getInt64Ty(generator_->context())
+    });
+
     checkGenericArgs_ = declareRunTimeFunction("ejcCheckGenericArgs", llvm::Type::getInt1Ty(generator_->context()), {
         generator_->typeHelper().pointer(),
         generator_->typeHelper().pointer(),

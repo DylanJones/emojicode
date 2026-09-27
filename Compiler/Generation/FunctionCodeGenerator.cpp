@@ -14,6 +14,8 @@
 #include "Generation/CallCodeGenerator.hpp"
 #include "Package/Package.hpp"
 #include "Types/Class.hpp"
+#include "Types/Protocol.hpp"
+#include "TypeDescriptionGenerator.hpp"
 #include "Types/ValueType.hpp"
 #include "Types/TypeContext.hpp"
 #include <llvm/IR/BasicBlock.h>
@@ -376,6 +378,139 @@ void FunctionCodeGenerator::makeRemoteBoxValueUnique(llvm::Value *box, const Typ
         auto value = builder().CreateLoad(llvmType, builder().CreateLoad(typeHelper().pointer(), valuePtrPtr));
         builder().CreateStore(value, buildSetRemoteBoxObject(box, mngType, alloc(mngType)));
         builder().CreateCall(generator()->runTime().releaseWithoutDeinit(), object);
+    });
+}
+
+llvm::Value* FunctionCodeGenerator::buildErasedReference(llvm::Value *address, llvm::Value *entry) {
+    if (entry == nullptr) {
+        entry = llvm::ConstantPointerNull::get(typeHelper().pointer());
+    }
+    llvm::Value *reference = llvm::UndefValue::get(typeHelper().erasedReference());
+    reference = builder().CreateInsertValue(reference, address, 0);
+    return builder().CreateInsertValue(reference, entry, 1);
+}
+
+llvm::Value* FunctionCodeGenerator::buildErasedReferenceAddress(llvm::Value *reference) {
+    return builder().CreateExtractValue(reference, 0);
+}
+
+llvm::Value* FunctionCodeGenerator::buildTypeDescriptionEntry(const Type &type) {
+    return TypeDescriptionGenerator(this, TypeDescriptionUser::Function).entryFor(type);
+}
+
+/// Returns the function at @p index of the value witness of the type described by @p entry.
+static llvm::Value* witnessField(FunctionCodeGenerator *fg, llvm::Value *entry, unsigned index) {
+    auto &th = fg->typeHelper();
+    auto witness = fg->builder().CreateLoad(th.pointer(),
+                                            fg->builder().CreateConstInBoundsGEP2_32(th.typeDescription(), entry, 0, 2));
+    return fg->builder().CreateLoad(index == 0 ? static_cast<llvm::Type *>(llvm::Type::getInt64Ty(fg->ctx()))
+                                               : th.pointer(),
+                                    fg->builder().CreateConstInBoundsGEP2_32(th.valueWitness(), witness, 0, index));
+}
+
+bool FunctionCodeGenerator::boxHasConformance(const Type &type) {
+    return type.type() == TypeType::Box && (type.boxedFor().type() == TypeType::Protocol ||
+                                            type.boxedFor().type() == TypeType::MultiProtocol);
+}
+
+llvm::Value* FunctionCodeGenerator::buildBoxConformance(llvm::Value *box, llvm::Value *boxInfo, const Type &type) {
+    auto &boxedFor = type.boxedFor();
+    if (boxedFor.type() == TypeType::Protocol) {
+        return buildFindProtocolConformance(box, boxInfo, boxedFor.protocol()->rtti());
+    }
+    auto &protocols = boxedFor.protocols();
+    auto arrayType = llvm::ArrayType::get(typeHelper().pointer(), protocols.size());
+    auto conformances = createEntryAlloca(arrayType);
+    for (size_t i = 0; i < protocols.size(); i++) {
+        auto conformance = buildFindProtocolConformance(box, boxInfo, protocols[i].protocol()->rtti());
+        builder().CreateStore(conformance, builder().CreateConstInBoundsGEP2_32(arrayType, conformances, 0, i));
+    }
+    return builder().CreateCall(generator()->runTime().multiprotocolTable(), { conformances, int64(protocols.size()) });
+}
+
+/// Replaces the protocol conformance (or table of them) in the box of @p type to which @p box points with the box info
+/// of its value, as the boxes of value witnesses hold.
+static void conformanceToBoxInfo(FunctionCodeGenerator *fg, llvm::Value *box, const Type &type) {
+    auto infoPtr = fg->buildGetBoxInfoPtr(box);
+    auto conformance = fg->builder().CreateLoad(fg->typeHelper().pointer(), infoPtr);
+    fg->createIf(fg->builder().CreateIsNotNull(conformance), [&] {
+        fg->builder().CreateStore(fg->buildGetValueBoxInfo(conformance, type), infoPtr);
+    });
+}
+
+/// Replaces the box info in the box of @p type to which @p box points with what a box of @p type holds instead (see
+/// FunctionCodeGenerator::buildBoxConformance()).
+static void boxInfoToConformance(FunctionCodeGenerator *fg, llvm::Value *box, const Type &type) {
+    auto infoPtr = fg->buildGetBoxInfoPtr(box);
+    auto boxInfo = fg->builder().CreateLoad(fg->typeHelper().pointer(), infoPtr);
+    fg->createIf(fg->builder().CreateIsNotNull(boxInfo), [&] {
+        fg->builder().CreateStore(fg->buildBoxConformance(box, boxInfo, type), infoPtr);
+    });
+}
+
+llvm::Value* FunctionCodeGenerator::buildValueSize(llvm::Value *entry) {
+    return witnessField(this, entry, 0);
+}
+
+llvm::Value* FunctionCodeGenerator::buildLoadErased(llvm::Value *reference, const Type &otype) {
+    auto type = otype;
+    type.setReference(false);
+    auto box = createEntryAlloca(typeHelper().box());
+    auto address = buildErasedReferenceAddress(reference);
+    auto entry = builder().CreateExtractValue(reference, 1);
+    createIfElse(builder().CreateIsNull(entry), [&] {
+        builder().CreateStore(builder().CreateLoad(typeHelper().box(), address), box);
+        retain(box, type);
+    }, [&] {
+        builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, 1), { address, box });
+        if (boxHasConformance(type)) {
+            boxInfoToConformance(this, box, type);
+        }
+    });
+    return builder().CreateLoad(typeHelper().box(), box);
+}
+
+void FunctionCodeGenerator::buildStoreErased(llvm::Value *address, llvm::Value *entry, llvm::Value *boxValue,
+                                             const Type &type) {
+    auto box = createEntryAlloca(typeHelper().box());
+    builder().CreateStore(boxValue, box);
+    if (boxHasConformance(type)) {
+        conformanceToBoxInfo(this, box, type);
+    }
+    builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, 2), { address, box });
+}
+
+void FunctionCodeGenerator::buildReleaseErased(llvm::Value *address, llvm::Value *entry) {
+    builder().CreateCall(typeHelper().boxRetainRelease(), witnessField(this, entry, 3), { address });
+}
+
+llvm::Value* FunctionCodeGenerator::buildErasedReferenceBox(llvm::Value *reference, const Type &otype) {
+    auto type = otype;
+    type.setReference(false);
+    auto address = buildErasedReferenceAddress(reference);
+    auto entry = builder().CreateExtractValue(reference, 1);
+    return createIfElsePhi(builder().CreateIsNull(entry), [&] { return address; }, [&]() -> llvm::Value* {
+        auto box = createEntryAlloca(typeHelper().box());
+        builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, 1), { address, box });
+        if (boxHasConformance(type)) {
+            boxInfoToConformance(this, box, type);
+        }
+        return box;
+    });
+}
+
+void FunctionCodeGenerator::buildErasedReferenceWriteBack(llvm::Value *reference, llvm::Value *box,
+                                                          const Type &otype, bool mutated) {
+    auto type = otype;
+    type.setReference(false);
+    auto address = buildErasedReferenceAddress(reference);
+    auto entry = builder().CreateExtractValue(reference, 1);
+    createIf(builder().CreateIsNotNull(entry), [&] {
+        if (mutated) {
+            buildReleaseErased(address, entry);
+            buildStoreErased(address, entry, builder().CreateLoad(typeHelper().box(), box), type);
+        }
+        release(box, type);
     });
 }
 

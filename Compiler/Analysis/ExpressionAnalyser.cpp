@@ -8,6 +8,7 @@
 #include "ExpressionAnalyser.hpp"
 #include "AnalysisObserver.hpp"
 #include "AST/ASTClosure.hpp"
+#include "AST/ASTType.hpp"
 #include "AST/ASTVariables.hpp"
 #include "AST/ASTTypeExpr.hpp"
 #include "Compiler.hpp"
@@ -117,9 +118,42 @@ bool ExpressionAnalyser::storesGenericValuesUnboxed(TypeDefinition *typeDef) con
                                   typeDef == compiler()->cVoidPointer);
 }
 
+static bool containsTypeGenericVariable(const Type &type) {
+    auto unboxed = type.unboxed().unoptionalized();
+    if (unboxed.type() == TypeType::GenericVariable) {
+        return true;
+    }
+    if (unboxed.canHaveGenericArguments()) {
+        for (auto &argument : unboxed.genericArguments()) {
+            if (containsTypeGenericVariable(argument)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void ExpressionAnalyser::usesGenericArgumentsOf(const Type &type) {
+    if (containsTypeGenericVariable(type)) {
+        pathAnalyser().record(PathAnalyserIncident::UsedSelf);
+    }
+}
+
+void ExpressionAnalyser::checkMemoryAccessOf(const ASTType &type, const SourcePosition &p) const {
+    auto function = typeContext().function();
+    if (function != nullptr && function->enclosingSpecialization() != nullptr && type.isStoredBoxedByGenericCode()) {
+        throw CompilerError(p, "A specialization cannot access values of ", type.type().toString(typeContext()),
+                            " in memory, which generic code stores in boxes.");
+    }
+}
+
 Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &type, Function *function,
                                              Function **specialization) {
     auto genericArgs = transformTypeAstVector(node->genericArguments(), typeContext());
+    // The generic arguments are passed as type descriptions, which describe those of the type with those in 👇.
+    for (auto &argument : genericArgs) {
+        usesGenericArgumentsOf(argument);
+    }
 
     // The generic arguments are types of the calling code, e.g. its own generic parameters, so they must be checked
     // in its context. Only the constraints are resolved in the context of the callee.
@@ -230,7 +264,10 @@ Type ExpressionAnalyser::box(Type exprType, const TypeExpectation &expectation, 
             insertNode<ASTBoxReferenceToSimple>(node, exprType);
             return exprType;
         }
-        if (!expectation.isReference()) {
+        // A reference is only kept where one is useful, if one is merely allowed. E.g. a specialization of 🐽 of 🍨 for
+        // 🔡 returns a reference to a 🔡, on which a method is called with the 🔡 itself.
+        if (!expectation.isReference() ||
+            (expectation.type() == TypeType::StorageExpectation && !exprType.isReferenceUseful())) {
             exprType.setReference(false);
             insertNode<ASTDereference>(node, exprType);
         }
@@ -278,6 +315,11 @@ void ExpressionAnalyser::makeIntoSimple(Type &exprType, std::shared_ptr<ASTExpr>
 
 void ExpressionAnalyser::makeIntoBox(Type &exprType, const TypeExpectation &expectation,
                                    std::shared_ptr<ASTExpr> *node) const {
+    if (exprType.isReference() && exprType.storageType() != StorageType::Box) {
+        // A box holds a copy of the value, e.g. the 🔢 to which 🐽 of a 🍨🐚🔢🍆 returns a reference (ASTInterpolationLiteral).
+        exprType.setReference(false);
+        insertNode<ASTDereference>(node, exprType);
+    }
     switch (exprType.storageType()) {
         case StorageType::Box:
             if (expectation.type() == TypeType::Box &&

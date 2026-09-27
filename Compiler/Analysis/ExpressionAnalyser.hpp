@@ -24,6 +24,7 @@ struct SourcePosition;
 class ASTArguments;
 class CompilerError;
 class ASTTypeExpr;
+class ASTType;
 
 /// This class provides all interfaces required for analysing an expression.
 ///
@@ -93,6 +94,14 @@ public:
     /// specialization, which the call must then call instead of @p function. It is left unchanged otherwise.
     Type analyseFunctionCall(ASTArguments *node, const Type &type, Function *function,
                              Function **specialization = nullptr);
+
+    /// Records that the code needs the type for which a generic parameter of the type in @p type stands at run time,
+    /// which it gets from 👇, so that a closure captures it.
+    void usesGenericArgumentsOf(const Type &type);
+    /// Throws if this is a specialization and generic code stores values of @p type in memory differently (see
+    /// ASTType::isStoredBoxedByGenericCode()), so that the generic function is used, which shares memory with the
+    /// generic code, instead.
+    void checkMemoryAccessOf(const ASTType &type, const SourcePosition &p) const;
 
     Type integer() const;
     Type boolean() const;

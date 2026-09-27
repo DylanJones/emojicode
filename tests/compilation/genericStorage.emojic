@@ -1,0 +1,120 @@
+💭 Generic code storing values of the types its generic parameters stand for in memory, as 🍨 and 🍯 do: of
+💭 integers, strings, value types stored remotely, protocols, and elements mutated in place through 🐽.
+🐊 🔼 🍇
+  ❗️ 🆙 ➡️ 🔢
+🍉
+
+🕊 🐘 🍇
+  🐊 🔼
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 d 🔢
+  🖍🆕 name 🔡
+  🆕 🍼 a 🔢 🍼 name 🔡 🍇
+    a ➡️ 🖍b
+    a ➡️ 🖍c
+    a ➡️ 🖍d
+  🍉
+  ❗️ 🆙 ➡️ 🔢 🍇
+    ↩️ a ➕ b ➕ c ➕ d
+  🍉
+  ❗️ 📛 ➡️ 🔡 🍇
+    ↩️ name
+  🍉
+🍉
+
+🕊 🐭 🍇
+  🐊 🔼
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 🆙 ➡️ 🔢 🍇
+    ↩️ n
+  🍉
+  🖍❗️ 📈 🍇
+    n ⬅️➕ 1
+  🍉
+🍉
+
+🐇 🧺 🍇
+  🆕 🍇🍉
+  💭 Class methods stay generic, so these operate on the lists with witnesses.
+  ❗️ 🔀🐚T⚪🍆 list 🍨🐚T🍆 ➡️ 🍨🐚T🍆 🍇
+    🆕🍨🐚T🍆❗️ ➡️ 🖍🆕 result
+    🔂 x list 🍇
+      🐻result x❗️
+    🍉
+    🔂 x list 🍇
+      🐻result x❗️
+    🍉
+    ↩️ result
+  🍉
+  ❗️ 🥇🐚T⚪🍆 list 🍨🐚T🍆 ➡️ T 🍇
+    ↩️ 🐽list 0❗️
+  🍉
+  ❗️ 🎯🐚T 🔼🍆 list 🍨🐚T🍆 ➡️ 🔢 🍇
+    0 ➡️ 🖍🆕 sum
+    🔂 x list 🍇
+      sum ⬅️➕ 🆙x❗️
+    🍉
+    ↩️ sum
+  🍉
+🍉
+
+🏁 🍇
+  🆕🧺❗️ ➡️ basket
+  🔂 round 🆕⏩ 0 200❗️ 🍇
+    🍿 1 2 3 🍆 ➡️ ints
+    🍿 🔤a🔤 🔤b🔤 🍆 ➡️ strings
+    🍿 🆕🐘 1 🔤one🔤❗️ 🆕🐘 2 🔤two🔤❗️ 🍆 ➡️ elephants
+    🍿 🆕🐭 5❗️ 🆕🐭 6❗️ 🍆 ➡️ mice
+    🍿 🆕🐘 3 🔤three🔤❗️ 🆕🐭 7❗️ 🍆 ➡️ ups
+
+    🔀basket ints❗️ ➡️ i2
+    🔀basket strings❗️ ➡️ s2
+    🔀basket elephants❗️ ➡️ e2
+    🔀basket mice❗️ ➡️ m2
+    🔀basket ups❗️ ➡️ u2
+    ↪️ round 🙌 199 🍇
+      😀 🔡 📏i2❓❗️❗️
+      😀 🥇basket s2❗️❗️
+      😀 📛 🥇basket e2❗️❗️❗️
+      😀 🔡 🆙 🥇basket m2❗️❗️❗️❗️
+      😀 🔡 🎯basket u2❗️❗️❗️
+      😀 🔡 🎯basket e2❗️❗️❗️
+    🍉
+
+    💭 Mutating an element in place through 🐽.
+    🍿 🍿 1 2 🍆 🍿 3 🍆 🍆 ➡️ 🖍🆕 nested
+    🐻 🐽nested 0❗️ 9❗️
+    🍿 🆕🐭 1❗️ 🆕🐭 2❗️ 🍆 ➡️ 🖍🆕 mutableMice
+    📈 🐽mutableMice 1❗️❗️
+    ↪️ round 🙌 199 🍇
+      😀 🔡 📏 🐽nested 0❗️❓❗️❗️
+      😀 🔡 🆙 🐽mutableMice 1❗️❗️❗️❗️
+    🍉
+
+    💭 Removing, inserting and sorting.
+    🍿 🆕🐘 5 🔤five🔤❗️ 🆕🐘 4 🔤four🔤❗️ 🆕🐘 6 🔤six🔤❗️ 🍆 ➡️ 🖍🆕 herd
+    🐨herd 0❗️
+    🐵herd 0 🆕🐘 9 🔤nine🔤❗️❗️
+    🦁herd 🍇 a 🐘 b 🐘 ➡️ 🔢 ↩️ 🆙a❗️ ➖ 🆙b❗️ 🍉❗️
+    🐼herd❗️ ➡️ popped
+    ↪️ round 🙌 199 🍇
+      😀 📛 🐽herd 0❗️❗️❗️
+      ↪️ popped ➡️ p 🍇
+        😀 📛 p❗️❗️
+      🍉
+    🍉
+
+    🍿 🔤x🔤 ➡️ 🆕🐘 8 🔤eight🔤❗️ 🔤y🔤 ➡️ 🆕🐘 7 🔤seven🔤❗️ 🍆 ➡️ 🖍🆕 dict
+    🆕🐘 3 🔤three🔤❗️ ➡️ 🐽dict 🔤z🔤❗️
+    🐨dict 🔤x🔤❗️
+    ↪️ round 🙌 199 🍇
+      ↪️ 🐽dict 🔤z🔤❗️ ➡️ z 🍇
+        😀 📛 z❗️❗️
+      🍉
+      😀 🔡 📏dict❓❗️❗️
+    🍉
+  🍉
+🍉

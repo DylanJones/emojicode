@@ -8,6 +8,11 @@
 
 #include "Runtime.h"
 #include "Internal.hpp"
+#include <map>
+#include <mutex>
+#include <vector>
+#include <memory>
+#include <algorithm>
 #include <cinttypes>
 #include <cstdlib>
 #include <cstring>
@@ -180,6 +185,41 @@ struct ProtocolConformanceEntry {
     void *protocolConformance;
 };
 
+/// Returns a table of the protocol conformances @p conformances, which a box of a multiprotocol points to. Tables with
+/// the same conformances are the same, and live as long as the program.
+namespace {
+
+/// Conformances passed to ejcMultiprotocolTable(), which are looked up without copying them.
+struct Conformances {
+    void **first, **last;
+    void** begin() const { return first; }
+    void** end() const { return last; }
+};
+
+struct ConformancesLess {
+    using is_transparent = void;
+    template <typename A, typename B>
+    bool operator()(const A &a, const B &b) const {
+        return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
+    }
+};
+
+}  // namespace
+
+extern "C" void** ejcMultiprotocolTable(void **conformances, runtime::Integer count) {
+    static std::mutex mutex;
+    static std::map<std::vector<void *>, std::unique_ptr<void *[]>, ConformancesLess> tables;
+    Conformances key { conformances, conformances + count };
+    std::lock_guard<std::mutex> lock(mutex);
+    auto it = tables.find(key);
+    if (it == tables.end()) {
+        auto table = std::make_unique<void *[]>(count);
+        std::copy(conformances, conformances + count, table.get());
+        it = tables.emplace(std::vector<void *>(key.begin(), key.end()), std::move(table)).first;
+    }
+    return it->second.get();
+}
+
 extern "C" void* ejcFindProtocolConformance(ProtocolConformanceEntry *info, void *protocolId) {
     for (auto infoNew = info; infoNew->protocolId != nullptr; infoNew++) {
         if (infoNew->protocolId == protocolId) {
@@ -197,6 +237,8 @@ struct RunTimeTypeInfo {
 struct TypeDescription {
     RunTimeTypeInfo *rtti;
     bool optional;
+    /// The operations on a value of the described type in memory (see ValueWitnessBuilder in the compiler).
+    void *valueWitness;
 };
 
 bool checkGenericArgs(TypeDescription **argsl, TypeDescription **argsr, int16_t argsCount, int16_t argsOffset) {

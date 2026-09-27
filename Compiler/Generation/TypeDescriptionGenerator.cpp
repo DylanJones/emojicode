@@ -13,6 +13,7 @@
 #include "Types/Protocol.hpp"
 #include "Compiler.hpp"
 #include "Generation/RunTimeHelper.hpp"
+#include "Generation/ValueWitnessBuilder.hpp"
 
 namespace EmojicodeCompiler {
 
@@ -60,7 +61,8 @@ void TypeDescriptionGenerator::addType(const Type &type) {
 
     auto strct = llvm::ConstantStruct::get(fg_->typeHelper().typeDescription(), {
         genericInfo,
-        type.type() == TypeType::Optional ? llvm::ConstantInt::getTrue(fg_->ctx()) : llvm::ConstantInt::getFalse(fg_->ctx())
+        type.type() == TypeType::Optional ? llvm::ConstantInt::getTrue(fg_->ctx()) : llvm::ConstantInt::getFalse(fg_->ctx()),
+        fg_->generator()->valueWitnesses().witnessFor(type),
     });
     types_.emplace_back(strct);
 
@@ -80,6 +82,27 @@ llvm::Value* TypeDescriptionGenerator::extractTypeDescriptionPtr() {
     }
     auto type = fg_->typeHelper().managable(fg_->typeHelper().typeDescription());
     return fg_->builder().CreateConstInBoundsGEP2_32(type, ptr, 0, 1);
+}
+
+llvm::Value* TypeDescriptionGenerator::entryFor(const Type &otype) {
+    auto type = otype.unboxed();
+    llvm::Value *gargs;
+    if (type.type() == TypeType::LocalGenericVariable) {
+        gargs = fg_->functionGenericArgs();
+    }
+    else {
+        assert(type.type() == TypeType::GenericVariable);
+        if (!fg_->calleeType().is<TypeType::TypeAsValue>() &&
+            fg_->calleeType().typeDefinition()->isGenericDynamismDisabled()) {
+            throw CompilerError(fg_->position(), "Generic dynamism is disabled in this type.");
+        }
+        gargs = extractTypeDescriptionPtr();
+    }
+    auto index = type.genericVariableIndex();
+    if (index == 0) {
+        return gargs;
+    }
+    return fg_->builder().CreateCall(fg_->generator()->runTime().indexTypeDescription(), { gargs, fg_->int64(index) });
 }
 
 void TypeDescriptionGenerator::addDynamic(llvm::Value *gargs, size_t index) {

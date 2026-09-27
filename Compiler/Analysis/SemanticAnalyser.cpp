@@ -110,13 +110,18 @@ constexpr size_t kMaxSpecializationDepth = 8;
 
 static bool isSpecializable(Function *function) {
     if (function->isExternal() || function->ast() == nullptr || function->isC() || function->isClosure() ||
-        function->isThunk() || function->unsafe() || function->owner() == nullptr) {
+        function->isThunk() || function->owner() == nullptr) {
         return false;
     }
     if (function->genericParameters().empty() && function->owner()->genericParameters().empty()) {
         return false;
     }
-    // Only statically dispatched functions, as a virtual table has no entry per specialization.
+    // Only statically dispatched functions, as a virtual table has no entry per specialization: those of value types,
+    // and methods of classes that cannot be overridden.
+    if (function->functionType() == FunctionType::ObjectMethod) {
+        auto klass = dynamic_cast<Class *>(function->owner());
+        return klass != nullptr && (function->final() || klass->final()) && function->superFunction() == nullptr;
+    }
     return function->functionType() == FunctionType::ValueTypeMethod ||
            function->functionType() == FunctionType::ValueTypeInitializer ||
            function->functionType() == FunctionType::Function;
@@ -138,7 +143,10 @@ static bool appendConcreteArguments(const std::vector<Type> &types, std::vector<
 
 Function* SemanticAnalyser::specialize(Function *function, const Type &calleeType,
                                        const std::vector<Type> &genericArguments) {
-    if (!declarationsAnalysed_ || imported_ || function->package() != package_ || !isSpecializable(function)) {
+    // A function of an imported package can be specialized if its body is in the package's interface, i.e. it is
+    // inline. The specialization belongs to this package.
+    if (!declarationsAnalysed_ || imported_ || !isSpecializable(function) ||
+        (function->package() != package_ && !(function->package()->isImported() && function->isInline()))) {
         return nullptr;
     }
     auto owner = function->owner();

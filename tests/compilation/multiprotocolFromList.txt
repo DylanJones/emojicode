@@ -1,0 +1,5 @@
+7
+elephant
+42
+giraffe
+end

@@ -25,6 +25,13 @@ public:
     void setReference() { reference_ = true; type_.setReference(); }
     bool wasAnalysed() const { return package_ == nullptr; }
 
+    /// Whether generic code stores values of this type in memory differently than a specialization, which stores values
+    /// of the concrete types: generic code boxes a 🍬T and the generic parameters of a callable. (A value of a generic
+    /// parameter itself is a value of the type it stands for in both, see ValueWitnessBuilder.)
+    bool isStoredBoxedByGenericCode() const;
+    /// Whether a generic parameter is named in this type.
+    virtual bool mentionsGenericVariable() const { return false; }
+
     void toCode(PrettyStream &pretty) const override;
 
     virtual ~ASTType() = default;
@@ -62,6 +69,7 @@ public:
 
     void toCodeType(PrettyStream &pretty) const override;
     Type getType(const TypeContext &typeContext, bool allowGenericInference) const override;
+    bool mentionsGenericVariable() const override;
 private:
     std::u32string name_;
     std::u32string namespace_;
@@ -79,6 +87,7 @@ public:
 
     void toCodeType(PrettyStream &pretty) const override;
     Type getType(const TypeContext &typeContext, bool allowGenericInference) const override;
+    bool mentionsGenericVariable() const override;
     /// Makes this a C function pointer type, 🍇🎍🌊 … 🍉.
     void setC() { c_ = true; }
 private:
@@ -133,6 +142,7 @@ public:
 
     void toCodeType(PrettyStream &pretty) const override;
     Type getType(const TypeContext &typeContext, bool allowGenericInference) const override;
+    bool mentionsGenericVariable() const override { return true; }
 private:
     std::u32string name_;
 };
