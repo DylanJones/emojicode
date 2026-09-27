@@ -34,9 +34,14 @@ bool hasInstanceScope(FunctionType);
 bool isReturnForbidden(FunctionType);
 bool hasThisArgument(Function *function);
 bool isTypeMethod(Function *function);
-/// Whether @p function takes the generic arguments of its type as a parameter, which a type method of a type that stores
-/// them does. A closure in such a type method captures them instead.
+/// Whether @p function takes the generic arguments of its type as a parameter, which a type method of a value type or
+/// enum that stores them does. A closure in such a type method captures them instead.
 bool takesTypeGenericArgs(Function *function);
+/// Whether @p function, a type method of a class that stores generic arguments, reads them from its this, the class
+/// type value, which describes the class it is called on. All type methods of classes are called the same way, so an
+/// override in a generic subclass of a class without generic parameters, or with fewer, gets all the arguments of its
+/// class. A closure in such a type method captures them instead.
+bool readsTypeGenericArgsFromThis(Function *function);
 
 }  // namespace EmojicodeCompiler
 

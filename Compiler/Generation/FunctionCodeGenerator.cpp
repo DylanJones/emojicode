@@ -66,6 +66,9 @@ void FunctionCodeGenerator::declareArguments(llvm::Function *function) {
     unsigned int i = 0;
     auto it = function->args().begin();
     if (hasThisArgument(fn_)) {
+        if (readsTypeGenericArgsFromThis(fn_)) {
+            typeMethodGenericArgs_ = buildGetGenericArgsFromTypeValue(&*it);
+        }
         (it++)->setName("this");
     }
     for (auto &arg : fn_->parameters()) {

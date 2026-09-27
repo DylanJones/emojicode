@@ -1,7 +1,16 @@
-# 🥩 of 🔍: the type methods are passed the generic arguments the type value describes, which follow its class.
+# 📐 of 🌲 and of 🍪: a type method of a class reads the generic arguments of its class from the type value, where they
+# follow the class, and takes no other parameter for them.
+@ ^_\.class_1f332\.type\.1f4d0$
++ %typeGenericArgs = getelementptr inbounds %typeDescription, ptr %this, i32 1
+@ ^_\.class_1f36a\.type\.1f4d0$
++ %typeGenericArgs = getelementptr inbounds %typeDescription, ptr %this, i32 1
+# 🥩 and 🥐 of 🔍: the type methods of 🅰️ and 🍩, the latter without generic parameters, are called through the type
+# value alike, which is the only argument.
 @ ^_\.class_1f50d\.type\.1f969-
-+ getelementptr inbounds %typeDescription, ptr %a, i32 1
++ call ptr %dispatchFunc\(ptr %a\)
 - ejcTypeValue
+@ ^_\.class_1f50d\.type\.1f950-
++ call ptr %dispatchFunc\(ptr %a\)
 # 🌿 and 🍂 of 🔍: a type value described at run time is copied to one that lives as long as the program.
 @ ^_\.class_1f50d\.type\.1f33f$
 + call ptr @ejcTypeValue

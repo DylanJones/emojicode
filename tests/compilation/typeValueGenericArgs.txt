@@ -38,3 +38,9 @@
 📦 instance 24 1
 🎁 8
 🎁 instance 8
+🍩
+🍩 instance
+🍪 24
+🍪 instance 24
+🍪 1
+🍪 instance 1
