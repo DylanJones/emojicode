@@ -38,6 +38,9 @@ struct Capture {
     /// Whether the closure captures the generic arguments of the value type in whose method it is, instead of 👇,
     /// which an escaping closure cannot capture, so that it can describe the generic variables of the type.
     bool typeGenericArgs = false;
+    /// Whether the closure is in a type method of a type that stores generic arguments, and captures the description
+    /// of them passed to the type method, so that it can describe the generic variables of the type at run-time.
+    bool typeMethodGenericArgs = false;
 
     bool capturesSelf() const { return self.type() != TypeType::NoReturn; }
 };

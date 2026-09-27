@@ -12,6 +12,7 @@
 #include "Generation/TypeDescriptionGenerator.hpp"
 #include "Compiler.hpp"
 #include "Types/TypeContext.hpp"
+#include "Types/TypeDefinition.hpp"
 #include "Functions/Function.hpp"
 #include <llvm/Support/raw_ostream.h>
 
@@ -51,6 +52,9 @@ Value* ASTClosure::generate(FunctionCodeGenerator *fg) const {
             }
         }
     }
+    // A closure in a type method (see configureClosure()) finds the generic arguments of the type only in those passed
+    // to the type method, as it has no value to take them from.
+    capture.typeMethodGenericArgs = isTypeMethod(closure_.get()) && closure_->owner()->storesGenericArgs();
     capture.type = fg->generator()->typeHelper().llvmTypeForCapture(capture, thisValue, isEscaping_);
 
     ClosureCodeGenerator closureGenerator(capture, closure_.get(), fg->generator(), isEscaping_);
@@ -93,6 +97,11 @@ llvm::Value* ASTClosure::createDeinit(CodeGenerator *cg, const Capture &capture)
         if (capture.typeGenericArgs) {
             auto ptr = fg.builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++);
             fg.builder().CreateCall(fg.generator()->runTime().releaseMemory(),
+                                    fg.builder().CreateLoad(fg.typeHelper().pointer(), ptr));
+        }
+        if (capture.typeMethodGenericArgs) {
+            auto ptr = fg.builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++);
+            fg.builder().CreateCall(fg.generator()->runTime().free(),
                                     fg.builder().CreateLoad(fg.typeHelper().pointer(), ptr));
         }
     }
@@ -155,6 +164,19 @@ llvm::Value* ASTClosure::storeCapturedVariables(FunctionCodeGenerator *fg, const
         auto genericArgs = fg->builder().CreateLoad(fg->genericArgsType(), fg->genericArgsPtr());
         if (isEscaping_) {
             fg->builder().CreateCall(fg->generator()->runTime().retain(), genericArgs);
+        }
+        fg->builder().CreateStore(genericArgs, fg->builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++));
+    }
+    if (capture.typeMethodGenericArgs) {
+        llvm::Value *genericArgs = fg->genericArgsPtr();
+        if (isEscaping_) {
+            // Like the generic arguments of a function, those of a type method are on the stack of its caller.
+            std::vector<Type> variables;
+            for (size_t j = 0; j < fg->calleeType().typeOfTypeValue().genericArguments().size(); j++) {
+                variables.emplace_back(j, closure_->owner());
+            }
+            auto copy = TypeDescriptionGenerator(fg, TypeDescriptionUser::Class).generate(variables);
+            genericArgs = fg->builder().CreateExtractValue(copy, 0);
         }
         fg->builder().CreateStore(genericArgs, fg->builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++));
     }

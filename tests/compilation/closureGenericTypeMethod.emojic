@@ -1,0 +1,175 @@
+💭 A closure in a type method of a generic type captures the generic arguments passed to the type method, as it has no
+💭 👇 to take them from, to use the type T stands for at run time.
+🕊 🔲🐚T⚪🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+
+  ❗️ 🔓 ➡️ T 🍇
+    ↩️ value
+  🍉
+
+  🐇❗️ 🪞 x T ➡️ T 🍇
+    ↩️ x
+  🍉
+
+  💭 Calls another type method, which is passed the generic arguments, too.
+  🐇❗️ 🔐 x T ➡️ T 🍇
+    🍇 ➡️ T
+      ↩️ 🪞🕊🔲🐚T🍆 x❗️
+    🍉 ➡️ closure
+    ↩️ ⁉️closure❗️
+  🍉
+
+  🐇❗️ 📏 ➡️ 🔢 🍇
+    🍇 ➡️ 🔢
+      ↩️ ⚖️T
+    🍉 ➡️ closure
+    ↩️ ⁉️closure❗️
+  🍉
+
+  💭 The generic arguments are on the stack of the caller of the type method, which the closures outlive.
+  🐇❗️ 🎁 x T ➡️ 🍇➡️T🍉 🍇
+    ↩️ 🍇🎍🥡 ➡️ T
+      ↩️ 🔓🆕🔲🐚T🍆 🪞🕊🔲🐚T🍆 x❗️❗️❗️
+    🍉
+  🍉
+
+  🐇❗️ 🪆 x T ➡️ 🍇➡️🍇➡️🔡🍉🍉 🍇
+    ↩️ 🍇🎍🥡 ➡️ 🍇➡️🔡🍉
+      ↩️ 🍇🎍🥡 ➡️ 🔡
+        ↩️ 🔤🧲🔡 ⚖️T❗️🧲 🧲🔡 📏 🍿 x x 🍆❓❗️🧲🔤
+      🍉
+    🍉
+  🍉
+
+  🐇❗️ 🚦 x T ok 👌 ➡️ 🍬T 🍇
+    🍇 ➡️ T 🚧🚧
+      ↪️ ok 🍇
+        ↩️ 🪞🕊🔲🐚T🍆 x❗️
+      🍉
+      🚨🆕🚧 🔤not ok🔤❗️
+    🍉 ➡️ closure
+    🖍🆕 found 🍬T
+    🆗 result ⁉️closure❗️ 🍇
+      result ➡️ 🖍found
+    🍉
+    🙅 error 🍇
+      😀 💬error❗️❗️
+      🤷‍♀️ ➡️ 🖍found
+    🍉
+    ↩️ found
+  🍉
+
+  💭 A closure in a method calls a type method with T.
+  ❗️ 🔏 ➡️ T 🍇
+    value ➡️ v
+    🍇 ➡️ T
+      ↩️ 🪞🕊🔲🐚T🍆 v❗️
+    🍉 ➡️ closure
+    ↩️ ⁉️closure❗️
+  🍉
+
+  ❗️ 🔑 ➡️ 🍇➡️T🍉 🍇
+    value ➡️ v
+    ↩️ 🍇🎍🥡 ➡️ T
+      ↩️ 🔓🆕🔲🐚T🍆 v❗️❗️
+    🍉
+  🍉
+🍉
+
+🐇 📦🐚T⚪🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+
+  🐇❗️ 🪞 x T ➡️ T 🍇
+    ↩️ x
+  🍉
+
+  🐇❗️ 🔐 x T ➡️ T 🍇
+    🍇 ➡️ T
+      ↩️ 🪞🐇📦🐚T🍆 x❗️
+    🍉 ➡️ closure
+    ↩️ ⁉️closure❗️
+  🍉
+🍉
+
+🕊 🌰 🍇
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🆕 🍼 a 🔢 🍇
+    a ➡️ 🖍b
+    a ➡️ 🖍c
+  🍉
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔤🧲🔡 a 10❗️🧲 🧲🔡 b 10❗️🧲 🧲🔡 c 10❗️🧲🔤
+  🍉
+🍉
+
+💭 The type methods are called with generic arguments created at run time here.
+🐇 🏭 🍇
+  🐇❗️ 🔐🐚A⚪🍆 x A ➡️ A 🍇
+    ↩️ 🔐🕊🔲🐚A🍆 x❗️
+  🍉
+  🐇❗️ 🎁🐚A⚪🍆 x A ➡️ 🍇➡️A🍉 🍇
+    ↩️ 🎁🕊🔲🐚A🍆 x❗️
+  🍉
+  🐇❗️ 📏🐚A⚪🍆 x A ➡️ 🔢 🍇
+    ↩️ 📏🕊🔲🐚A🍆❗️
+  🍉
+  🐇❗️ 🪆🐚A⚪🍆 x A ➡️ 🍇➡️🍇➡️🔡🍉🍉 🍇
+    ↩️ 🪆🕊🔲🐚A🍆 x❗️
+  🍉
+  🐇❗️ 🚦🐚A⚪🍆 x A ok 👌 ➡️ 🍬A 🍇
+    ↩️ 🚦🕊🔲🐚A🍆 x ok❗️
+  🍉
+🍉
+
+🏁 🍇
+  😀 🔡 🔐🕊🔲🐚🔢🍆 5❗️❗️❗️
+  😀 🔐🕊🔲🐚🔡🍆 🔤five🔤❗️❗️
+  😀 🔡 📏🕊🔲🐚🔢🍆❗️❗️❗️
+  😀 🔡 📏🕊🔲🐚🌰🍆❗️❗️❗️
+
+  🎁🕊🔲🐚🔢🍆 6❗️ ➡️ six
+  😀 🔡 ⁉️six❗️❗️❗️
+  🎁🕊🔲🐚🔡🍆 🔤six🔤❗️ ➡️ sixString
+  😀 ⁉️sixString❗️❗️
+  🎁🕊🔲🐚🌰🍆 🆕🌰 6❗️❗️ ➡️ sixNuts
+  😀 🔡 ⁉️sixNuts❗️❗️❗️
+
+  😀 ⁉️⁉️🪆🕊🔲🐚🔢🍆 7❗️❗️❗️❗️
+  😀 ⁉️⁉️🪆🕊🔲🐚🔡🍆 🔤seven🔤❗️❗️❗️❗️
+
+  😀 🔡 🍺🚦🕊🔲🐚🔢🍆 8 👍❗️❗️❗️
+  ↪️ 🚦🕊🔲🐚🔢🍆 8 👎❗️ ➡️ eight 🍇
+    😀 🔡 eight❗️❗️
+  🍉
+  🙅 🍇
+    😀 🔤no eight🔤❗️
+  🍉
+
+  😀 🔡 🔏🆕🔲 9❗️❗️❗️❗️
+  😀 🔡 ⁉️🔑🆕🔲 10❗️❗️❗️❗️❗️
+  😀 ⁉️🔑🆕🔲 🔤ten🔤❗️❗️❗️❗️
+
+  😀 🔡 🔐🐇📦🐚🔢🍆 11❗️❗️❗️
+  😀 🔐🐇📦🐚🔡🍆 🔤eleven🔤❗️❗️
+
+  😀 🔡 🔐🐇🏭 12❗️❗️❗️
+  😀 🔐🐇🏭 🔤twelve🔤❗️❗️
+  😀 🔡 🔐🐇🏭 🆕🌰 12❗️❗️❗️❗️
+  🎁🐇🏭 🆕🌰 13❗️❗️ ➡️ nuts
+  😀 🔡 ⁉️nuts❗️❗️❗️
+  🎁🐇🏭 🔤thirteen🔤❗️ ➡️ strings
+  😀 ⁉️strings❗️❗️
+  😀 🔡 📏🐇🏭 🆕🌰 14❗️❗️❗️❗️
+  😀 ⁉️⁉️🪆🐇🏭 🆕🌰 15❗️❗️❗️❗️❗️
+  😀 🔡 🍺🚦🐇🏭 16 👍❗️❗️❗️
+  ↪️ 🚦🐇🏭 🔤sixteen🔤 👎❗️ ➡️ sixteen 🍇
+    😀 sixteen❗️
+  🍉
+  🙅 🍇
+    😀 🔤no sixteen🔤❗️
+  🍉
+🍉
