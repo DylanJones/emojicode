@@ -9,6 +9,7 @@
 #include "Lex/Token.hpp"
 #include "Package/Package.hpp"
 #include "Parsing/AbstractParser.hpp"
+#include "Types/Class.hpp"
 #include "Types/Type.hpp"
 #include "Types/TypeContext.hpp"
 #include "Types/TypeDefinition.hpp"
@@ -67,6 +68,10 @@ Type ASTTypeId::getType(const TypeContext &typeContext, bool allowGenericInferen
     auto type = rawType();
 
     auto typeDef = type.typeDefinition();
+    if (auto klass = dynamic_cast<Class *>(typeDef); klass != nullptr && typeContext.deferredChecks() != nullptr) {
+        // The class may be declared after the class whose super type is being analysed.
+        klass->analyseSuperTypeWhenUsed(typeContext.deferredChecks());
+    }
 
     auto args = typeDef->superGenericArguments();
     for (auto &arg : genericArgs_) {

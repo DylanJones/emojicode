@@ -68,6 +68,10 @@ public:
     /// Analyses the superclass. Its generic arguments are checked by appending checks to @p constraintChecks, as the
     /// constraints of the superclass and of this class may not be analysed yet.
     void analyseSuperType(std::vector<std::function<void()>> *constraintChecks);
+    /// Analyses the superclass like analyseSuperType() if a type of this class is used while the super types are
+    /// analysed, e.g. as generic argument of the superclass of a class declared earlier, as the type needs the generic
+    /// arguments this class inherits. Does nothing if the superclass is being analysed already.
+    void analyseSuperTypeWhenUsed(std::vector<std::function<void()>> *constraintChecks);
 
     /// Makes hasSubclass() return true.
     void setHasSubclass() { hasSubclass_ = true; }
@@ -103,6 +107,9 @@ private:
     bool hasSubclass_ = false;
     /// Whether analyseSuperType() is analysing the superclasses of this class. Used to detect circular inheritance.
     bool analysingSuperType_ = false;
+    /// Whether analyseSuperType() started. A type of this class used while it is not finished yet, e.g. as generic
+    /// argument of its own superclass, lacks the generic arguments this class inherits.
+    bool superTypeAnalysisStarted_ = false;
     /// Whether analyseSuperType() finished, which it must do only once as it offsets the generic parameter indices.
     bool superTypeAnalysed_ = false;
 

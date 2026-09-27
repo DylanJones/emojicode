@@ -33,6 +33,12 @@ std::vector<Type> Class::superGenericArguments() const {
     return std::vector<Type>();
 }
 
+void Class::analyseSuperTypeWhenUsed(std::vector<std::function<void()>> *constraintChecks) {
+    if (!superTypeAnalysisStarted_) {
+        analyseSuperType(constraintChecks);
+    }
+}
+
 void Class::analyseSuperType(std::vector<std::function<void()>> *constraintChecks) {
     if (superType() == nullptr || superTypeAnalysed_) {
         return;
@@ -43,6 +49,10 @@ void Class::analyseSuperType(std::vector<std::function<void()>> *constraintCheck
         throw CompilerError(superType()->position(), Type(this).toString(TypeContext(classType)),
                             " inherits from itself.");
     }
+    if (superTypeAnalysisStarted_) {
+        return;  // A subclass is used in the superclass type, e.g. as generic argument, which is not circular.
+    }
+    superTypeAnalysisStarted_ = true;
     // The generic parameters of this class follow the generic arguments of its superclass, which may mention them. So
     // the superclass's superclass is analysed and the indices are offset before the superclass type is analysed.
     if (auto typeId = dynamic_cast<ASTTypeId *>(superType())) {

@@ -1,0 +1,30 @@
+💭 A class used as generic argument of a superclass is declared after the class, and inherits generic arguments
+💭 itself.
+🐇 🧺🐚T⚪️🍆 🍇
+  🖍🆕 item T
+  🆕 🍼 item T 🍇🍉
+  ❗️ 🔍 ➡️ T 🍇
+    ↩️ item
+  🍉
+🍉
+🐇 🛒 🧺🐚🥝🍆 🍇
+  🆕 k 🥝 🍇
+    ⤴️🆕 k❗️
+  🍉
+🍉
+🐇 🥝 🐟🐚🔢🍆 🍇
+  🆕 🍇
+    ⤴️🆕 7❗️
+  🍉
+🍉
+🐇 🐟🐚A⚪️🍆 🍇
+  🖍🆕 a A
+  🆕 🍼 a A 🍇🍉
+  ❗️ 🅰️ ➡️ A 🍇
+    ↩️ a
+  🍉
+🍉
+🏁 🍇
+  🆕🛒 🆕🥝❗️❗️ ➡️ cart
+  😀 🔡 🅰️ 🔍 cart❗️❗️❗️❗️
+🍉

@@ -109,6 +109,7 @@ compilation_tests = [
     "genericRecursion",
     "genericSuperclassArguments",
     "genericSuperclassDeclaredFirst",
+    "superclassArgumentDeclaredLater",
     "optionalGenericField",
     "nestedOptionalGenericArgument",
     "variableInitAndScoping",
