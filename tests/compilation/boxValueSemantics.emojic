@@ -31,6 +31,17 @@
   🍉
 🍉
 
+💭 Small enough to be stored in a box, so copies of a box copy the value.
+🕊 🍋 🍇
+  🐊 🔼
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  🖍❗️ ⬆️ ➡️ 🔢 🍇
+    n ⬅️➕ 1
+    ↩️ n
+  🍉
+🍉
+
 🕊 🎁🐚T 🔼🍆 🍇
   🖍🆕 value T
   🆕 🍼 value T 🍇🍉
@@ -66,5 +77,6 @@
   😀 🔡 🆙a❗️❗️❗️
 
   😀 🔡 🆙🐇🧰 🆕🐘 30 🔤erased🔤❗️❗️❗️❗️
+  😀 🔡 🆙🐇🧰 🆕🍋 20❗️❗️❗️❗️
   😀 🔤end🔤❗️
 🍉

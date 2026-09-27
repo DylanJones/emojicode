@@ -64,6 +64,7 @@ compilation_tests = [
     "specializationFallback",
     "specializationScoping",
     "specializationMangling",
+    "specializationCycles",
     "directCalls",
     "protocolValueTypeRemote",
     "protocolEnum",
@@ -174,6 +175,7 @@ unoptimized_tests = [
     "typeSpecialization",
     "specializationFallback",
     "specializationScoping",
+    "specializationCycles",
     "remoteBoxRelease",
     "boxValueSemantics",
     "borrowedBoxes",
@@ -186,6 +188,7 @@ specialization_tests = [
     "typeSpecialization",
     "specializationScoping",
     "specializationMangling",
+    "specializationCycles",
     "genericRecursion",
 ]
 # Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions

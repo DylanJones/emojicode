@@ -1,0 +1,89 @@
+🐇 🐟 🍇
+  🆕 🍇🍉
+  ❗️ 🙋 ➡️ 🔡 🍇
+    ↩️ 🔤fish🔤
+  🍉
+🍉
+
+🐇 🐡 🐟 🍇
+  🆕 🍇
+    ⤴️🆕❗️
+  🍉
+  ✒️ ❗️ 🙋 ➡️ 🔡 🍇
+    ↩️ 🔤blowfish🔤
+  🍉
+🍉
+
+🕊 🧰 🍇
+  🆕 🍇🍉
+
+  💭 Specializations that call each other more than once wait for each other.
+  🐇❗️ 🔴🐚T ⚪️🍆 x T n 🔢 ➡️ 🔢 🍇
+    ↪️ n 🙌 0 🍇
+      ↩️ 0
+    🍉
+    ↩️ 🔵🐚T🍆🕊🧰 x n ➖ 1❗️ ➕ 🔵🐚T🍆🕊🧰 x 0❗️
+  🍉
+  🐇❗️ 🔵🐚T ⚪️🍆 x T n 🔢 ➡️ 🔢 🍇
+    ↪️ n 🙌 0 🍇
+      ↩️ 1
+    🍉
+    ↩️ 🔴🐚T🍆🕊🧰 x n ➖ 1❗️
+  🍉
+
+  💭 🍒 cannot be specialized, which discards the specializations of 🍓 and 🍑, as 🍑 calls it.
+  🐇❗️ 🍒🐚T ⚪️🍆 x T n 🔢 ➡️ 🔢 🍇
+    ↪️ n 🙌 0 🍇
+      ↩️ 0
+    🍉
+    🍓🐚T🍆🕊🧰 x n ➖ 1❗️ ➡️ r
+    ↪️ ⚖️T 🙌 0 🍇
+      ↩️ 1000
+    🍉
+    ↩️ r ➕ 1
+  🍉
+  🐇❗️ 🍓🐚T ⚪️🍆 x T n 🔢 ➡️ 🔢 🍇
+    ↩️ 🍑🐚T🍆🕊🧰 x n❗️
+  🍉
+  🐇❗️ 🍑🐚T ⚪️🍆 x T n 🔢 ➡️ 🔢 🍇
+    ↪️ n 🙌 0 🍇
+      ↩️ 10
+    🍉
+    ↩️ 🍒🐚T🍆🕊🧰 x n ➖ 1❗️
+  🍉
+
+  💭 A method overridden in a subclass is no overloaded method.
+  🐇❗️ 📐🐚T 🐟🍆 x T ➡️ 🔡 🍇
+    ↩️ 🙋x❗️
+  🍉
+🍉
+
+💭 🔧 cannot be specialized, but made a thunk to store the closure in make, which must not be analysed once discarded.
+🕊 🏭🐚T ⚪️🍆 🍇
+  🖍🆕 make 🍇🔢➡️T🍉
+  🆕 🍼 make 🍇🔢➡️T🍉 🍇🍉
+  🖍❗️ 🔧 ➡️ 🔢 🍇
+    make ➡️ old
+    🍇🎍🥡 n 🔢 ➡️ T
+      ↩️ ⁉️ old n ✖️ 2❗️
+    🍉 ➡️ doubled
+    doubled ➡️ 🖍make
+    ↪️ ⚖️T 🙌 0 🍇
+      ↩️ 1000
+    🍉
+    ↩️ 5
+  🍉
+  ❗️ 🔨 n 🔢 ➡️ T 🍇
+    ↩️ ⁉️ make n❗️
+  🍉
+🍉
+
+🏁 🍇
+  😀 🔡 🔴🐚🔢🍆🕊🧰 5 4❗️❗️❗️
+  😀 🔡 🍒🐚🔢🍆🕊🧰 5 4❗️❗️❗️
+  😀 📐🕊🧰 🆕🐟❗️❗️❗️
+  😀 📐🕊🧰 🆕🐡❗️❗️❗️
+  🆕🏭🐚🔢🍆 🍇🎍🥡 n 🔢 ➡️ 🔢 ↩️ n ➕ 1 🍉❗️ ➡️ 🖍🆕 factory
+  😀 🔡 🔧factory❗️❗️❗️
+  😀 🔡 🔨factory 3❗️❗️❗️
+🍉
