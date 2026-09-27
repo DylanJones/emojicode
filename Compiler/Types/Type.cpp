@@ -620,6 +620,12 @@ bool Type::identicalTo(Type to, const TypeContext &tc, GenericInferer *inf) cons
                                   [&tc, inf](const Type &a, const Type &b) { return a.identicalTo(b, tc, inf); });
             case TypeType::StorageExpectation:
             case TypeType::Box:
+            case TypeType::Invalid:
+            case TypeType::IntegerLiteral:
+            case TypeType::RealLiteral:
+            case TypeType::ListLiteral:
+            case TypeType::DictionaryLiteral:
+            case TypeType::NoValueLiteral:
                 return false;
         }
     }
@@ -867,6 +873,13 @@ void Type::typeName(Type type, const TypeContext &typeContext, std::string &stri
             return;
         case TypeType::StorageExpectation:
             return;
+        case TypeType::Invalid:
+        case TypeType::IntegerLiteral:
+        case TypeType::RealLiteral:
+        case TypeType::ListLiteral:
+        case TypeType::DictionaryLiteral:
+        case TypeType::NoValueLiteral:
+            break;
     }
 
     if (type.canHaveGenericArguments()) {
