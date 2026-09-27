@@ -1,0 +1,39 @@
+🏁 🍇
+  🍿 1 2 3 🍆 ➡️ numbers
+  🔂 n numbers 🍇
+    😀 🔡 n❗️❗️
+  🍉
+
+  🍿 🔤a🔤 🔤b🔤 🍆 ➡️ words
+  🔂 w words 🍇
+    😀 w❗️
+  🍉
+
+  💭 Iterates through a protocol box.
+  🖍🆕 iterable 🔂🐚🔡🍆
+  words ➡️ 🖍iterable
+  🔂 w iterable 🍇
+    😀 w❗️
+  🍉
+
+  😀 🔡 🍺🐧 numbers 🍇 a 🔢 b 🔢 ➡️ 🔢 ↩️ a ➕ b 🍉❗️❗️❗️
+
+  🆕🍦🐚🔢🍆❗️ ➡️ wrapper
+  🐻wrapper 7❗️
+  🔂 n wrapper 🍇
+    😀 🔡 n❗️❗️
+  🍉
+
+  🆕🍨🐚🔢🍆❗️ ➡️ empty
+  🔂 n empty 🍇
+    😀 🔤Empty list iterated🔤❗️
+  🍉
+
+  💭 The iterator holds a copy, so appending does not extend the loop.
+  🍿 1 2 🍆 ➡️ 🖍🆕 growing
+  🔂 n growing 🍇
+    🐻growing n❗️
+    😀 🔡 n❗️❗️
+  🍉
+  😀 🔡 📏growing❓❗️❗️
+🍉

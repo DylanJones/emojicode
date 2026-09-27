@@ -5,7 +5,7 @@
     🆕⏩ 20 50 10❗️ ➡️ range205010
     🆕⏩ 0 10❗️ ➡️ range0101
     🆕⏩ 10 -1 -1❗️ ➡️ range10-1-1
-    🆕⏩ 20 10❗️ ➡️ range2010-1
+    🆕⏩ 20 10 -1❗️ ➡️ range2010-1
     🔢👇 🐽range205010 0❗️ 20 🔤Index 0🔤❗️
     🔢👇 🐽range205010 1❗️ 30 🔤Index 1🔤❗️
     🔢👇 🐽range205010 2❗️ 40 🔤Index 2🔤❗️
@@ -52,6 +52,10 @@
     🔢👇 📏🆕⏩ 0 5 2❗️❓ 3 🔤Range has correct length🔤❗️
     🔢👇 📏🆕⏩ 0 19 3❗️❓ 7 🔤Range has correct length🔤❗️
     🔢👇 📏🆕⏩ 10 0 -3❗️❓ 4 🔤Range has correct length🔤❗️
+    🔢👇 📏🆕⏩ 20 10❗️❓ 0 🔤A range without a step does not count down🔤❗️
+    🔢👇 📏🆕⏩ 5 5❗️❓ 0 🔤A range from a number to itself is empty🔤❗️
+    🔢👇 📏🆕⏩ 5 0 1❗️❓ 0 🔤A range whose step goes away from stop is empty🔤❗️
+    🔢👇 📏🆕⏩ 0 5 -1❗️❓ 0 🔤A range whose step goes away from stop is empty🔤❗️
   🍉
 🍉
 

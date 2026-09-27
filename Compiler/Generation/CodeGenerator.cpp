@@ -209,6 +209,10 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
     if (function->isInline()) {
         fn->addFnAttr(llvm::Attribute::InlineHint);
     }
+    if (function->neverReturns()) {
+        fn->addFnAttr(llvm::Attribute::NoReturn);
+        fn->addFnAttr(llvm::Attribute::Cold);
+    }
 
     size_t i = function->isClosure() && !function->isC() ? 1 : 0;
     if (hasThisArgument(function) && !function->isClosure()) {

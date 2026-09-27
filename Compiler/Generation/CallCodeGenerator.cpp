@@ -29,6 +29,16 @@ static bool isMutableVariable(const Type &calleeType) {
 CallCodeGenerator::CallCodeGenerator(FunctionCodeGenerator *fg, CallType callType) : fg_(fg), callType_(callType) {}
 CallCodeGenerator::~CallCodeGenerator() = default;
 
+llvm::Value* CallCodeGenerator::markNeverReturning(llvm::Value *value, Function *function) {
+    if (function->neverReturns()) {
+        if (auto call = llvm::dyn_cast<llvm::CallInst>(value)) {
+            call->setDoesNotReturn();
+            call->addFnAttr(llvm::Attribute::Cold);
+        }
+    }
+    return value;
+}
+
 llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, const ASTArguments &astArgs,
                                          Function *function, llvm::Value *errorPointer,
                                          const std::vector<llvm::Value *> &supplArgs) {
@@ -46,12 +56,12 @@ llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, 
             if (function->isC()) {
                 call->setAttributes(llvmFn->getAttributes());
             }
-            return call;
+            return markNeverReturning(call, function);
         }
         case CallType::DynamicDispatch:
         case CallType::DynamicDispatchOnType:
             assert(type.type() == TypeType::Class);
-            return createDynamicDispatch(function, args, astArgs.genericArgumentTypes());
+            return markNeverReturning(createDynamicDispatch(function, args, astArgs.genericArgumentTypes()), function);
         case CallType::DynamicProtocolDispatch: {
             assert(type.type() == TypeType::Box);
 

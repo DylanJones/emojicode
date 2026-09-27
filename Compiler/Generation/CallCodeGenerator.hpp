@@ -66,6 +66,8 @@ protected:
                                                llvm::Value *conformance, bool uniqueBox);
     llvm::Value* buildFindProtocolConformance(const std::vector<llvm::Value *> &args, const Type &protocol);
 private:
+    /// Marks @p value, if it is a call, as not returning if @p function never returns (see Function::neverReturns()).
+    llvm::Value* markNeverReturning(llvm::Value *value, Function *function);
     /// Calls the trampoline of a 🎍🌊 function that takes or returns C structs by value. @see needsCTrampoline()
     llvm::Value* generateCTrampolineCall(Function *function, llvm::Function *trampoline,
                                          std::vector<llvm::Value *> args);

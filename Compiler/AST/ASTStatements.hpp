@@ -94,9 +94,7 @@ class ASTExprStatement final : public ASTStatement {
 public:
     void analyse(FunctionAnalyser *analyser) override;
 
-    void generate(FunctionCodeGenerator *fg) const override {
-        expr_->generate(fg);
-    }
+    void generate(FunctionCodeGenerator *fg) const override;
 
     void toCode(PrettyStream &pretty) const override;
     void analyseMemoryFlow(MFFunctionAnalyser *analyser) override;
@@ -104,6 +102,8 @@ public:
     ASTExprStatement(std::shared_ptr<ASTExpr> expr, const SourcePosition &p) : ASTStatement(p), expr_(std::move(expr)) {}
 private:
     std::shared_ptr<ASTExpr> expr_;
+    /// Whether the expression is a call to a function that never returns, which ends the block like ↩️.
+    bool neverReturns_ = false;
 };
 
 class ASTReturn : public ASTStatement, public Releasing {

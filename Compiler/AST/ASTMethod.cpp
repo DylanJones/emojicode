@@ -8,6 +8,7 @@
 
 #include "ASTMethod.hpp"
 #include <algorithm>
+#include "ASTTypeAsValue.hpp"
 #include "ASTVariables.hpp"
 #include "Analysis/FunctionAnalyser.hpp"
 #include "Analysis/SemanticAnalyser.hpp"
@@ -44,7 +45,9 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
     method_ = calleeType_.typeDefinition()->methods().get(name, args_.mood(), &args_,
                                                           &calleeType_, analyser, position());
 
-    if (calleeType_.type() == TypeType::Class && (method_->accessLevel() == AccessLevel::Private || calleeType_.isExact())) {
+    // A private or 🔏 method cannot be overridden, and an exact type has no subclass that could override it.
+    if (calleeType_.type() == TypeType::Class &&
+        (method_->accessLevel() == AccessLevel::Private || method_->final() || calleeType_.isExact())) {
         callType_ = CallType::StaticDispatch;
     }
 
@@ -135,7 +138,12 @@ Type ASTMethodable::analyseTypeMethodCall(ExpressionAnalyser *analyser, const st
     method_ = calleeType_.typeDefinition()->typeMethods().get(name, args_.mood(), &args_,
                                                               &calleeType_, analyser, position());
 
-    if (calleeType_.type() == TypeType::Class && (method_->accessLevel() == AccessLevel::Private || calleeType_.isExact())) {
+    // A private or 🔏 method cannot be overridden, and neither an exact type nor a class named in the call, as in
+    // 🤯🐇💻, can be a subclass that overrides it. (A class named elsewhere, e.g. in a list of type values, can
+    // become a subclass, so its type is not exact.)
+    auto namedClass = std::dynamic_pointer_cast<ASTTypeAsValue>(callee) != nullptr;
+    if (calleeType_.type() == TypeType::Class && (method_->accessLevel() == AccessLevel::Private ||
+                                                  method_->final() || calleeType_.isExact() || namedClass)) {
         callType_ = CallType::StaticDispatch;
     }
     ensureErrorIsHandled(analyser);

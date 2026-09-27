@@ -24,6 +24,15 @@ void ASTBlock::generate(FunctionCodeGenerator *fg) const {
     }
 }
 
+void ASTExprStatement::generate(FunctionCodeGenerator *fg) const {
+    expr_->generate(fg);
+    if (neverReturns_) {
+        // Nothing follows, as the block ends here (see ASTBlock::analyse()).
+        fg->releaseTemporaryObjects();
+        fg->builder().CreateUnreachable();
+    }
+}
+
 ASTReturn::ASTReturn(std::shared_ptr<ASTExpr> value, const SourcePosition &p)
     : ASTStatement(p), value_(std::move(value)) {}
 
