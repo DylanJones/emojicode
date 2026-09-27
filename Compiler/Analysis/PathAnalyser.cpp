@@ -25,15 +25,40 @@ void PathAnalyser::uninitalizedError(const ResolvedVariable &rvar, const SourceP
 }
 
 void PathAnalyser::copyCertainIncidents() {
-    auto incs = currentBranch_->branches[0].certainIncidents;
-    for (auto it = currentBranch_->branches.begin() + 1; it < currentBranch_->branches.end(); it++) {
-        auto branch = *it;
+    auto incs = intersectCertainIncidents(false);
+    currentBranch_->certainIncidents.insert(incs.begin(), incs.end());
+
+    // Execution does not continue after a branch that returned (or raised an error, or called a function that never
+    // returns), so only the other branches determine whether the instance has been initialized afterwards. (A ↩️↩️ in
+    // an initializer requires the instance to be initialized, see FunctionAnalyser::analyseInitializerReturn().) The
+    // initialization of local variables is not treated this way, as their release at a return does not consider the
+    // path (see MFFunctionAnalyser::releaseAllVariables()).
+    for (auto &incident : intersectCertainIncidents(true)) {
+        if (incident.type() == PathAnalyserIncident::InstanceVarInit ||
+            incident.type() == PathAnalyserIncident::CalledSuperInitializer) {
+            currentBranch_->certainIncidents.emplace(incident);
+        }
+    }
+}
+
+std::set<PathAnalyserIncident> PathAnalyser::intersectCertainIncidents(bool skipReturned) const {
+    std::set<PathAnalyserIncident> incs;
+    bool first = true;
+    for (auto &branch : currentBranch_->branches) {
+        if (skipReturned && branch.certainIncidents.count(PathAnalyserIncident::Returned) > 0) {
+            continue;
+        }
+        if (first) {
+            incs = branch.certainIncidents;
+            first = false;
+            continue;
+        }
         auto newIncidents = std::set<PathAnalyserIncident>();
         std::set_intersection(incs.begin(), incs.end(), branch.certainIncidents.begin(),
                               branch.certainIncidents.end(), std::inserter(newIncidents, newIncidents.begin()));
         incs = newIncidents;
     }
-    currentBranch_->certainIncidents.insert(incs.begin(), incs.end());
+    return incs;
 }
 
 bool PathAnalyser::hasCertainly(PathAnalyserIncident incident) const {

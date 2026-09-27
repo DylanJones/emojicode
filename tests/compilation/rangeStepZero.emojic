@@ -1,0 +1,10 @@
+🏁 🍇
+  🔂 i 🆕⏩ 0 3 1❗️ 🍇
+    😀 🔡 i❗️❗️
+  🍉
+  💭 A range with a step of 0 would never reach stop, so creating one panics.
+  🔂 i 🆕⏩ 0 10 0❗️ 🍇
+    😀 🔡 i❗️❗️
+  🍉
+  😀 🔤Created a range with a step of 0🔤❗️
+🍉

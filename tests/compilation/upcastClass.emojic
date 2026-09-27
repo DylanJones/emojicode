@@ -1,0 +1,183 @@
+🐊 🌊 🍇
+  ❗️ 💦 ➡️ 🔡
+🍉
+
+🐇 🐠 🍇
+  🐊 🌊
+
+  🆕 🍇🍉
+
+  ❗️ 🏷 ➡️ 🔡 🍇
+    ↩️ 🔤fish🔤
+  🍉
+
+  ❗️ 💦 ➡️ 🔡 🍇
+    ↩️ 🔤splash🔤
+  🍉
+🍉
+
+🐇 🦈 🐠 🍇
+  🖍🆕 teeth 🔢
+
+  🆕 🍼 teeth 🔢 🍇
+    ⤴️🆕❗️
+  🍉
+
+  ✒️ ❗️ 🏷 ➡️ 🔡 🍇
+    ↩️ 🔤shark with 🧲teeth🧲 teeth🔤
+  🍉
+🍉
+
+🐇 🐋 🦈 🍇
+  🆕 🍇
+    ⤴️🆕 3❗️
+  🍉
+
+  ✒️ ❗️ 🏷 ➡️ 🔡 🍇
+    ↩️ 🔤whale🔤
+  🍉
+🍉
+
+🐇 📦🐚K⚪️ V⚪️🍆 🍇
+  🖍🆕 key K
+  🖍🆕 value V
+
+  🆕 🍼 key K 🍼 value V 🍇🍉
+
+  ❗️ 🏷 ➡️ 🔡 🍇
+    ↩️ 🔤box🔤
+  🍉
+
+  ❗️ 💰 ➡️ V 🍇
+    ↩️ value
+  🍉
+🍉
+
+🐇 🎁🐚V⚪️🍆 📦🐚🔡 V🍆 🍇
+  ✒️ ❗️ 🏷 ➡️ 🔡 🍇
+    ↩️ 🔤gift🔤
+  🍉
+🍉
+
+🐇 🎀🐚W⚪️🍆 🎁🐚W🍆 🍇
+  ✒️ ❗️ 🏷 ➡️ 🔡 🍇
+    ↩️ 🔤bow🔤
+  🍉
+🍉
+
+🐇 🍭 📦🐚🔡 🔢🍆 🍇
+  ✒️ ❗️ 🏷 ➡️ 🔡 🍇
+    ↩️ 🔤candy🔤
+  🍉
+🍉
+
+🐇 🏠🐚T⚪️🍆 🍇
+  🖍🆕 box 📦🐚🔡 T🍆
+  🖍🆕 fish 🍬🐠
+
+  🆕 🍼 box 📦🐚🔡 T🍆 🍇🍉
+
+  ❗️ 🎁 value T 🍇
+    🆕🎁🐚T🍆 🔤g🔤 value❗️ ➡️ 🖍box
+  🍉
+
+  ❗️ 🐟 newFish 🦈 🍇
+    newFish ➡️ 🖍fish
+  🍉
+
+  ❗️ 🗣 🍇
+    😀 🏷box❗️❗️
+    ↪️ fish ➡️ f 🍇
+      😀 🏷f❗️❗️
+    🍉
+    🙅 🍇
+      😀 🔤no fish🔤❗️
+    🍉
+  🍉
+🍉
+
+🐇 🧰 🍇
+  🐇❗️ 🐠 ➡️ 🐠 🍇
+    ↩️ 🆕🐋❗️
+  🍉
+
+  🐇❗️ 🦈 ➡️ 🍬🦈 🍇
+    ↩️ 🆕🦈 7❗️
+  🍉
+
+  🐇❗️ 📦 ➡️ 📦🐚🔡 🔢🍆 🍇
+    ↩️ 🆕🍭 🔤c🔤 4❗️
+  🍉
+🍉
+
+🏁 🍇
+  💭 Subclass to superclass
+  🆕🐠❗️ ➡️ 🖍🆕 fish
+  😀 🏷fish❗️❗️
+  🆕🦈 12❗️ ➡️ 🖍fish
+  😀 🏷fish❗️❗️
+  🖍🆕 declared 🐠
+  🆕🐋❗️ ➡️ 🖍declared
+  😀 🏷declared❗️❗️
+
+  💭 Generic subclass to generic superclass
+  🆕📦🐚🔡 🔢🍆 🔤b🔤 1❗️ ➡️ 🖍🆕 box
+  😀 🏷box❗️❗️
+  🆕🎁🐚🔢🍆 🔤g🔤 2❗️ ➡️ 🖍box
+  😀 🔤🧲🏷box❗️🧲 🧲🔡💰box❗️ 10❗️🧲🔤❗️
+  🆕🎀🐚🔢🍆 🔤b🔤 3❗️ ➡️ 🖍box
+  😀 🔤🧲🏷box❗️🧲 🧲🔡💰box❗️ 10❗️🧲🔤❗️
+  🆕🍭 🔤c🔤 4❗️ ➡️ 🖍box
+  😀 🔤🧲🏷box❗️🧲 🧲🔡💰box❗️ 10❗️🧲🔤❗️
+
+  💭 Through optionals
+  🖍🆕 optional 🍬🐠
+  🆕🦈 5❗️ ➡️ 🖍optional
+  ↪️ optional ➡️ f 🍇
+    😀 🏷f❗️❗️
+  🍉
+  🦈🐇🧰❗️ ➡️ 🖍optional
+  ↪️ optional ➡️ f 🍇
+    😀 🏷f❗️❗️
+  🍉
+  🤷‍♀️ ➡️ 🖍optional
+  ↪️ optional ➡️ f 🍇
+    😀 🏷f❗️❗️
+  🍉
+  🙅 🍇
+    😀 🔤no fish🔤❗️
+  🍉
+
+  💭 Instance variables, return values and closures
+  🆕🏠🐚🔢🍆 🆕🍭 🔤c🔤 6❗️❗️ ➡️ house
+  🗣house❗️
+  🎁house 8❗️
+  🐟house 🆕🦈 9❗️❗️
+  🗣house❗️
+  😀 🏷🐠🐇🧰❗️❗️❗️
+  😀 🔤🧲🏷📦🐇🧰❗️❗️🧲 🧲🔡💰📦🐇🧰❗️❗️ 10❗️🧲🔤❗️
+  🖍🆕 maker 🍇➡️🐠🍉
+  🍇 ➡️ 🐠
+    ↩️ 🆕🦈 10❗️
+  🍉 ➡️ 🖍maker
+  😀 🏷⁉️maker❗️❗️❗️
+  🍇 ➡️ 🦈
+    ↩️ 🆕🐋❗️
+  🍉 ➡️ 🖍maker
+  😀 🏷⁉️maker❗️❗️❗️
+
+  💭 Protocols, ⚪️ and lists
+  🖍🆕 splasher 🌊
+  🆕🦈 11❗️ ➡️ 🖍splasher
+  😀 💦splasher❗️❗️
+  🖍🆕 object ⚪️
+  🆕🐋❗️ ➡️ 🖍object
+  ↪️ 🔲 object 🐋 ➡️ f 🍇
+    😀 🏷f❗️❗️
+  🍉
+  🖍🆕 school 🍨🐚🐠🍆
+  🍿 🆕🦈 13❗️ 🆕🐋❗️ 🆕🐠❗️ 🍆 ➡️ 🖍school
+  🔂 f school 🍇
+    😀 🏷f❗️❗️
+  🍉
+🍉

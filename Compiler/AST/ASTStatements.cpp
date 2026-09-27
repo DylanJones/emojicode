@@ -8,6 +8,7 @@
 
 #include "ASTStatements.hpp"
 #include "ASTBoxing.hpp"
+#include "ASTLiterals.hpp"
 #include "ASTMethod.hpp"
 #include "Analysis/AnalysisObserver.hpp"
 #include "ASTUnsafeBlock.hpp"
@@ -15,6 +16,7 @@
 #include "Compiler.hpp"
 #include "Functions/FunctionType.hpp"
 #include "Functions/Initializer.hpp"
+#include "Package/Package.hpp"
 #include "MemoryFlowAnalysis/MFFunctionAnalyser.hpp"
 #include "Scoping/SemanticScoper.hpp"
 #include "Scoping/VariableNotFoundError.hpp"
@@ -91,6 +93,17 @@ void ASTReturn::analyse(FunctionAnalyser *analyser) {
     if (analyser->function()->returnType()->type().type() == TypeType::NoReturn) {
         if (value_ != nullptr) {
             throw CompilerError(position(), "No return type declared. Use ↩️↩️.");
+        }
+        if (isReturnForbidden(analyser->function()->functionType())) {
+            // ↩️↩️ returns the instance from an initializer.
+            value_ = analyser->analyseInitializerReturn(position());
+            if (value_ != nullptr) {
+                setIsInitReturn();
+            }
+        }
+        else if (analyser->function() == analyser->function()->package()->startFlagFunction()) {
+            // 🏁 returns the exit code (see FunctionAnalyser::analyseReturn()), which ↩️↩️ sets to 0.
+            value_ = std::make_shared<ASTNumberLiteral>(static_cast<int64_t>(0), std::u32string(), position());
         }
         return;
     }

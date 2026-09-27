@@ -243,6 +243,10 @@ void ASTThis::toCode(PrettyStream &pretty) const {
     pretty << "👇";
 }
 
+void ASTHandledCall::toCode(PrettyStream &pretty) const {
+    expr_->toCode(pretty);
+}
+
 void ASTUnwrap::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty << " 🍺" << expr_;
