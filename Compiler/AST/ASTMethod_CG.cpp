@@ -181,17 +181,28 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
         }
     }
 
+    auto callee = callee_->generate(fg);
     std::vector<llvm::Value *> supplArgs;
     auto tdg = TypeDescriptionGenerator(fg, TypeDescriptionGenerator::User::Function);
+    auto describesArgs = false;
     if (takesTypeGenericArgs(method_)) {
-        supplArgs.emplace_back(tdg.generate(callee_->expressionType().typeOfTypeValue().selfResolvedGenericArgs()));
+        auto type = callee_->expressionType().typeOfTypeValue();
+        if (type.type() == TypeType::Class) {
+            // The type value describes the class it stands for, which can be a subclass with more generic arguments
+            // than the type through which the method is called, and one of its overrides may use them.
+            supplArgs.emplace_back(fg->buildGetGenericArgsFromTypeValue(callee));
+        }
+        else {
+            supplArgs.emplace_back(tdg.generate(type.selfResolvedGenericArgs()));
+            describesArgs = true;
+        }
     }
 
-    auto ret = CallCodeGenerator(fg, callType_).generate(callee_->generate(fg), calleeType_,
-                                                         args_, method_, errorPointer(), supplArgs);
+    auto ret = CallCodeGenerator(fg, callType_).generate(callee, calleeType_, args_, method_, errorPointer(),
+                                                         supplArgs);
 
     // An erased reference that the method returns may point into the generic arguments (see entryFor()).
-    if (!supplArgs.empty() && !LLVMTypeHelper::isErasedReference(method_->returnType()->type())) {
+    if (describesArgs && !LLVMTypeHelper::isErasedReference(method_->returnType()->type())) {
         tdg.restoreStack();
     }
 

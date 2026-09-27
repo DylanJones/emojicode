@@ -1,0 +1,142 @@
+💭 A class type value describes its class with the generic arguments. A type method called through the type value of a
+💭 superclass, which has fewer generic arguments, is passed all of them, so an override can use those of its own class.
+
+🕊 🌰 🍇
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🆕 🍇
+    0 ➡️ 🖍a
+    0 ➡️ 🖍b
+    0 ➡️ 🖍c
+  🍉
+🍉
+
+🐇 🅰️🐚T⚪🍆 🍇
+  🔑 🆕 🍇🍉
+
+  🐇❗️ 📐 ➡️ 🔡 🍇
+    ↩️ 🔤🅰️ 🧲🔡 ⚖️T❗️🧲🔤
+  🍉
+
+  💭 Calls the type method on the type value it is called through.
+  🐇❗️ 🔭 ➡️ 🔡 🍇
+    ↩️ 📐👇❗️
+  🍉
+
+  🐇❗️ 🎁 ➡️ 🍇➡️🔡🍉 🍇
+    ↩️ 🍇🎍🥡 ➡️ 🔡
+      ↩️ 🔤🅰️ closure🔤
+    🍉
+  🍉
+
+  ❗️ 🙋 ➡️ 🔡 🍇
+    ↩️ 🔤🅰️ instance 🧲🔡 ⚖️T❗️🧲🔤
+  🍉
+🍉
+
+🐇 🌲🐚V⚪🍆 🅰️🐚🔢🍆 🍇
+  🔑 🆕 🍇 ⤴️🆕❗️ 🍉
+
+  ✒️ 🐇❗️ 📐 ➡️ 🔡 🍇
+    ↩️ 🔤🌲 🧲🔡 ⚖️V❗️🧲🔤
+  🍉
+
+  💭 The closure outlives the call and copies the generic arguments.
+  ✒️ 🐇❗️ 🎁 ➡️ 🍇➡️🔡🍉 🍇
+    ↩️ 🍇🎍🥡 ➡️ 🔡
+      ↩️ 🔤🌲 closure 🧲🔡 ⚖️V❗️🧲🔤
+    🍉
+  🍉
+
+  ✒️ ❗️ 🙋 ➡️ 🔡 🍇
+    ↩️ 🔤🌲 instance 🧲🔡 ⚖️V❗️🧲🔤
+  🍉
+🍉
+
+💭 🌴 holds the arguments 🔢 for T, 🌰 for V and its own W.
+🐇 🌴🐚W⚪🍆 🌲🐚🌰🍆 🍇
+  🔑 🆕 🍇 ⤴️🆕❗️ 🍉
+
+  ✒️ 🐇❗️ 📐 ➡️ 🔡 🍇
+    ↩️ 🔤🌴 🧲🔡 ⚖️W❗️🧲🔤
+  🍉
+
+  ✒️ ❗️ 🙋 ➡️ 🔡 🍇
+    ↩️ 🔤🌴 instance 🧲🔡 ⚖️W❗️🧲🔤
+  🍉
+🍉
+
+💭 🍭 has no generic parameters but holds the arguments to its superclass, which 🎁 holds before its own.
+🐇 📦🐚K⚪️ V⚪️🍆 🍇
+  🔑 🆕 🍇🍉
+
+  🐇❗️ 📐 ➡️ 🔡 🍇
+    ↩️ 🔤📦 🧲🔡 ⚖️K❗️🧲 🧲🔡 ⚖️V❗️🧲🔤
+  🍉
+
+  ❗️ 🙋 ➡️ 🔡 🍇
+    ↩️ 🔤📦 instance 🧲🔡 ⚖️K❗️🧲 🧲🔡 ⚖️V❗️🧲🔤
+  🍉
+🍉
+
+🐇 🍭 📦🐚🌰 💧🍆 🍇
+  🔑 🆕 🍇 ⤴️🆕❗️ 🍉
+🍉
+
+🐇 🎁🐚W⚪️🍆 🍭 🍇
+  🔑 🆕 🍇 ⤴️🆕❗️ 🍉
+
+  ✒️ 🐇❗️ 📐 ➡️ 🔡 🍇
+    ↩️ 🔤🎁 🧲🔡 ⚖️W❗️🧲🔤
+  🍉
+
+  ✒️ ❗️ 🙋 ➡️ 🔡 🍇
+    ↩️ 🔤🎁 instance 🧲🔡 ⚖️W❗️🧲🔤
+  🍉
+🍉
+
+🐇 🔍 🍇
+  🐇❗️ 🥩 a 🐇🅰️🐚🔢🍆 🍇
+    😀 📐a❗️❗️
+    😀 🔭a❗️❗️
+    😀 ⁉️🎁a❗️❗️❗️
+    💭 The required initializer is passed the generic arguments of the class the type value stands for.
+    😀 🙋🆕⬛️a❗️❗️❗️
+  🍉
+
+  🐇❗️ 🥕 a 🐇📦🐚🌰 💧🍆 🍇
+    😀 📐a❗️❗️
+    😀 🙋🆕⬛️a❗️❗️❗️
+  🍉
+
+  💭 The type values are created at run time from a generic argument, and outlive the calls that create them.
+  🐇❗️ 🌿🐚X⚪🍆 ➡️ 🐇🅰️🐚🔢🍆 🍇
+    ↩️ 🐇🌲🐚X🍆
+  🍉
+  🐇❗️ 🍂🐚X⚪🍆 ➡️ 🐇🅰️🐚🔢🍆 🍇
+    ↩️ 🐇🌴🐚X🍆
+  🍉
+🍉
+
+🏁 🍇
+  😀 📐🐇🌲🐚💧🍆❗️❗️
+  😀 📐🐇🌴🐚🔡🍆❗️❗️
+
+  🥩🐇🔍 🐇🅰️🐚🔢🍆❗️
+  🥩🐇🔍 🐇🌲🐚🔡🍆❗️
+  🥩🐇🔍 🐇🌲🐚💧🍆❗️
+  🥩🐇🔍 🐇🌴🐚🌰🍆❗️
+  🥩🐇🔍 🐇🌴🐚💧🍆❗️
+
+  🌿🐚🌰🍆🐇🔍❗️ ➡️ nuts
+  🍂🐚💧🍆🐇🔍❗️ ➡️ bytes
+  🌿🐚💧🍆🐇🔍❗️ ➡️ moreBytes
+  🥩🐇🔍 nuts❗️
+  🥩🐇🔍 bytes❗️
+  🥩🐇🔍 moreBytes❗️
+
+  🥕🐇🔍 🐇📦🐚🌰 💧🍆❗️
+  🥕🐇🔍 🐇🍭❗️
+  🥕🐇🔍 🐇🎁🐚🔢🍆❗️
+🍉

@@ -1,0 +1,12 @@
+# 🥩 of 🔍: the type methods are passed the generic arguments the type value describes, which follow its class.
+@ ^_\.class_1f50d\.type\.1f969-
++ getelementptr inbounds %typeDescription, ptr %a, i32 1
+- ejcTypeValue
+# 🌿 and 🍂 of 🔍: a type value described at run time is copied to one that lives as long as the program.
+@ ^_\.class_1f50d\.type\.1f33f$
++ call ptr @ejcTypeValue
+@ ^_\.class_1f50d\.type\.1f342$
++ call ptr @ejcTypeValue
+# 🏁: the type values of classes with known generic arguments are constants.
+@ ^fn_1f3c1$
+- ejcTypeValue

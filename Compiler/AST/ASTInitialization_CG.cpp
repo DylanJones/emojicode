@@ -75,8 +75,13 @@ Value* ASTInitialization::generateClassInit(FunctionCodeGenerator *fg) const {
         }
     }
     else {
+        // initializer_ is the type method that calls the required initializer on the class the type value stands for,
+        // which it describes with its generic arguments.
+        auto typeValue = typeExpr_->generate(fg);
+        auto suppl = takesTypeGenericArgs(initializer_) ?
+            std::vector<llvm::Value*> { fg->buildGetGenericArgsFromTypeValue(typeValue) } : std::vector<llvm::Value*>();
         obj = CallCodeGenerator(fg, CallType::DynamicDispatchOnType)
-            .generate(typeExpr_->generate(fg), typeExpr_->expressionType(), args_, initializer_, errorPointer());
+            .generate(typeValue, typeExpr_->expressionType(), args_, initializer_, errorPointer(), suppl);
     }
     handleResult(fg, obj);
     return obj;

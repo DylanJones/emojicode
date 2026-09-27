@@ -192,6 +192,11 @@ public:
     /// @param object Pointer to the object from which the class info shall be obtained.
     /// @returns A llvm::Value* representing a pointer to a class info.
     llvm::Value* buildGetClassInfoFromObject(llvm::Value *object);
+    /// Gets a pointer to the class info of a class type value, which is a type description of the class.
+    llvm::Value* buildGetClassInfoFromTypeValue(llvm::Value *typeValue);
+    /// Gets a pointer to the description of the generic arguments of the class of a class type value, which a type
+    /// method of the class is passed. They follow the entry that describes the class.
+    llvm::Value* buildGetGenericArgsFromTypeValue(llvm::Value *typeValue);
 
     llvm::Value* buildFindProtocolConformance(llvm::Value *box, llvm::Value *boxInfo, llvm::Value *protocolRTTI);
 

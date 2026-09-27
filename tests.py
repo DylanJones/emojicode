@@ -168,6 +168,8 @@ compilation_tests = [
     "inferLiteralFromExpec",
     "sequenceTypeNames",
     "typeValues",
+    "typeValueGenericArgs",
+    "castTypeValue",
     "deinitializer",
     "rcOrder",
     "rcOrderVt",
@@ -235,6 +237,7 @@ unoptimized_tests = [
     "closureGenericArgsCapture",
     "genericsInferenceTypeDescription",
     "errorProneGenericArgs",
+    "typeValueGenericArgs",
 ]
 # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
 # NAME.specializations. A function that is not specialized, but called generically, does not change what a program
@@ -258,6 +261,7 @@ specialization_tests = [
 # whose name matches the REGEX of a line "! REGEX" may be defined. Lines starting with # are comments.
 ir_tests = [
     "directCalls",
+    "typeValueGenericArgs",
 ]
 # Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
 host_tests = [
