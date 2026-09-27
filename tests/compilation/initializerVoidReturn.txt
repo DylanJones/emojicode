@@ -1,0 +1,17 @@
+released local
+negative
+released negative
+released local
+local
+released local
+released local
+-2
+released negative
+released local
+positive
+2
+released local
+3
+-1
+4
+6

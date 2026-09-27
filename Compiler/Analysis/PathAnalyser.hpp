@@ -52,6 +52,8 @@ public:
         return false;
     }
 
+    IncidentType type() const { return type_; }
+
 private:
     IncidentType type_;
     size_t value_;
@@ -123,6 +125,9 @@ public:
 private:
     void copyPotentialIncidents();
     void copyCertainIncidents();
+    /// Returns the incidents that certainly occurred in all branches of the current branch, or, if @p skipReturned is
+    /// true, in all of them that did not certainly return.
+    std::set<PathAnalyserIncident> intersectCertainIncidents(bool skipReturned) const;
 
     Branch mainBranch_ = Branch(nullptr);
     Branch *currentBranch_ = &mainBranch_;

@@ -1,0 +1,93 @@
+💭 ↩️↩️ returns the instance from an initializer early, once it is fully initialized.
+
+🐇 💰 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ❗️ 🏷 ➡️ 🔡 🍇
+    ↩️ name
+  🍉
+
+  ♻️ 🍇
+    😀 🔤released 🧲name🧲🔤❗️
+  🍉
+🍉
+
+🐇 🐟 🍇
+  🖍🆕 resource 💰
+
+  🆕 n 🔢 🍇
+    🆕💰 🔤local🔤❗️ ➡️ local
+    ↪️ n ◀️ 0 🍇
+      🆕💰 🔤negative🔤❗️ ➡️ 🖍resource
+      ↩️↩️
+    🍉
+    ↪️ n 🙌 0 🍇
+      🤯🐇💻 🔤zero🔤❗️
+    🍉
+    🆕💰 🏷 local❗️❗️ ➡️ 🖍resource
+  🍉
+
+  ❗️ 📛 ➡️ 🔡 🍇
+    ↩️ 🏷 resource❗️
+  🍉
+🍉
+
+🐇 🐡 🐟 🍇
+  🖍🆕 spikes 🔢
+
+  🆕 n 🔢 🍇
+    n ➡️ 🖍spikes
+    ⤴️🆕 n❗️
+    ↪️ n ◀️ 0 🍇
+      ↩️↩️
+    🍉
+    😀 🔤positive🔤❗️
+  🍉
+
+  ❗️ 🔢 ➡️ 🔢 🍇
+    ↩️ spikes
+  🍉
+🍉
+
+🕊 🌰 🍇
+  🖍🆕 value 🔢
+
+  🆕 n 🔢 🍇
+    0 ➡️ 🖍value
+    🔂 i 🆕⏩ 0 n❗️ 🍇
+      ↪️ i 🙌 3 🍇
+        i ➡️ 🖍value
+        ↩️↩️
+      🍉
+    🍉
+    -1 ➡️ 🖍value
+  🍉
+
+  🆕 ▶️🔢 n 🔢 🍇
+    ↪️ n ◀️ 0 🍇
+      0 ➖ n ➡️ 🖍value
+      ↩️↩️
+    🍉
+    🙅↪️ n 🙌 0 🍇
+      🤯🐇💻 🔤zero🔤❗️
+    🍉
+    n ➡️ 🖍value
+  🍉
+
+  ❗️ 🔢 ➡️ 🔢 🍇
+    ↩️ value
+  🍉
+🍉
+
+🏁 🍇
+  😀 📛🆕🐟 -1❗️❗️❗️
+  😀 📛🆕🐟 1❗️❗️❗️
+  😀 🔡 🔢🆕🐡 -2❗️❗️❗️❗️
+  😀 🔡 🔢🆕🐡 2❗️❗️❗️❗️
+  😀 🔡 🔢🆕🌰 5❗️❗️❗️❗️
+  😀 🔡 🔢🆕🌰 2❗️❗️❗️❗️
+  😀 🔡 🔢🆕🌰▶️🔢 -4❗️❗️❗️❗️
+  😀 🔡 🔢🆕🌰▶️🔢 6❗️❗️❗️❗️
+🍉

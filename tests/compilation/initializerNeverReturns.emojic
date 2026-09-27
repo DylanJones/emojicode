@@ -1,0 +1,126 @@
+💭 An initializer need not initialize the instance on a path that ends in 🤯 or 🚨, as it returns no instance there.
+
+🐇 🐫 🚧 🍇
+  🆕 🍇
+    ⤴️🆕 🔤camel🔤❗️
+  🍉
+🍉
+
+🐇 💰 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ❗️ 🏷 ➡️ 🔡 🍇
+    ↩️ name
+  🍉
+
+  ♻️ 🍇
+    😀 🔤released 🧲name🧲🔤❗️
+  🍉
+🍉
+
+🐇 🐟 🍇
+  🖍🆕 resource 💰
+
+  🆕 🍇
+    🆕💰 🔤🐟🔤❗️ ➡️ 🖍resource
+  🍉
+
+  🆕 ▶️🆒 🍇
+    🤯🐇💻 🔤unsupported🔤❗️
+  🍉
+
+  🆕 ▶️🔢 n 🔢 🍇
+    ↪️ n ◀️ 0 🍇
+      🤯🐇💻 🔤negative🔤❗️
+    🍉
+    🙅 🍇
+      🆕💰 🔤first🔤❗️ ➡️ 🖍resource
+    🍉
+    💭 The instance variable is initialized on all paths reaching this, so the old value is released.
+    🆕💰 🔡 n❗️❗️ ➡️ 🖍resource
+  🍉
+
+  🆕 ▶️🚧 n 🔢 🚧🐫 🍇
+    ↪️ n ◀️ 0 🍇
+      🚨🆕🐫❗️
+    🍉
+    🙅 🍇
+      🆕💰 🔡 n❗️❗️ ➡️ 🖍resource
+    🍉
+    ↪️ n 🙌 0 🍇
+      💭 Only the paths on which the instance variable is initialized reach this.
+      🚨🆕🐫❗️
+    🍉
+  🍉
+
+  ❗️ 📛 ➡️ 🔡 🍇
+    ↩️ 🏷 resource❗️
+  🍉
+🍉
+
+🐇 🐡 🐟 🍇
+  🖍🆕 spikes 🔢
+
+  🆕 🍇
+    3 ➡️ 🖍spikes
+    ⤴️🆕❗️
+  🍉
+
+  🆕 ▶️🔢 n 🔢 🍇
+    ↪️ n ◀️ 0 🍇
+      🤯🐇💻 🔤negative🔤❗️
+    🍉
+    🙅 🍇
+      n ➡️ 🖍spikes
+      ⤴️🆕❗️
+    🍉
+    😀 🔡 spikes❗️❗️
+  🍉
+
+  🆕 ▶️🆒 🍇
+    🤯🐇💻 🔤unsupported🔤❗️
+  🍉
+🍉
+
+🕊 🌰 🍇
+  🖍🆕 value 🔢
+
+  🆕 n 🔢 🍇
+    ↪️ n ◀️ 0 🍇
+      🤯🐇💻 🔤negative🔤❗️
+    🍉
+    🙅 🍇
+      n ➡️ 🖍value
+    🍉
+  🍉
+
+  ❗️ 🔢 ➡️ 🔢 🍇
+    ↩️ value
+  🍉
+🍉
+
+🏁 🍇
+  😀 📛🆕🐟▶️🔢 5❗️❗️❗️
+  😀 🔡 🔢🆕🌰 7❗️❗️❗️❗️
+  😀 📛🆕🐡▶️🔢 2❗️❗️❗️
+  🆗 fish 🆕🐟▶️🚧 8❗️ 🍇
+    😀 📛fish❗️❗️
+  🍉
+  🙅 error 🍇
+    😀 🔤error🔤❗️
+  🍉
+  🆗 fish 🆕🐟▶️🚧 0❗️ 🍇
+    😀 📛fish❗️❗️
+  🍉
+  🙅 error 🍇
+    😀 🔤error🔤❗️
+  🍉
+  🆗 fish 🆕🐟▶️🚧 -1❗️ 🍇
+    😀 📛fish❗️❗️
+  🍉
+  🙅 error 🍇
+    😀 🔤error🔤❗️
+  🍉
+🍉

@@ -152,11 +152,7 @@ void FunctionAnalyser::analyseReturn(ASTBlock *root) {
     }
     else if (function_->functionType() == FunctionType::ObjectInitializer &&
             !pathAnalyser_.hasCertainly(PathAnalyserIncident::Returned)) {
-        auto initializer = dynamic_cast<Initializer *>(function_);
-        auto thisNode = std::dynamic_pointer_cast<ASTExpr>(std::make_shared<ASTThis>(root->position()));
-        ExpressionAnalyser::analyse(thisNode);
-        comply(TypeExpectation(initializer->constructedType(typeContext().calleeType())), &thisNode);
-        auto ret = std::make_unique<ASTReturn>(thisNode, root->position());
+        auto ret = std::make_unique<ASTReturn>(initializedObject(root->position()), root->position());
         ret->setIsInitReturn();
         root->appendNode(std::move(ret));
         root->setReturnedCertainly();
@@ -183,7 +179,36 @@ void FunctionAnalyser::analyseReturn(ASTBlock *root) {
     }
 }
 
+std::shared_ptr<ASTExpr> FunctionAnalyser::initializedObject(const SourcePosition &p) {
+    auto initializer = dynamic_cast<Initializer *>(function_);
+    auto thisNode = std::dynamic_pointer_cast<ASTExpr>(std::make_shared<ASTThis>(p));
+    ExpressionAnalyser::analyse(thisNode);
+    comply(TypeExpectation(initializer->constructedType(typeContext().calleeType())), &thisNode);
+    return thisNode;
+}
+
+std::shared_ptr<ASTExpr> FunctionAnalyser::analyseInitializerReturn(const SourcePosition &p) {
+    // The end of the initializer is not checked if all paths returned (see analyseInitializationRequirements()), so
+    // every ↩️↩️ must meet the same requirements.
+    uninitializedVariablesCheck(p, "Instance variable \"", "\" must be initialized before ↩️↩️.");
+    if (isSuperconstructorRequired(function_->functionType()) &&
+        typeContext_.calleeType().klass()->superclass() != nullptr &&
+        !pathAnalyser_.hasCertainly(PathAnalyserIncident::CalledSuperInitializer)) {
+        throw CompilerError(p, "Superinitializer must be called before ↩️↩️.");
+    }
+    if (function_->functionType() == FunctionType::ObjectInitializer) {
+        return initializedObject(p);
+    }
+    return nullptr;
+}
+
 bool FunctionAnalyser::analyseInitializationRequirements() {
+    // If every path returned, raised an error or called a function that never returns, like 🤯, the end of the
+    // initializer is never reached. A ↩️↩️ in an initializer checks the requirements itself (see
+    // analyseInitializerReturn()), and the other paths do not return an instance.
+    if (pathAnalyser_.hasCertainly(PathAnalyserIncident::Returned)) {
+        return true;
+    }
     if (isFullyInitializedCheckRequired(function_->functionType())) {
         uninitializedVariablesCheck(function_->position(), "Instance variable \"", "\" must be initialized.");
     }
