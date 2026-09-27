@@ -7,6 +7,7 @@
 //
 
 #include "Class.hpp"
+#include "AST/ASTType.hpp"
 #include "Analysis/SemanticAnalyser.hpp"
 #include "Compiler.hpp"
 #include "CompilerError.hpp"
@@ -16,7 +17,6 @@
 #include "Utils/StringUtils.hpp"
 #include "Scoping/Scope.hpp"
 #include <algorithm>
-#include <set>
 #include <utility>
 
 namespace EmojicodeCompiler {
@@ -34,32 +34,31 @@ std::vector<Type> Class::superGenericArguments() const {
 }
 
 void Class::analyseSuperType(std::vector<std::function<void()>> *constraintChecks) {
-    if (superType() == nullptr) {
+    if (superType() == nullptr || superTypeAnalysed_) {
         return;
     }
 
     auto classType = Type(this);
+    if (analysingSuperType_) {
+        throw CompilerError(superType()->position(), Type(this).toString(TypeContext(classType)),
+                            " inherits from itself.");
+    }
+    // The generic parameters of this class follow the generic arguments of its superclass, which may mention them. So
+    // the superclass's superclass is analysed and the indices are offset before the superclass type is analysed.
+    if (auto typeId = dynamic_cast<ASTTypeId *>(superType())) {
+        auto rawType = typeId->rawType();
+        if (rawType.type() == TypeType::Class) {
+            analysingSuperType_ = true;
+            rawType.klass()->analyseSuperType(constraintChecks);
+            analysingSuperType_ = false;
+            offsetIndicesBy(rawType.klass()->superGenericArguments().size() + typeId->genericArgumentCount());
+        }
+    }
+
     auto &type = superType()->analyseType(TypeContext(TypeContext(classType), constraintChecks));
 
     if (type.type() != TypeType::Class) {
         throw CompilerError(superType()->position(), "The superclass must be a class.");
-    }
-
-    if (type.klass()->superType() != nullptr && !type.klass()->superType()->wasAnalysed()) {
-        type.klass()->analyseSuperType(constraintChecks);
-    }
-
-    std::set<Class *> visited;
-    for (auto klass = type.klass(); klass != nullptr && visited.insert(klass).second;) {
-        if (klass == this) {
-            throw CompilerError(superType()->position(), Type(this).toString(TypeContext(classType)),
-                                " inherits from itself.");
-        }
-        auto super = klass->superType();
-        if (super == nullptr || !super->wasAnalysed() || super->type().type() != TypeType::Class) {
-            break;
-        }
-        klass = super->type().klass();
     }
 
     if (type.klass()->final()) {
@@ -67,19 +66,7 @@ void Class::analyseSuperType(std::vector<std::function<void()>> *constraintCheck
                                                   " can’t be used as superclass as it was marked with 🔏."));
     }
     type.klass()->setHasSubclass();
-
-    offsetIndicesBy(type.genericArguments().size());
-    for (size_t i = type.typeDefinition()->superGenericArguments().size(); i < type.genericArguments().size(); i++) {
-        if (type.genericArguments()[i].type() == TypeType::GenericVariable) {
-            auto newIndex = type.genericArguments()[i].genericVariableIndex() + type.genericArguments().size();
-            type.setGenericArgument(i, Type(newIndex, this));
-        }
-        else if (type.genericArguments()[i].type() == TypeType::Box &&
-                 type.genericArguments()[i].unboxedType() == TypeType::GenericVariable) {
-            auto newIndex = type.genericArguments()[i].unboxed().genericVariableIndex() + type.genericArguments().size();
-            type.setGenericArgument(i, Type(newIndex, this).boxedFor(type.genericArguments()[i].boxedFor()));
-        }
-    }
+    superTypeAnalysed_ = true;
 }
 
 Function* Class::findSuperFunction(Function *function, SemanticAnalyser *analyser) {

@@ -66,6 +66,10 @@ public:
             : ASTType(std::move(p), package), name_(std::move(name)), namespace_(std::move(ns)) {}
 
     void addGenericArgument(std::unique_ptr<ASTType> type) { genericArgs_.emplace_back(std::move(type)); }
+    /// Returns the type named, without generic arguments.
+    /// @pre The type was not analysed.
+    Type rawType() const;
+    size_t genericArgumentCount() const { return genericArgs_.size(); }
 
     void toCodeType(PrettyStream &pretty) const override;
     Type getType(const TypeContext &typeContext, bool allowGenericInference) const override;
