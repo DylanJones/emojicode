@@ -46,25 +46,40 @@ Value* ASTRebox::rebox(Value *box, FunctionCodeGenerator *fg) const {
         return fg->builder().CreateInsertValue(box, fg->buildGetValueBoxInfo(boxInfo, from), 0);
     }
 
-    auto protocol = expressionType().boxedFor().protocol();
-    if (from.boxedFor().type() == TypeType::MultiProtocol) {
-        // The box already has the conformance to each protocol of the multiprotocol.
-        auto &protocols = from.boxedFor().protocols();
-        auto it = std::find_if(protocols.begin(), protocols.end(), [protocol](auto &t) {
-            return t.protocol() == protocol;
-        });
-        if (it != protocols.end()) {
-            auto conformance = fg->buildGetBoxConformance(boxInfo, from, it - protocols.begin());
-            return fg->builder().CreateInsertValue(box, conformance, 0);
+    Value *boxPtr = nullptr, *valueBoxInfo = nullptr;
+    auto conformanceTo = [&](Protocol *protocol) -> Value* {
+        if (from.boxedFor().type() == TypeType::MultiProtocol) {
+            // The box already has the conformance to each protocol of the multiprotocol.
+            auto &protocols = from.boxedFor().protocols();
+            auto it = std::find_if(protocols.begin(), protocols.end(), [protocol](auto &t) {
+                return t.protocol() == protocol;
+            });
+            if (it != protocols.end()) {
+                return fg->buildGetBoxConformance(boxInfo, from, it - protocols.begin());
+            }
         }
-    }
+        if (boxPtr == nullptr) {
+            boxPtr = fg->createEntryAlloca(fg->typeHelper().box());
+            fg->builder().CreateStore(box, boxPtr);
+            valueBoxInfo = fg->buildGetValueBoxInfo(boxInfo, from);
+        }
+        return fg->buildFindProtocolConformance(boxPtr, valueBoxInfo, protocol->rtti());
+    };
 
-    auto boxPtr = fg->createEntryAlloca(fg->typeHelper().box());
-    fg->builder().CreateStore(box, boxPtr);
-    auto conformance = fg->buildFindProtocolConformance(boxPtr, fg->buildGetValueBoxInfo(boxInfo, from),
-                                                        protocol->rtti());
-    fg->builder().CreateStore(conformance, fg->buildGetBoxInfoPtr(boxPtr));
-    return fg->builder().CreateLoad(fg->typeHelper().box(), boxPtr);
+    auto &to = expressionType().boxedFor();
+    if (to.type() == TypeType::MultiProtocol) {
+        // The box points to a table of the conformances to the protocols of the multiprotocol.
+        auto arrayType = llvm::ArrayType::get(fg->typeHelper().pointer(), to.protocols().size());
+        auto conformances = fg->createEntryAlloca(arrayType);
+        for (size_t i = 0; i < to.protocols().size(); i++) {
+            fg->builder().CreateStore(conformanceTo(to.protocols()[i].protocol()),
+                                      fg->builder().CreateConstInBoundsGEP2_32(arrayType, conformances, 0, i));
+        }
+        auto table = fg->builder().CreateCall(fg->generator()->runTime().multiprotocolTable(),
+                                              { conformances, fg->int64(to.protocols().size()) });
+        return fg->builder().CreateInsertValue(box, table, 0);
+    }
+    return fg->builder().CreateInsertValue(box, conformanceTo(to.protocol()), 0);
 }
 
 Value* ASTBoxing::getBoxValuePtr(Value *box, FunctionCodeGenerator *fg) const {

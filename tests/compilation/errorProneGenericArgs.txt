@@ -1,0 +1,24 @@
+1
+plain
+error 2
+three
+generic
+error 4
+5
+error 6
+3
+error 8
+2
+error 10
+11
+error 12
+thirteen
+generic
+error 14
+15
+error 16
+2
+error 18
+nineteen
+0
+error 20

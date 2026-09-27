@@ -1,0 +1,35 @@
+🐇 🦊🐚A⚪️ B⚪️🍆 🍇
+  🖍🆕 a A
+  🖍🆕 b B
+  🆕 🍼 a A 🍼 b B 🍇🍉
+  ❗️ 🍩 ➡️ A 🍇
+    ↩️ a
+  🍉
+  ❗️ 🍫 ➡️ B 🍇
+    ↩️ b
+  🍉
+🍉
+
+💭 T is also nested in a generic argument of the superclass.
+🐇 🐐🐚T 📈🐚T🍆🍆 🦊🐚T 🍨🐚T🍆🍆 🍇
+  ❗️ 🐽 x T ➡️ 👌 🍇
+    ↩️ 🍩 👇❗️ ◀️ x
+  🍉
+🍉
+
+💭 V must be compatible to the constraint of T, which mentions T.
+🐇 🐟🐚V 📈🐚V🍆🍆 🐐🐚V🍆 🍇
+  ❗️ 🐙 ➡️ V 🍇
+    ↩️ 🐽 🍫 👇❗️ 0❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🐟🐚🔢🍆 5 🍿 1 2 🍆❗️ ➡️ g
+  ↪️ 🐽 g 7❗️ 🍇
+    😀 🔤5 is less than 7🔤❗️
+  🍉
+  😀 🔡 🍩 g❗️❗️❗️
+  😀 🔡 🐙 g❗️❗️❗️
+  😀 🔡 🐽 🍫 g❗️ 1❗️❗️❗️
+🍉

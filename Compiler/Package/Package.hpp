@@ -106,6 +106,11 @@ public:
 
     /// @returns All classes registered with this package.
     const std::vector<std::unique_ptr<Class>>& classes() const { return classes_; };
+    /// Reorders classes() so that every class comes after its superclass if that belongs to this package, and keeps
+    /// the declaration order otherwise. A class can be declared before its superclass, but inheriting (analysis) and
+    /// creating (code generation) a class use the results for its superclass.
+    /// @pre The super types of all classes were analysed.
+    void orderClassesSuperclassFirst();
     const std::vector<std::unique_ptr<Function>>& functions() const { return functions_; }
     /// Takes ownership of a specialization of a function of this package. Specializations are not declarations, so
     /// they are neither in functions() nor in the functions of the type definitions.

@@ -41,6 +41,7 @@ void SemanticAnalyser::analyse(bool executable) {
     for (auto &klass : package_->classes()) {
         klass->analyseSuperType(&constraintChecks);
     }
+    package_->orderClassesSuperclassFirst();
     for (auto &protocol : package_->protocols()) {
         protocol->analyseConstraints(TypeContext(TypeContext(Type(protocol.get())), &constraintChecks));
     }

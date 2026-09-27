@@ -94,9 +94,16 @@ void ASTSuper::analyseSuperInitErrorProneness(ExpressionAnalyser *eanalyser, con
 
 Value* ASTSuper::generate(FunctionCodeGenerator *fg) const {
     auto castedThis = fg->builder().CreateBitCast(fg->thisValue(), fg->typeHelper().llvmTypeFor(calleeType_));
+    std::vector<llvm::Value *> suppl;
+    if (init_ && calleeType_.klass()->storesGenericArgs()) {
+        // The superinitializer stores the generic arguments like any initializer. The object stores those of its
+        // class already, which include those of the superclass.
+        assert(fg->calleeType().klass()->storesGenericArgs());
+        suppl.emplace_back(fg->builder().CreateLoad(fg->genericArgsType(), fg->genericArgsPtr()));
+    }
     auto ret = CallCodeGenerator(fg, CallType::StaticDispatch).generate(castedThis, calleeType_, args_, function_,
                                                                         manageErrorProneness_ ? fg->errorPointer() :
-                                                                        errorPointer());
+                                                                        errorPointer(), suppl);
     if (manageErrorProneness_) {
         fg->createIfElseBranchCond(isError(fg, fg->errorPointer()), [&]() {  // TODO: finish
             buildDestruct(fg);
