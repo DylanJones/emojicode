@@ -191,7 +191,8 @@ compilation_tests = [
     "genericDynDisableLiteralConstraint",
     "reraiseEscapingArgument",
     "dictionaryCollisions",
-    "rangeStepZero"
+    "rangeStepZero",
+    "startFlagBareReturn"
 ]
 
 if not (quick or valgrind):
