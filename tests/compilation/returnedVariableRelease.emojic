@@ -1,0 +1,100 @@
+💭 A variable whose value one ↩️ returns is still released on every other path, including a variable that later
+💭 reuses its ID in a sibling scope, like the 🙅 variable after a 🆗 block that returns its value (#59).
+🐇 💰 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ♻️ 🍇
+    😀 name❗️
+  🍉
+🍉
+
+🐇 💥 🚧 🍇
+  🆕 🍇
+    ⤴️🆕 🔤boom🔤❗️
+  🍉
+
+  ♻️ 🍇
+    😀 🔤error released🔤❗️
+  🍉
+🍉
+
+🐇 🐟 🍇
+  🐇❗️ 🚦 ok 👌 ➡️ 💰 🚧💥 🍇
+    ↪️ ok 🍇
+      ↩️ 🆕💰 🔤value🔤❗️
+    🍉
+    🚨🆕💥❗️
+  🍉
+
+  🐇❗️ 🥕 ok 👌 ➡️ 💰 🍇
+    🆗 result 🚦🐇🐟 ok❗️ 🍇
+      ↩️ result
+    🍉
+    🙅 error 🍇
+      😀 🔤error block🔤❗️
+    🍉
+    ↩️ 🆕💰 🔤after handler🔤❗️
+  🍉
+
+  🐇❗️ 🍅 ok 👌 ➡️ 🔢 🍇
+    🍇 ➡️ 🔢 🚧💥
+      ↪️ ok 🍇
+        ↩️ 1
+      🍉
+      🚨🆕💥❗️
+    🍉 ➡️ closure
+    🆗 result ⁉️closure❗️ 🍇
+      ↩️ result
+    🍉
+    🙅 error 🍇
+      😀 🔤closure error block🔤❗️
+    🍉
+    ↩️ 0
+  🍉
+
+  🐇❗️ 🌿 c 👌 ➡️ 💰 🍇
+    ↪️ c 🍇
+      🆕💰 🔤branch🔤❗️ ➡️ a
+      ↩️ a
+    🍉
+    🆕💰 🔤sibling🔤❗️ ➡️ b
+    ↩️ 🆕💰 🔤fresh🔤❗️
+  🍉
+
+  🐇❗️ 🌳 c 👌 ➡️ 💰 🍇
+    🆕💰 🔤outer🔤❗️ ➡️ o
+    ↪️ c 🍇
+      ↩️ o
+    🍉
+    ↩️ 🆕💰 🔤other🔤❗️
+  🍉
+
+  🐇❗️ 🌀 ➡️ 💰 🍇
+    🔂 i 🆕⏩ 0 3❗️ 🍇
+      🆕💰 🔡 i❗️❗️ ➡️ l
+      ↪️ i 🙌 2 🍇
+        ↩️ l
+      🍉
+    🍉
+    ↩️ 🆕💰 🔤never🔤❗️
+  🍉
+🍉
+
+🏁 🍇
+  🥕🐇🐟 👎❗️
+  🥕🐇🐟 👍❗️
+  😀 🔤--🔤❗️
+  😀 🔡 🍅🐇🐟 👎❗️❗️❗️
+  😀 🔡 🍅🐇🐟 👍❗️❗️❗️
+  😀 🔤--🔤❗️
+  🌿🐇🐟 👎❗️
+  🌿🐇🐟 👍❗️
+  😀 🔤--🔤❗️
+  🌳🐇🐟 👎❗️
+  🌳🐇🐟 👍❗️
+  😀 🔤--🔤❗️
+  🌀🐇🐟❗️
+  😀 🔤end🔤❗️
+🍉
