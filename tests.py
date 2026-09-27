@@ -104,6 +104,7 @@ compilation_tests = [
     "genericRecursion",
     "optionalGenericField",
     "nestedOptionalGenericArgument",
+    "inheritedGenericMethodOnSelf",
     "variableInitAndScoping",
     "varInitPath",
     "valueTypeRemoteAdditional",

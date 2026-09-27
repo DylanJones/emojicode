@@ -1,0 +1,57 @@
+💭 A non-generic subclass of a generic class calls inherited methods that mention the superclass's generic parameter
+💭 on 👇: directly, in collection literals, in a closure, and two levels down the hierarchy.
+🐇 🐠🐚T⚪️🍆 🍇
+  🖍🆕 v T
+  🆕 🍼 v T 🍇🍉
+  ❗️ 💎 ➡️ T 🍇
+    ↩️ v
+  🍉
+  ❗️ 🌼 a T ➡️ T 🍇
+    ↩️ a
+  🍉
+🍉
+
+🐇 🐟 🐠🐚🔢🍆 🍇
+  ❗️ 🔢 ➡️ 🔢 🍇
+    💎👇❗️ ➡️ x
+    ↩️ x ➕ 🌼👇 1❗️
+  🍉
+  ❗️ 🍨 ➡️ 🍨🐚🔢🍆 🍇
+    ↩️ 🍿 💎👇❗️ 🌼👇 2❗️ 🍆
+  🍉
+  ❗️ 🍯 ➡️ 🔢 🍇
+    🍿 🔤a🔤 ➡️ 💎👇❗️ 🍆 ➡️ d
+    ↩️ 🍺 🐽 d 🔤a🔤❗️
+  🍉
+  ❗️ 🎁 ➡️ 🔢 🍇
+    🍇 ➡️ 🔢
+      ↩️ 💎👇❗️ ✖️ 10
+    🍉 ➡️ c
+    ↩️ ⁉️ c❗️
+  🍉
+🍉
+
+🐇 🐡 🐟 🍇
+  ❗️ 🐡 ➡️ 🔢 🍇
+    ↩️ 💎👇❗️ ➖ 1
+  🍉
+🍉
+
+🐇 🦐 🐠🐚🔡🍆 🍇
+  ❗️ 🔡 ➡️ 🔡 🍇
+    🍿 💎👇❗️ 🌼👇 🔤!🔤❗️ 🍆 ➡️ l
+    ↩️ 🔤🧲🐽 l 0❗️🧲🧲🐽 l 1❗️🧲🔤
+  🍉
+🍉
+
+🏁 🍇
+  🆕🐟 7❗️ ➡️ f
+  😀 🔡 🔢 f❗️❗️❗️
+  🍨 f❗️ ➡️ l
+  😀 🔡 🐽 l 0❗️❗️❗️
+  😀 🔡 🐽 l 1❗️❗️❗️
+  😀 🔡 🍯 f❗️❗️❗️
+  😀 🔡 🎁 f❗️❗️❗️
+  😀 🔡 🐡 🆕🐡 5❗️❗️❗️❗️
+  😀 🔡 🆕🦐 🔤shrimp🔤❗️❗️❗️
+🍉
