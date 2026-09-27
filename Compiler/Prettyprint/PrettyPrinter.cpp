@@ -41,6 +41,7 @@ void PrettyPrinter::printInterface(const std::string &out) {
     interface_ = true;
     prettyStream_.setOutPath(out);
 
+    prettyStream_ << kABIVersionPrefix + std::to_string(kABIVersion) + "\n";
     if (!package_->documentation().empty()) {
         prettyStream_.indent() << "📘" << package_->documentation() << "📘\n";
     }

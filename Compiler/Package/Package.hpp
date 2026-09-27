@@ -32,6 +32,15 @@ struct SourcePosition;
 class Compiler;
 class SourceFile;
 
+/// The version of the binary interface between a compiled package and the code that imports it: the layouts of
+/// run-time structures (boxes, box infos, protocol conformances, type descriptions, class infos, ...), the calling
+/// conventions and the format of interfaces. Every interface begins with kABIVersionPrefix followed by this number,
+/// and the compiler refuses to import a package whose interface records another version or none.
+/// Increase it whenever any of these change, as a package compiled by another compiler would otherwise silently
+/// miscompile or crash its importers.
+constexpr int kABIVersion = 1;
+constexpr const char *kABIVersionPrefix = "💭 Emojicode package ABI version ";
+
 /// Package is the class used to load, parse and analyse packages.
 class Package {
 public:
