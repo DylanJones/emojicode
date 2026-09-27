@@ -243,9 +243,12 @@ Type ExpressionAnalyser::complyReference(Type exprType, const TypeExpectation &e
 }
 
 Type ExpressionAnalyser::upcast(Type exprType, const TypeExpectation &expectation, std::shared_ptr<ASTExpr> *node) const {
+    // Only an instance of a subclass is upcast. Any other class is left as is, so that the caller reports it as
+    // incompatible, instead of treating an unrelated object as an instance of the expected class.
     if ((exprType.type() == TypeType::Class && expectation.type() == TypeType::Class &&
-         expectation.klass() != exprType.klass()) || (exprType.unoptionalized().type() == TypeType::Class &&
-                                                      expectation.unoptionalized().type() == TypeType::Someobject)) {
+         expectation.klass() != exprType.klass() && exprType.compatibleTo(expectation, typeContext_)) ||
+        (exprType.unoptionalized().type() == TypeType::Class &&
+         expectation.unoptionalized().type() == TypeType::Someobject)) {
         insertNode<ASTUpcast>(node, exprType, expectation.unoptionalized());
         exprType = expectation.unoptionalized();
     }
