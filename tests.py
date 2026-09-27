@@ -36,6 +36,8 @@ compilation_tests = [
     "classOverride",
     "classSuper",
     "classSubInstanceVar",
+    "subclassDeclaredFirst",
+    "genericSubclassDeclaredFirst",
     "overload",
     "optionalParameter",
     "returnInBlock",
@@ -233,6 +235,7 @@ host_tests = [
 importing_tests = [
     "inlineClosure",
     "importedSpecialization",
+    "importedSubclassDeclaredFirst",
 ]
 reject_tests = glob.glob(os.path.join(dist.source, "tests", "reject",
                                       "*.emojic"))
