@@ -19,6 +19,7 @@
 #include "Types/Class.hpp"
 #include "Package/Package.hpp"
 #include "Compiler.hpp"
+#include <algorithm>
 
 namespace EmojicodeCompiler {
 
@@ -117,7 +118,7 @@ void MFFunctionAnalyser::popScope(ASTBlock *block) {
 }
 
 bool MFFunctionAnalyser::shouldReleaseVariable(const MFLocalVariable &var) const {
-    return !var.isParam && !var.isReturned && var.type.isManaged();
+    return !var.isParam && var.type.isManaged();
 }
 
 void MFFunctionAnalyser::releaseVariables(ASTBlock *block) const {
@@ -134,16 +135,16 @@ void MFFunctionAnalyser::releaseVariables(ASTBlock *block) const {
     // Otherwise, determine whether the last statement of the block is a return statement.
     // If it is a return statement, add the release statements to the return statement.
     else if (auto returnStmt = block->getReturn()) {
-        releaseAllVariables(returnStmt, block->scopeStats(), block->position());
+        releaseAllVariables(returnStmt, block->scopeStats(), block->position(), returnStmt->returnedVariables());
     }
 }
 
 void MFFunctionAnalyser::releaseAllVariables(Releasing *releasing, const SemanticScopeStats &stats,
-                                             const SourcePosition &p) const {
+                                             const SourcePosition &p, const std::vector<size_t> &returned) const {
     for (size_t i = 0; i < stats.allVariablesCount; i++) {
         VariableID variableId = i;
         auto &var = scope_.getVariable(variableId);
-        if (shouldReleaseVariable(var)) {
+        if (shouldReleaseVariable(var) && std::find(returned.begin(), returned.end(), variableId) == returned.end()) {
             releasing->addRelease(std::make_unique<ASTRelease>(false, variableId, var.type, p));
         }
     }
@@ -155,7 +156,7 @@ bool MFFunctionAnalyser::recordVariableGet(size_t id, MFFlowCategory category) {
     // stack of the caller.
     bool returnsValueOfVariable = category.isReturn() && !var.isParam && !var.isCaptured;
     if (returnsValueOfVariable) {
-        var.isReturned = true;
+        returnedVariables_.emplace_back(id);
     }
     if (category.isEscaping()) {
         auto type = var.type.unoptionalized();
@@ -165,6 +166,12 @@ bool MFFunctionAnalyser::recordVariableGet(size_t id, MFFlowCategory category) {
         }
     }
     return returnsValueOfVariable;
+}
+
+std::vector<size_t> MFFunctionAnalyser::analyseReturnValue(ASTExpr *value) {
+    returnedVariables_.clear();
+    value->analyseMemoryFlow(this, MFFlowCategory::Return);
+    return std::move(returnedVariables_);
 }
 
 void MFFunctionAnalyser::take(ASTExpr *expr) {
