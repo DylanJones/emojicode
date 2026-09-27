@@ -98,6 +98,14 @@ public:
     /// @throws CompilerError
     void uninitalizedError(const ResolvedVariable &rvar, const SourcePosition &p) const;
 
+    /// Forgets the initialization of the local variable with the ID @p id in the current branch, e.g. as its scope
+    /// ended. Variables declared later reuse the ID, and must not be considered initialized.
+    void forgetVariable(size_t id) {
+        auto incident = PathAnalyserIncident(false, id);
+        currentBranch_->certainIncidents.erase(incident);
+        currentBranch_->potentialIncidents.erase(incident);
+    }
+
     /// Determines if the incident described by `incident` has certainly occured until now.
     bool hasCertainly(PathAnalyserIncident incident) const;
     /// Determines if the incident described by `incident` has probably occured until now.
