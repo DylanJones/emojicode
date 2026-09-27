@@ -58,6 +58,7 @@ compilation_tests = [
     "castGenericValueType",
     "castBindingRemote",
     "castGenericClass",
+    "genericSubclassArguments",
     "protocolClass",
     "protocolSubclass",
     "protocolValueType",
