@@ -65,6 +65,7 @@ compilation_tests = [
     "specializationScoping",
     "specializationMangling",
     "selfConstraint",
+    "selfConstraintCalls",
     "numericMatrix",
     "directCalls",
     "protocolValueTypeRemote",

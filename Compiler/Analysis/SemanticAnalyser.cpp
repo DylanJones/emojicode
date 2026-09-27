@@ -32,9 +32,14 @@ SemanticAnalyser::~SemanticAnalyser() = default;
 
 void SemanticAnalyser::analyse(bool executable) {
     // Constraints and protocol conformances can mention generic parameters and types whose constraints or
-    // conformances are not analysed yet (e.g. 🐊 📈🐚🎲🍆 with 🐊 📈🐚T 📈🐚T🍆🍆), so generic arguments are only
-    // checked against their constraints once all are analysed.
+    // conformances are not analysed yet (e.g. 🐊 🎚🐚🎲🍆 in 🎲 with 🐊 🎚🐚T 🎚🐚T🍆🍆), so generic arguments are
+    // only checked against their constraints once all are analysed.
     std::vector<std::function<void()>> constraintChecks;
+    // The generic arguments of a class start with those of its superclass, so the superclasses are analysed before
+    // any constraint or conformance can mention a class.
+    for (auto &klass : package_->classes()) {
+        klass->analyseSuperType(&constraintChecks);
+    }
     for (auto &protocol : package_->protocols()) {
         protocol->analyseConstraints(TypeContext(TypeContext(Type(protocol.get())), &constraintChecks));
     }
@@ -43,7 +48,6 @@ void SemanticAnalyser::analyse(bool executable) {
         finalizeProtocols(Type(vt.get()), &constraintChecks);
     }
     for (auto &klass : package_->classes()) {
-        klass->analyseSuperType();
         klass->analyseConstraints(TypeContext(TypeContext(Type(klass.get())), &constraintChecks));
         finalizeProtocols(Type(klass.get()), &constraintChecks);
     }
