@@ -164,7 +164,8 @@ compilation_tests = [
     "interpolationDereference",
     "interpolationRelease",
     "genericDynDisableLiteralConstraint",
-    "reraiseEscapingArgument"
+    "reraiseEscapingArgument",
+    "dictionaryCollisions"
 ]
 
 if not (quick or valgrind):
