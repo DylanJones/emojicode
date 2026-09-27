@@ -34,6 +34,10 @@ void PackageCreator::generate() {
     for (auto &klass : package_->classes()) {
         createClass(klass.get());
     }
+    // The generic arguments of a specialization can be any type, which must have been created to declare it.
+    for (auto &specialization : package_->specializations()) {
+        createFunction(specialization.get());
+    }
     for (auto &function : package_->functions()) {
         createFunction(function.get());
     }

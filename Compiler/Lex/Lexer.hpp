@@ -35,6 +35,10 @@ public:
     /// @pre continues() must be true.
     Token lex();
 
+    /// Continues lexing at the start of @p line, if the source file recorded where it starts, which the lexer of a
+    /// package being compiled does. Otherwise, lexing continues where it is.
+    void seekLine(unsigned int line);
+
     /// @returns True iff characters to be tokenized are left.
     bool continues() const { return continue_; }
 

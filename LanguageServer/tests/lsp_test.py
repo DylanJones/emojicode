@@ -531,6 +531,17 @@ class NavigationTests(ServerTestCase):
             self.assertIn(expected, hover["contents"]["value"], needle)
             self.assertNotIn("0?", hover["contents"]["value"], needle)
 
+    def test_hover_specialized_call(self):
+        # The call uses a specialization of 📐 for 🔢, but shows 📐 as it is declared.
+        text = ("🕊 🧰 🍇\n  🆕 🍇🍉\n  🐇❗️ 📐🐚T ⚪️🍆 x T ➡️ 🔢 🍇\n    ↩️ 1\n  🍉\n🍉\n"
+                "🏁 🍇\n  📐🕊🧰 5❗️ ➡️ n\n🍉\n")
+        path = self.write("specialized.emojic", text)
+        self.client.open(path)
+        self.assertEqual(self.client.diagnostics(path), [])
+        hover = self.client.request("textDocument/hover", {"textDocument": {"uri": uri(path)},
+                                                           "position": position(text, "📐", 2)})
+        self.assertIn("📐 🐚T ⚪️ 🍆", hover["contents"]["value"])
+
     def test_definition_in_standard_library(self):
         path, start = self.definition("😀")
         self.assertTrue(path.endswith("🏛"), path)

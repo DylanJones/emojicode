@@ -107,6 +107,11 @@ public:
     /// @returns All classes registered with this package.
     const std::vector<std::unique_ptr<Class>>& classes() const { return classes_; };
     const std::vector<std::unique_ptr<Function>>& functions() const { return functions_; }
+    /// Takes ownership of a specialization of a function of this package. Specializations are not declarations, so
+    /// they are neither in functions() nor in the functions of the type definitions.
+    void addSpecialization(std::unique_ptr<Function> function);
+    /// The specializations of the functions of this package, in the order in which they were analysed.
+    const std::vector<std::unique_ptr<Function>>& specializations() const { return specializations_; }
     const std::vector<std::unique_ptr<ValueType>>& valueTypes() const { return valueTypes_; }
     const std::vector<std::unique_ptr<Protocol>>& protocols() const { return protocols_; }
     const std::vector<ExportedType>& exportedTypes() const { return exportedTypes_; }
@@ -154,6 +159,7 @@ private:
     std::vector<std::unique_ptr<Class>> classes_;
     std::vector<std::unique_ptr<ValueType>> valueTypes_;
     std::vector<std::unique_ptr<Function>> functions_;
+    std::vector<std::unique_ptr<Function>> specializations_;
     std::vector<std::unique_ptr<Protocol>> protocols_;
     std::vector<std::string> linkHints_;
     std::string linkHintsDirectory_;

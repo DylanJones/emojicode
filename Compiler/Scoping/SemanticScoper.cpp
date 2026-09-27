@@ -46,6 +46,9 @@ SemanticScopeStats SemanticScoper::createStats() const {
 
 SemanticScoper SemanticScoper::scoperForFunction(Function *function)  {
     if (hasInstanceScope(function->functionType())) {
+        if (auto scope = function->instanceScope()) {
+            return SemanticScoper(scope);
+        }
         return SemanticScoper(&function->owner()->instanceScope());
     }
     return SemanticScoper();

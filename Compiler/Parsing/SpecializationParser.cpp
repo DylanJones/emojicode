@@ -1,0 +1,53 @@
+//
+//  SpecializationParser.cpp
+//  EmojicodeCompiler
+//
+
+#include "SpecializationParser.hpp"
+#include "AST/ASTStatements.hpp"
+#include "CompilerError.hpp"
+#include "FunctionParser.hpp"
+#include "Functions/Function.hpp"
+#include "Functions/Initializer.hpp"
+#include "Lex/Lexer.hpp"
+#include "Lex/TokenStream.hpp"
+
+namespace EmojicodeCompiler {
+
+void SpecializationParser::parse(Function *generic, Function *specialization) {
+    auto &position = generic->position();
+    // Minimal mode, as a normal lexer records the lines and comments of the file again.
+    Lexer lexer(position.file, true);
+    lexer.seekLine(position.line);
+    TokenStream stream(std::move(lexer));
+    SpecializationParser parser(generic->package(), stream);
+    parser.skipToName(position);
+    parser.parseFunction(specialization);
+}
+
+void SpecializationParser::skipToName(const SourcePosition &position) {
+    while (stream_.hasMoreTokens()) {
+        auto token = stream_.consumeToken();
+        if (token.position().line == position.line && token.position().character == position.character) {
+            // An initializer is declared at 🆕, which its name can follow, and a method at the token of its mood,
+            // which its name follows, unless it is an operator.
+            if (token.type() == TokenType::New) {
+                parseInitializerName();
+            }
+            else if (token.type() != TokenType::Operator) {
+                stream_.consumeToken();
+            }
+            return;
+        }
+    }
+    throw CompilerError(position, "Could not find the source of the generic function to specialize.");
+}
+
+void SpecializationParser::parseFunction(Function *specialization) {
+    // The generic parameters of the specialization are bound to its arguments instead.
+    parseFunctionSignature(specialization, dynamic_cast<Initializer *>(specialization) != nullptr, false);
+    stream_.consumeToken(TokenType::BlockBegin);
+    specialization->setAst(FunctionParser(package_, stream_).parse());
+}
+
+}  // namespace EmojicodeCompiler

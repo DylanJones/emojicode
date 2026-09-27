@@ -622,6 +622,61 @@ std::string Type::typePackage() const {
     }
 }
 
+bool Type::containsGenericVariables() const {
+    if (type() == TypeType::GenericVariable || type() == TypeType::LocalGenericVariable) {
+        return true;
+    }
+    return std::any_of(genericArguments_.begin(), genericArguments_.end(), [](const Type &type) {
+        return type.containsGenericVariables();
+    });
+}
+
+Type Type::withMinimalBoxing() const {
+    Type type = unboxed();
+    if (type.type() == TypeType::Optional || type.canHaveGenericArguments()) {
+        for (auto &argument : type.genericArguments_) {
+            argument = argument.withMinimalBoxing();
+        }
+    }
+    if (type.type() == TypeType::Optional) {
+        return type.rewrapped(type.genericArguments_[0]);
+    }
+    return type.applyMinimalBoxing();
+}
+
+Type Type::withMinimallyBoxedGenericArguments() const {
+    Type type = *this;
+    if (type.type() == TypeType::Box || type.type() == TypeType::Optional) {
+        type.genericArguments_[0] = type.genericArguments_[0].withMinimallyBoxedGenericArguments();
+    }
+    else if (type.type() == TypeType::Callable) {
+        for (auto &argument : type.genericArguments_) {
+            argument = argument.withMinimallyBoxedGenericArguments();
+        }
+    }
+    else if (type.canHaveGenericArguments()) {
+        for (auto &argument : type.genericArguments_) {
+            argument = argument.withMinimalBoxing();
+        }
+    }
+    return type;
+}
+
+bool Type::isCompileTimeOnly() const {
+    switch (unboxedType()) {
+        case TypeType::Invalid:
+        case TypeType::StorageExpectation:
+        case TypeType::IntegerLiteral:
+        case TypeType::RealLiteral:
+        case TypeType::ListLiteral:
+        case TypeType::DictionaryLiteral:
+        case TypeType::NoValueLiteral:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool Type::isManaged() const {
     return type() == TypeType::Class || type() == TypeType::Someobject || type() == TypeType::Box ||
         (type() == TypeType::Callable && !cCallable_) ||

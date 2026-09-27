@@ -1,0 +1,41 @@
+💭 Specializations for types that differ only in nested generic arguments, error types or boxes must be distinct.
+🐇 🐫 🚧 🍇
+🍉
+🐇 🦒 🚧 🍇
+🍉
+
+🕊 🧰 🍇
+  🆕 🍇🍉
+
+  🐇❗️ 🔮🐚T ⚪🍆 x T ➡️ 🔢 🍇
+    ↩️ 1
+  🍉
+
+  💭 Never called, as values of multiprotocols are not fully supported, but its calls are specialized anyway.
+  🐇❗️ 🙈 a 🍱🍡🐚🔢🍆🔂🐚🔢🍆🍱 b 🍱🍡🐚🔡🍆🔂🐚🔡🍆🍱 🍇
+    😀 🔡 🔮🐚🍱🍡🐚🔢🍆🔂🐚🔢🍆🍱🍆🕊🧰 a❗️❗️❗️
+    😀 🔡 🔮🐚🍱🍡🐚🔡🍆🔂🐚🔡🍆🍱🍆🕊🧰 b❗️❗️❗️
+  🍉
+🍉
+
+💭 check takes T boxed, so its type differs from that of a callable taking 🔢 only in a box.
+🕊 🏭🐚T ⚪️🍆 🍇
+  🖍🆕 check 🍇T➡️🔢🍉
+  🆕 🍼 check 🍇T➡️🔢🍉 🍇🍉
+  ❗️ 🔨 ➡️ 🔢 🍇
+    ↩️ 🔮🕊🧰 check❗️
+  🍉
+🍉
+
+🏁 🍇
+  🍇 ➡️ 🔢 🚧🐫
+    ↩️ 1
+  🍉 ➡️ camel
+  🍇 ➡️ 🔢 🚧🦒
+    ↩️ 2
+  🍉 ➡️ giraffe
+  😀 🔡 🔮🕊🧰 camel❗️❗️❗️
+  😀 🔡 🔮🕊🧰 giraffe❗️❗️❗️
+  😀 🔡 🔨🆕🏭🐚🔢🍆 🍇🎍🥡 a 🔢 ➡️ 🔢 ↩️ a 🍉❗️❗️❗️❗️
+  😀 🔡 🔮🕊🧰 🍇 a 🔢 ➡️ 🔢 ↩️ a 🍉❗️❗️❗️
+🍉

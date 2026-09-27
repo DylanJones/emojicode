@@ -306,6 +306,9 @@ std::optional<Symbol> Navigator::nodeSymbol(const IndexedNode &node, const Token
             return functionSymbol(function);
         }
     }
+    if (function != nullptr && function->specializedFunction() != nullptr) {
+        function = function->specializedFunction();  // A call can use a specialization, which is not declared.
+    }
     if (function != nullptr) {
         if (!tokenNames(token, function)) {
             return std::nullopt;

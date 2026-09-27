@@ -22,6 +22,9 @@ void MFAnalyser::analyse() {
     for (auto &function : package_->functions()) {
         analyseFunction(function.get());
     }
+    for (auto &specialization : package_->specializations()) {
+        analyseFunction(specialization.get());
+    }
 }
 
 void MFAnalyser::analyseTypeDefinition(TypeDefinition *typeDef) {

@@ -5,12 +5,10 @@
 11
 11
 12
-21
-21
-22
 31
 deinit
 erased
+21
 end
 deinit
 protocol

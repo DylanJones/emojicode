@@ -6,6 +6,8 @@
 #define EMOJICODE_SEMANTICANALYSER_HPP
 
 #include <queue>
+#include <vector>
+#include <map>
 #include <memory>
 #include <set>
 
@@ -26,7 +28,8 @@ class ValueType;
 
 class SemanticAnalyser {
 public:
-    explicit SemanticAnalyser(Package *package, bool imported) : package_(package), imported_(imported) {}
+    explicit SemanticAnalyser(Package *package, bool imported);
+    ~SemanticAnalyser();
 
     /// Analyses the package.
     /// @throws CompilerError if an unrecoverable error occurs, e.g. if the start flag function is not present but
@@ -35,7 +38,17 @@ public:
     /// flag function be present.
     void analyse(bool executable);
 
+    /// Analyses the declaration of the function and queues the analysis of its body, or analyses it right away while a
+    /// specialization is analysed.
     void enqueueFunction(Function *);
+
+    /// Returns the specialization of @p function for @p genericArguments, which the caller should call instead of
+    /// the generic function, or nullptr if it must call the generic function.
+    /// A specialization is created and analysed if it does not exist yet. If its code does not compile, e.g. because a
+    /// cast of a value of a generic type is unnecessary with the concrete type, the generic function is used.
+    /// @param calleeType The type on which @p function is called. A method of a generic value type is specialized for
+    /// the generic arguments of this type too.
+    Function* specialize(Function *function, const Type &calleeType, const std::vector<Type> &genericArguments);
 
     /// Iff `type` is a literal type, returns the default inferred type for the literal type. Otherwise the type is
     /// returned.
@@ -58,6 +71,15 @@ public:
 
 private:
     void analyseQueue();
+    /// Analyses @p specialization with trapped errors and returns whether it compiled.
+    bool analyseSpecialization(Function *specialization);
+    /// Records that the specialization being analysed calls @p specialization, if it is unfinished, so that it is
+    /// discarded if @p specialization is.
+    void recordCall(Function *specialization);
+    /// Discards @p specialization and those that call it. If @p failed, it is not created anew.
+    void discardSpecialization(Function *specialization, bool failed);
+    /// Returns the position of @p specialization in unfinishedSpecializations_, or its end.
+    std::vector<std::unique_ptr<Function>>::iterator findUnfinished(Function *specialization);
     void enqueueFunctionsOfTypeDefinition(TypeDefinition *typeDef);
     void finalizeProtocols(const Type &type);
     void checkProtocolConformance(const Type &type);
@@ -66,6 +88,22 @@ private:
 
     Package *package_;
     std::queue<Function *> queue_;
+    /// The specializations by generic function and generic arguments, or nullptr if the function could not be
+    /// specialized with them.
+    std::map<std::pair<Function *, std::vector<Type>>, Function *> specializations_;
+    /// The specializations analysed since the outermost specialization being analysed began, in the order in which
+    /// they were created. They are owned here until that one is analysed, as a specialization that fails discards those
+    /// that call it, possibly recursively. Then they are used.
+    std::vector<std::unique_ptr<Function>> unfinishedSpecializations_;
+    /// The specializations being analysed, the innermost last.
+    std::vector<Function *> specializationStack_;
+    /// The unfinished specializations that an unfinished specialization calls, which it can only be used with.
+    std::map<Function *, std::set<Function *>> specializationDependencies_;
+    /// Specializations that are not used, kept until no specialization is analysed as code analysed with them refers to
+    /// them.
+    std::vector<std::unique_ptr<Function>> unusedSpecializations_;
+    /// Whether all declarations were analysed, before which no specialization can be analysed.
+    bool declarationsAnalysed_ = false;
     bool imported_;
 
     bool checkArgumentPromise(const Function *sub, const Function *super, const TypeContext &subContext,
