@@ -12,6 +12,7 @@
 #include "Scoping/SemanticScoper.hpp"
 #include "Types/Class.hpp"
 #include "AST/ASTExpr.hpp"
+#include "AST/ASTUnary.hpp"
 
 namespace EmojicodeCompiler {
 
@@ -43,13 +44,27 @@ void ErrorSelfDestructing::buildDestruct(FunctionCodeGenerator *fg) const {
     }
 }
 
-llvm::Value* ErrorHandling::prepareErrorDestination(FunctionCodeGenerator *fg, ASTExpr *expr) const {
-    auto call = dynamic_cast<ASTCall *>(expr);
-    auto type = fg->typeHelper().llvmTypeFor(call->errorType());
+ASTCall* ErrorHandling::handleCall(std::shared_ptr<ASTExpr> *expr) {
+    handledCall_ = dynamic_cast<ASTCall *>(expr->get());
+    if (handledCall_ != nullptr) {
+        handledCall_->setHandledError();
+        auto node = std::make_shared<ASTHandledCall>(std::move(*expr));
+        handledCallNode_ = node.get();
+        *expr = std::move(node);
+    }
+    return handledCall_;
+}
+
+llvm::Value* ErrorHandling::prepareErrorDestination(FunctionCodeGenerator *fg) const {
+    auto type = fg->typeHelper().llvmTypeFor(handledCall_->errorType());
     auto alloca = fg->createEntryAlloca(type, "error");
     fg->builder().CreateStore(llvm::Constant::getNullValue(type), alloca);
-    call->setErrorPointer(alloca);
+    handledCall_->setErrorPointer(alloca);
     return alloca;
+}
+
+void ErrorHandling::generateHandledCall(FunctionCodeGenerator *fg) const {
+    handledCallNode_->generateCall(fg);
 }
 
 llvm::Value* ErrorHandling::isError(FunctionCodeGenerator *fg, llvm::Value *errorDestination) const {

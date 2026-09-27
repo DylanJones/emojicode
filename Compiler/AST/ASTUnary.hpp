@@ -45,6 +45,26 @@ protected:
     void unsetIsTemporaryPost() final { expr_->unsetIsTemporary(); }
 };
 
+/// The call whose error is handled by an ErrorHandling node, which wraps the call in this node before it is analysed.
+///
+/// The analysis may wrap the value of the call in nodes that box or unbox it, e.g. the value of a call to a method
+/// that returns its generic argument and is not specialized. These nodes must not operate on the value of a call that
+/// raised an error, which is undefined. The ErrorHandling node therefore generates the call with generateCall() and
+/// the expression containing this node only if there was no error, whereupon this node returns the value of the call.
+class ASTHandledCall final : public ASTUnaryMFForwarding {
+public:
+    explicit ASTHandledCall(std::shared_ptr<ASTExpr> call) : ASTUnaryMFForwarding(std::move(call), SourcePosition()) {}
+    Type analyse(ExpressionAnalyser *analyser) override;
+    Type comply(ExpressionAnalyser *analyser, const TypeExpectation &expectation) override;
+    Value* generate(FunctionCodeGenerator *fg) const override;
+    void generateCall(FunctionCodeGenerator *fg) const { value_ = expr_->generate(fg); }
+
+    void toCode(PrettyStream &pretty) const override;
+
+private:
+    mutable Value *value_ = nullptr;
+};
+
 class ASTUnwrap final : public ASTUnaryMFForwarding, public ErrorHandling {
     using ASTUnaryMFForwarding::ASTUnaryMFForwarding;
 public:

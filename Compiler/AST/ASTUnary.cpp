@@ -22,11 +22,18 @@ void ASTUnaryMFForwarding::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlo
     expr_->analyseMemoryFlow(analyser, type);
 }
 
+Type ASTHandledCall::analyse(ExpressionAnalyser *analyser) {
+    return analyser->analyse(expr_);
+}
+
+Type ASTHandledCall::comply(ExpressionAnalyser *analyser, const TypeExpectation &expectation) {
+    auto type = expr_->comply(analyser, expectation).resolveOnSuperArgumentsAndConstraints(analyser->typeContext());
+    expr_->setExpressionType(type);
+    return type;
+}
+
 Type ASTUnwrap::analyse(ExpressionAnalyser *analyser) {
-    auto call = dynamic_cast<ASTCall *>(expr_.get());
-    if (call != nullptr) {
-        call->setHandledError();
-    }
+    auto call = handleCall(&expr_);
 
     Type t = analyser->expect(TypeExpectation(false, false), &expr_);
 
@@ -45,8 +52,7 @@ Type ASTUnwrap::analyse(ExpressionAnalyser *analyser) {
 }
 
 Type ASTReraise::analyse(ExpressionAnalyser *analyser) {
-    auto call = dynamic_cast<ASTCall *>(expr_.get());
-    if (call != nullptr) call->setHandledError();
+    auto call = handleCall(&expr_);
     Type t = analyser->expect(TypeExpectation(false, false), &expr_);
     if (call == nullptr || !call->isErrorProne()) {
         analyser->error(CompilerError(position(), "Provided value is not an error-prone call."));

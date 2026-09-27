@@ -96,8 +96,8 @@ void ASTErrorHandler::generate(FunctionCodeGenerator *fg) const {
     auto noError = llvm::BasicBlock::Create(fg->ctx(), "noError", function);
     auto errorBlock = llvm::BasicBlock::Create(fg->ctx(), "error", function);
 
-    auto errorDest = prepareErrorDestination(fg, value_.get());
-    auto value = value_->generate(fg);
+    auto errorDest = prepareErrorDestination(fg);
+    generateHandledCall(fg);
     auto tom = fg->takeTemporaryObjectsManager();
 
     fg->builder().CreateCondBr(isError(fg, errorDest), errorBlock, noError);
@@ -111,6 +111,7 @@ void ASTErrorHandler::generate(FunctionCodeGenerator *fg) const {
     }
 
     fg->builder().SetInsertPoint(noError);
+    auto value = value_->generate(fg);
     tom.releaseTemporaryObjects(fg, true, false);
     if (!valueVarName_.empty()) {
         fg->setVariable(valueVar_, value);
