@@ -111,7 +111,7 @@ public:
 private:
     bool checkFunctionAccess(Function *function);
     std::optional<GenericInferer> checkCallSignature(Function *function);
-    bool checkGenericArguments(Function *function, const std::vector<Type> &args);
+    bool checkGenericArguments(Function *function, const GenericInferer &inf);
     bool moreSpecific(Function *a, Function *b) const;
 
     FunctionTableKey key_;

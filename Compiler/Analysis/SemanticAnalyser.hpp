@@ -7,6 +7,7 @@
 
 #include <queue>
 #include <vector>
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -81,7 +82,9 @@ private:
     /// Returns the position of @p specialization in unfinishedSpecializations_, or its end.
     std::vector<std::unique_ptr<Function>>::iterator findUnfinished(Function *specialization);
     void enqueueFunctionsOfTypeDefinition(TypeDefinition *typeDef);
-    void finalizeProtocols(const Type &type);
+    /// Analyses the protocols to which @p type conforms. Their generic arguments are checked by appending checks to
+    /// @p constraintChecks.
+    void finalizeProtocols(const Type &type, std::vector<std::function<void()>> *constraintChecks);
     void checkProtocolConformance(const Type &type);
     void finalizeProtocol(const Type &type, ProtocolConformance &conformance);
     void checkStartFlagFunction(bool executable);

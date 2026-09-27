@@ -31,17 +31,31 @@ SemanticAnalyser::SemanticAnalyser(Package *package, bool imported) : package_(p
 SemanticAnalyser::~SemanticAnalyser() = default;
 
 void SemanticAnalyser::analyse(bool executable) {
+    // Constraints and protocol conformances can mention generic parameters and types whose constraints or
+    // conformances are not analysed yet (e.g. 🐊 🎚🐚🎲🍆 in 🎲 with 🐊 🎚🐚T 🎚🐚T🍆🍆), so generic arguments are
+    // only checked against their constraints once all are analysed.
+    std::vector<std::function<void()>> constraintChecks;
+    // The generic arguments of a class start with those of its superclass, so the superclasses are analysed before
+    // any constraint or conformance can mention a class.
+    for (auto &klass : package_->classes()) {
+        klass->analyseSuperType(&constraintChecks);
+    }
+    for (auto &protocol : package_->protocols()) {
+        protocol->analyseConstraints(TypeContext(TypeContext(Type(protocol.get())), &constraintChecks));
+    }
     for (auto &vt : package_->valueTypes()) {
-        finalizeProtocols(Type(vt.get()));
-        vt->analyseConstraints(TypeContext(Type(vt.get())));
+        vt->analyseConstraints(TypeContext(TypeContext(Type(vt.get())), &constraintChecks));
+        finalizeProtocols(Type(vt.get()), &constraintChecks);
     }
     for (auto &klass : package_->classes()) {
-        klass->analyseSuperType();
-        finalizeProtocols(Type(klass.get()));
-        klass->analyseConstraints(TypeContext(Type(klass.get())));
+        klass->analyseConstraints(TypeContext(TypeContext(Type(klass.get())), &constraintChecks));
+        finalizeProtocols(Type(klass.get()), &constraintChecks);
     }
 
     package_->recreateClassTypes();
+    for (auto &check : constraintChecks) {
+        check();
+    }
 
     // Now all types are ready to be used with compatibleTo
 
@@ -330,7 +344,11 @@ void SemanticAnalyser::analyseFunctionDeclaration(Function *function) const {
         throw CompilerError(function->errorType()->position(), "Error type must be a subclass of 🚧.");
     }
 
-    function->analyseConstraints(context);
+    std::vector<std::function<void()>> constraintChecks;
+    function->analyseConstraints(TypeContext(context, &constraintChecks));
+    for (auto &check : constraintChecks) {
+        check();
+    }
     for (auto &param : function->parameters()) {
         param.type->analyseType(context);
         if (!function->externalName().empty() && !function->isC() &&
@@ -531,12 +549,12 @@ void SemanticAnalyser::checkProtocolConformance(const Type &type) {
     }
 }
 
-void SemanticAnalyser::finalizeProtocols(const Type &type) {
+void SemanticAnalyser::finalizeProtocols(const Type &type, std::vector<std::function<void()>> *constraintChecks) {
     // A type can conform to a protocol only once, even with different generic arguments.
     std::set<Protocol *> protocols;
 
     for (auto &protocol : type.typeDefinition()->protocols()) {
-        auto &protocolType = protocol.type->analyseType(TypeContext(type));
+        auto &protocolType = protocol.type->analyseType(TypeContext(TypeContext(type), constraintChecks));
         Type unboxed = protocolType.unboxed();
         if (!unboxed.is<TypeType::Protocol>()) {
             package_->compiler()->error(CompilerError(protocol.type->position(), "Type is not a protocol."));
