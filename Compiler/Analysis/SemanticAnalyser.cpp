@@ -460,7 +460,8 @@ bool SemanticAnalyser::checkReturnPromise(const Function *sub, const TypeContext
                                                   " is not compatible to the return type defined in ",
                                                   superSource.toString(subContext)));
     }
-    return subReturn.storageType() == superReturn.storageType() && subReturn.isReference() == superReturn.isReference();
+    // A box for another type, e.g. for a multiprotocol instead of one of its protocols, must be reboxed too.
+    return subReturn.isStoredLike(superReturn, subContext) && subReturn.isReference() == superReturn.isReference();
 }
 
 std::unique_ptr<Function> SemanticAnalyser::enforcePromises(Function *sub, Function *super,
@@ -506,7 +507,7 @@ bool SemanticAnalyser::checkArgumentPromise(const Function *sub, const Function 
                                                       " is not compatible with its ", thisname, " argument type ",
                                                       supertype, "."));
         }
-        if (sub->parameters()[i].type->type().resolveOn(subContext).storageType() != superArgumentType.storageType()) {
+        if (!sub->parameters()[i].type->type().resolveOn(subContext).isStoredLike(superArgumentType, subContext)) {
             compatible = false;  // Boxing Thunk required for parameter i
         }
     }

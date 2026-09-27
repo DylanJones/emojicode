@@ -1,0 +1,16 @@
+💭 A box for a multiprotocol holds the conformances of the type of its value, which is not known for a value boxed
+💭 for ⚪.
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+🐊 🔽 🍇
+  ❗️ 🔡 ➡️ 🔡
+🍉
+🐇 🧰 🍇
+  🐇❗️ 🙈 value 🍱🔼🔽🍱 🍇🍉
+  🐇❗️ 🙉 list 🍨🐚🍱🔼🔽🍱🍆 🍇
+    🙈🐇🧰 🐽 list 0❗️❗️
+  🍉
+🍉
+🏁 🍇
+🍉

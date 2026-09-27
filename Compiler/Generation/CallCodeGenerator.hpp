@@ -64,7 +64,9 @@ protected:
     llvm::Value *createDynamicProtocolDispatch(Function *function, std::vector<llvm::Value *> args,
                                                const std::vector<Type> &genericArgs,
                                                llvm::Value *conformance, bool uniqueBox);
-    llvm::Value* buildFindProtocolConformance(const std::vector<llvm::Value *> &args, const Type &protocol);
+    /// Finds the conformance to @p protocol of the value in the callee box, the first of @p args, of @p calleeType.
+    llvm::Value* buildFindProtocolConformance(const std::vector<llvm::Value *> &args, const Type &calleeType,
+                                              const Type &protocol);
 private:
     /// Marks @p value, if it is a call, as not returning if @p function never returns (see Function::neverReturns()).
     llvm::Value* markNeverReturning(llvm::Value *value, Function *function);

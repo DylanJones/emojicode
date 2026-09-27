@@ -120,6 +120,10 @@ bool Type::areMatchingBoxes(const Type &type, const TypeContext &context) const 
         boxedFor().identicalTo(type.boxedFor(), context, nullptr);
 }
 
+bool Type::isStoredLike(const Type &type, const TypeContext &context) const {
+    return storageType() == type.storageType() && (this->type() != TypeType::Box || areMatchingBoxes(type, context));
+}
+
 TypeType Type::unboxedType() const {
     if (type() == TypeType::Box) {
         return genericArguments_[0].typeContent_;
@@ -279,7 +283,10 @@ Type Type::rewrapped(Type wrapped) const {
     if (type() == TypeType::Optional && (wrapped.type() == TypeType::Box || wrapped.type() == TypeType::Optional)) {
         // An optional must not contain a box, but a box an optional. Nor can an optional contain an optional, as 🍬🍬T
         // is 🍬T, so that a generic argument 🍬🔢 in 🍬Element must not make it 🍬🍬🔢.
-        return wrapped.optionalized();
+        auto t = wrapped.optionalized();
+        t.setReference(isReference());
+        t.setMutable(mutable_);
+        return t;
     }
     Type t = *this;
     t.genericArguments_[0] = type() == TypeType::Box ? wrapped.unboxed() : std::move(wrapped);

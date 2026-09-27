@@ -44,7 +44,28 @@
     ↩️ 🔤mouse🔤
   🍉
 🍉
+💭 An override returning a multiprotocol for one of its protocols needs a boxing thunk.
+🐇 🥚 🍇
+  🆕 🍇🍉
+  ❗️ 🎁 ➡️ 🔼 🍇
+    ↩️ 🆕🐭 1❗️
+  🍉
+🍉
+🐇 🐣 🥚 🍇
+  🆕 🍇 ⤴️🆕❗️ 🍉
+  ✒️ ❗️ 🎁 ➡️ 🍱🔼🔽🍱 🍇
+    ↩️ 🆕🐭 2❗️
+  🍉
+🍉
+
 🐇 🧰 🍇
+  💭 Class methods are not specialized, so the value is returned in a box for 🔼.
+  🐇❗️ 🆔🐚T 🔼🍆 value T ➡️ T 🍇
+    ↩️ value
+  🍉
+  🐇❗️ 🥣 egg 🥚 ➡️ 🔢 🍇
+    ↩️ 📏🎁egg❗️❗️
+  🍉
   🐇❗️ 📐 value 🔼 ➡️ 🔢 🍇
     ↩️ 📏 value❗️
   🍉
@@ -79,6 +100,10 @@
     😀 🔡 🎈🐇🧰 value❗️❗️❗️
     😀 🔡 📐🐇🧰 value❗️❗️❗️
     😀 📛🐇🧰 value❗️❗️
+    🆔🐇🧰 value❗️ ➡️ same
+    😀 🔡 📏same❗️❗️❗️
+    😀 🔡same❗️❗️
+    😀 🔡 🥣🐇🧰 🆕🐣❗️❗️❗️❗️
     🖍🆕 kept 🔼
     value ➡️ 🖍kept
     😀 🔡 📏kept❗️❗️❗️
