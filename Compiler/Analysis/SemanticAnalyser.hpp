@@ -29,7 +29,8 @@ class ValueType;
 
 class SemanticAnalyser {
 public:
-    explicit SemanticAnalyser(Package *package, bool imported);
+    /// @param specialize Whether specialize() creates specializations, which it never does for an imported package.
+    SemanticAnalyser(Package *package, bool imported, bool specialize = true);
     ~SemanticAnalyser();
 
     /// Analyses the package.
@@ -108,6 +109,7 @@ private:
     /// Whether all declarations were analysed, before which no specialization can be analysed.
     bool declarationsAnalysed_ = false;
     bool imported_;
+    bool specialize_;
 
     bool checkArgumentPromise(const Function *sub, const Function *super, const TypeContext &subContext,
                                   const TypeContext &superContext) const;

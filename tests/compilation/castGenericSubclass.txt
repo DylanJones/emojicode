@@ -1,0 +1,17 @@
+gift
+type method: gift
+type method: not 🎁🐚🔢🍆
+envelope
+bow
+🎀 is a 🎁🐚🔢🍆
+dolphin
+🐬 is a 🎁🐚🔢🍆
+🎁🐚🍨🐚🔢🍆🍆
+in 🎁🐚🔢🍆:
+  same V
+  list of V
+in 🎁🐚🍨🐚🔢🍆🍆:
+  list of V
+gift
+gift
+🍨🐚🎁🐚🔢🍆🍆 of 2

@@ -57,7 +57,7 @@
   🖍🆕 capacity 🔢
   🖍🆕 data 🧠
 
-  🆕 🍼capacity🔢 🍇
+  🆕 ▶️🐴 🍼capacity🔢 🍇
     ☣️ 🍇
       capacity✖️⚖️🍬🐝🐚🔡Element🍆 ➡️ length
       🆕🧠 length❗️ ➡️ 🖍data
@@ -175,16 +175,16 @@
 
   📗 Creates an empty 🍯. 📗
   🥯🆕 🍇
-    🆕🌸🐚Element🍆️ 7❗️➡️ 🖍data
+    🆕🌸🐚Element🍆️▶️🐴 7❗️➡️ 🖍data
   🍉
 
   📗 Creates an empty 🍯 with a capacity of at least *minCapacity*. 📗
   🆕 ▶️🐴 minCapacity 🔢 🍇
-    🆕🌸🐚Element🍆️ 🛷🕊🍯🐚Element🍆 minCapacity❗️❗️➡️ 🖍data
+    🆕🌸🐚Element🍆️▶️🐴 🛷🕊🍯🐚Element🍆 minCapacity❗️❗️➡️ 🖍data
   🍉
 
   ☣️ 🆕 ▶️🍪 keys 🧠 values 🧠 count 🔢 🍇
-    🆕🌸🐚Element🍆️ 🛷🕊🍯🐚Element🍆 count❗️❗️➡️ 🖍data
+    🆕🌸🐚Element🍆️▶️🐴 🛷🕊🍯🐚Element🍆 count❗️❗️➡️ 🖍data
     🔂 i 🆕⏩ 0 count❗️ 🍇
       🐽🐚🔡🍆 keys i✖️⚖️🔡❗️ ➡️ key
       🐽🐚Element🍆 values i✖️⚖️Element❗️➡️ 🐽👇 key❗
@@ -300,7 +300,7 @@
       🐴data❓ ➡️ oldCapacity
 
       0 ➡️ 🖍count
-      🆕🌸🐚Element🍆️ 🛷🕊🍯🐚Element🍆 🐴data❓❗️❗️➡️ 🖍data
+      🆕🌸🐚Element🍆️▶️🐴 🛷🕊🍯🐚Element🍆 🐴data❓❗️❗️➡️ 🖍data
 
       🔂 i 🆕⏩ 0 oldCapacity❗️ 🍇
         i✖️⚖️🍬🐝🐚🔡Element🍆 ➡️ offset

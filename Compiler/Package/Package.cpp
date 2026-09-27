@@ -18,6 +18,7 @@
 #include "Types/ValueType.hpp"
 #include <algorithm>
 #include <cstring>
+#include <functional>
 #include <map>
 #include <sstream>
 #include <string>
@@ -27,6 +28,30 @@ namespace EmojicodeCompiler {
 Class* Package::add(std::unique_ptr<Class> &&cl) {
     classes_.emplace_back(std::move(cl));
     return classes_.back().get();
+}
+
+void Package::orderClassesSuperclassFirst() {
+    std::map<Class *, size_t> indices;
+    for (size_t i = 0; i < classes_.size(); i++) {
+        indices.emplace(classes_[i].get(), i);
+    }
+    std::vector<std::unique_ptr<Class>> ordered;
+    ordered.reserve(classes_.size());
+    std::function<void(size_t)> append = [&](size_t i) {
+        auto klass = std::move(classes_[i]);
+        if (klass == nullptr) {
+            return;  // Already appended, or being appended if the class inherits from itself.
+        }
+        auto super = indices.find(klass->superclass());
+        if (super != indices.end()) {
+            append(super->second);
+        }
+        ordered.emplace_back(std::move(klass));
+    };
+    for (size_t i = 0; i < classes_.size(); i++) {
+        append(i);
+    }
+    classes_ = std::move(ordered);
 }
 
 ValueType* Package::add(std::unique_ptr<ValueType> &&vt) {

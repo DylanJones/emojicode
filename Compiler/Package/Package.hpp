@@ -32,6 +32,15 @@ struct SourcePosition;
 class Compiler;
 class SourceFile;
 
+/// The version of the binary interface between a compiled package and the code that imports it: the layouts of
+/// run-time structures (boxes, box infos, protocol conformances, type descriptions, class infos, ...), the calling
+/// conventions and the format of interfaces. Every interface begins with kABIVersionPrefix followed by this number,
+/// and the compiler refuses to import a package whose interface records another version or none.
+/// Increase it whenever any of these change, as a package compiled by another compiler would otherwise silently
+/// miscompile or crash its importers.
+constexpr int kABIVersion = 1;
+constexpr const char *kABIVersionPrefix = "💭 Emojicode package ABI version ";
+
 /// Package is the class used to load, parse and analyse packages.
 class Package {
 public:
@@ -106,6 +115,11 @@ public:
 
     /// @returns All classes registered with this package.
     const std::vector<std::unique_ptr<Class>>& classes() const { return classes_; };
+    /// Reorders classes() so that every class comes after its superclass if that belongs to this package, and keeps
+    /// the declaration order otherwise. A class can be declared before its superclass, but inheriting (analysis) and
+    /// creating (code generation) a class use the results for its superclass.
+    /// @pre The super types of all classes were analysed.
+    void orderClassesSuperclassFirst();
     const std::vector<std::unique_ptr<Function>>& functions() const { return functions_; }
     /// Takes ownership of a specialization of a function of this package. Specializations are not declarations, so
     /// they are neither in functions() nor in the functions of the type definitions.

@@ -34,6 +34,9 @@ bool hasInstanceScope(FunctionType);
 bool isReturnForbidden(FunctionType);
 bool hasThisArgument(Function *function);
 bool isTypeMethod(Function *function);
+/// Whether @p function takes the generic arguments of its type as a parameter, which a type method of a type that stores
+/// them does. A closure in such a type method captures them instead.
+bool takesTypeGenericArgs(Function *function);
 
 }  // namespace EmojicodeCompiler
 

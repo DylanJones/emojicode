@@ -30,7 +30,7 @@ public:
     void generate(FunctionCodeGenerator *) const override;
 
     void toCode(PrettyStream &pretty) const override;
-    void analyseMemoryFlow(MFFunctionAnalyser *) override {}
+    void analyseMemoryFlow(MFFunctionAnalyser *analyser) override;
 
     ~ASTVariableDeclaration();
 

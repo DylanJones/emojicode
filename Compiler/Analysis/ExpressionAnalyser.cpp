@@ -135,7 +135,7 @@ static bool containsTypeGenericVariable(const Type &type) {
 
 void ExpressionAnalyser::usesGenericArgumentsOf(const Type &type) {
     if (containsTypeGenericVariable(type)) {
-        pathAnalyser().record(PathAnalyserIncident::UsedSelf);
+        pathAnalyser().record(PathAnalyserIncident::UsedTypeGenericArguments);
     }
 }
 
@@ -153,6 +153,12 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
     // The generic arguments are passed as type descriptions, which describe those of the type with those in 👇.
     for (auto &argument : genericArgs) {
         usesGenericArgumentsOf(argument);
+    }
+    // So are those of the type to a type method or an initializer of a type that stores them.
+    if (function->owner() != nullptr && function->owner()->storesGenericArgs() &&
+        (isTypeMethod(function) || function->functionType() == FunctionType::ObjectInitializer ||
+         function->functionType() == FunctionType::ValueTypeInitializer)) {
+        usesGenericArgumentsOf(type);
     }
 
     // The generic arguments are types of the calling code, e.g. its own generic parameters, so they must be checked
@@ -324,9 +330,10 @@ void ExpressionAnalyser::makeIntoBox(Type &exprType, const TypeExpectation &expe
         case StorageType::Box:
             if (expectation.type() == TypeType::Box &&
                 !exprType.boxedFor().identicalTo(expectation.boxedFor(), typeContext(), nullptr)) {
-                if (expectation.boxedFor().type() == TypeType::MultiProtocol) {
+                if (expectation.boxedFor().type() == TypeType::MultiProtocol &&
+                    exprType.boxedFor().type() != TypeType::MultiProtocol) {
                     // A box for a multiprotocol holds the conformances to all its protocols, which exist only for the
-                    // type of a value that is known where it is boxed.
+                    // type of a value that is known where it is boxed, or in a box for a multiprotocol (ASTRebox).
                     throw CompilerError((*node)->position(), "A value boxed for ",
                                         exprType.boxedFor().toString(typeContext()), " cannot be used as ",
                                         expectation.boxedFor().toString(typeContext()), ".");

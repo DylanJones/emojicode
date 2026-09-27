@@ -1,0 +1,139 @@
+💭 Each class is declared before its superclass.
+🐇 🦈 🐬 🍇
+  🖍🆕 fin 🔡
+  🖍🆕 teeth 🔢
+
+  🆕 🍇
+    🔤dorsal🔤 ➡️ 🖍fin
+    300 ➡️ 🖍teeth
+    ⤴️🆕 3❗️
+  🍉
+
+  ✒️ ❗️ 🙋 ➡️ 🔡 🍇
+    ↩️ 🔤🧲⤴️🙋❗️🧲 shark with 🧲🔡 teeth 10❗️🧲 teeth and a 🧲fin🧲 fin🔤
+  🍉
+
+  ✒️ ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ ⤴️📏❗️ ➕ 10
+  🍉
+
+  ✒️ ❗️ 🎈 ➡️ 🔢 🍇
+    ↩️ ⤴️🎈❗️ ✖️ 2
+  🍉
+
+  ✒️ ❗️ 🎺 ➡️ 🔡 🍇
+    ↩️ 🔤chomp🔤
+  🍉
+
+  ✒️ 🐇❗️ 🏷 ➡️ 🔡 🍇
+    ↩️ 🔤🦈🔤
+  🍉
+
+  ♻️ 🍇
+    😀 🔤deinit 🦈🔤❗️
+  🍉
+🍉
+
+🐇 🐬 🐳 🍇
+  🖍🆕 size 🔢
+
+  🆕 🍼 size 🔢 🍇
+    ⤴️🆕 🔤flipper🔤❗️
+  🍉
+
+  ✒️ ❗️ 🙋 ➡️ 🔡 🍇
+    ↩️ 🔤🧲⤴️🙋❗️🧲 dolphin🔤
+  🍉
+
+  ❗️ 🎈 ➡️ 🔢 🍇
+    ↩️ size
+  🍉
+
+  ♻️ 🍇
+    😀 🔤deinit 🐬🔤❗️
+  🍉
+🍉
+
+🐇 🐳 🍇
+  🐊 📢
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ❗️ 🙋 ➡️ 🔡 🍇
+    ↩️ 🔤whale 🧲name🧲🔤
+  🍉
+
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ 1
+  🍉
+
+  ❗️ 🎺 ➡️ 🔡 🍇
+    ↩️ 🔤blow🔤
+  🍉
+
+  🐇❗️ 🏷 ➡️ 🔡 🍇
+    ↩️ 🔤🐳🔤
+  🍉
+
+  ♻️ 🍇
+    😀 🔤deinit 🐳🔤❗️
+  🍉
+🍉
+
+🐊 📢 🍇
+  ❗️ 🎺 ➡️ 🔡
+🍉
+
+🐇 🔍 🍇
+  🐇❗️ 🔬 w 🐳 🍇
+    😀 🔤🧲🙋 w❗️🧲, 🧲🔡 📏 w❗️ 10❗️🧲🔤❗️
+  🍉
+
+  🐇❗️ 📡 p 📢 🍇
+    😀 🎺 p❗️❗️
+  🍉
+
+  🐇❗️ 🔖 t 🐇🐳 🍇
+    😀 🏷 t❗️❗️
+  🍉
+
+  🐇❗️ 🧪 a ⚪️ 🍇
+    ↪️🔲 a 🦈 ➡️ shark 🍇
+      😀 🔤a 🦈 whose 🎈 is 🧲🔡 🎈 shark❗️ 10❗️🧲🔤❗️
+    🍉
+    🙅↪️🔲 a 🐬 ➡️ dolphin 🍇
+      😀 🔤a 🐬 whose 🎈 is 🧲🔡 🎈 dolphin❗️ 10❗️🧲🔤❗️
+    🍉
+    🙅↪️🔲 a 🐳 ➡️ whale 🍇
+      😀 🔤a 🐳 named 🧲🙋 whale❗️🧲🔤❗️
+    🍉
+    🙅 🍇
+      😀 🔤not a 🐳🔤❗️
+    🍉
+  🍉
+🍉
+
+🏁 🍇
+  🆕🦈❗️ ➡️ shark
+  🆕🐬 7❗️ ➡️ dolphin
+  🆕🐳 🔤willy🔤❗️ ➡️ whale
+
+  🔬🐇🔍 shark❗️
+  🔬🐇🔍 dolphin❗️
+  🔬🐇🔍 whale❗️
+
+  📡🐇🔍 shark❗️
+  📡🐇🔍 dolphin❗️
+  📡🐇🔍 whale❗️
+
+  🔖🐇🔍 🐇🦈❗️
+  🔖🐇🔍 🐇🐬❗️
+  🔖🐇🔍 🐇🐳❗️
+
+  🧪🐇🔍 shark❗️
+  🧪🐇🔍 dolphin❗️
+  🧪🐇🔍 whale❗️
+  🧪🐇🔍 🔤krill🔤❗️
+
+🍉

@@ -12,6 +12,7 @@
 #include "Generation/TypeDescriptionGenerator.hpp"
 #include "Compiler.hpp"
 #include "Types/TypeContext.hpp"
+#include "Types/TypeDefinition.hpp"
 #include "Functions/Function.hpp"
 #include <llvm/Support/raw_ostream.h>
 
@@ -62,7 +63,21 @@ Value* ASTClosure::generate(FunctionCodeGenerator *fg) const {
     return handleResult(fg, fg->builder().CreateInsertValue(callable, alloc, 1));
 }
 
-llvm::Value* ASTClosure::createDeinit(CodeGenerator *cg, const Capture &capture) const {
+ASTClosure::CapturedGenericArgs ASTClosure::captureGenericArgs(FunctionCodeGenerator *fg, llvm::Value *genericArgs,
+                                                               const std::vector<Type> &variables) const {
+    if (!isEscaping_) {
+        return { genericArgs, false };
+    }
+    // The generic arguments are on the stack of the caller of the generic function or type method, which the closure
+    // can outlive, so it gets a copy. A description of types that are known here, e.g. in a specialization, is a
+    // global, which must not be freed.
+    auto copy = fg->builder().CreateExtractValue(
+        TypeDescriptionGenerator(fg, TypeDescriptionUser::Class).generate(variables), 0);
+    return { copy, !llvm::isa<llvm::Constant>(copy) };
+}
+
+llvm::Value* ASTClosure::createDeinit(CodeGenerator *cg, const Capture &capture, bool freeFunctionGenericArgs,
+                                      bool freeTypeMethodGenericArgs) const {
     auto deinit = llvm::Function::Create(cg->typeHelper().captureDeinit(),
                                          llvm::GlobalValue::LinkageTypes::PrivateLinkage, "captureDeinit",
                                          cg->module());
@@ -73,22 +88,32 @@ llvm::Value* ASTClosure::createDeinit(CodeGenerator *cg, const Capture &capture)
 
     if (isEscaping_) {
         auto captures = deinit->args().begin();
+        auto field = [&](unsigned i) { return fg.builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i); };
+        auto callWithField = [&](llvm::Function *function, unsigned i) {
+            fg.builder().CreateCall(function, fg.builder().CreateLoad(fg.typeHelper().pointer(), field(i)));
+        };
 
-        auto i = 2;
+        // The fields are in the order of LLVMTypeHelper::llvmTypeForCapture().
+        unsigned i = 2;
         if (capture.capturesSelf()) {
-            auto ep = fg.builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++);
-            fg.releaseByReference(ep, capture.self);
+            fg.releaseByReference(field(i++), capture.self);
         }
         for (auto &capturedVar : capture.captures) {
-            auto ptr = fg.builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++);
+            auto ptr = field(i++);
             if (capturedVar.type.isManaged()) {
                 fg.releaseByReference(ptr, capturedVar.type);
             }
         }
         if (capture.genericArgsOf != nullptr) {
-            auto ptr = fg.builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++);
-            fg.builder().CreateCall(fg.generator()->runTime().free(),
-                                    fg.builder().CreateLoad(fg.typeHelper().pointer(), ptr));
+            if (freeFunctionGenericArgs) callWithField(fg.generator()->runTime().free(), i);
+            i++;
+        }
+        if (capture.typeGenericArgs) {
+            callWithField(fg.generator()->runTime().releaseMemory(), i++);
+        }
+        if (capture.typeMethodGenericArgs) {
+            if (freeTypeMethodGenericArgs) callWithField(fg.generator()->runTime().free(), i);
+            i++;
         }
     }
 
@@ -99,8 +124,28 @@ llvm::Value* ASTClosure::createDeinit(CodeGenerator *cg, const Capture &capture)
 llvm::Value* ASTClosure::storeCapturedVariables(FunctionCodeGenerator *fg, const Capture &capture) const {
     auto captures = allocate(fg, capture.type);
 
+    // The generic arguments are copied first, as the deinitializer frees only copies.
+    CapturedGenericArgs functionGenericArgs, typeMethodGenericArgs;
+    if (capture.genericArgsOf != nullptr) {
+        std::vector<Type> variables;
+        for (size_t j = 0; j < capture.genericArgsOf->genericParameters().size(); j++) {
+            variables.emplace_back(j, capture.genericArgsOf);
+        }
+        functionGenericArgs = captureGenericArgs(fg, fg->functionGenericArgs(), variables);
+    }
+    if (capture.typeMethodGenericArgs) {
+        // Those passed to a type method: the arguments of the superclasses followed by those of the type.
+        auto owner = closure_->owner();
+        std::vector<Type> variables;
+        for (size_t j = 0; j < owner->offset() + owner->genericParameters().size(); j++) {
+            variables.emplace_back(j, owner);
+        }
+        typeMethodGenericArgs = captureGenericArgs(fg, fg->genericArgsPtr(), variables);
+    }
+
     auto ep = fg->builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, 1);
-    fg->builder().CreateStore(createDeinit(fg->generator(), capture), ep);
+    fg->builder().CreateStore(createDeinit(fg->generator(), capture, functionGenericArgs.copy,
+                                           typeMethodGenericArgs.copy), ep);
 
     auto i = 2;
     if (capture.capturesSelf()) {
@@ -133,18 +178,19 @@ llvm::Value* ASTClosure::storeCapturedVariables(FunctionCodeGenerator *fg, const
         }
     }
     if (capture.genericArgsOf != nullptr) {
-        llvm::Value *genericArgs = fg->functionGenericArgs();
+        fg->builder().CreateStore(functionGenericArgs.value,
+                                  fg->builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++));
+    }
+    if (capture.typeGenericArgs) {
+        auto genericArgs = fg->builder().CreateLoad(fg->genericArgsType(), fg->genericArgsPtr());
         if (isEscaping_) {
-            // The generic arguments are on the stack of the caller of the generic function, which the closure can
-            // outlive, so it gets a copy, which its deinitializer frees.
-            std::vector<Type> variables;
-            for (size_t j = 0; j < capture.genericArgsOf->genericParameters().size(); j++) {
-                variables.emplace_back(j, capture.genericArgsOf);
-            }
-            auto copy = TypeDescriptionGenerator(fg, TypeDescriptionUser::Class).generate(variables);
-            genericArgs = fg->builder().CreateExtractValue(copy, 0);
+            fg->builder().CreateCall(fg->generator()->runTime().retain(), genericArgs);
         }
         fg->builder().CreateStore(genericArgs, fg->builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++));
+    }
+    if (capture.typeMethodGenericArgs) {
+        fg->builder().CreateStore(typeMethodGenericArgs.value,
+                                  fg->builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++));
     }
     return captures;
 }

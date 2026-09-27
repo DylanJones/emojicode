@@ -1,0 +1,28 @@
+💭 The inline methods of 🍯 that prepare it for mutation (📝) and grow it (🦕) are specialized, as are the
+💭 initializers of 🍯, so inserting into a 🍯🐚🔢🍆 calls no erased method of 🍯.
+🏁 🍇
+  🆕🍯🐚🔢🍆❗️ ➡️ 🖍🆕 squares
+  🔂 i 🆕⏩ 0 40❗️ 🍇
+    i ✖️ i ➡️ 🐽squares 🔡 i❗️❗️
+  🍉
+  squares ➡️ 🖍🆕 copy
+  -1 ➡️ 🐽copy 🔤7🔤❗️
+  🐨copy 🔤8🔤❗️
+  ↪️ 🐽squares 🔤7🔤❗️ ➡️ value 🍇
+    😀 🔡 value❗️❗️
+  🍉
+  ↪️ 🐽copy 🔤7🔤❗️ ➡️ value 🍇
+    😀 🔡 value❗️❗️
+  🍉
+  ↪️ 🐣squares 🔤8🔤❗️ 🍇
+    😀 🔤squares has 8🔤❗️
+  🍉
+  ↪️ ❎🐣copy 🔤8🔤❗️❗️ 🍇
+    😀 🔤copy lacks 8🔤❗️
+  🍉
+  😀 🔡 📏squares❓❗️❗️
+  😀 🔡 📏copy❓❗️❗️
+  😀 🔡 🐗copy❗️❗️❗️
+  😀 🔡 📏squares❓❗️❗️
+  😀 🔡 📏copy❓❗️❗️
+🍉

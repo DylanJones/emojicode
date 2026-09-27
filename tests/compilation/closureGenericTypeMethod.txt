@@ -1,0 +1,27 @@
+5
+five
+8
+24
+6
+six
+6 6 6
+8 2
+8 2
+8
+not ok
+no eight
+9
+10
+ten
+11
+eleven
+12
+twelve
+12 12 12
+13 13 13
+thirteen
+24
+24 2
+16
+not ok
+no sixteen

@@ -532,7 +532,7 @@ class NavigationTests(ServerTestCase):
             self.assertNotIn("0?", hover["contents"]["value"], needle)
 
     def test_hover_specialized_call(self):
-        # The call uses a specialization of 📐 for 🔢, but shows 📐 as it is declared.
+        # A compiler would call a specialization of 📐 for 🔢. The server does not specialize and shows 📐.
         text = ("🕊 🧰 🍇\n  🆕 🍇🍉\n  🐇❗️ 📐🐚T ⚪️🍆 x T ➡️ 🔢 🍇\n    ↩️ 1\n  🍉\n🍉\n"
                 "🏁 🍇\n  📐🕊🧰 5❗️ ➡️ n\n🍉\n")
         path = self.write("specialized.emojic", text)
@@ -541,6 +541,9 @@ class NavigationTests(ServerTestCase):
         hover = self.client.request("textDocument/hover", {"textDocument": {"uri": uri(path)},
                                                            "position": position(text, "📐", 2)})
         self.assertIn("📐 🐚T ⚪️ 🍆", hover["contents"]["value"])
+        result = self.client.request("textDocument/definition", {"textDocument": {"uri": uri(path)},
+                                                                 "position": position(text, "📐", 2)})
+        self.assertEqual(result["range"]["start"], position(text, "📐"))
 
     def test_definition_in_standard_library(self):
         path, start = self.definition("😀")
@@ -619,6 +622,16 @@ class NavigationTests(ServerTestCase):
         symbols = self.client.request("textDocument/documentSymbol", {"textDocument": {"uri": uri(self.path)}})
         self.assertEqual([s["name"] for s in symbols], ["🐟"])
         self.assertEqual([c["name"] for c in symbols[0]["children"]], ["depth", "🏊", "🆕"])
+
+    def test_document_symbols_in_source_order(self):
+        # The compiler analyses 🐡 before its subclass 🐟, but the outline follows the source, whatever the kind.
+        text = "🐇 🐟 🐡 🍇🍉\n🕊 🥥 🍇\n  🆕 🍇🍉\n🍉\n🐇 🐡 🍇🍉\n🏁 🍇🍉\n"
+        path = self.write("order.emojic", text)
+        client = self.start()
+        client.open(path)
+        self.assertEqual(client.diagnostics(path), [])
+        symbols = client.request("textDocument/documentSymbol", {"textDocument": {"uri": uri(path)}})
+        self.assertEqual([s["name"] for s in symbols], ["🐟", "🥥", "🐡"])
 
 
 class CompletionTests(ServerTestCase):

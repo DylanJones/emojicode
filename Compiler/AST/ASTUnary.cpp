@@ -75,6 +75,9 @@ Type ASTReraise::analyse(ExpressionAnalyser *analyser) {
 }
 
 void ASTReraise::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCategory type) {
+    // The call is evaluated before the releases, which only run if it raises. Its callee and arguments flow as
+    // Borrowing or Escaping, never as Return, so analysing it cannot keep any variable from being released here.
+    ASTUnaryMFForwarding::analyseMemoryFlow(analyser, type);
     analyser->releaseAllVariables(this, stats_, position());
 }
 

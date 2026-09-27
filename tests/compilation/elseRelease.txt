@@ -1,0 +1,34 @@
+released if
+end of 🅰️
+released else if
+end of 🅰️
+released else
+end of 🅰️
+--
+released outer
+--
+released outer
+released inner
+--
+returned
+released returned
+--
+released first
+end of 🆎
+released listed
+released second
+--
+released loop 1
+released nested
+released loop 2
+--
+released if
+end of 🌙
+in else
+end of 🌙
+in else
+end of 🌗
+in else
+released else value
+end of 🌗
+--

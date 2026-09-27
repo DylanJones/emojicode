@@ -16,6 +16,7 @@
 #include "Generation/LLVMTypeHelper.hpp"
 #include "Generation/TypeDescriptionGenerator.hpp"
 #include <llvm/Support/raw_ostream.h>
+#include <algorithm>
 #include <stdexcept>
 
 namespace EmojicodeCompiler {
@@ -170,14 +171,23 @@ llvm::Value *MultiprotocolCallCodeGenerator::generate(llvm::Value *callee, const
 
     auto argsv = createArgsVector(callee, args, errorPointer, {});
 
-    llvm::Value *conformance;
-    if (calleeType.boxedFor().type() != TypeType::MultiProtocol) {
-        conformance = buildFindProtocolConformance(argsv, calleeType, calleeType.protocols()[multiprotocolN]);
+    auto &protocol = calleeType.protocols()[multiprotocolN];
+    llvm::Value *conformance = nullptr;
+    if (calleeType.boxedFor().type() == TypeType::MultiProtocol) {
+        // The box can be for a multiprotocol of some of the protocols, e.g. a multiprotocol value returned as a generic
+        // argument for it, whose table has the conformances in its order.
+        auto &boxProtocols = calleeType.boxedFor().protocols();
+        auto it = std::find_if(boxProtocols.begin(), boxProtocols.end(), [&protocol](const Type &t) {
+            return t.protocol() == protocol.protocol();
+        });
+        if (it != boxProtocols.end()) {
+            auto boxInfo = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
+                                                      fg()->buildGetBoxInfoPtr(argsv.front()));
+            conformance = fg()->buildGetBoxConformance(boxInfo, calleeType, it - boxProtocols.begin());
+        }
     }
-    else {
-        auto boxInfo = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
-                                                  fg()->buildGetBoxInfoPtr(argsv.front()));
-        conformance = fg()->buildGetBoxConformance(boxInfo, calleeType, multiprotocolN);
+    if (conformance == nullptr) {
+        conformance = buildFindProtocolConformance(argsv, calleeType, protocol);
     }
     auto value = createDynamicProtocolDispatch(function, std::move(argsv), args.genericArgumentTypes(), conformance,
                                                isMutableVariable(calleeType) && function->mutating());

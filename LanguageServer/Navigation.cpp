@@ -5,6 +5,7 @@
 
 #include "Navigation.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <sstream>
 #include "AST/ASTInitialization.hpp"
 #include "AST/ASTMethod.hpp"
@@ -246,6 +247,10 @@ void Navigator::collectDeclarations() {
         add(function->name(), nameLocation(function->position(), function->name()), functionSymbol(function),
             outline);
     };
+    auto inSourceOrder = [](const OutlineEntry &a, const OutlineEntry &b) {
+        return std::make_pair(a.location.line, a.location.character) <
+               std::make_pair(b.location.line, b.location.character);
+    };
     auto addTypeDefinition = [&](TypeDefinition *definition) {
         if (!isInFile(definition->position())) {
             return;
@@ -267,15 +272,14 @@ void Navigator::collectDeclarations() {
         for (auto function : definition->inits().list()) addFunction(function, members);
         for (auto function : definition->methods().list()) addFunction(function, members);
         for (auto function : definition->typeMethods().list()) addFunction(function, members);
-        std::sort(members->begin(), members->end(), [](const OutlineEntry &a, const OutlineEntry &b) {
-            return std::make_pair(a.location.line, a.location.character) <
-                   std::make_pair(b.location.line, b.location.character);
-        });
+        std::sort(members->begin(), members->end(), inSourceOrder);
     };
     auto package = analysis_.compiler->mainPackage();
     for (auto &type : package->classes()) addTypeDefinition(type.get());
     for (auto &type : package->valueTypes()) addTypeDefinition(type.get());
     for (auto &type : package->protocols()) addTypeDefinition(type.get());
+    // The package lists the types in no particular order, e.g. classes after their superclasses.
+    std::sort(outline_.begin(), outline_.end(), inSourceOrder);
 }
 
 /// Returns whether @p token names @p function. Calls that the compiler adds, like the call of the iterator method
@@ -305,9 +309,6 @@ std::optional<Symbol> Navigator::nodeSymbol(const IndexedNode &node, const Token
         if (function != nullptr && token.type == TokenType::Super) {
             return functionSymbol(function);
         }
-    }
-    if (function != nullptr && function->specializedFunction() != nullptr) {
-        function = function->specializedFunction();  // A call can use a specialization, which is not declared.
     }
     if (function != nullptr) {
         if (!tokenNames(token, function)) {
