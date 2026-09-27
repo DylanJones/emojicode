@@ -65,8 +65,19 @@ private:
 
     llvm::Value* storeCapturedVariables(FunctionCodeGenerator *fg, const Capture &capture) const;
 
+    /// Generic arguments that a closure captures, and whether they are a copy, which its deinitializer frees.
+    struct CapturedGenericArgs {
+        llvm::Value *value = nullptr;
+        bool copy = false;
+    };
+    /// Returns the generic arguments @p genericArgs of the enclosing function to capture, or a copy of @p variables if
+    /// the closure is escaping.
+    CapturedGenericArgs captureGenericArgs(FunctionCodeGenerator *fg, llvm::Value *genericArgs,
+                                           const std::vector<Type> &variables) const;
+
     void applyBoxingFromExpectation(ExpressionAnalyser *analyser, const TypeExpectation &expectation);
-    llvm::Value* createDeinit(CodeGenerator *cg, const Capture &capture) const;
+    llvm::Value* createDeinit(CodeGenerator *cg, const Capture &capture, bool freeFunctionGenericArgs,
+                              bool freeTypeMethodGenericArgs) const;
 };
 
 class ASTCallableBox final : public ASTBoxing, public MFHeapAutoAllocates {

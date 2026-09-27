@@ -59,7 +59,10 @@ Type ASTClosure::comply(ExpressionAnalyser *analyser, const TypeExpectation &exp
     if (closureAnaly.pathAnalyser().hasPotentially(PathAnalyserIncident::UsedTypeGenericArguments)) {
         auto &callee = analyser->typeContext().calleeType();
         if (callee.type() == TypeType::TypeAsValue) {
-            // In a type method, the closure captures the generic arguments passed to it (see generate()).
+            // In a type method, the closure captures the generic arguments passed to it, as it has no value to take
+            // them from. A closure around this one must capture them too.
+            capture_.typeMethodGenericArgs = true;
+            analyser->pathAnalyser().record(PathAnalyserIncident::UsedTypeGenericArguments);
         }
         else if (!usesSelf && callee.type() == TypeType::ValueType && callee.typeDefinition()->storesGenericArgs()) {
             // A value type stores its generic arguments as a reference-counted type description, which the closure
