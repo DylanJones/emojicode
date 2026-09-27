@@ -161,7 +161,8 @@ compilation_tests = [
     "superMemoryFlow",
     "interpolationDereference",
     "interpolationRelease",
-    "genericDynDisableLiteralConstraint"
+    "genericDynDisableLiteralConstraint",
+    "startFlagBareReturn"
 ]
 
 if not (quick or valgrind):

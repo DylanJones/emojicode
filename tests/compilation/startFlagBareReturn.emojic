@@ -1,0 +1,27 @@
+💭 ↩️↩️ in 🏁 returns the exit code 0 wherever it is, and releases the variables in scope (#69).
+🏁 🍇
+  🍇
+    😀 🔤closure🔤❗️
+    ↩️↩️
+  🍉 ➡️ closure
+  ⁉️ closure❗️
+
+  ↪️ 👎 🍇
+    ↩️↩️
+  🍉
+  🙅 🍇
+    😀 🔤else🔤❗️
+  🍉
+
+  🔤kept🔤 ➡️ kept
+  🔂 i 🆕⏩ 0 3❗️ 🍇
+    🔤🧲i🧲!🔤 ➡️ string
+    😀 string❗️
+    ↪️ i 🙌 1 🍇
+      😀 kept❗️
+      ↩️↩️
+    🍉
+  🍉
+  😀 🔤unreachable🔤❗️
+  ↩️↩️
+🍉

@@ -1,0 +1,5 @@
+closure
+else
+0!
+1!
+kept
