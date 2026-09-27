@@ -127,7 +127,7 @@ bool FunctionResolution<T>::checkGenericArguments(Function *function, const Gene
     TypeContext instanceContext(callee, function, &args);
     for (size_t i = function->offset(); i < args.size(); i++) {
         auto constraint = function->constraintForIndex(i).resolveOn(instanceContext);
-        if (!args[i].compatibleTo(constraint, typeContext_)) {
+        if (!args[i].compatibleTo(constraint, typeContext_)) {  // The arguments are types of the calling code.
             nonCandidates_.emplace_back(function, NonCandidate::Reason::GenericArgument, i - function->offset() + 1);
             return false;
         }
@@ -257,6 +257,13 @@ T* FunctionResolution<T>::resolveAndReificate(ASTArguments *args, Type *type) {
     candidate->genericInferer.issueWarning(args->position(), analyser_->compiler());
     return candidate->function;
 }
+
+template <typename T>
+FunctionResolution<T>::FunctionResolution(const std::u32string &name, Mood mood, const std::vector<Type> &args,
+                                          std::vector<Type> genericArgs, const Type &callee,
+                                          const TypeContext &typeContext, SemanticAnalyser *analyser, SourcePosition p)
+        : key_(name, mood, args.size()), callee_(callee), args_(args), genericArgs_(std::move(genericArgs)),
+          typeContext_(typeContext), analyser_(analyser), p_(p) {}
 
 template <typename T>
 void FunctionResolution<T>::explain(CompilerError *error) const {

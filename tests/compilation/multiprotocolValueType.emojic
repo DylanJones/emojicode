@@ -1,0 +1,129 @@
+💭 Values of value types, small and remote ones, and of classes in boxes for multiprotocols.
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+🐊 🔽 🍇
+  🖍❗️ 🔻
+  ❗️ 🔡 ➡️ 🔡
+🍉
+
+🐇 🐟 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ♻️ 🍇
+    😀 🔤deinit🔤❗️
+    😀 name❗️
+  🍉
+🍉
+
+💭 Too large to be stored in a box, so boxes store it in an object on the heap.
+🕊 🐘 🍇
+  🐊 🔼
+  🐊 🔽
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 fish 🐟
+  🆕 🍼 a 🔢 name 🔡 🍇
+    0 ➡️ 🖍b
+    0 ➡️ 🖍c
+    🆕🐟 name❗️ ➡️ 🖍fish
+  🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+  🖍❗️ 🔻 🍇
+    a ⬅️➖ 1
+  🍉
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔤elephant🔤
+  🍉
+🍉
+
+🕊 🐭 🍇
+  🐊 🔼
+  🐊 🔽
+  🖍🆕 a 🔢
+  🆕 🍼 a 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+  🖍❗️ 🔻 🍇
+    a ⬅️➖ 1
+  🍉
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔤mouse🔤
+  🍉
+🍉
+
+🐇 🦒 🍇
+  🐊 🔼
+  🐊 🔽
+  🖍🆕 a 🔢
+  🆕 🍼 a 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+  ❗️ 🔻 🍇
+    a ⬅️➖ 1
+  🍉
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔤giraffe🔤
+  🍉
+  ♻️ 🍇
+    😀 🔤deinit giraffe🔤❗️
+  🍉
+🍉
+
+🐇 🧰 🍇
+  🐇❗️ 📐 value 🔼 ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+  🐇❗️ 🔮🐚T ⚪🍆 value T ➡️ 🔡 🍇
+    ↪️ 🔲 value 🐭 ➡️ mouse 🍇
+      ↩️ 🔤a mouse again🔤
+    🍉
+    ↩️ 🔤not a mouse🔤
+  🍉
+  🐇❗️ 🙈 value 🍱🔼🔽🍱 ➡️ 🍱🔼🔽🍱 🍇
+    value ➡️ 🖍🆕 copy
+    🔻copy❗️
+    😀 🔡 📏value❗️❗️❗️
+    😀 🔡 📏copy❗️❗️❗️
+    😀 🔡copy❗️❗️
+    😀 🔮🐇🧰 copy❗️❗️
+    ↪️ 🔲 copy 🐘 ➡️ elephant 🍇
+      😀 🔤an elephant again🔤❗️
+    🍉
+    ↩️ copy
+  🍉
+  💭 The methods of generic protocols are resolved on the protocol, so that 🔽 returns 🔢.
+  🐇❗️ 🚶 a 🍱🍡🐚🔢🍆🔂🐚🔢🍆🍱 🍇
+    a ➡️ 🖍🆕 iterator
+    🔁 🔽iterator❓ 🍇
+      😀 🔡 🔽iterator❗️❗️❗️
+    🍉
+    ↪️ 🔽a❓ 🍇
+      😀 🔤the copy is independent🔤❗️
+    🍉
+  🍉
+  🐇❗️ 🔃 b 🍱🍡🐚🔡🍆🔂🐚🔡🍆🍱 🍇
+    🍡b❗️ ➡️ 🖍🆕 iterator
+    🔁 🔽iterator❓ 🍇
+      😀 🔽iterator❗️❗️
+    🍉
+  🍉
+🍉
+
+🏁 🍇
+  🚶🐇🧰 🍡🆕⏩ 0 3❗️❗️❗️
+  🍿 🔤x🔤 🔤y🔤 🍆 ➡️ list
+  🔃🐇🧰 🍡list❗️❗️
+  🙈🐇🧰 🆕🐘 10 🔤dumbo🔤❗️❗️ ➡️ elephant
+  😀 🔡 📏elephant❗️❗️❗️
+  🙈🐇🧰 🆕🐭 20❗️❗️ ➡️ mouse
+  😀 🔡 📏mouse❗️❗️❗️
+  🙈🐇🧰 🆕🦒 30❗️❗️ ➡️ giraffe
+  😀 🔡 📏giraffe❗️❗️❗️
+  😀 🔤end🔤❗️
+🍉

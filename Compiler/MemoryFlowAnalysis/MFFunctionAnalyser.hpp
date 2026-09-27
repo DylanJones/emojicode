@@ -70,7 +70,13 @@ public:
     /// Records the flow category of a use of the context.
     void recordThis(MFFlowCategory category);
     /// Records the flow category of the use of a variable value.
-    void recordVariableGet(size_t id, MFFlowCategory category);
+    /// @returns True if the value is returned and the reference of the variable to it is returned with it, so that the
+    /// value must not be retained. Neither a parameter nor a captured variable owns its value, which must therefore be
+    /// retained.
+    bool recordVariableGet(size_t id, MFFlowCategory category);
+    /// Records that the variable @p id of the closure being analysed is a captured variable, whose value is owned by
+    /// the closure's captures. Must be called before analyse().
+    void recordCapture(size_t id) { scope_.getVariable(id).isCaptured = true; }
     /// Records an expression whose resulting value was assigned to a variable.
     /// If the compiler can prove that the variable value is never used in an Escaping manner it will inform the
     /// expression that it can allocate on the heap if it inherits from MFHeapAllocates.
@@ -104,6 +110,7 @@ public:
 private:
     struct MFLocalVariable {
         bool isParam = false;
+        bool isCaptured = false;
         bool isReturned = false;
         size_t param;
         MFFlowCategory flowCategory = MFFlowCategory::Borrowing;

@@ -40,10 +40,11 @@ void TypeDefinition::eachFunction(const std::function<void (Function *)>& cb) co
 }
 
 void TypeDefinition::eachFunctionWithoutInitializers(const std::function<void (Function *)>& cb) const {
-    for (auto function : methods().list()) {
+    // Copies, as cb can add functions, e.g. the boxing thunk of an override, which are not passed to it.
+    for (auto function : std::vector<Function *>(methods().list())) {
         cb(function);
     }
-    for (auto function : typeMethods().list()) {
+    for (auto function : std::vector<Function *>(typeMethods().list())) {
         cb(function);
     }
 }

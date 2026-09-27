@@ -1,0 +1,48 @@
+💭 A method passes its own generic parameter, or one of its type, to a generic method, which constrains it to a protocol.
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+
+🕊 🐘 🍇
+  🐊 🔼
+  🖍🆕 a 🔢
+  🆕 🍼 a 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+🍉
+
+🐇 🧰 🍇
+  🐇❗️ 📐🐚T 🔼🍆 value T ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+  🐇❗️ 📦🐚T ⚪🍆 value T ➡️ 🔢 🍇
+    ↩️ 1
+  🍉
+
+  🐇❗️ 🎈🐚U 🔼🍆 value U ➡️ 🔢 🍇
+    ↩️ 📐🐚U🍆🐇🧰 value❗️
+  🍉
+  🐇❗️ 🎊🐚U 🔼🍆 value U ➡️ 🔢 🍇
+    ↩️ 📐🐇🧰 value❗️
+  🍉
+  💭 A parameter constrained to 🔼 can be passed on for ⚪ too.
+  🐇❗️ 🎉🐚U 🔼🍆 value U ➡️ 🔢 🍇
+    ↩️ 📦🐚U🍆🐇🧰 value❗️
+  🍉
+🍉
+
+🐇 🎁🐚E 🔼🍆 🍇
+  🖍🆕 value E
+  🆕 🍼 value E 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ 📐🐚E🍆🐇🧰 value❗️
+  🍉
+🍉
+
+🏁 🍇
+  😀 🔡 🎈🐇🧰 🆕🐘 1❗️❗️❗️❗️
+  😀 🔡 🎊🐇🧰 🆕🐘 2❗️❗️❗️❗️
+  😀 🔡 🎉🐇🧰 🆕🐘 3❗️❗️❗️❗️
+  😀 🔡 📏🆕🎁🐚🐘🍆 🆕🐘 4❗️❗️❗️❗️❗️
+🍉

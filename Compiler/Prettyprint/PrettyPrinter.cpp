@@ -203,7 +203,7 @@ void PrettyPrinter::printTypeDef(const Type &type) {
 
     if (auto protocol = type.protocol()) {
         for (auto method : protocol->methods().list()) {
-            print(moodEmoji(method->mood()), method, false, true);
+            print(moodEmoji(method->mood()), method, false, false);
         }
         prettyStream_ << "🍉\n\n";
         prettyStream_.decreaseIndent();
@@ -330,7 +330,8 @@ void PrettyPrinter::printFunctionAttributes(Function *function, bool noMutate) {
         prettyStream_ << "☣️ ";
     }
 
-    if (function->owner()->type().type() == TypeType::ValueType && function->mutating() && !noMutate) {
+    if ((function->owner()->type().type() == TypeType::ValueType ||
+         function->owner()->type().type() == TypeType::Protocol) && function->mutating() && !noMutate) {
         prettyStream_ << "🖍 ";
     }
     if (auto initializer = dynamic_cast<Initializer *>(function)) {

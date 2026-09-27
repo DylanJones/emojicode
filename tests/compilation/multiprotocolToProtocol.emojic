@@ -1,0 +1,123 @@
+💭 A multiprotocol value is passed where one of its protocols is expected.
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+🐊 🔽 🍇
+  ❗️ 🔡 ➡️ 🔡
+🍉
+🐇 🐟 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ♻️ 🍇
+    😀 🔤deinit🔤❗️
+    😀 name❗️
+  🍉
+🍉
+🕊 🐘 🍇
+  🐊 🔼
+  🐊 🔽
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 fish 🐟
+  🆕 🍼 a 🔢 name 🔡 🍇
+    0 ➡️ 🖍b
+    0 ➡️ 🖍c
+    🆕🐟 name❗️ ➡️ 🖍fish
+  🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔤elephant🔤
+  🍉
+🍉
+🕊 🐭 🍇
+  🐊 🔼
+  🐊 🔽
+  🖍🆕 a 🔢
+  🆕 🍼 a 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔤mouse🔤
+  🍉
+🍉
+💭 An override returning a multiprotocol for one of its protocols needs a boxing thunk.
+🐇 🥚 🍇
+  🆕 🍇🍉
+  ❗️ 🎁 ➡️ 🔼 🍇
+    ↩️ 🆕🐭 1❗️
+  🍉
+🍉
+🐇 🐣 🥚 🍇
+  🆕 🍇 ⤴️🆕❗️ 🍉
+  ✒️ ❗️ 🎁 ➡️ 🍱🔼🔽🍱 🍇
+    ↩️ 🆕🐭 2❗️
+  🍉
+🍉
+
+🐇 🧰 🍇
+  💭 Class methods are not specialized, so the value is returned in a box for 🔼.
+  🐇❗️ 🆔🐚T 🔼🍆 value T ➡️ T 🍇
+    ↩️ value
+  🍉
+  🐇❗️ 🥣 egg 🥚 ➡️ 🔢 🍇
+    ↩️ 📏🎁egg❗️❗️
+  🍉
+  🐇❗️ 📐 value 🔼 ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+  🐇❗️ 📛 value 🔽 ➡️ 🔡 🍇
+    ↩️ 🔡 value❗️
+  🍉
+  🐇❗️ 🍪🐚T 🔼🍆 value T ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+  🐇❗️ 👣🐚T ⚪🍆 iterator 🍡🐚T🍆 ➡️ 🔢 🍇
+    0 ➡️ 🖍🆕 count
+    iterator ➡️ 🖍🆕 copy
+    🔁 🔽copy❓ 🍇
+      🔽copy❗️
+      count ⬅️➕ 1
+    🍉
+    ↩️ count
+  🍉
+  🐇❗️ 🔀 iterator 🍱🍡🐚🔢🍆🔂🐚🔢🍆🍱 ➡️ 🔢 🍇
+    ↩️ 👣🐇🧰 iterator❗️
+  🍉
+  🐇❗️ 🎈 value 🍬🍱🔼🔽🍱 ➡️ 🔢 🍇
+    🖍🆕 maybe 🍬🔼
+    value ➡️ 🖍maybe
+    ↪️ maybe ➡️ m 🍇
+      ↩️ 📏m❗️
+    🍉
+    ↩️ -1
+  🍉
+  🐇❗️ 🙈 value 🍱🔼🔽🍱 🍇
+    😀 🔡 🍪🐇🧰 value❗️❗️❗️
+    😀 🔡 🎈🐇🧰 value❗️❗️❗️
+    😀 🔡 📐🐇🧰 value❗️❗️❗️
+    😀 📛🐇🧰 value❗️❗️
+    🆔🐇🧰 value❗️ ➡️ same
+    😀 🔡 📏same❗️❗️❗️
+    😀 🔡same❗️❗️
+    😀 🔡 🥣🐇🧰 🆕🐣❗️❗️❗️❗️
+    🖍🆕 kept 🔼
+    value ➡️ 🖍kept
+    😀 🔡 📏kept❗️❗️❗️
+    🖍🆕 maybe 🍬🔽
+    value ➡️ 🖍maybe
+    ↪️ maybe ➡️ m 🍇
+      😀 🔡m❗️❗️
+    🍉
+  🍉
+🍉
+🏁 🍇
+  🙈🐇🧰 🆕🐘 10 🔤dumbo🔤❗️❗️
+  🙈🐇🧰 🆕🐭 20❗️❗️
+  😀 🔡 🔀🐇🧰 🍡🆕⏩ 0 4❗️❗️❗️❗️❗️
+  😀 🔡 🎈🐇🧰 🤷‍♀️❗️❗️❗️
+  😀 🔤end🔤❗️
+🍉

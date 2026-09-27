@@ -45,10 +45,20 @@
   🍉
 🍉
 
-💭 Its initializer is not specialized, so optional values are boxed for it.
-🐇 🎀🐚T ⚪🍆 🍇
+💭 Its initializer is not specialized, so optional values are boxed for it, here for the protocol 🔼.
+🐇 🎀🐚T 🔼🍆 🍇
   🖍🆕 spare 🍬T
   🆕 🍼 spare 🍬T 🍇🍉
+  ❗️ 📐 ➡️ 🔢 🍇
+    ↪️ spare ➡️ value 🍇
+      ↩️ 📏 value❗️
+    🍉
+    ↩️ -1
+  🍉
+  💭 Reboxes the optional value for ⚪.
+  ❗️ 🔎 ➡️ 🔡 🍇
+    ↩️ 🔎🐇🧰 spare❗️
+  🍉
 🍉
 
 🐇 🧰 🍇
@@ -60,6 +70,12 @@
       ↩️ 🤷‍♀️
     🍉
     ↩️ 🆕🐘 a name❗️
+  🍉
+  🐇❗️ 🔎🐚T ⚪🍆 value 🍬T ➡️ 🔡 🍇
+    ↪️ value ➡️ v 🍇
+      ↩️ 🔤some🔤
+    🍉
+    ↩️ 🔤none🔤
   🍉
   🐇❗️ 📐 value 🔼 ➡️ 🔢 🍇
     ↩️ 📏 value❗️
@@ -78,6 +94,10 @@
 
   🆕🎀🐚🐘🍆 🏭🐇🧰 5 🔤optional🔤❗️❗️ ➡️ present
   🆕🎀🐚🐘🍆 🏭🐇🧰 0 🔤none🔤❗️❗️ ➡️ absent
+  😀 🔡 📐present❗️❗️❗️
+  😀 🔡 📐absent❗️❗️❗️
+  😀 🔎present❗️❗️
+  😀 🔎absent❗️❗️
 
   🖍🆕 stored 🔼
   🆕🐘 3 🔤stored🔤❗️ ➡️ 🖍stored

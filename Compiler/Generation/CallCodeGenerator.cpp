@@ -67,14 +67,15 @@ llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, 
 
             llvm::Value *conformance;
             if (type.boxedFor().type() != TypeType::Protocol) {
-                conformance = buildFindProtocolConformance(args, type.unboxed());
+                conformance = buildFindProtocolConformance(args, type, type.unboxed());
             }
             else {
                 conformance = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
                                                          fg()->buildGetBoxInfoPtr(args.front()));
             }
+            // Only a 🖍 method can mutate the value, as only a 🖍 protocol method can be implemented by one.
             return createDynamicProtocolDispatch(function, args, astArgs.genericArgumentTypes(), conformance,
-                                                 isMutableVariable(type));
+                                                 isMutableVariable(type) && function->mutating());
         }
         case CallType::None:
             throw std::domain_error("CallType::None is not a valid call type");
@@ -108,9 +109,11 @@ llvm::Value* CallCodeGenerator::generateCTrampolineCall(Function *function, llvm
 }
 
 llvm::Value* CallCodeGenerator::buildFindProtocolConformance(const std::vector<llvm::Value *> &args,
-                                                             const Type &protocol) {
+                                                             const Type &calleeType, const Type &protocol) {
+    // The box can be for another protocol, e.g. a multiprotocol value returned as a generic argument for it.
     auto boxInfo = fg()->builder().CreateLoad(fg()->typeHelper().pointer(), fg()->buildGetBoxInfoPtr(args.front()));
-    return fg()->buildFindProtocolConformance(args.front(), boxInfo, protocol.protocol()->rtti());
+    return fg()->buildFindProtocolConformance(args.front(), fg()->buildGetValueBoxInfo(boxInfo, calleeType),
+                                              protocol.protocol()->rtti());
 }
 
 std::vector<Value *> CallCodeGenerator::createArgsVector(llvm::Value *callee, const ASTArguments &args,
@@ -144,17 +147,15 @@ llvm::Value *MultiprotocolCallCodeGenerator::generate(llvm::Value *callee, const
 
     llvm::Value *conformance;
     if (calleeType.boxedFor().type() != TypeType::MultiProtocol) {
-        conformance = buildFindProtocolConformance(argsv, calleeType.protocols()[multiprotocolN]);
+        conformance = buildFindProtocolConformance(argsv, calleeType, calleeType.protocols()[multiprotocolN]);
     }
     else {
-        auto mpt = fg()->typeHelper().multiprotocolConformance(calleeType);
-        auto mpl = fg()->builder().CreateLoad(fg()->typeHelper().pointer(), fg()->buildGetBoxInfoPtr(argsv.front()));
-
-        conformance = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
-                                                 fg()->builder().CreateConstGEP2_32(mpt, mpl, 0, multiprotocolN));
+        auto boxInfo = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
+                                                  fg()->buildGetBoxInfoPtr(argsv.front()));
+        conformance = fg()->buildGetBoxConformance(boxInfo, calleeType, multiprotocolN);
     }
     return createDynamicProtocolDispatch(function, std::move(argsv), args.genericArgumentTypes(), conformance,
-                                         isMutableVariable(calleeType));
+                                         isMutableVariable(calleeType) && function->mutating());
 }
 
 llvm::Value *CallCodeGenerator::dispatchFromVirtualTable(Function *function, llvm::Value *virtualTable,

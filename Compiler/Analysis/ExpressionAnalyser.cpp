@@ -121,6 +121,8 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
                                              Function **specialization) {
     auto genericArgs = transformTypeAstVector(node->genericArguments(), typeContext());
 
+    // The generic arguments are types of the calling code, e.g. its own generic parameters, so they must be checked
+    // in its context. Only the constraints are resolved in the context of the callee.
     function->requestReificationAndCheck(typeContext(), TypeContext(type, function, &genericArgs), genericArgs,
                                          node->position());
     if (specialization != nullptr) {
@@ -280,6 +282,13 @@ void ExpressionAnalyser::makeIntoBox(Type &exprType, const TypeExpectation &expe
         case StorageType::Box:
             if (expectation.type() == TypeType::Box &&
                 !exprType.boxedFor().identicalTo(expectation.boxedFor(), typeContext(), nullptr)) {
+                if (expectation.boxedFor().type() == TypeType::MultiProtocol) {
+                    // A box for a multiprotocol holds the conformances to all its protocols, which exist only for the
+                    // type of a value that is known where it is boxed.
+                    throw CompilerError((*node)->position(), "A value boxed for ",
+                                        exprType.boxedFor().toString(typeContext()), " cannot be used as ",
+                                        expectation.boxedFor().toString(typeContext()), ".");
+                }
                 if (exprType.isReference()) {
                     // This is an edge case caused by ASTInterpolationLiteral.
                     exprType.setReference(false);
@@ -301,20 +310,16 @@ void ExpressionAnalyser::makeIntoBox(Type &exprType, const TypeExpectation &expe
     }
 }
 
-bool doStorageTypesMatch(const Type &a, const Type &b, const TypeContext &tc) {
-    return a.storageType() == b.storageType() && (a.type() != TypeType::Box || a.areMatchingBoxes(b, tc));
-}
-
 bool ExpressionAnalyser::callableBoxingRequired(const TypeExpectation &expectation, const Type &exprType) const {
     if (expectation.type() == TypeType::Callable && exprType.type() == TypeType::Callable &&
         !expectation.isCCallable() && !exprType.isCCallable() &&
         expectation.parametersCount() == exprType.parametersCount()) {
         auto mismatch = std::mismatch(expectation.parameters(), expectation.parametersEnd(),
                                       exprType.parameters(), [this](const Type &a, const Type &b) {
-                                          return doStorageTypesMatch(a, b, typeContext());
+                                          return a.isStoredLike(b, typeContext());
                                       });
         return mismatch.first != expectation.parametersEnd() ||
-            !doStorageTypesMatch(expectation.returnType(), exprType.returnType(), typeContext());
+            !expectation.returnType().isStoredLike(exprType.returnType(), typeContext());
     }
     return false;
 }

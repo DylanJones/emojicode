@@ -12,6 +12,7 @@
 #include "StorageType.hpp"
 #include <string>
 #include <utility>
+#include <optional>
 #include <vector>
 #include <tuple>
 #include <cassert>
@@ -157,6 +158,9 @@ public:
 
     /// @returns True if both types are boxes and are boxed for identical types as determined by identicalTo().
     bool areMatchingBoxes(const Type &type, const TypeContext &context) const;
+    /// @returns True if values of this type and @p type are stored alike: with the same storage type and, for boxes,
+    /// in boxes for identical types, which hold the same kind of box info, e.g. a conformance to the same protocol.
+    bool isStoredLike(const Type &type, const TypeContext &context) const;
 
     /// If this is a box, proxies to the Box and returns the type of the optional in an equal Box.
     /// @returns The type this optional contains. If this type is force boxed, so will be the returned type.
@@ -362,6 +366,11 @@ private:
 
     /// Returns this optional or box with @p wrapped as the type it contains. A box stays outside of an optional.
     Type rewrapped(Type wrapped) const;
+    /// Resolves this generic variable to what it stands for in @p tc, i.e. a super argument or constraint.
+    /// @returns Nothing if it cannot be resolved there, e.g. as it is a variable of another function.
+    std::optional<Type> resolvedGenericVariable(const TypeContext &tc) const;
+    /// Checks the compatibility to the generic variable @p to, which is resolved in @p tc first.
+    bool compatibleToResolved(const Type &to, const TypeContext &tc, GenericInferer *inf) const;
 
     Type(TypeType typeType, std::vector<Type> genArgs)
         : typeContent_(typeType), genericArguments_(std::move(genArgs)) {}

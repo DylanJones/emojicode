@@ -30,6 +30,9 @@ template <typename T>
 struct Candidate;
 struct NonCandidate;
 
+/// Analyses the arguments of a call and returns their types, which a FunctionResolution resolves the call with.
+std::vector<Type> analyseArgs(ExpressionAnalyser *analyser, ASTArguments *args);
+
 struct FunctionTableKey {
     FunctionTableKey(std::u32string name, Mood mood, int paramCount)
         : name(std::move(name)), mood(mood), paramCount(paramCount) {}
@@ -84,9 +87,7 @@ class FunctionResolution {
 public:
     FunctionResolution(const std::u32string &name, Mood mood, const std::vector<Type> &args,
                        std::vector<Type> genericArgs, const Type &callee,
-                       const TypeContext &typeContext, SemanticAnalyser *analyser, SourcePosition p)
-            : key_(name, mood, args.size()), callee_(callee), args_(args), genericArgs_(std::move(genericArgs)),
-              typeContext_(typeContext), analyser_(analyser), p_(p) {}
+                       const TypeContext &typeContext, SemanticAnalyser *analyser, SourcePosition p);
 
     FunctionResolution(const std::u32string &name, Mood mood, ASTArguments *args, const Type &callee,
                        ExpressionAnalyser *analyser, SourcePosition p);

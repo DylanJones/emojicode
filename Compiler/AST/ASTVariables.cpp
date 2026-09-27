@@ -44,11 +44,8 @@ Type ASTGetVariable::analyse(ExpressionAnalyser *analyser) {
 }
 
 void ASTGetVariable::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCategory type) {
-    if (type.isReturn()) {
-        returned_ = true;
-    }
     if (!inInstanceScope()) {
-        analyser->recordVariableGet(id(), type);
+        returned_ = analyser->recordVariableGet(id(), type);
     }
 }
 

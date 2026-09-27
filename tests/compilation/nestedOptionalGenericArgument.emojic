@@ -1,0 +1,75 @@
+💭 A generic argument that is optional must not make 🍬T an optional of an optional, which boxes cannot store.
+🕊 🎁🐚T ⚪🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+  ❗️ 🔓 ➡️ 🍬T 🍇
+    ↩️ value
+  🍉
+🍉
+
+🐇 🎀🐚T ⚪🍆 🍇
+  🖍🆕 value 🍬T
+  🆕 🍼 value 🍬T 🍇🍉
+  ❗️ 🔓 ➡️ 🍬T 🍇
+    ↩️ value
+  🍉
+🍉
+
+🏁 🍇
+  🆕🍨🐚🍬🔢🍆❗️ ➡️ 🖍🆕 list
+  🐻 list 5❗️
+  🐻 list 🤷‍♀️❗️
+  🐻 list 42❗️
+  🔂 x list 🍇
+    ↪️ x ➡️ v 🍇
+      😀 🔡 v❗️❗️
+    🍉
+    🙅 🍇
+      😀 🔤none🔤❗️
+    🍉
+  🍉
+  ↪️ 🐽list 2❗️ ➡️ v 🍇
+    😀 🔡 v❗️❗️
+  🍉
+
+  🆕🍯🐚🍬🔢🍆❗️ ➡️ 🖍🆕 dict
+  7 ➡️🐽dict 🔤a🔤❗️
+  🤷‍♀️ ➡️🐽dict 🔤b🔤❗️
+  ↪️ 🐽dict 🔤a🔤❗️ ➡️ v 🍇
+    😀 🔡 v❗️❗️
+  🍉
+  ↪️ 🐽dict 🔤b🔤❗️ ➡️ v 🍇
+    😀 🔡 v❗️❗️
+  🍉
+  🙅 🍇
+    😀 🔤b none🔤❗️
+  🍉
+  ↪️ 🐽dict 🔤c🔤❗️ ➡️ v 🍇
+    😀 🔡 v❗️❗️
+  🍉
+  🙅 🍇
+    😀 🔤c none🔤❗️
+  🍉
+
+  🆕🍯🐚🍬🔡🍆❗️ ➡️ 🖍🆕 names
+  🔤Ada🔤 ➡️🐽names 🔤first🔤❗️
+  ↪️ 🐽names 🔤first🔤❗️ ➡️ v 🍇
+    😀 v❗️
+  🍉
+
+  🆕🎁🐚🍬🔢🍆 99❗️ ➡️ gift
+  ↪️ 🔓gift❗️ ➡️ v 🍇
+    😀 🔡 v❗️❗️
+  🍉
+  🆕🎀🐚🍬🔡🍆 🔤ribbon🔤❗️ ➡️ bow
+  ↪️ 🔓bow❗️ ➡️ v 🍇
+    😀 v❗️
+  🍉
+  🆕🎀🐚🍬🔡🍆 🤷‍♀️❗️ ➡️ noBow
+  ↪️ 🔓noBow❗️ ➡️ v 🍇
+    😀 v❗️
+  🍉
+  🙅 🍇
+    😀 🔤no bow🔤❗️
+  🍉
+🍉

@@ -18,6 +18,7 @@
 #include "Types/Class.hpp"
 #include "Types/Protocol.hpp"
 #include "Types/TypeDefinition.hpp"
+#include "Types/Enum.hpp"
 #include "Types/ValueType.hpp"
 
 namespace EmojicodeCompiler {
@@ -460,7 +461,8 @@ bool SemanticAnalyser::checkReturnPromise(const Function *sub, const TypeContext
                                                   " is not compatible to the return type defined in ",
                                                   superSource.toString(subContext)));
     }
-    return subReturn.storageType() == superReturn.storageType() && subReturn.isReference() == superReturn.isReference();
+    // A box for another type, e.g. for a multiprotocol instead of one of its protocols, must be reboxed too.
+    return subReturn.isStoredLike(superReturn, subContext) && subReturn.isReference() == superReturn.isReference();
 }
 
 std::unique_ptr<Function> SemanticAnalyser::enforcePromises(Function *sub, Function *super,
@@ -506,7 +508,7 @@ bool SemanticAnalyser::checkArgumentPromise(const Function *sub, const Function 
                                                       " is not compatible with its ", thisname, " argument type ",
                                                       supertype, "."));
         }
-        if (sub->parameters()[i].type->type().resolveOn(subContext).storageType() != superArgumentType.storageType()) {
+        if (!sub->parameters()[i].type->type().resolveOn(subContext).isStoredLike(superArgumentType, subContext)) {
             compatible = false;  // Boxing Thunk required for parameter i
         }
     }
@@ -525,6 +527,16 @@ void SemanticAnalyser::finalizeProtocol(const Type &type, ProtocolConformance &c
                                   " does not conform to protocol ", protocol.toString(TypeContext()),
                                   ": Method ", utf8(method->name()), " not provided."));
             continue;
+        }
+
+        // Methods of enums, which cannot mutate their value, and classes are marked as mutating anyway.
+        auto valueType = type.type() == TypeType::ValueType && dynamic_cast<Enum *>(type.typeDefinition()) == nullptr;
+        if (valueType && implementation->mutating() && !method->mutating()) {
+            // It would mutate values through the protocol that are not mutable.
+            package_->compiler()->error(
+                    CompilerError(implementation->position(), utf8(implementation->name()), " is marked 🖍 but ",
+                                  utf8(method->name()), " of ", protocol.toString(TypeContext()),
+                                  ", which it implements, is not."));
         }
 
         if (imported_) {
