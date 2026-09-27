@@ -59,8 +59,12 @@ bool ASTCallableType::mentionsGenericVariable() const {
         std::any_of(params_.begin(), params_.end(), [](auto &param) { return param->mentionsGenericVariable(); });
 }
 
+Type ASTTypeId::rawType() const {
+    return package()->getRawType(TypeIdentifier(name_, namespace_, position()));
+}
+
 Type ASTTypeId::getType(const TypeContext &typeContext, bool allowGenericInference) const {
-    auto type = package()->getRawType(TypeIdentifier(name_, namespace_, position()));
+    auto type = rawType();
 
     auto typeDef = type.typeDefinition();
 

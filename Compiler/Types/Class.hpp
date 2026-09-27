@@ -101,6 +101,10 @@ private:
     bool final_;
     bool foreign_;
     bool hasSubclass_ = false;
+    /// Whether analyseSuperType() is analysing the superclasses of this class. Used to detect circular inheritance.
+    bool analysingSuperType_ = false;
+    /// Whether analyseSuperType() finished, which it must do only once as it offsets the generic parameter indices.
+    bool superTypeAnalysed_ = false;
 
     llvm::GlobalVariable *classInfo_ = nullptr;
 
