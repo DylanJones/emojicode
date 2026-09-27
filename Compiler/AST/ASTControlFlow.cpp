@@ -53,6 +53,7 @@ void ASTIf::analyseMemoryFlow(MFFunctionAnalyser *analyser) {
     }
     if (hasElse()) {
         blocks_.back().block.analyseMemoryFlow(analyser);
+        analyser->popScope(&blocks_.back().block);
     }
 }
 
