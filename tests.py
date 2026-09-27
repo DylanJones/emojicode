@@ -60,6 +60,7 @@ compilation_tests = [
     "castAny",
     "somethingParameters",
     "castGenericValueType",
+    "castGenericSubclass",
     "castBindingRemote",
     "castGenericClass",
     "genericSubclassArguments",
