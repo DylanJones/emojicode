@@ -154,6 +154,12 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
     for (auto &argument : genericArgs) {
         usesGenericArgumentsOf(argument);
     }
+    // So are those of the type to a type method or an initializer of a type that stores them.
+    if (function->owner() != nullptr && function->owner()->storesGenericArgs() &&
+        (isTypeMethod(function) || function->functionType() == FunctionType::ObjectInitializer ||
+         function->functionType() == FunctionType::ValueTypeInitializer)) {
+        usesGenericArgumentsOf(type);
+    }
 
     // The generic arguments are types of the calling code, e.g. its own generic parameters, so they must be checked
     // in its context. Only the constraints are resolved in the context of the callee.

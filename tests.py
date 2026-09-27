@@ -115,6 +115,7 @@ compilation_tests = [
     "closureCaptureNonEscaping",
     "closureGenerics",
     "closureGenericValueType",
+    "closureGenericTypeMethod",
     "closureError",
     "callableBoxing",
     "errorUnwrap",
@@ -201,6 +202,7 @@ unoptimized_tests = [
     "borrowedBoxes",
     "genericStorage",
     "closureGenericValueType",
+    "closureGenericTypeMethod",
 ]
 # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
 # NAME.specializations. A function that is not specialized, but called generically, does not change what a program
