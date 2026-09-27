@@ -467,6 +467,9 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
             if (klass() == to.klass()) {
                 return identicalGenericArguments(to, tc, inf);
             }
+            if (to.genericArguments().size() == to.typeDefinition()->superGenericArguments().size()) {
+                return true;  // The superclass has no generic parameters of its own to compare.
+            }
             // The arguments to the superclass are those of the superclass declaration, e.g. 🔡 V for
             // 🐇 🎁🐚V⚪️🍆 📦🐚🔡 V🍆, and must be resolved on the arguments of this type.
             Type resolved = *this;
