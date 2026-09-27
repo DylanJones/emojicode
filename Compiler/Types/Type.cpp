@@ -317,15 +317,25 @@ Type Type::resolveOn(const TypeContext &typeContext) const {
     }
 
     if (typeContext.calleeType().canHaveGenericArguments()) {
+        // The arguments for the superclasses, which come first, are those of the superclass declarations and refer to
+        // generic parameters that come later, so they are resolved again. The type's own arguments are types of the
+        // code that wrote it, which may be generic variables of the type or one of its superclasses too, e.g. T in
+        // 🌴🐚T🍆 written in its superclass 🎄🐚T🍆. They must not be resolved again, which would never end.
+        auto superArgumentCount = typeContext.calleeType().typeDefinition()->superGenericArguments().size();
         while (t.unboxedType() == TypeType::GenericVariable  &&
                typeContext.calleeType().typeDefinition()->canResolve(t.resolutionConstraint())) {
-            Type tn = typeContext.calleeType().genericArguments()[t.genericVariableIndex()];
+            auto index = t.genericVariableIndex();
+            Type tn = typeContext.calleeType().genericArguments()[index];
             if (tn.unboxedType() == TypeType::GenericVariable
-                && tn.genericVariableIndex() == t.genericVariableIndex()
+                && tn.genericVariableIndex() == index
                 && tn.resolutionConstraint() == t.resolutionConstraint()) {
                 break;
             }
             t = tn;
+            if (index >= superArgumentCount || t.unboxedType() != TypeType::GenericVariable ||
+                t.genericVariableIndex() <= index) {
+                break;
+            }
         }
     }
 
@@ -453,9 +463,22 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
                 return true;
             }
             return compatibleToResolved(to, tc, inf);
-        case TypeType::Class:
-            return type() == TypeType::Class && klass()->inheritsFrom(to.klass()) &&
-                identicalGenericArguments(to, tc, inf);
+        case TypeType::Class: {
+            if (type() != TypeType::Class || !klass()->inheritsFrom(to.klass())) {
+                return false;
+            }
+            if (klass() == to.klass()) {
+                return identicalGenericArguments(to, tc, inf);
+            }
+            if (to.genericArguments().size() == to.typeDefinition()->superGenericArguments().size()) {
+                return true;  // The superclass has no generic parameters of its own to compare.
+            }
+            // The arguments to the superclass are those of the superclass declaration, e.g. 🔡 V for
+            // 🐇 🎁🐚V⚪️🍆 📦🐚🔡 V🍆, and must be resolved on the arguments of this type.
+            Type resolved = *this;
+            resolved.setGenericArguments(selfResolvedGenericArgs());
+            return resolved.identicalGenericArguments(to, tc, inf);
+        }
         case TypeType::ValueType:
             return type() == TypeType::ValueType && typeDefinition() == to.typeDefinition() &&
                 identicalGenericArguments(to, tc, inf);

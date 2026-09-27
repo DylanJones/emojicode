@@ -22,6 +22,8 @@
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_ostream.h>
+#include <stdexcept>
 
 namespace EmojicodeCompiler {
 
@@ -41,10 +43,13 @@ void FunctionCodeGenerator::generate() {
 
     fn_->ast()->generate(this);
 
-    if (llvm::verifyFunction(*function_, &llvm::outs())) {
+    // Invalid IR must not reach the optimizer, which assumes valid IR and may hide the problem or miscompile.
+    std::string problems;
+    llvm::raw_string_ostream problemsStream(problems);
+    if (llvm::verifyFunction(*function_, &problemsStream)) {
         auto ows = function()->owner() != nullptr ? function()->owner()->type().toString(fn_->typeContext()) : "";
-        printf("\nDetected in: %s%s (%s)\n=============\n", ows.c_str(), utf8(fn_->name()).c_str(),
-               function_->getName().str().c_str());
+        throw std::logic_error("Invalid LLVM IR was generated for " + ows + utf8(fn_->name()) + " (" +
+                               function_->getName().str() + "):\n" + problems);
     }
 }
 

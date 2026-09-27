@@ -1,0 +1,14 @@
+gift: 2, 📦 🎁
+box: 1, 📦
+envelope: 4, 📦 🧧
+text
+text
+🎺 📦 🎁
+🎺 📦
+🎺 📦 🧧
+🎺 📦 🧧
+a 🎁 with 7, 📦 🎁
+a 📦🐚🔡 🔢🍆: box 1
+a 📦🐚🔡 🔢🍆: envelope 4
+a 📦🐚🔡 🔡🍆: letter text
+something else

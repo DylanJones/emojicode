@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from subprocess import PIPE, CalledProcessError
+from subprocess import PIPE, CalledProcessError, TimeoutExpired
 import glob
 import os
 import dist
@@ -36,6 +36,8 @@ compilation_tests = [
     "classOverride",
     "classSuper",
     "classSubInstanceVar",
+    "subclassDeclaredFirst",
+    "genericSubclassDeclaredFirst",
     "overload",
     "optionalParameter",
     "returnInBlock",
@@ -59,6 +61,8 @@ compilation_tests = [
     "castGenericValueType",
     "castBindingRemote",
     "castGenericClass",
+    "genericSubclassArguments",
+    "genericSubclassInAncestor",
     "protocolClass",
     "protocolSubclass",
     "protocolValueType",
@@ -98,12 +102,16 @@ compilation_tests = [
     "genericProtocol",
     "genericProtocolValueType",
     "genericTypeMethod",
+    "genericSuperInitializer",
     "genericLocalAsArgToGeneric",
     "genericArgumentOfCaller",
     "genericToConstraintOptional",
     "genericsInferenceValueType",
     "genericsInferenceClass",
     "genericRecursion",
+    "genericSuperclassArguments",
+    "genericSuperclassDeclaredFirst",
+    "superclassArgumentDeclaredLater",
     "optionalGenericField",
     "nestedOptionalGenericArgument",
     "variableInitAndScoping",
@@ -124,6 +132,7 @@ compilation_tests = [
     "errorReraiseMem",
     "errorReraiseMem2",
     "errorHandlerDiscardMem",
+    "errorProneGenericArgs",
     "valueTypeCopySelf",
     "valueTypeBoxCopySelf",
     "remoteBoxRelease",
@@ -202,6 +211,7 @@ unoptimized_tests = [
     "boxValueSemantics",
     "borrowedBoxes",
     "genericStorage",
+    "errorProneGenericArgs",
 ]
 # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
 # NAME.specializations. A function that is not specialized, but called generically, does not change what a program
@@ -234,6 +244,7 @@ importing_tests = [
     "lazyInline",
     "inlineClosure",
     "importedSpecialization",
+    "importedSubclassDeclaredFirst",
 ]
 reject_tests = glob.glob(os.path.join(dist.source, "tests", "reject",
                                       "*.emojic"))
@@ -251,6 +262,9 @@ os.environ["EMOJICODE_PACKAGES_PATH"] = os.path.abspath(".")
 os.environ["TEST_ENV_1"] = "The day starts like the rest I've seen"
 # The number of tests run at once, one per core unless EMOJICODE_TEST_JOBS says otherwise.
 jobs = int(os.environ.get("EMOJICODE_TEST_JOBS", os.cpu_count() or 1))
+# The seconds a command, e.g. the compiler or a test program, may run. One that hangs fails its test instead of the
+# whole suite.
+command_timeout = 300
 
 
 source_locks = {}
@@ -280,6 +294,7 @@ def run(args, check=False, **kwargs):
     keep_stderr = 'stderr' not in kwargs
     if keep_stderr:
         kwargs['stderr'] = PIPE
+    kwargs.setdefault('timeout', command_timeout)
     completed = subprocess.run(args, **kwargs)
     if keep_stderr and completed.stderr:
         report.stderr.append(completed.stderr.decode('utf-8', 'replace'))
@@ -498,6 +513,9 @@ def perform(name, function, *args):
         function(*args)
     except CalledProcessError as error:
         log("Command failed with exit code {0}: {1}".format(error.returncode, " ".join(map(str, error.cmd))))
+        fail_test(name)
+    except TimeoutExpired as error:
+        log("Command timed out after {0} s: {1}".format(error.timeout, " ".join(map(str, error.cmd))))
         fail_test(name)
     except Exception:
         # E.g. a missing expected output or output that is not UTF-8, which must not abort the other tests.

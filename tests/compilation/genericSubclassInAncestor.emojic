@@ -1,0 +1,62 @@
+💭 A generic subclass type written inside one of its generic superclasses, with that superclass's generic parameter as
+💭 argument. The parameter belongs to the code that wrote the type, and must not be resolved on the type again.
+🐇 🎄🐚T⚪️🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+
+  ❗️ 🔍 ➡️ T 🍇
+    ↩️ value
+  🍉
+
+  💭 A factory in the superclass returning a subclass.
+  ❗️ 🌱 ➡️ 🎄🐚T🍆 🍇
+    ↩️ 🆕🌴🐚T🍆 value❗️
+  🍉
+
+  💭 A subclass passed where the superclass is expected.
+  🐇❗️ 🍃 x 🌴🐚T🍆 ➡️ 🎄🐚T🍆 🍇
+    ↩️ x
+  🍉
+🍉
+
+🐇 🌴🐚T⚪️🍆 🎄🐚T🍆 🍇
+🍉
+
+🐇 📦🐚K⚪️ V⚪️🍆 🍇
+  🖍🆕 value V
+  🆕 🍼 value V 🍇🍉
+
+  ❗️ 💎 ➡️ V 🍇
+    ↩️ value
+  🍉
+🍉
+
+🐇 🎁🐚V⚪️🍆 📦🐚🔡 V🍆 🍇
+  🆕 v V 🍇
+    ⤴️🆕 v❗️
+  🍉
+
+  💭 A 🎀🐚V🍆 is passed where a 📦🐚🔡 V🍆 is expected, inside 🎁🐚V🍆.
+  ❗️ 🎈 r 🎀🐚V🍆 ➡️ V 🍇
+    ↩️ 💎🐇🔧 r❗️
+  🍉
+🍉
+
+🐇 🎀🐚W⚪️🍆 🎁🐚W🍆 🍇
+  🆕 w W 🍇
+    ⤴️🆕 w❗️
+  🍉
+🍉
+
+🐇 🔧 🍇
+  🐇❗️ 💎🐚X⚪️🍆 b 📦🐚🔡 X🍆 ➡️ X 🍇
+    ↩️ 💎 b❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🎄🐚🔢🍆 3❗️ ➡️ tree
+  😀 🔡 🔍 🌱 tree❗️❗️❗️❗️
+  😀 🔍 🍃🐇🎄🐚🔡🍆 🆕🌴🐚🔡🍆 🔤palm🔤❗️❗️❗️❗️
+  😀 🔡 🎈 🆕🎁🐚🔢🍆 1❗️ 🆕🎀🐚🔢🍆 7❗️❗️❗️❗️
+🍉

@@ -620,6 +620,16 @@ class NavigationTests(ServerTestCase):
         self.assertEqual([s["name"] for s in symbols], ["🐟"])
         self.assertEqual([c["name"] for c in symbols[0]["children"]], ["depth", "🏊", "🆕"])
 
+    def test_document_symbols_in_source_order(self):
+        # The compiler analyses 🐡 before its subclass 🐟, but the outline follows the source, whatever the kind.
+        text = "🐇 🐟 🐡 🍇🍉\n🕊 🥥 🍇\n  🆕 🍇🍉\n🍉\n🐇 🐡 🍇🍉\n🏁 🍇🍉\n"
+        path = self.write("order.emojic", text)
+        client = self.start()
+        client.open(path)
+        self.assertEqual(client.diagnostics(path), [])
+        symbols = client.request("textDocument/documentSymbol", {"textDocument": {"uri": uri(path)}})
+        self.assertEqual([s["name"] for s in symbols], ["🐟", "🥥", "🐡"])
+
 
 class CompletionTests(ServerTestCase):
     def complete(self, word, snippets=False):
