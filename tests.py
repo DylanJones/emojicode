@@ -61,6 +61,7 @@ compilation_tests = [
     "castBindingRemote",
     "castGenericClass",
     "genericSubclassArguments",
+    "genericSubclassInAncestor",
     "protocolClass",
     "protocolSubclass",
     "protocolValueType",
