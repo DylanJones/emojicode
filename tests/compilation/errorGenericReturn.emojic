@@ -25,6 +25,16 @@
   🐇❗️ 🐕 fail 👌 ➡️ 🔡 🚧🚧 🍇
     ↩️ 🔺🔃🐇🐋 🔤reraised🔤 fail❗️
   🍉
+
+  🐇❗️ 🐈 fail 👌 🚧🚧 🍇
+    🔺🔃🐇🐋 5 fail❗️
+    😀 🔤discarded number not reraised🔤❗️
+  🍉
+
+  🐇❗️ 🐅 fail 👌 🚧🚧 🍇
+    🔺🔃🐇🐋 🔤discarded🔤 fail❗️
+    😀 🔤discarded string not reraised🔤❗️
+  🍉
 🍉
 
 🐇 🐡 🐋 🍇 🍉
@@ -57,6 +67,12 @@
   🙅 e 🍇 😀 💬e❗️❗️ 🍉
   🆗 🔃🐇🐋 🔤discarded🔤 👎❗️ 🍇 😀 🔤discarded🔤❗️ 🍉
   🙅 e 🍇 😀 💬e❗️❗️ 🍉
+  🆗 🔃🐇🐋 🔤discarded🔤 👍❗️ 🍇 😀 🔤unexpected🔤❗️ 🍉
+  🙅 e 🍇 😀 💬e❗️❗️ 🍉
+  🆗 🔃🐇🐋 2 👎❗️ 🍇 😀 🔤discarded number🔤❗️ 🍉
+  🙅 e 🍇 😀 💬e❗️❗️ 🍉
+  🆗 🔃🐇🐋 2 👍❗️ 🍇 😀 🔤unexpected🔤❗️ 🍉
+  🙅 e 🍇 😀 💬e❗️❗️ 🍉
 
   🆗 x 🔃🐇🐋 🆕🦖❗️ 👎❗️ 🍇 😀 🔡🧮x❗️❗️❗️ 🍉
   🙅 e 🍇 😀 💬e❗️❗️ 🍉
@@ -77,6 +93,15 @@
   🆗 x 🐕🐇🐋 👎❗️ 🍇 😀 x❗️ 🍉
   🙅 e 🍇 😀 💬e❗️❗️ 🍉
   🆗 x 🐕🐇🐋 👍❗️ 🍇 😀 x❗️ 🍉
+  🙅 e 🍇 😀 💬e❗️❗️ 🍉
+
+  🆗 🐈🐇🐋 👎❗️ 🍇 🍉
+  🙅 e 🍇 😀 💬e❗️❗️ 🍉
+  🆗 🐈🐇🐋 👍❗️ 🍇 😀 🔤unexpected🔤❗️ 🍉
+  🙅 e 🍇 😀 💬e❗️❗️ 🍉
+  🆗 🐅🐇🐋 👎❗️ 🍇 🍉
+  🙅 e 🍇 😀 💬e❗️❗️ 🍉
+  🆗 🐅🐇🐋 👍❗️ 🍇 😀 🔤unexpected🔤❗️ 🍉
   🙅 e 🍇 😀 💬e❗️❗️ 🍉
 
   😀 🔡🍺🔃🐇🐋 4 👎❗️❗️❗️

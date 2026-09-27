@@ -55,6 +55,12 @@ protected:
     /// Generates the handled call. The expression that was passed to handleCall() must be generated after the error
     /// was checked, and only if there was none, as the nodes the analysis wrapped around the call operate on its value.
     void generateHandledCall(FunctionCodeGenerator *fg) const;
+    /// Whether generateHandledCall() registered the value of the call as a temporary object, which is then the last
+    /// temporary object. The value of a call that raised an error is undefined and must not be released.
+    ///
+    /// Only the call decides this: the nodes the analysis wrapped around the call, e.g. to unbox a value of an
+    /// unmanaged type, may not produce a temporary object when the call does, and vice versa.
+    bool handledCallProducesTemporaryObject() const;
 
     llvm::Value* isError(FunctionCodeGenerator *fg, llvm::Value *errorDestination) const;
 

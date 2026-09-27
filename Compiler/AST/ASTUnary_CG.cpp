@@ -77,7 +77,7 @@ Value* ASTReraise::generate(FunctionCodeGenerator *fg) const {
     handledCall_->setErrorPointer(fg->errorPointer());
     generateHandledCall(fg);
     fg->createIfElseBranchCond(createExpectFalse(fg, isError(fg, fg->errorPointer())), [this, fg]() {
-        fg->releaseTemporaryObjects(false, expr_->producesTemporaryObject());
+        fg->releaseTemporaryObjects(false, handledCallProducesTemporaryObject());
         release(fg);
         fg->buildErrorReturn();
         return false;

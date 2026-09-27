@@ -3,6 +3,9 @@ type method failed
 string
 type method failed
 discarded
+type method failed
+discarded number
+type method failed
 15
 type method failed
 3
@@ -10,6 +13,10 @@ optional failed
 method
 method failed
 reraised
+type method failed
+discarded number not reraised
+type method failed
+discarded string not reraised
 type method failed
 4
 unwrapped

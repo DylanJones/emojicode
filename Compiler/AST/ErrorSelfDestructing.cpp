@@ -67,6 +67,10 @@ void ErrorHandling::generateHandledCall(FunctionCodeGenerator *fg) const {
     handledCallNode_->generateCall(fg);
 }
 
+bool ErrorHandling::handledCallProducesTemporaryObject() const {
+    return handledCall_->producesTemporaryObject();
+}
+
 llvm::Value* ErrorHandling::isError(FunctionCodeGenerator *fg, llvm::Value *errorDestination) const {
     auto null = llvm::ConstantPointerNull::get(fg->typeHelper().pointer());
     return fg->builder().CreateICmpNE(null, fg->builder().CreateLoad(fg->typeHelper().pointer(), errorDestination));
