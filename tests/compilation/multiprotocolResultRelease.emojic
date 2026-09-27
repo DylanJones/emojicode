@@ -1,0 +1,58 @@
+💭 The value returned by a call of a method of a multiprotocol is released after the statement unless it is taken.
+
+🐇 🎈 🔡 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇
+    ☣️ 🍇
+      ⤴️🆕 🧠name❗️ 📐name❗️❗️
+    🍉
+  🍉
+
+  ♻️ 🍇
+    😀 🔤Released 🧲name🧲🔤❗️
+  🍉
+🍉
+
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+🐊 🔽 🍇
+  ❗️ 🙋 name 🔡 ➡️ 🔡
+🍉
+
+🐇 🐭 🍇
+  🐊 🔼
+  🐊 🔽
+
+  🆕 🍇🍉
+
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ 3
+  🍉
+
+  ❗️ 🙋 name 🔡 ➡️ 🔡 🍇
+    ↩️ 🆕🎈 name❗️
+  🍉
+🍉
+
+🐇 🐟 🍇
+  🐇❗️ 🎁 value 🍱🔼🔽🍱 ➡️ 🔡 🍇
+    ↩️ 🙋 value 🔤returned🔤❗️
+  🍉
+🍉
+
+🏁 🍇
+  🖍🆕 value 🍱🔼🔽🍱
+  🆕🐭❗️ ➡️ 🖍value
+  😀 🔤🧲🙋 value 🔤interpolated🔤❗️🧲!🔤❗️
+  😀 🙋 value 🔤argument🔤❗️❗️
+  ↪️ 🙋 value 🔤compared🔤❗️ 🙌 🔤compared🔤 🍇
+    😀 🔤equal🔤❗️
+  🍉
+  🙋 value 🔤discarded🔤❗️
+  🙋 value 🔤assigned🔤❗️ ➡️ assigned
+  😀 assigned❗️
+  😀 🎁🐇🐟 value❗️❗️
+  😀 🔤-----🔤❗️
+🍉

@@ -174,8 +174,9 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
                 return fg->builder().CreateGEP(type, v, args_.args().front()->generate(fg));
             }
             case BuiltInType::Multiprotocol:
-                return MultiprotocolCallCodeGenerator(fg, callType_).generate(v, calleeType_, args_, method_,
-                                                                              errorPointer(), multiprotocolN_);
+                return handleResult(fg, MultiprotocolCallCodeGenerator(fg, callType_).generate(v, calleeType_, args_,
+                                                                                               method_, errorPointer(),
+                                                                                               multiprotocolN_));
             default:
                 break;
         }

@@ -112,7 +112,11 @@ Value* ASTSuper::generate(FunctionCodeGenerator *fg) const {
         }, [] { return true; });
     }
 
-    return init_ ? nullptr : ret;
+    if (init_) {
+        return nullptr;
+    }
+    // Like the value of any other call, the returned value is released after the statement unless it is taken.
+    return handleResult(fg, ret);
 }
 
 }  // namespace EmojicodeCompiler

@@ -1,0 +1,82 @@
+💭 The value returned by a ⤴️ call is released after the statement unless it is taken, like that of any other call.
+
+🐇 🎈 🔡 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇
+    ☣️ 🍇
+      ⤴️🆕 🧠name❗️ 📐name❗️❗️
+    🍉
+  🍉
+
+  ♻️ 🍇
+    😀 🔤Released 🧲name🧲🔤❗️
+  🍉
+🍉
+
+🐇 🅰️ 🍇
+  🆕 🍇🍉
+
+  ❗️ 🙋 name 🔡 ➡️ 🔡 🍇
+    ↩️ 🆕🎈 name❗️
+  🍉
+
+  ❗️ 🥭 fail 👌 ➡️ 🔡 🚧🚧 🍇
+    ↪️ fail 🍇
+      🚨🆕🚧🔤Failed🔤❗️
+    🍉
+    ↩️ 🆕🎈 🔤avocado🔤❗️
+  🍉
+🍉
+
+🐇 🅱️ 🅰️ 🍇
+  🆕 🍇
+    ⤴️🆕❗️
+  🍉
+
+  ✒️ ❗️ 🙋 name 🔡 ➡️ 🔡 🍇
+    😀 🔤🧲⤴️🙋 🔤interpolated🔤❗️🧲!🔤❗️
+    😀 ⤴️🙋 🔤argument🔤❗️❗️
+    😀 🔡 📏 🔫 ⤴️🙋 🔤callee🔤❗️ 🔤l🔤❗️❓❗️❗️
+    ↪️ ⤴️🙋 🔤compared🔤❗️ 🙌 🔤compared🔤 🍇
+      😀 🔤equal🔤❗️
+    🍉
+    ⤴️🙋 🔤discarded🔤❗️
+    ⤴️🙋 🔤assigned🔤❗️ ➡️ assigned
+    😀 assigned❗️
+    ↩️ ⤴️🙋 name❗️
+  🍉
+
+  ✒️ ❗️ 🥭 fail 👌 ➡️ 🔡 🚧🚧 🍇
+    ↪️ 🆕🎈 🔤first🔤❗️ 🙌 🔺⤴️🥭 fail❗️ 🍇
+      😀 🔤reraised equal🔤❗️
+    🍉
+    🆗 ⤴️🥭 fail❗️ 🍇
+      😀 🔤value block🔤❗️
+    🍉
+    🙅 error 🍇
+      😀 💬error❗️ ❗️
+    🍉
+    ↩️ 🔤done🔤
+  🍉
+🍉
+
+🏁 🍇
+  🆕🅱️❗️ ➡️ b
+  🙋 b 🔤returned🔤❗️ ➡️ returned
+  😀 returned❗️
+  🆗 value 🥭 b 👎❗️ 🍇
+    😀 value❗️
+  🍉
+  🙅 error 🍇
+    😀 💬error❗️ ❗️
+  🍉
+  😀 🔤--🔤❗️
+  🆗 value 🥭 b 👍❗️ 🍇
+    😀 value❗️
+  🍉
+  🙅 error 🍇
+    😀 💬error❗️ ❗️
+  🍉
+  😀 🔤-----🔤❗️
+🍉
