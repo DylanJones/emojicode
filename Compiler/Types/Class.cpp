@@ -33,20 +33,20 @@ std::vector<Type> Class::superGenericArguments() const {
     return std::vector<Type>();
 }
 
-void Class::analyseSuperType() {
+void Class::analyseSuperType(std::vector<std::function<void()>> *constraintChecks) {
     if (superType() == nullptr) {
         return;
     }
 
     auto classType = Type(this);
-    auto &type = superType()->analyseType(TypeContext(classType));
+    auto &type = superType()->analyseType(TypeContext(TypeContext(classType), constraintChecks));
 
     if (type.type() != TypeType::Class) {
         throw CompilerError(superType()->position(), "The superclass must be a class.");
     }
 
     if (type.klass()->superType() != nullptr && !type.klass()->superType()->wasAnalysed()) {
-        type.klass()->analyseSuperType();
+        type.klass()->analyseSuperType(constraintChecks);
     }
 
     std::set<Class *> visited;

@@ -1,4 +1,4 @@
-💭 Specializations for types that differ only in nested generic arguments or error types must be distinct.
+💭 Specializations for types that differ only in nested generic arguments, error types or boxes must be distinct.
 🐇 🐫 🚧 🍇
 🍉
 🐇 🦒 🚧 🍇
@@ -18,6 +18,15 @@
   🍉
 🍉
 
+💭 check takes T boxed, so its type differs from that of a callable taking 🔢 only in a box.
+🕊 🏭🐚T ⚪️🍆 🍇
+  🖍🆕 check 🍇T➡️🔢🍉
+  🆕 🍼 check 🍇T➡️🔢🍉 🍇🍉
+  ❗️ 🔨 ➡️ 🔢 🍇
+    ↩️ 🔮🕊🧰 check❗️
+  🍉
+🍉
+
 🏁 🍇
   🍇 ➡️ 🔢 🚧🐫
     ↩️ 1
@@ -29,4 +38,6 @@
   😀 🔡 🔮🕊🧰 giraffe❗️❗️❗️
   🍿 🔤x🔤 🔤y🔤 🍆 ➡️ list
   🙈🕊🧰 🍡🆕⏩ 0 3❗️❗️ 🍡list❗️❗️
+  😀 🔡 🔨🆕🏭🐚🔢🍆 🍇🎍🥡 a 🔢 ➡️ 🔢 ↩️ a 🍉❗️❗️❗️❗️
+  😀 🔡 🔮🕊🧰 🍇 a 🔢 ➡️ 🔢 ↩️ a 🍉❗️❗️❗️
 🍉

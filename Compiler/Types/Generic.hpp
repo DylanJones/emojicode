@@ -99,7 +99,7 @@ public:
         for (size_t i = offset_; i < args.size(); i++) {
             auto constraint = constraintForIndex(i).resolveOn(instanceContext);
             if (!args[i].compatibleTo(constraint, typeContext)) {
-                throw CompilerError(p, "Generic argument ", i + 1, " of type ",
+                throw CompilerError(p, "Generic argument ", i - offset_ + 1, " of type ",
                                     args[i].toString(typeContext), " is not compatible to constraint ",
                                     constraint.toString(typeContext), ".");
             }

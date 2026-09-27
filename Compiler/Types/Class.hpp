@@ -11,6 +11,7 @@
 
 #include "Functions/Initializer.hpp"
 #include "TypeDefinition.hpp"
+#include <functional>
 #include <set>
 
 namespace llvm {
@@ -64,7 +65,9 @@ public:
     void addInstanceVariable(const InstanceVariableDeclaration &declaration) override;
 
     void inherit(SemanticAnalyser *analyser);
-    void analyseSuperType();
+    /// Analyses the superclass. Its generic arguments are checked by appending checks to @p constraintChecks, as the
+    /// constraints of the superclass and of this class may not be analysed yet.
+    void analyseSuperType(std::vector<std::function<void()>> *constraintChecks);
 
     /// Makes hasSubclass() return true.
     void setHasSubclass() { hasSubclass_ = true; }
