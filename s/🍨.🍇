@@ -17,9 +17,7 @@
 
     ☣️ 🍇
       🆕🧠 size✖️⚖️Element❗️ ➡️ 🖍data
-      🔂 i 🆕⏩ 0 📏storage❓❗️ 🍇
-        🐽🐚Element🍆 🧠storage❗️i✖️⚖️Element❗️ ➡️🐽🐚Element🍆data i✖️⚖️Element❗️
-      🍉
+      📋🐚Element🍆 data 0 🧠storage❗️ 0 count❗️
     🍉
   🍉
 
@@ -55,8 +53,9 @@
 
   📗 Releases everything inside the list. 📗
   ☣️❗️♻️ 🍇
+    data ➡️ memory
     🔂 i 🆕⏩ 0 count❗️ 🍇
-      ♻️🐚Element🍆 data i✖️⚖️Element❗️
+      ♻️🐚Element🍆 memory i✖️⚖️Element❗️
     🍉
   🍉
 

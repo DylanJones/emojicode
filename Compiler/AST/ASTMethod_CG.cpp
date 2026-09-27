@@ -107,6 +107,27 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
                                             llvm::MaybeAlign(), args_.args()[3]->generate(fg));
                 return nullptr;
             }
+            case BuiltInType::MemoryCopy: {
+                auto type = args_.genericArguments().front()->type();
+                auto destination = buildAddOffsetAddress(fg, v, args_.args()[0]->generate(fg));
+                auto source = buildAddOffsetAddress(fg, args_.args()[1]->generate(fg), args_.args()[2]->generate(fg));
+                auto count = args_.args()[3]->generate(fg);
+                if (LLVMTypeHelper::isErased(type)) {
+                    fg->buildCopyErased(destination, source, count, fg->buildTypeDescriptionEntry(type));
+                    return nullptr;
+                }
+                auto llvmType = fg->typeHelper().llvmTypeFor(type);
+                fg->builder().CreateMemMove(destination, llvm::MaybeAlign(), source, llvm::MaybeAlign(),
+                                            fg->builder().CreateMul(fg->sizeOf(llvmType), count));
+                if (type.isManaged()) {
+                    fg->createCountedLoop(count, [&](llvm::Value *index) {
+                        auto ptr = fg->builder().CreateGEP(llvmType, destination, index);
+                        fg->retain(fg->isManagedByReference(type) ? ptr : fg->builder().CreateLoad(llvmType, ptr),
+                                   type);
+                    });
+                }
+                return nullptr;
+            }
             case BuiltInType::MemorySet: {
                 fg->builder().CreateMemSet(buildAddOffsetAddress(fg, v, args_.args()[1]->generate(fg)),
                                            args_.args()[0]->generate(fg), args_.args()[2]->generate(fg),

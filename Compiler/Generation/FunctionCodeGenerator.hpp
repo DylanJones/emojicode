@@ -152,6 +152,8 @@ public:
     void buildStoreErased(llvm::Value *address, llvm::Value *entry, llvm::Value *box, const Type &type);
     /// Releases the value at @p address, which is of the type described by @p entry.
     void buildReleaseErased(llvm::Value *address, llvm::Value *entry);
+    /// Copies @p count values of the type described by @p entry from @p source to @p destination, retaining them.
+    void buildCopyErased(llvm::Value *destination, llvm::Value *source, llvm::Value *count, llvm::Value *entry);
     /// Gets a pointer to the field of the box to which @p box points that holds the object storing its remote value.
     llvm::Value* buildGetRemoteBoxObjectPtr(llvm::Value *box);
     /// Makes the value of the box to which @p box points unique, using the function of the protocol @p conformance,
@@ -237,6 +239,8 @@ public:
                                 const std::function<bool()> &otherwise);
     /// Creates an if block. The code produced by the @then function is only executed if the condition is true.
     void createIf(llvm::Value* cond, const std::function<void()> &then);
+    /// Creates a loop that executes the code produced by @p body, which is passed the index, @p count times.
+    void createCountedLoop(llvm::Value *count, const std::function<void(llvm::Value *)> &body);
 
     llvm::BasicBlock* createBlock(const llvm::Twine &name = "");
 
