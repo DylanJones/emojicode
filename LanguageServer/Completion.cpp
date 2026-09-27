@@ -26,7 +26,7 @@ namespace {
 
 namespace Kind {
 const int Text = 1, Method = 2, Field = 5, Variable = 6, Class = 7, Interface = 8, Enum = 13, Keyword = 14,
-          Snippet = 15, Struct = 22, TypeParameter = 25;
+          Snippet = 15, Struct = 22;
 }
 
 /// Where a keyword can be written, as flags.

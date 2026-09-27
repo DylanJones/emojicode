@@ -9,15 +9,40 @@
 #ifndef EmojicodeCompiler_hpp
 #define EmojicodeCompiler_hpp
 
-#include <codecvt>
-#include <locale>
+#include <algorithm>
 #include <sstream>
 #include <string>
 
 namespace EmojicodeCompiler {
 
+/// Encodes UTF-8. Surrogates and values above U+10FFFF, which cannot be encoded, become U+FFFD.
 inline std::string utf8(const std::u32string &s) {
-    return std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>().to_bytes(s);
+    std::string result;
+    result.reserve(s.size());
+    for (char32_t c : s) {
+        if (c > 0x10FFFF || (0xD800 <= c && c <= 0xDFFF)) {
+            c = 0xFFFD;
+        }
+        if (c < 0x80) {
+            result.push_back(static_cast<char>(c));
+        }
+        else if (c < 0x800) {
+            result.push_back(static_cast<char>(0xC0 | (c >> 6)));
+            result.push_back(static_cast<char>(0x80 | (c & 0x3F)));
+        }
+        else if (c < 0x10000) {
+            result.push_back(static_cast<char>(0xE0 | (c >> 12)));
+            result.push_back(static_cast<char>(0x80 | ((c >> 6) & 0x3F)));
+            result.push_back(static_cast<char>(0x80 | (c & 0x3F)));
+        }
+        else {
+            result.push_back(static_cast<char>(0xF0 | (c >> 18)));
+            result.push_back(static_cast<char>(0x80 | ((c >> 12) & 0x3F)));
+            result.push_back(static_cast<char>(0x80 | ((c >> 6) & 0x3F)));
+            result.push_back(static_cast<char>(0x80 | (c & 0x3F)));
+        }
+    }
+    return result;
 }
 
 /// Decodes UTF-8. Invalid sequences, surrogates and overlong encodings become U+FFFD instead of raising an error,

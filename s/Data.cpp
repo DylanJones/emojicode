@@ -24,8 +24,6 @@ extern "C" runtime::SimpleOptional<runtime::Integer> sDataFindFromIndex(Data *da
 }
 
 extern "C" runtime::SimpleOptional<String *> sDataAsString(Data *data) {
-    auto chars = reinterpret_cast<char *>(data->data.get());
-
     // TODO: validate
 
     auto *string = String::init();
