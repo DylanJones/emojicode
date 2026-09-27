@@ -79,6 +79,14 @@ void ASTVariableDeclaration::analyse(FunctionAnalyser *analyser) {
     id_ = var.id();
 }
 
+void ASTVariableDeclaration::analyseMemoryFlow(MFFunctionAnalyser *analyser) {
+    // An optional variable is declared without a value (see generate()), which may be released. Any other variable
+    // only has a value once one is assigned.
+    if (type_->type().type() == TypeType::Optional) {
+        analyser->recordVariableDeclaration(id_, type_->type());
+    }
+}
+
 ASTVariableDeclaration::~ASTVariableDeclaration() = default;
 
 void ASTVariableAssignment::analyse(FunctionAnalyser *analyser) {

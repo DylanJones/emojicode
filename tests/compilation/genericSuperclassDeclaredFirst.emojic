@@ -1,0 +1,35 @@
+💭 Each class is declared before its generic superclass, whose generic arguments mention the class's own generic
+💭 parameter (see genericSuperclassArguments, which declares them superclass-first).
+🐇 🐟🐚V 📈🐚V🍆🍆 🐐🐚V🍆 🍇
+  ❗️ 🐙 ➡️ V 🍇
+    ↩️ 🐽 🍫 👇❗️ 0❗️
+  🍉
+🍉
+
+🐇 🐐🐚T 📈🐚T🍆🍆 🦊🐚T 🍨🐚T🍆🍆 🍇
+  ❗️ 🐽 x T ➡️ 👌 🍇
+    ↩️ 🍩 👇❗️ ◀️ x
+  🍉
+🍉
+
+🐇 🦊🐚A⚪️ B⚪️🍆 🍇
+  🖍🆕 a A
+  🖍🆕 b B
+  🆕 🍼 a A 🍼 b B 🍇🍉
+  ❗️ 🍩 ➡️ A 🍇
+    ↩️ a
+  🍉
+  ❗️ 🍫 ➡️ B 🍇
+    ↩️ b
+  🍉
+🍉
+
+🏁 🍇
+  🆕🐟🐚🔢🍆 5 🍿 1 2 🍆❗️ ➡️ g
+  😀 🔡 🐙 g❗️❗️❗️
+  😀 🔡 🐽 🍫 g❗️ 1❗️❗️❗️
+  😀 🔡 🍩 g❗️❗️❗️
+  ↪️ 🐽 g 7❗️ 🍇
+    😀 🔤5 is less than 7🔤❗️
+  🍉
+🍉

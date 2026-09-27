@@ -241,8 +241,22 @@ struct TypeDescription {
     void *valueWitness;
 };
 
+/// Returns the number of entries describing the type at @p arg. Its generic arguments follow it, and those of a class
+/// begin with the paramOffset arguments to its superclass.
+runtime::Integer typeDescriptionLength(TypeDescription *arg) {
+    runtime::Integer count = 1;
+    for (runtime::Integer i = 0; i < count; i++, arg++) {
+        count += arg->rtti->paramOffset + arg->rtti->paramCount;
+    }
+    return count;
+}
+
 bool checkGenericArgs(TypeDescription **argsl, TypeDescription **argsr, int16_t argsCount, int16_t argsOffset) {
-    *argsl += argsOffset, *argsr += argsOffset;
+    // The arguments to the superclass follow from the class's own arguments.
+    for (int16_t i = 0; i < argsOffset; i++) {
+        *argsl += typeDescriptionLength(*argsl);
+        *argsr += typeDescriptionLength(*argsr);
+    }
     for (int16_t i = 0; i < argsCount; i++) {
         auto l = *((*argsl)++), r = *((*argsr)++);
         if (l.rtti != r.rtti || l.optional != r.optional) return false;
@@ -258,16 +272,12 @@ extern "C" bool ejcCheckGenericArgs(TypeDescription *argsl, TypeDescription *arg
 }
 
 extern "C" runtime::Integer ejcTypeDescriptionLength(TypeDescription *arg) {
-    runtime::Integer count = 1;
-    for (runtime::Integer i = 0; i < count; i++) {
-        count += (arg++)->rtti->paramCount;
-    }
-    return count;
+    return typeDescriptionLength(arg);
 }
 
 extern "C" TypeDescription* ejcIndexTypeDescription(TypeDescription *arg, runtime::Integer index) {
     for (runtime::Integer i = 0; i < index; i++) {
-        index += (arg++)->rtti->paramCount;
+        arg += typeDescriptionLength(arg);
     }
     return arg;
 }

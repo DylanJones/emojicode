@@ -1,0 +1,38 @@
+💭 A specialization may call an overloaded function if only one overload accepts the arguments. It must not if
+💭 several do, as generic code, whose arguments are of generic types, may have chosen another one.
+🐇 🔧 🍇
+  🐇❗️ 🎚 n 🔢 ➡️ 🔡 🍇
+    ↩️ 🔤🎚 with 🔢🔤
+  🍉
+  🐇❗️ 🎚 s 🔡 ➡️ 🔡 🍇
+    ↩️ 🔤🎚 with 🔡🔤
+  🍉
+
+  🐇❗️ 🎛 x ⚪️ ➡️ 🔡 🍇
+    ↩️ 🔤🎛 with ⚪️🔤
+  🍉
+  🐇❗️ 🎛 n 🔢 ➡️ 🔡 🍇
+    ↩️ 🔤🎛 with 🔢🔤
+  🍉
+🍉
+
+🕊 🔲🐚T⚪️🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+
+  💭 Only the 🎚 for 🔢 accepts 3, in generic code and in the specialization for 🔢.
+  ❗️ 🅰️ ➡️ 🔡 🍇
+    ↩️ 🎚🐇🔧 3❗️
+  🍉
+
+  💭 Generic code calls the 🎛 for ⚪️ with value. Both accept 🔢, so the specialization for 🔢 is not used.
+  ❗️ 🅱️ ➡️ 🔡 🍇
+    ↩️ 🎛🐇🔧 value❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🔲🐚🔢🍆 1❗️ ➡️ box
+  😀 🅰️box❗️❗️
+  😀 🅱️box❗️❗️
+🍉

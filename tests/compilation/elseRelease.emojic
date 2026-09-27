@@ -1,0 +1,125 @@
+💭 Variables declared in the 🙅 block of ↪️ are released like those of the other blocks.
+🐇 🐕 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ❗️ 🗣 ➡️ 🔡 🍇
+    ↩️ name
+  🍉
+
+  ♻️ 🍇
+    😀 🔤released 🧲name🧲🔤❗️
+  🍉
+🍉
+
+🐇 🐈 🍇
+  🐇❗️ 🅰️ n 🔢 🍇
+    ↪️ n 🙌 0 🍇
+      🆕🐕 🔤if🔤❗️ ➡️ d
+    🍉
+    🙅↪️ n 🙌 1 🍇
+      🆕🐕 🔤else if🔤❗️ ➡️ d
+    🍉
+    🙅 🍇
+      🆕🐕 🔤else🔤❗️ ➡️ d
+    🍉
+    😀 🔤end of 🅰️🔤❗️
+  🍉
+
+  🐇❗️ 🅱️ c 👌 ➡️ 🔢 🍇
+    🆕🐕 🔤outer🔤❗️ ➡️ o
+    ↪️ c 🍇
+      ↩️ 1
+    🍉
+    🙅 🍇
+      🆕🐕 🔤inner🔤❗️ ➡️ i
+      ↩️ 2
+    🍉
+  🍉
+
+  🐇❗️ 🅾️ c 👌 ➡️ 🐕 🍇
+    ↪️ c 🍇
+      ↩️ 🆕🐕 🔤if🔤❗️
+    🍉
+    🙅 🍇
+      🆕🐕 🔤returned🔤❗️ ➡️ d
+      ↩️ d
+    🍉
+  🍉
+
+  🐇❗️ 🆎 🍇
+    🆕🍨🐚🐕🍆❗️ ➡️ 🖍🆕 list
+    🆕🐕 🔤first🔤❗️ ➡️ 🖍🆕 outer
+    ↪️ 👎 🍇🍉
+    🙅 🍇
+      🆕🐕 🔤listed🔤❗️ ➡️ d
+      🐻 list d❗️
+      🆕🐕 🔤second🔤❗️ ➡️ e
+      e ➡️ 🖍outer
+    🍉
+    😀 🔤end of 🆎🔤❗️
+  🍉
+
+  💭 b reuses the ID of a, and is declared without a value.
+  🐇❗️ 🌙 c 👌 🍇
+    ↪️ c 🍇
+      🆕🐕 🔤if🔤❗️ ➡️ a
+    🍉
+    🙅 🍇
+      🖍🆕 b 🍬🐕
+      😀 🔤in else🔤❗️
+    🍉
+    😀 🔤end of 🌙🔤❗️
+  🍉
+
+  💭 The same, but b may be assigned a value.
+  🐇❗️ 🌗 c 👌 d 👌 🍇
+    ↪️ c 🍇
+      🆕🐕 🔤if🔤❗️ ➡️ a
+    🍉
+    🙅 🍇
+      🖍🆕 b 🍬🐕
+      ↪️ d 🍇
+        🆕🐕 🔤else value🔤❗️ ➡️ 🖍b
+      🍉
+      😀 🔤in else🔤❗️
+    🍉
+    😀 🔤end of 🌗🔤❗️
+  🍉
+
+  🐇❗️ 🆑 🍇
+    🔂 i 🆕⏩ 0 3❗️ 🍇
+      ↪️ i 🙌 0 🍇🍉
+      🙅 🍇
+        🆕🐕 🔤loop 🧲🔡 i 10❗️🧲🔤❗️ ➡️ d
+        ↪️ i 🙌 1 🍇🍉
+        🙅 🍇
+          🆕🐕 🔤nested🔤❗️ ➡️ n
+        🍉
+      🍉
+    🍉
+  🍉
+🍉
+
+🏁 🍇
+  🅰️🐇🐈 0❗️
+  🅰️🐇🐈 1❗️
+  🅰️🐇🐈 2❗️
+  😀 🔤--🔤❗️
+  🅱️🐇🐈👍❗️ ➡️ a
+  😀 🔤--🔤❗️
+  🅱️🐇🐈👎❗️ ➡️ b
+  😀 🔤--🔤❗️
+  😀 🗣🅾️🐇🐈👎❗️❗️❗️
+  😀 🔤--🔤❗️
+  🆎🐇🐈❗️
+  😀 🔤--🔤❗️
+  🆑🐇🐈❗️
+  😀 🔤--🔤❗️
+  🌙🐇🐈 👍❗️
+  🌙🐇🐈 👎❗️
+  🌗🐇🐈 👎 👎❗️
+  🌗🐇🐈 👎 👍❗️
+  😀 🔤--🔤❗️
+🍉

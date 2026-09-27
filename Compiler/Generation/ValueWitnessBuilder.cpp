@@ -41,11 +41,9 @@ llvm::Value* unboxSimple(FunctionCodeGenerator &fg, llvm::Value *box, const Type
 
 /// Retains the value of @p type at @p ptr.
 void retainAt(FunctionCodeGenerator &fg, llvm::Value *ptr, const Type &type) {
-    if (!type.isManaged()) {
-        return;
+    if (type.isManaged()) {
+        fg.retainByReference(ptr, type);
     }
-    fg.retain(fg.isManagedByReference(type) ? ptr : fg.builder().CreateLoad(fg.typeHelper().llvmTypeFor(type), ptr),
-              type);
 }
 
 llvm::Function* createWitnessFunction(CodeGenerator *generator, llvm::FunctionType *type, const std::string &name) {
@@ -72,6 +70,8 @@ llvm::Constant* ValueWitnessBuilder::witnessFor(const Type &otype) {
         buildLoad(type, name + ".load"),
         buildStore(type, name + ".store"),
         buildRelease(type, name + ".release"),
+        buildRetain(type, name + ".retain"),
+        llvm::ConstantInt::getBool(generator_->context(), !type.isManaged()),
     });
     auto variable = new llvm::GlobalVariable(*generator_->module(), typeHelper.valueWitness(), true,
                                              llvm::GlobalValue::PrivateLinkage, witness, name);
@@ -188,6 +188,15 @@ llvm::Function* ValueWitnessBuilder::buildRelease(const Type &type, const std::s
     if (type.isManaged()) {
         fg.releaseByReference(fn->getArg(0), type);
     }
+    fg.builder().CreateRetVoid();
+    return fn;
+}
+
+llvm::Function* ValueWitnessBuilder::buildRetain(const Type &type, const std::string &name) {
+    auto fn = createWitnessFunction(generator_, generator_->typeHelper().boxRetainRelease(), name);
+    FunctionCodeGenerator fg(fn, generator_, std::make_unique<TypeContext>());
+    fg.createEntry();
+    retainAt(fg, fn->getArg(0), type);
     fg.builder().CreateRetVoid();
     return fn;
 }

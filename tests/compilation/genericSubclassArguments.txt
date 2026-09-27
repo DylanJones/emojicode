@@ -1,0 +1,15 @@
+gift g 1
+bow b 2
+swap s 3
+candy c 9
+box plain 4
+bow b 5
+5
+5
+5
+bow with box
+candy with box
+gift with gift
+11
+gift g 7
+swap x 8

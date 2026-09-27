@@ -40,6 +40,7 @@ Type ASTStaticType::analyse(ExpressionAnalyser *analyser, const TypeExpectation 
     if (type_->type().type() == TypeType::GenericVariable || type_->type().type() == TypeType::LocalGenericVariable) {
         throw CompilerError(position(), "Generic Arguments are not available dynamically.");
     }
+    analyser->usesGenericArgumentsOf(type_->type());  // generate() describes the type at run time.
     return type_->type();
 }
 

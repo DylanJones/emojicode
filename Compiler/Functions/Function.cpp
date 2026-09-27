@@ -33,7 +33,12 @@ llvm::FunctionType* FunctionReification::functionType() {
 }
 
 TypeContext Function::typeContext() {
-    auto type = owner_ == nullptr ? Type::noReturn() : specializedCalleeType_.value_or(owner_->type());
+    // A closure written in a specialization has the specialization's callee type, like 👇 it captures.
+    std::optional<Type> specializedCallee;
+    for (auto f = this; f != nullptr && !specializedCallee; f = f->enclosingFunction_) {
+        specializedCallee = f->specializedCalleeType_;
+    }
+    auto type = owner_ == nullptr ? Type::noReturn() : specializedCallee.value_or(owner_->type());
     if (type.type() == TypeType::ValueType || type.type() == TypeType::Enum) {
         type.setReference();
         type.setMutable(mutating());
