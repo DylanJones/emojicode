@@ -1,5 +1,7 @@
 # Emojicode
 
+Follow [AGENTS.md](AGENTS.md) for issue, PR, and review handoffs.
+
 ## Commits
 
 Every commit message starts with an emoji as its first character, e.g. `🦁 Fix sorting edge cases`. Choose one
