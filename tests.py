@@ -77,6 +77,7 @@ compilation_tests = [
     "selfConstraintCalls",
     "numericMatrix",
     "specializationCycles",
+    "specializationClosures",
     "directCalls",
     "genericStorage",
     "genericOptionalStorage",
@@ -108,6 +109,7 @@ compilation_tests = [
     "genericToConstraintOptional",
     "genericsInferenceValueType",
     "genericsInferenceClass",
+    "genericsInferenceTypeDescription",
     "genericRecursion",
     "genericSuperclassArguments",
     "genericSuperclassDeclaredFirst",
@@ -123,7 +125,11 @@ compilation_tests = [
     "closureCaptureValueType",
     "closureCaptureThisClass",
     "closureCaptureNonEscaping",
+    "closureNestedCaptureThis",
     "closureGenerics",
+    "closureGenericValueType",
+    "closureGenericTypeMethod",
+    "closureGenericArgsCapture",
     "closureError",
     "callableBoxing",
     "errorUnwrap",
@@ -207,10 +213,15 @@ unoptimized_tests = [
     "specializationFallback",
     "specializationScoping",
     "specializationCycles",
+    "specializationClosures",
     "remoteBoxRelease",
     "boxValueSemantics",
     "borrowedBoxes",
     "genericStorage",
+    "closureGenericValueType",
+    "closureGenericTypeMethod",
+    "closureGenericArgsCapture",
+    "genericsInferenceTypeDescription",
     "errorProneGenericArgs",
 ]
 # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
@@ -226,6 +237,7 @@ specialization_tests = [
     "selfConstraint",
     "specializationFallback",
     "numericMatrix",
+    "specializationClosures",
 ]
 # Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions
 # whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies. No function
