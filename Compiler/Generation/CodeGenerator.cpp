@@ -118,8 +118,38 @@ void CodeGenerator::generate() {
         generateFunctions(package, true);
     }
     generateFunctions(compiler()->mainPackage(), false);
+    generateReferencedImportedFunctions();
 
     optimizationManager_->optimize(module());
+}
+
+void CodeGenerator::generateReferencedImportedFunctions() {
+    // Generating a body can reference further imported functions, so repeat until no new one is referenced.
+    bool generated;
+    do {
+        generated = false;
+        for (auto function : importedFunctions_) {
+            function->eachReification([&](auto &reification) {
+                auto fn = reification.entity.function;
+                if (fn != nullptr && fn->isDeclaration() && !fn->use_empty()) {
+                    generateReification(function, ReificationContext(*function, reification), fn);
+                    generated = true;
+                }
+            });
+        }
+    } while (generated);
+
+    // A declaration cannot be available_externally, and nothing calls these.
+    for (auto function : importedFunctions_) {
+        function->eachReification([&](auto &reification) {
+            auto fn = reification.entity.function;
+            if (fn != nullptr && fn->isDeclaration()) {
+                fn->eraseFromParent();
+                reification.entity.function = nullptr;
+            }
+        });
+    }
+    importedFunctions_.clear();
 }
 
 void CodeGenerator::emit(bool ir, const std::string &outPath) {
@@ -157,33 +187,42 @@ void CodeGenerator::emit(bool ir, const std::string &outPath) {
 }
 
 void CodeGenerator::generateFunctions(Package *package, bool imported) {
-    for (auto &valueType : package->valueTypes()) {
-        valueType->eachFunction([&](auto *function) {
+    auto generate = [this, imported](Function *function) {
+        if (function->isExternal()) {
+            return;
+        }
+        if (imported) {
+            importedFunctions_.emplace_back(function);
+        }
+        else {
             generateFunction(function);
-        });
+        }
+    };
+    for (auto &valueType : package->valueTypes()) {
+        valueType->eachFunction(generate);
     }
     for (auto &klass : package->classes()) {
-        klass->eachFunction([&](auto *function) {
-            generateFunction(function);
-        });
+        klass->eachFunction(generate);
     }
     for (auto &function : package->functions()) {
-        generateFunction(function.get());
+        generate(function.get());
     }
     for (auto &specialization : package->specializations()) {
-        generateFunction(specialization.get());
+        generate(specialization.get());
     }
 }
 
 void CodeGenerator::generateFunction(Function *function) {
-    if (!function->isExternal()) {
-        function->eachReification([this, function](auto &reification) {
-            typeHelper_.withReificationContext(ReificationContext(*function, reification), [&] {
-                FunctionCodeGenerator(function, reification.entity.function, this).generate();
-            });
-            optimizationManager_->optimize(reification.entity.function);
-        });
-    }
+    function->eachReification([this, function](auto &reification) {
+        generateReification(function, ReificationContext(*function, reification), reification.entity.function);
+    });
+}
+
+void CodeGenerator::generateReification(Function *function, const ReificationContext &context, llvm::Function *fn) {
+    typeHelper_.withReificationContext(context, [&] {
+        FunctionCodeGenerator(function, fn, this).generate();
+    });
+    optimizationManager_->optimize(fn);
 }
 
 llvm::Function* CodeGenerator::createLlvmFunction(Function *function, ReificationContext reificationContext) {

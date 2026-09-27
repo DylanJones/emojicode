@@ -218,8 +218,8 @@ specialization_tests = [
     "numericMatrix",
 ]
 # Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions
-# whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies. Lines
-# starting with # are comments.
+# whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies. No function
+# whose name matches the REGEX of a line "! REGEX" may be defined. Lines starting with # are comments.
 ir_tests = [
     "directCalls",
 ]
@@ -228,8 +228,10 @@ host_tests = [
     "ffiHostLib",
 ]
 # Programs that import a package of the same name with "Package" appended, which is compiled first. They test code
-# that is only generated in importers, like the bodies of inlined methods.
+# that is only generated in importers, like the bodies of inlined methods. Their IR is checked against NAME.ir and
+# NAME.specializations, if present.
 importing_tests = [
+    "lazyInline",
     "inlineClosure",
     "importedSpecialization",
 ]
@@ -348,15 +350,25 @@ def ir_test(name):
         with source_lock(source_path):
             run([emojicodec, source_path, '--emit-llvm', '-o', os.path.join(directory, name)], check=True)
         ir = open(os.path.join(directory, name + ".ll"), "r", encoding='utf-8').read()
+    check_ir(name, ir, os.path.join(dist.source, "tests", "compilation", name + ".ir"))
+
+
+def check_ir(name, ir, check_path):
+    """Checks the IR against the file at check_path (see ir_tests)."""
     functions = {m.group(1): m.group(2) for m in
                  re.finditer(r'^define [^\n]*@"?([^"(\s]+)"?\([^\n]*\{\n(.*?)^\}', ir, re.S | re.M)}
     bodies = []
     failed = False
-    check_path = os.path.join(dist.source, "tests", "compilation", name + ".ir")
     for line in open(check_path, "r", encoding='utf-8').read().splitlines():
         if not line or line.startswith('#'):
             continue
         kind, pattern = line[0], line[2:]
+        if kind == '!':
+            for function_name in functions:
+                if re.search(pattern, function_name):
+                    log("{0}: unexpectedly defined".format(function_name))
+                    failed = True
+            continue
         if kind == '@':
             bodies = [(n, b) for n, b in functions.items() if re.search(pattern, n)]
             if not bodies:
@@ -400,14 +412,18 @@ def importing_test(name):
          os.path.join(directory, package + ".🍇"), '-O'], check=True)
     run([emojicodec, '-S', os.path.join(directory, "packages"), os.path.join(directory, name + ".emojic"), '-O'],
         check=True)
-    # The specializations of the package's functions that the program creates, if listed.
+    # The specializations of the package's functions that the program creates and the functions it defines, if listed.
     exp_path = os.path.join(directory, name + ".specializations")
-    if os.path.exists(exp_path):
+    check_path = os.path.join(directory, name + ".ir")
+    if os.path.exists(exp_path) or os.path.exists(check_path):
         with tempfile.TemporaryDirectory() as ir_directory:
             run([emojicodec, '-S', os.path.join(directory, "packages"), os.path.join(directory, name + ".emojic"),
                  '--emit-llvm', '-o', os.path.join(ir_directory, name)], check=True)
             ir = open(os.path.join(ir_directory, name + ".ll"), "r", encoding='utf-8').read()
-        check_specializations(name, ir, exp_path)
+        if os.path.exists(exp_path):
+            check_specializations(name, ir, exp_path)
+        if os.path.exists(check_path):
+            check_ir(name, ir, check_path)
     completed = run([os.path.join(directory, name)], stdout=PIPE)
     output = completed.stdout.decode('utf-8')
     if output != open(os.path.join(directory, name + ".txt"), "r", encoding='utf-8').read() or \
