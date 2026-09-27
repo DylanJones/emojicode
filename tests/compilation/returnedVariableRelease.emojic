@@ -71,6 +71,20 @@
     ↩️ 🆕💰 🔤other🔤❗️
   🍉
 
+  💭 b reuses the ID of a, and is declared without a value when the second ↩️ returns.
+  🐇❗️ 🌾 c 👌 d 👌 ➡️ 🍬💰 🍇
+    ↪️ c 🍇
+      🆕💰 🔤early🔤❗️ ➡️ a
+      ↩️ a
+    🍉
+    🖍🆕 b 🍬💰
+    ↪️ d 🍇
+      ↩️ 🤷‍♀️
+    🍉
+    🆕💰 🔤late🔤❗️ ➡️ 🖍b
+    ↩️ b
+  🍉
+
   🐇❗️ 🌀 ➡️ 💰 🍇
     🔂 i 🆕⏩ 0 3❗️ 🍇
       🆕💰 🔡 i❗️❗️ ➡️ l
@@ -96,5 +110,9 @@
   🌳🐇🐟 👍❗️
   😀 🔤--🔤❗️
   🌀🐇🐟❗️
+  😀 🔤--🔤❗️
+  🌾🐇🐟 👎 👍❗️
+  🌾🐇🐟 👎 👎❗️
+  🌾🐇🐟 👍 👎❗️
   😀 🔤end🔤❗️
 🍉

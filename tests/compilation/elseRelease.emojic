@@ -61,6 +61,33 @@
     😀 🔤end of 🆎🔤❗️
   🍉
 
+  💭 b reuses the ID of a, and is declared without a value.
+  🐇❗️ 🌙 c 👌 🍇
+    ↪️ c 🍇
+      🆕🐕 🔤if🔤❗️ ➡️ a
+    🍉
+    🙅 🍇
+      🖍🆕 b 🍬🐕
+      😀 🔤in else🔤❗️
+    🍉
+    😀 🔤end of 🌙🔤❗️
+  🍉
+
+  💭 The same, but b may be assigned a value.
+  🐇❗️ 🌗 c 👌 d 👌 🍇
+    ↪️ c 🍇
+      🆕🐕 🔤if🔤❗️ ➡️ a
+    🍉
+    🙅 🍇
+      🖍🆕 b 🍬🐕
+      ↪️ d 🍇
+        🆕🐕 🔤else value🔤❗️ ➡️ 🖍b
+      🍉
+      😀 🔤in else🔤❗️
+    🍉
+    😀 🔤end of 🌗🔤❗️
+  🍉
+
   🐇❗️ 🆑 🍇
     🔂 i 🆕⏩ 0 3❗️ 🍇
       ↪️ i 🙌 0 🍇🍉
@@ -89,5 +116,10 @@
   🆎🐇🐈❗️
   😀 🔤--🔤❗️
   🆑🐇🐈❗️
+  😀 🔤--🔤❗️
+  🌙🐇🐈 👍❗️
+  🌙🐇🐈 👎❗️
+  🌗🐇🐈 👎 👎❗️
+  🌗🐇🐈 👎 👍❗️
   😀 🔤--🔤❗️
 🍉

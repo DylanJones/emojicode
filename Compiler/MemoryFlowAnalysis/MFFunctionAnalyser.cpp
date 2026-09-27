@@ -108,12 +108,15 @@ void MFFunctionAnalyser::popScope(ASTBlock *block) {
         if (var.isParam) {
             function_->setParameterMFType(var.param, var.flowCategory);
         }
-        else if (!var.flowCategory.isEscaping()) {
-            for (auto init : var.inits) {
-                init->allocateOnStack();
+        else {
+            if (!var.flowCategory.isEscaping()) {
+                for (auto init : var.inits) {
+                    init->allocateOnStack();
+                }
             }
+            // A variable in a later scope may get the same ID, and must not inherit the type or flow category.
+            var = MFLocalVariable();
         }
-        var.inits.clear();
     }
 }
 

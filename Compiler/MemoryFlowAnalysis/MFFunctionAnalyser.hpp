@@ -78,6 +78,9 @@ public:
     /// @returns The IDs of the variables whose values are returned without being retained (see recordVariableGet()).
     /// Only this return statement must not release them: on any other path they must be released as usual.
     std::vector<size_t> analyseReturnValue(ASTExpr *value);
+    /// Records the declaration of a variable of type @p type that has a value from the start, i.e. an optional one
+    /// without a value, so that it is released at any return from now on.
+    void recordVariableDeclaration(size_t id, Type type) { scope_.getVariable(id).type = std::move(type); }
     /// Records that the variable @p id of the closure being analysed is a captured variable, whose value is owned by
     /// the closure's captures. Must be called before analyse().
     void recordCapture(size_t id) { scope_.getVariable(id).isCaptured = true; }
