@@ -40,6 +40,9 @@ Type ASTInitialization::analyse(ExpressionAnalyser *analyser) {
     else {
         initializer_ = init;
     }
+    // The generic arguments of the type may have been inferred from the arguments. Code generation uses the type
+    // expression's type, e.g. to pass the generic arguments to the initializer, so it must include them.
+    typeExpr_->setInferredType(type);
 
     // Only value types are specialized, as classes dispatch initializers dynamically.
     analyser->analyseFunctionCall(&args_, type, init, initType_ == InitType::ValueType ? &initializer_ : nullptr);
@@ -94,10 +97,11 @@ void ASTInitialization::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCa
     if (initType_ == InitType::Enum) {
         return;
     }
+    // Analyses the initializer first if necessary, as its flow category for this is only known then.
+    analyser->analyseFunctionCall(&args_, typeExpr_.get(), initializer_);
     if (!type.isEscaping() && initType_ == InitType::Class && !initializer_->memoryFlowTypeForThis().isEscaping()) {
         initType_ = InitType::ClassStack;
     }
-    analyser->analyseFunctionCall(&args_, typeExpr_.get(), initializer_);
 }
 
 void ASTInitialization::allocateOnStack() {

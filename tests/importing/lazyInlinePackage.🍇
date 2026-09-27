@@ -1,0 +1,44 @@
+💭 Methods short enough to be inlined into importers. An importer only generates the bodies of those it uses.
+🌍 🕊 🐡 🍇
+  🖍🆕 value 🔢
+
+  🆕 🍼 value 🔢 🍇🍉
+
+  💭 Called by the program.
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ 🎈👇❗️ ➕ 1
+  🍉
+
+  💭 Only called by 📏.
+  ❗️ 🎈 ➡️ 🔢 🍇
+    ↩️ value ✖️ 2
+  🍉
+
+  💭 Never called.
+  ❗️ 🔮 ➡️ 🔢 🍇
+    ↩️ value ➖ 1
+  🍉
+🍉
+
+🌍 🐇 🦈 🍇
+  🆕 🍇🍉
+
+  💭 Only referenced by the class table of the program's subclass.
+  ❗️ 🗣 ➡️ 🔡 🍇
+    ↩️ 🔤🦈🔤
+  🍉
+
+  💭 Never called, but in the class table.
+  ❗️ 🔮 ➡️ 🔡 🍇
+    ↩️ 🔤🔮🔤
+  🍉
+🍉
+
+🌍 🐇 🐙 🍇
+  🆕 🍇🍉
+
+  💭 Never called.
+  ❗️ 🔮 ➡️ 🔡 🍇
+    ↩️ 🔤🐙🔤
+  🍉
+🍉

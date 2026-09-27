@@ -17,6 +17,48 @@
 
 namespace EmojicodeCompiler {
 
+namespace {
+
+/// A class type holds the arguments to its superclass as the class declaration writes them, followed by its own
+/// arguments. The former can therefore mention generic variables of the class or its superclasses, which stand for
+/// later arguments: 🎁🐚🔢🍆 of 🐇 🎁🐚V⚪️🍆 📦🐚🔡 V🍆 holds [🔡, V, 🔢].
+/// This replaces these variables in @p type, the argument at @p slot of @p args, with the arguments they stand for.
+/// Variables that don't refer to a later argument belong to the code the type appears in and are kept.
+Type resolveSuperArgument(const Type &type, const std::vector<Type> &args, size_t slot, size_t superCount,
+                          Class *klass) {
+    switch (type.type()) {
+        case TypeType::Optional:
+            return resolveSuperArgument(type.optionalType(), args, slot, superCount, klass).optionalized();
+        case TypeType::Box:
+            return resolveSuperArgument(type.unboxed(), args, slot, superCount, klass).unboxed()
+                .boxedFor(type.boxedFor());
+        case TypeType::GenericVariable: {
+            auto index = type.genericVariableIndex();
+            auto constraint = dynamic_cast<Class *>(type.resolutionConstraint());
+            if (constraint == nullptr || !klass->inheritsFrom(constraint) || index <= slot || index >= args.size()) {
+                return type;
+            }
+            if (index < superCount) {
+                return resolveSuperArgument(args[index], args, index, superCount, klass);
+            }
+            return args[index];
+        }
+        default:
+            break;
+    }
+    if (!type.canHaveGenericArguments()) {
+        return type;
+    }
+    Type resolved = type;
+    for (size_t i = 0; i < type.genericArguments().size(); i++) {
+        resolved.setGenericArgument(i, resolveSuperArgument(type.genericArguments()[i], args, slot, superCount,
+                                                            klass));
+    }
+    return resolved;
+}
+
+}  // namespace
+
 void TypeDescriptionGenerator::addType(const Type &type) {
     llvm::Constant *genericInfo;
     auto notype = type.unoptionalized().unboxed();
@@ -67,8 +109,10 @@ void TypeDescriptionGenerator::addType(const Type &type) {
     types_.emplace_back(strct);
 
     if (!notype.canHaveGenericArguments()) return;
-    for (auto &arg : notype.genericArguments()) {
-        addType(arg);
+    auto &args = notype.genericArguments();
+    auto superCount = notype.type() == TypeType::Class ? notype.klass()->superGenericArguments().size() : 0;
+    for (size_t i = 0; i < args.size(); i++) {
+        addType(i < superCount ? resolveSuperArgument(args[i], args, i, superCount, notype.klass()) : args[i]);
     }
 }
 

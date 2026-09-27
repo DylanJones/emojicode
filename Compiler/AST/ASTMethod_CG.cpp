@@ -72,7 +72,7 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
                     store->setMetadata(llvm::LLVMContext::MD_tbaa, accessTag);
                 }
                 if (type.isManaged()) {
-                    fg->retain(fg->isManagedByReference(type) ? ptr : val, type);
+                    fg->retainByReference(ptr, type);
                 }
                 return nullptr;
             }
@@ -89,12 +89,26 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
             }
             case BuiltInType::Release: {
                 auto type = args_.genericArguments().front()->type();
-                if (LLVMTypeHelper::isErased(type)) {
-                    auto ptr = buildMemoryAddress(fg, v, args_.args().front()->generate(fg), type);
-                    fg->buildReleaseErased(ptr, fg->buildTypeDescriptionEntry(type));
+                // The arguments are evaluated whether or not there is anything to release, as in erased code.
+                auto offset = args_.args()[0]->generate(fg);
+                auto count = args_.args().size() == 2 ? args_.args()[1]->generate(fg) : nullptr;  // ♻️ offset count
+                if (!LLVMTypeHelper::isErased(type) && !type.isManaged()) {
+                    return nullptr;
                 }
-                else if (type.isManaged()) {
-                    auto ptr = buildMemoryAddress(fg, v, args_.args().front()->generate(fg), type);
+                auto ptr = buildMemoryAddress(fg, v, offset, type);
+                if (LLVMTypeHelper::isErased(type)) {
+                    if (count != nullptr) {
+                        fg->buildReleaseErased(ptr, fg->buildTypeDescriptionEntry(type), count);
+                    }
+                    else {
+                        fg->buildReleaseErased(ptr, fg->buildTypeDescriptionEntry(type));
+                    }
+                }
+                else if (count != nullptr) {
+                    fg->createForEachValue(ptr, count, fg->sizeOf(fg->typeHelper().llvmTypeFor(type)),
+                                           [&](llvm::Value *valuePtr) { fg->releaseByReference(valuePtr, type); });
+                }
+                else {
                     fg->releaseByReference(ptr, type);
                 }
                 return nullptr;
@@ -105,6 +119,25 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
                                             buildAddOffsetAddress(fg, args_.args()[1]->generate(fg),
                                                                   args_.args()[2]->generate(fg)),
                                             llvm::MaybeAlign(), args_.args()[3]->generate(fg));
+                return nullptr;
+            }
+            case BuiltInType::MemoryCopy: {
+                auto type = args_.genericArguments().front()->type();
+                auto destination = buildAddOffsetAddress(fg, v, args_.args()[0]->generate(fg));
+                auto source = buildAddOffsetAddress(fg, args_.args()[1]->generate(fg), args_.args()[2]->generate(fg));
+                auto count = args_.args()[3]->generate(fg);
+                if (LLVMTypeHelper::isErased(type)) {
+                    fg->buildCopyErased(destination, source, count, fg->buildTypeDescriptionEntry(type));
+                    return nullptr;
+                }
+                auto size = fg->sizeOf(fg->typeHelper().llvmTypeFor(type));
+                fg->builder().CreateMemMove(destination, llvm::MaybeAlign(), source, llvm::MaybeAlign(),
+                                            fg->builder().CreateMul(size, count));
+                if (type.isManaged()) {
+                    fg->createForEachValue(destination, count, size, [&](llvm::Value *ptr) {
+                        fg->retainByReference(ptr, type);
+                    });
+                }
                 return nullptr;
             }
             case BuiltInType::MemorySet: {
@@ -150,7 +183,7 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
 
     std::vector<llvm::Value *> supplArgs;
     auto tdg = TypeDescriptionGenerator(fg, TypeDescriptionGenerator::User::Function);
-    if (isTypeMethod(method_) && method_->owner()->storesGenericArgs()) {
+    if (takesTypeGenericArgs(method_)) {
         supplArgs.emplace_back(tdg.generate(callee_->expressionType().typeOfTypeValue().selfResolvedGenericArgs()));
     }
 

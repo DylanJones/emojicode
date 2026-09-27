@@ -28,10 +28,11 @@ namespace EmojicodeCompiler {
 const std::u32string kDefaultNamespace = std::u32string(1, E_HOUSE_BUILDING);
 
 /// Literal constraints (e.g. ⚪️) are analysed when parsed, so all constraints must be checked, not only the first.
+/// A type definition without generic parameters has none to wait for, but a class may still inherit generic arguments.
 template <typename T>
 static bool constraintsAnalysed(const T *generic) {
     auto &params = generic->genericParameters();
-    return !params.empty() && std::all_of(params.begin(), params.end(), [](auto &param) {
+    return std::all_of(params.begin(), params.end(), [](auto &param) {
         return param.constraint->wasAnalysed();
     });
 }
@@ -199,8 +200,11 @@ bool Type::canHaveProtocol() const {
 
 void Type::sortMultiProtocolType() {
     assert(type() == TypeType::MultiProtocol);
-    std::sort(genericArguments_.begin(), genericArguments_.end(), [](const Type &a, const Type &b) {
-        return a.protocol() < b.protocol();
+    // By name, not by address, which differs from run to run: The order determines the mangled names of
+    // specializations and the layout of the conformance tables, which a package and its importers must agree on.
+    std::stable_sort(genericArguments_.begin(), genericArguments_.end(), [](const Type &a, const Type &b) {
+        return std::make_pair(a.protocol()->package()->name(), a.protocol()->name()) <
+            std::make_pair(b.protocol()->package()->name(), b.protocol()->name());
     });
 }
 
@@ -317,15 +321,25 @@ Type Type::resolveOn(const TypeContext &typeContext) const {
     }
 
     if (typeContext.calleeType().canHaveGenericArguments()) {
+        // The arguments for the superclasses, which come first, are those of the superclass declarations and refer to
+        // generic parameters that come later, so they are resolved again. The type's own arguments are types of the
+        // code that wrote it, which may be generic variables of the type or one of its superclasses too, e.g. T in
+        // 🌴🐚T🍆 written in its superclass 🎄🐚T🍆. They must not be resolved again, which would never end.
+        auto superArgumentCount = typeContext.calleeType().typeDefinition()->superGenericArguments().size();
         while (t.unboxedType() == TypeType::GenericVariable  &&
                typeContext.calleeType().typeDefinition()->canResolve(t.resolutionConstraint())) {
-            Type tn = typeContext.calleeType().genericArguments()[t.genericVariableIndex()];
+            auto index = t.genericVariableIndex();
+            Type tn = typeContext.calleeType().genericArguments()[index];
             if (tn.unboxedType() == TypeType::GenericVariable
-                && tn.genericVariableIndex() == t.genericVariableIndex()
+                && tn.genericVariableIndex() == index
                 && tn.resolutionConstraint() == t.resolutionConstraint()) {
                 break;
             }
             t = tn;
+            if (index >= superArgumentCount || t.unboxedType() != TypeType::GenericVariable ||
+                t.genericVariableIndex() <= index) {
+                break;
+            }
         }
     }
 
@@ -405,9 +419,9 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
         });
     }
 
-    if ((this->type() == TypeType::GenericVariable && to.type() == TypeType::GenericVariable) ||
-        (this->type() == TypeType::LocalGenericVariable && to.type() == TypeType::LocalGenericVariable)) {
-        // A variable of the calling code, e.g. its own generic parameter, can be inferred for one of the callee.
+    if (type() == TypeType::GenericVariable || type() == TypeType::LocalGenericVariable) {
+        // A variable of the calling code, e.g. its own generic parameter or one of its type, can be inferred for one
+        // of the callee. It must not be resolved to its constraint first, which an F-bounded constraint rejects.
         if (to.type() == TypeType::GenericVariable && inf != nullptr && inf->inferringType()) {
             inf->addType(to.genericVariableIndex(), *this, tc);
             return true;
@@ -416,6 +430,9 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
             inf->addLocal(to.genericVariableIndex(), *this, tc);
             return true;
         }
+    }
+    if ((this->type() == TypeType::GenericVariable && to.type() == TypeType::GenericVariable) ||
+        (this->type() == TypeType::LocalGenericVariable && to.type() == TypeType::LocalGenericVariable)) {
         if (this->genericVariableIndex() == to.genericVariableIndex() && this->typeDefinition_ == to.typeDefinition_ &&
             this->localResolutionConstraint_ == to.localResolutionConstraint_) {
             return true;
@@ -450,9 +467,22 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
                 return true;
             }
             return compatibleToResolved(to, tc, inf);
-        case TypeType::Class:
-            return type() == TypeType::Class && klass()->inheritsFrom(to.klass()) &&
-                identicalGenericArguments(to, tc, inf);
+        case TypeType::Class: {
+            if (type() != TypeType::Class || !klass()->inheritsFrom(to.klass())) {
+                return false;
+            }
+            if (klass() == to.klass()) {
+                return identicalGenericArguments(to, tc, inf);
+            }
+            if (to.genericArguments().size() == to.typeDefinition()->superGenericArguments().size()) {
+                return true;  // The superclass has no generic parameters of its own to compare.
+            }
+            // The arguments to the superclass are those of the superclass declaration, e.g. 🔡 V for
+            // 🐇 🎁🐚V⚪️🍆 📦🐚🔡 V🍆, and must be resolved on the arguments of this type.
+            Type resolved = *this;
+            resolved.setGenericArguments(selfResolvedGenericArgs());
+            return resolved.identicalGenericArguments(to, tc, inf);
+        }
         case TypeType::ValueType:
             return type() == TypeType::ValueType && typeDefinition() == to.typeDefinition() &&
                 identicalGenericArguments(to, tc, inf);
@@ -488,11 +518,12 @@ bool Type::isCompatibleToTypeAsValue(const Type &to, const TypeContext &tc,
 }
 
 bool Type::isCompatibleToMultiProtocol(const Type &to, const TypeContext &ct, GenericInferer *inf) const {
-    if (type() == TypeType::MultiProtocol) {
-        return std::equal(protocols().begin(), protocols().end(), to.protocols().begin(), to.protocols().end(),
-                          [&](const Type &a, const Type &b) {
-                              return a.compatibleTo(b, ct, inf);
-                          });
+    if (type() == TypeType::MultiProtocol) {  // Reboxing makes a table of the conformances to the protocols of to.
+        return std::all_of(to.protocols().begin(), to.protocols().end(), [&](const Type &b) {
+            return std::any_of(protocols().begin(), protocols().end(), [&](const Type &a) {
+                return a.compatibleTo(b, ct, inf);
+            });
+        });
     }
 
     return std::all_of(to.protocols().begin(), to.protocols().end(), [&](const Type &p) {

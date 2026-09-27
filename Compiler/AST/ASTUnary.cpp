@@ -22,11 +22,18 @@ void ASTUnaryMFForwarding::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlo
     expr_->analyseMemoryFlow(analyser, type);
 }
 
+Type ASTHandledCall::analyse(ExpressionAnalyser *analyser) {
+    return analyser->analyse(expr_);
+}
+
+Type ASTHandledCall::comply(ExpressionAnalyser *analyser, const TypeExpectation &expectation) {
+    auto type = expr_->comply(analyser, expectation).resolveOnSuperArgumentsAndConstraints(analyser->typeContext());
+    expr_->setExpressionType(type);
+    return type;
+}
+
 Type ASTUnwrap::analyse(ExpressionAnalyser *analyser) {
-    auto call = dynamic_cast<ASTCall *>(expr_.get());
-    if (call != nullptr) {
-        call->setHandledError();
-    }
+    auto call = handleCall(&expr_);
 
     Type t = analyser->expect(TypeExpectation(false, false), &expr_);
 
@@ -45,8 +52,7 @@ Type ASTUnwrap::analyse(ExpressionAnalyser *analyser) {
 }
 
 Type ASTReraise::analyse(ExpressionAnalyser *analyser) {
-    auto call = dynamic_cast<ASTCall *>(expr_.get());
-    if (call != nullptr) call->setHandledError();
+    auto call = handleCall(&expr_);
     Type t = analyser->expect(TypeExpectation(false, false), &expr_);
     if (call == nullptr || !call->isErrorProne()) {
         analyser->error(CompilerError(position(), "Provided value is not an error-prone call."));
@@ -69,6 +75,9 @@ Type ASTReraise::analyse(ExpressionAnalyser *analyser) {
 }
 
 void ASTReraise::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCategory type) {
+    // The call is evaluated before the releases, which only run if it raises. Its callee and arguments flow as
+    // Borrowing or Escaping, never as Return, so analysing it cannot keep any variable from being released here.
+    ASTUnaryMFForwarding::analyseMemoryFlow(analyser, type);
     analyser->releaseAllVariables(this, stats_, position());
 }
 

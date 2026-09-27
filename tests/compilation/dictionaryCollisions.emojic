@@ -1,0 +1,31 @@
+💭 A 🍯 of 30 keys has keys that share buckets whatever the seed of the string hashes, so this assigns, reassigns,
+💭 looks up and removes keys that are in chains of entries, which must all be released.
+🕊 🐘 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ❗️ 📛 ➡️ 🔡 🍇
+    ↩️ name
+  🍉
+🍉
+
+🏁 🍇
+  🆕🍯🐚🐘🍆❗️ ➡️ 🖍🆕 dict
+  🔂 i 🆕⏩ 0 30❗️ 🍇
+    🆕🐘 🔡 i❗️❗️ ➡️ 🐽dict 🔡 i❗️❗️
+  🍉
+  🔂 i 🆕⏩ 0 30 3❗️ 🍇
+    🆕🐘 🔤again 🧲🔡 i❗️🧲🔤❗️ ➡️ 🐽dict 🔡 i❗️❗️
+  🍉
+  🔂 i 🆕⏩ 1 30 3❗️ 🍇
+    🐨dict 🔡 i❗️❗️
+  🍉
+  😀 🔡 📏dict❓❗️❗️
+  🔂 i 🆕⏩ 0 32❗️ 🍇
+    ↪️ 🐽dict 🔡 i❗️❗️ ➡️ e 🍇
+      😀 📛e❗️❗️
+    🍉
+    🙅 🍇
+      😀 🔤no 🧲🔡 i❗️🧲🔤❗️
+    🍉
+  🍉
+🍉

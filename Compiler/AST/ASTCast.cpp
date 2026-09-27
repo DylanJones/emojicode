@@ -15,7 +15,8 @@
 namespace EmojicodeCompiler {
 
 Type ASTCast::analyse(ExpressionAnalyser *analyser) {
-    auto type = analyser->analyseTypeExpr(typeExpr_, TypeExpectation());
+    // The value may be of a subclass of the class named, so the cast's type is not exact.
+    auto type = analyser->analyseTypeExpr(typeExpr_, TypeExpectation()).inexacted();
 
     Type originalType = analyser->expect(TypeExpectation(), &expr_);
 

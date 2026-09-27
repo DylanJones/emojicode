@@ -1,0 +1,60 @@
+🐇 🏠 🍇
+  🖍🆕 last 🍬🔲 ⬅️ 🤷‍♀️
+
+  🆕 🍇🍉
+
+  ❗️ 📥 c 🔲 🍇
+    c ➡️ 🖍last
+  🍉
+
+  ❗️ 🔍 ➡️ 🔡 🍇
+    ↪️ last ➡️ c 🍇
+      ↩️ 🔓c❗️
+    🍉
+    ↩️ 🔤none🔤
+  🍉
+🍉
+
+💭 The methods and type methods of 🔲 are memory flow analysed before its initializers, so an initialization in them
+💭 must have the initializer analysed first to know whether the instance can be allocated on the stack.
+🐇 🔲 🍇
+  🖍🆕 v 🔡
+
+  🆕 🍼 v 🔡 🍇🍉
+
+  🆕 ▶️🏠 🍼 v 🔡 h 🏠 🍇
+    📥 h 👇❗️
+  🍉
+
+  ❗️ 🔓 ➡️ 🔡 🍇
+    ↩️ v
+  🍉
+
+  🐇❗️ 🏭 v 🔡 ➡️ 🍇➡️🔡🍉 🍇
+    ↩️ 🍇🎍🥡 ➡️ 🔡
+      ↩️ 🔓🆕🔲 v❗️❗️
+    🍉
+  🍉
+
+  🐇❗️ 🔨 v 🔡 ➡️ 🔡 🍇
+    ↩️ 🔓🆕🔲 v❗️❗️
+  🍉
+
+  🐇❗️ 🧷 v 🔡 h 🏠 ➡️ 🔡 🍇
+    ↩️ 🔓🆕🔲▶️🏠 v h❗️❗️
+  🍉
+
+  ❗️ 🪞 w 🔡 ➡️ 🔡 🍇
+    ↩️ 🔓🆕🔲 w❗️❗️
+  🍉
+🍉
+
+🏁 🍇
+  🏭🐇🔲 🔤closure🔤❗️ ➡️ f
+  😀 ⁉️f❗️❗️
+  😀 🔨🐇🔲 🔤type method🔤❗️❗️
+  😀 🪞🆕🔲 🔤unused🔤❗️ 🔤instance method🔤❗️❗️
+  🆕🏠❗️ ➡️ h
+  😀 🧷🐇🔲 🔤escaping initializer🔤 h❗️❗️
+  😀 🔍h❗️❗️
+🍉

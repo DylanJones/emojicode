@@ -27,6 +27,8 @@ public:
     Type analyse(ExpressionAnalyser *analyser) final;
     virtual Type analyse(ExpressionAnalyser *analyser, const TypeExpectation &expectation,
                          bool allowGenericInference) = 0;
+    /// Sets the type to @p type, which has the generic arguments inferred from a call, e.g. of an initializer.
+    void setInferredType(const Type &type) { setExpressionType(type); }
 };
 
 class ASTTypeFromExpr : public ASTTypeExpr {

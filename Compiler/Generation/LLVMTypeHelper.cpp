@@ -50,6 +50,8 @@ LLVMTypeHelper::LLVMTypeHelper(llvm::LLVMContext &context, CodeGenerator *codeGe
         pointer(),  // copies a value from memory into a box: void (ptr value, ptr box)
         pointer(),  // copies the value in a box into memory: void (ptr value, ptr box)
         pointer(),  // releases a value in memory: void (ptr value)
+        pointer(),  // retains a value in memory: void (ptr value)
+        llvm::Type::getInt1Ty(context_),  // whether a value can be copied by copying its bytes, i.e. is not managed
     }, "valueWitness");
     erasedReference_ = llvm::StructType::create({ pointer(), pointer() }, "erasedReference");
     valueWitnessCopy_ = llvm::FunctionType::get(llvm::Type::getVoidTy(context_), { pointer(), pointer() }, false);
@@ -133,6 +135,12 @@ llvm::StructType* LLVMTypeHelper::llvmTypeForCapture(const Capture &capture, llv
     if (capture.genericArgsOf != nullptr) {
         types.emplace_back(pointer());
     }
+    if (capture.typeGenericArgs) {
+        types.emplace_back(pointer());
+    }
+    if (capture.typeMethodGenericArgs) {
+        types.emplace_back(pointer());
+    }
     return llvm::StructType::get(context_, types);
 }
 
@@ -181,7 +189,7 @@ llvm::FunctionType* LLVMTypeHelper::functionTypeFor(Function *function) {
          function->functionType() == FunctionType::ValueTypeInitializer) && function->owner()->storesGenericArgs()) {
         args.emplace_back(genericArgsStore(function->typeContext().calleeType()));
     }
-    if (isTypeMethod(function) && function->owner()->storesGenericArgs()) {
+    if (takesTypeGenericArgs(function)) {
         args.emplace_back(pointer());
     }
     if (!function->genericParameters().empty()) {

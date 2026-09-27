@@ -46,13 +46,12 @@ void ASTIf::analyse(FunctionAnalyser *analyser) {
 }
 
 void ASTIf::analyseMemoryFlow(MFFunctionAnalyser *analyser) {
-    for (size_t i = 0; i < conditions_.size(); i++) {
-        conditions_[i]->analyseMemoryFlow(analyser, MFFlowCategory::Borrowing);
+    for (size_t i = 0; i < blocks_.size(); i++) {
+        if (i < conditions_.size()) {  // The 🙅 block has none.
+            conditions_[i]->analyseMemoryFlow(analyser, MFFlowCategory::Borrowing);
+        }
         blocks_[i].block.analyseMemoryFlow(analyser);
         analyser->popScope(&blocks_[i].block);
-    }
-    if (hasElse()) {
-        blocks_.back().block.analyseMemoryFlow(analyser);
     }
 }
 
@@ -75,11 +74,10 @@ void ASTRepeatWhile::analyseMemoryFlow(MFFunctionAnalyser *analyser) {
 }
 
 void ASTErrorHandler::analyse(FunctionAnalyser *analyser) {
-    auto call = dynamic_cast<ASTCall *>(value_.get());
+    auto call = handleCall(&value_);
     if (call == nullptr) {
         throw CompilerError(position(), "Expression is not a call.");
     }
-    call->setHandledError();
 
     valueType_ = analyser->expect(TypeExpectation(false, false), &value_);
 

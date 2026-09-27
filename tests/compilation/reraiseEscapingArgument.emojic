@@ -1,0 +1,117 @@
+🐇 🐫 🚧 🍇
+  🆕🍇
+    ⤴️🆕 🔤camel🔤❗️
+  🍉
+🍉
+
+🐇 🐕 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ❗️ 🗣 ➡️ 🔡 🍇
+    ↩️ name
+  🍉
+🍉
+
+🐇 🗃 🍇
+  🖍🆕 boxes 🍨🐚📦🍆
+
+  🆕 🍇
+    🍿🍆 ➡️ 🖍boxes
+  🍉
+
+  ❗️ 📥 b 📦 🍇
+    🐻 boxes b❗️
+  🍉
+
+  ❗️ 👀 🍇
+    🔂 b boxes 🍇
+      👀 b❗️
+    🍉
+  🍉
+🍉
+
+🐇 📦 🍇
+  🖍🆕 stored 🍬🐕
+
+  🆕 🍇🍉
+
+  ❗️ 🔒 d 🐕 🚧🐫 🍇
+    d ➡️ 🖍stored
+  🍉
+
+  ❗️ 🔐 d 🐕 fail 👌 🚧🐫 🍇
+    d ➡️ 🖍stored
+    ↪️ fail 🍇
+      🚨🆕🐫❗️
+    🍉
+  🍉
+
+  ❗️ 🔏 d 🐕 ➡️ 🔡 🚧🐫 🍇
+    d ➡️ 🖍stored
+    ↩️ 🗣d❗️
+  🍉
+
+  ❗️ 📌 r 🗃 🚧🐫 🍇
+    📥 r 👇❗️
+  🍉
+
+  ❗️ 👀 🍇
+    ↪️ stored ➡️ s 🍇
+      😀 🗣s❗️❗️
+    🍉
+    🙅 🍇
+      😀 🔤empty🔤❗️
+    🍉
+  🍉
+🍉
+
+🐇 🐈 🍇
+  🐇❗️ 🅰️ box 📦 🚧🐫 🍇
+    🆕🐕 🔤stacked🔤❗️ ➡️ x
+    🔺🔒 box x❗️
+  🍉
+
+  🐇❗️ 🅱️ box 📦 fail 👌 🚧🐫 🍇
+    🆕🐕 🔤raised🔤❗️ ➡️ x
+    🔺🔐 box x fail❗️
+  🍉
+
+  🐇❗️ 🆎 box 📦 ➡️ 🔡 🚧🐫 🍇
+    🆕🐕 🔤returned🔤❗️ ➡️ x
+    ↩️ 🔺🔏 box x❗️
+  🍉
+
+  🐇❗️ 🆑 registry 🗃 🚧🐫 🍇
+    🆕📦❗️ ➡️ local
+    🔺🔒 local 🆕🐕 🔤registered🔤❗️❗️
+    🔺📌 local registry❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕📦❗️ ➡️ box
+  🆗 🅰️🐇🐈 box❗️ 🍇🍉
+  🙅 e 🍇🍉
+  👀 box❗️
+
+  🆕📦❗️ ➡️ raised
+  🆗 🅱️🐇🐈 raised 👍❗️ 🍇🍉
+  🙅 e 🍇
+    😀 🔤error🔤❗️
+  🍉
+  👀 raised❗️
+
+  🆕📦❗️ ➡️ returned
+  🆗 s 🆎🐇🐈 returned❗️ 🍇
+    😀 s❗️
+  🍉
+  🙅 e 🍇🍉
+  👀 returned❗️
+
+  🆕🗃❗️ ➡️ registry
+  🆗 🆑🐇🐈 registry❗️ 🍇🍉
+  🙅 e 🍇🍉
+  👀 registry❗️
+🍉
