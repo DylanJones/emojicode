@@ -114,6 +114,13 @@ public:
     /// Gets the box info of the type of the value from the box info field @p boxInfo of a box of @p type. A box for a
     /// protocol or a multiprotocol holds a protocol conformance there, which points to the box info.
     llvm::Value* buildGetValueBoxInfo(llvm::Value *boxInfo, const Type &type);
+    /// Whether @p type is a box for a protocol or a multiprotocol, whose box info field holds a protocol conformance or
+    /// a table of them instead of the box info of the value's type.
+    static bool boxHasConformance(const Type &type);
+    /// Returns what the box info field of a box of @p type, a box for a protocol or multiprotocol, holds for the value
+    /// in the box to which @p box points, whose box info is @p boxInfo: its conformance to the protocol, or a table of
+    /// its conformances to those of the multiprotocol.
+    llvm::Value* buildBoxConformance(llvm::Value *box, llvm::Value *boxInfo, const Type &type);
     /// Ensures that the box to which @p box points is the only box storing its value of the remote @p type, by copying
     /// the value into a new object if other boxes share the object storing it. Copies of a box share the object, so a
     /// value must be made unique before it is mutated in place.

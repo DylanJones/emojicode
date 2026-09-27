@@ -8,6 +8,7 @@ import sys
 import re
 import tempfile
 import threading
+import traceback
 
 quick = len(sys.argv) > 1 and sys.argv[1] == 'quick'
 valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
@@ -71,6 +72,9 @@ compilation_tests = [
     "numericMatrix",
     "directCalls",
     "genericStorage",
+    "genericOptionalStorage",
+    "genericCallStack",
+    "multiprotocolCallee",
     "dictionaryOfBytes",
     "protocolValueTypeRemote",
     "protocolEnum",
@@ -462,7 +466,7 @@ def prettyprint_test(name):
 
 
 def perform(name, function, *args):
-    """Runs a test and returns its report. A command that fails fails the test."""
+    """Runs a test and returns its report. A command that fails, or any other error, fails the test."""
     report.lines = []
     report.stderr = []
     report.failed = False
@@ -470,6 +474,10 @@ def perform(name, function, *args):
         function(*args)
     except CalledProcessError as error:
         log("Command failed with exit code {0}: {1}".format(error.returncode, " ".join(map(str, error.cmd))))
+        fail_test(name)
+    except Exception:
+        # E.g. a missing expected output or output that is not UTF-8, which must not abort the other tests.
+        log(traceback.format_exc())
         fail_test(name)
     return report.lines, report.stderr, report.failed
 

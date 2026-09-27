@@ -409,30 +409,43 @@ static llvm::Value* witnessField(FunctionCodeGenerator *fg, llvm::Value *entry, 
                                     fg->builder().CreateConstInBoundsGEP2_32(th.valueWitness(), witness, 0, index));
 }
 
-/// A box of a generic parameter constrained to a protocol has the conformance of the value's type as its first field,
-/// the boxes of witnesses the value's box info.
-static bool boxHasConformance(const Type &type) {
-    return type.boxedFor().type() == TypeType::Protocol;
+bool FunctionCodeGenerator::boxHasConformance(const Type &type) {
+    return type.type() == TypeType::Box && (type.boxedFor().type() == TypeType::Protocol ||
+                                            type.boxedFor().type() == TypeType::MultiProtocol);
 }
 
-/// Replaces the protocol conformance in the box to which @p box points with the box info it points to.
-static void conformanceToBoxInfo(FunctionCodeGenerator *fg, llvm::Value *box) {
+llvm::Value* FunctionCodeGenerator::buildBoxConformance(llvm::Value *box, llvm::Value *boxInfo, const Type &type) {
+    auto &boxedFor = type.boxedFor();
+    if (boxedFor.type() == TypeType::Protocol) {
+        return buildFindProtocolConformance(box, boxInfo, boxedFor.protocol()->rtti());
+    }
+    auto &protocols = boxedFor.protocols();
+    auto arrayType = llvm::ArrayType::get(typeHelper().pointer(), protocols.size());
+    auto conformances = createEntryAlloca(arrayType);
+    for (size_t i = 0; i < protocols.size(); i++) {
+        auto conformance = buildFindProtocolConformance(box, boxInfo, protocols[i].protocol()->rtti());
+        builder().CreateStore(conformance, builder().CreateConstInBoundsGEP2_32(arrayType, conformances, 0, i));
+    }
+    return builder().CreateCall(generator()->runTime().multiprotocolTable(), { conformances, int64(protocols.size()) });
+}
+
+/// Replaces the protocol conformance (or table of them) in the box of @p type to which @p box points with the box info
+/// of its value, as the boxes of value witnesses hold.
+static void conformanceToBoxInfo(FunctionCodeGenerator *fg, llvm::Value *box, const Type &type) {
     auto infoPtr = fg->buildGetBoxInfoPtr(box);
     auto conformance = fg->builder().CreateLoad(fg->typeHelper().pointer(), infoPtr);
     fg->createIf(fg->builder().CreateIsNotNull(conformance), [&] {
-        auto boxInfoPtr = fg->builder().CreateConstInBoundsGEP2_32(fg->typeHelper().protocolConformance(),
-                                                                   conformance, 0, 2);
-        fg->builder().CreateStore(fg->builder().CreateLoad(fg->typeHelper().pointer(), boxInfoPtr), infoPtr);
+        fg->builder().CreateStore(fg->buildGetValueBoxInfo(conformance, type), infoPtr);
     });
 }
 
-/// Replaces the box info in the box to which @p box points with the conformance to the protocol of @p type.
+/// Replaces the box info in the box of @p type to which @p box points with what a box of @p type holds instead (see
+/// FunctionCodeGenerator::buildBoxConformance()).
 static void boxInfoToConformance(FunctionCodeGenerator *fg, llvm::Value *box, const Type &type) {
     auto infoPtr = fg->buildGetBoxInfoPtr(box);
     auto boxInfo = fg->builder().CreateLoad(fg->typeHelper().pointer(), infoPtr);
     fg->createIf(fg->builder().CreateIsNotNull(boxInfo), [&] {
-        auto conformance = fg->buildFindProtocolConformance(box, boxInfo, type.boxedFor().protocol()->rtti());
-        fg->builder().CreateStore(conformance, infoPtr);
+        fg->builder().CreateStore(fg->buildBoxConformance(box, boxInfo, type), infoPtr);
     });
 }
 
@@ -463,7 +476,7 @@ void FunctionCodeGenerator::buildStoreErased(llvm::Value *address, llvm::Value *
     auto box = createEntryAlloca(typeHelper().box());
     builder().CreateStore(boxValue, box);
     if (boxHasConformance(type)) {
-        conformanceToBoxInfo(this, box);
+        conformanceToBoxInfo(this, box, type);
     }
     builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, 2), { address, box });
 }

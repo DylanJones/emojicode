@@ -115,8 +115,8 @@ Value* ASTCollectionLiteral::storeElements(FunctionCodeGenerator *fg, const std:
     auto structure = fg->builder().CreateAlloca(llvm::Type::getInt8Ty(fg->ctx()), bytes, name);
     fg->builder().CreateStore(fg->generator()->runTime().ignoreBlockPtr(), structure);
     llvm::Value *current = fg->builder().CreateGEP(header, structure, fg->int64(1));
+    auto box = fg->createEntryAlloca(fg->typeHelper().box());
     for (auto value : values) {
-        auto box = fg->createEntryAlloca(fg->typeHelper().box());
         fg->builder().CreateStore(value, box);
         fg->buildStoreErased(current, entry, value, elementType_);
         fg->release(box, elementType_);  // The memory holds the value instead, like a value stored directly.
@@ -125,15 +125,26 @@ Value* ASTCollectionLiteral::storeElements(FunctionCodeGenerator *fg, const std:
     return structure;
 }
 
+Value* ASTCollectionLiteral::saveStack(FunctionCodeGenerator *fg) const {
+    // Only the memory for elements of a generic type is allocated dynamically (see storeElements()).
+    return LLVMTypeHelper::isErased(elementType_) ? fg->builder().CreateStackSave() : nullptr;
+}
+
+void ASTCollectionLiteral::restoreStack(FunctionCodeGenerator *fg, Value *stack) const {
+    if (stack != nullptr) {
+        fg->builder().CreateStackRestore(stack);
+    }
+}
+
 Value* ASTCollectionLiteral::generate(FunctionCodeGenerator *fg) const {
     if (pairs_) return generatePairs(fg);
     std::vector<Value *> values;
     for (auto &value : values_) {
         values.emplace_back(value->generate(fg));
     }
-    auto stack = fg->builder().CreateStackSave();
+    auto stack = saveStack(fg);
     auto result = init(fg, { storeElements(fg, values, "items"), fg->int64(values_.size()) });
-    fg->builder().CreateStackRestore(stack);
+    restoreStack(fg, stack);
     return result;
 }
 
@@ -150,9 +161,9 @@ Value *ASTCollectionLiteral::generatePairs(FunctionCodeGenerator *fg) const {
         fg->builder().CreateStore(key, currentKey);
         currentKey = fg->builder().CreateConstInBoundsGEP1_32(string, currentKey, 1);
     }
-    auto stack = fg->builder().CreateStackSave();
+    auto stack = saveStack(fg);
     auto result = init(fg, { keys, storeElements(fg, values, "values"), fg->int64(keyValues.size()) });
-    fg->builder().CreateStackRestore(stack);
+    restoreStack(fg, stack);
     return result;
 }
 
