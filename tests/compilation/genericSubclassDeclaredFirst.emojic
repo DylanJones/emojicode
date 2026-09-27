@@ -1,0 +1,101 @@
+💭 Each class is declared before its generic superclass.
+🐇 🎁 📦🐚🔡 🔢🍆 🍇
+  ✒️ ❗️ 📝 ➡️ 🔡 🍇
+    ↩️ 🔤🧲⤴️📝❗️🧲 🎁🔤
+  🍉
+
+  ❗️ 🧸 ➡️ 🔢 🍇
+    ↩️ 7
+  🍉
+🍉
+
+🐇 🧧🐚K⚪️ V⚪️🍆 📦🐚K V🍆 🍇
+  ✒️ ❗️ 📝 ➡️ 🔡 🍇
+    ↩️ 🔤🧲⤴️📝❗️🧲 🧧🔤
+  🍉
+
+  ❗️ 🧸 ➡️ 🍨🐚V🍆 🍇
+    ↩️ 🍿 💎👇❗️ 💎👇❗️ 🍆
+  🍉
+🍉
+
+🐇 📦🐚K⚪️ V⚪️🍆 🍇
+  🐊 📢
+  🖍🆕 key K
+  🖍🆕 value V
+
+  🆕 🍼 key K 🍼 value V 🍇🍉
+
+  ❗️ 🔑 ➡️ K 🍇
+    ↩️ key
+  🍉
+
+  ❗️ 💎 ➡️ V 🍇
+    ↩️ value
+  🍉
+
+  ❗️ 📝 ➡️ 🔡 🍇
+    ↩️ 🔤📦🔤
+  🍉
+
+  ❗️ 🎺 ➡️ 🔡 🍇
+    ↩️ 🔤🎺 🧲📝👇❗️🧲🔤
+  🍉
+🍉
+
+🐊 📢 🍇
+  ❗️ 🎺 ➡️ 🔡
+🍉
+
+🐇 🔍 🍇
+  🐇❗️ 🔬 box 📦🐚🔡 🔢🍆 🍇
+    😀 🔤🧲🔑 box❗️🧲: 🧲🔡 💎 box❗️ 10❗️🧲, 🧲📝 box❗️🧲🔤❗️
+  🍉
+
+  🐇❗️ 📡 p 📢 🍇
+    😀 🎺 p❗️❗️
+  🍉
+
+  🐇❗️ 🧪 a ⚪️ 🍇
+    ↪️🔲 a 🎁 ➡️ gift 🍇
+      😀 🔤a 🎁 with 🧲🔡 🧸 gift❗️ 10❗️🧲, 🧲📝 gift❗️🧲🔤❗️
+    🍉
+    🙅↪️🔲 a 📦🐚🔡 🔢🍆 ➡️ box 🍇
+      😀 🔤a 📦🐚🔡 🔢🍆: 🧲🔑 box❗️🧲 🧲🔡 💎 box❗️ 10❗️🧲🔤❗️
+    🍉
+    🙅↪️🔲 a 📦🐚🔡 🔡🍆 ➡️ box 🍇
+      😀 🔤a 📦🐚🔡 🔡🍆: 🧲🔑 box❗️🧲 🧲💎 box❗️🧲🔤❗️
+    🍉
+    🙅 🍇
+      😀 🔤something else🔤❗️
+    🍉
+  🍉
+🍉
+
+🏁 🍇
+  🆕🎁 🔤gift🔤 2❗️ ➡️ gift
+  🆕📦🐚🔡 🔢🍆 🔤box🔤 1❗️ ➡️ box
+  🆕🧧🐚🔡 🔢🍆 🔤envelope🔤 4❗️ ➡️ envelope
+  🆕🧧🐚🔡 🔡🍆 🔤letter🔤 🔤text🔤❗️ ➡️ letter
+
+  🖍🆕 boxes 🍨🐚📦🐚🔡 🔢🍆🍆
+  🍿 gift box envelope 🍆 ➡️ 🖍boxes
+  🔂 b boxes 🍇
+    🔬🐇🔍 b❗️
+  🍉
+
+  🔂 v 🧸 letter❗️ 🍇
+    😀 v❗️
+  🍉
+
+  📡🐇🔍 gift❗️
+  📡🐇🔍 box❗️
+  📡🐇🔍 envelope❗️
+  📡🐇🔍 letter❗️
+
+  🧪🐇🔍 gift❗️
+  🧪🐇🔍 box❗️
+  🧪🐇🔍 envelope❗️
+  🧪🐇🔍 letter❗️
+  🧪🐇🔍 🆕📦🐚🔢 🔢🍆 1 2❗️❗️
+🍉

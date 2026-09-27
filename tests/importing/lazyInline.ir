@@ -1,0 +1,9 @@
+# The program defines the bodies of the package's inline functions that it uses: 📏 of 🐡, which it calls, 🎈, which
+# only 📏 calls, and the methods in the class table of 🐋, including the unused 🔮.
+@ ^lazyInlinePackage\.vt_1f421\.1f4cf$
+@ ^lazyInlinePackage\.vt_1f421\.1f388$
+@ ^lazyInlinePackage\.class_1f988\.1f5e3$
+@ ^lazyInlinePackage\.class_1f988\.1f52e$
+# It does not define those of the other functions, which it does not use.
+! ^lazyInlinePackage\.vt_1f421\.1f52e$
+! ^lazyInlinePackage\.class_1f419\.

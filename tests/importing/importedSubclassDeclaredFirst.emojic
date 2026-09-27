@@ -1,0 +1,38 @@
+📦 importedSubclassDeclaredFirstPackage 🏠
+
+💭 Also declared before its superclass, which is imported.
+🐇 🐟 🐡 🍇
+  ✒️ ❗️ 🙋 ➡️ 🔡 🍇
+    ↩️ 🔤🧲⤴️🙋❗️🧲, a fish🔤
+  🍉
+🍉
+
+🐇 🐡 🦈 🍇
+  ✒️ ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ ⤴️📏❗️ ✖️ 2
+  🍉
+
+  ✒️ ❗️ 🎈 ➡️ 🔢 🍇
+    ↩️ ⤴️🎈❗️ ➕ 1
+  🍉
+🍉
+
+🐇 🔍 🍇
+  🐇❗️ 🔬 w 🐳 🍇
+    😀 🔤🧲🙋 w❗️🧲 (🧲🔡 📏 w❗️ 10❗️🧲)🔤❗️
+  🍉
+
+  🐇❗️ 🎈 d 🐬 🍇
+    😀 🔡 🎈 d❗️ 10❗️❗️
+  🍉
+🍉
+
+🏁 🍇
+  🔬🐇🔍 🆕🐳 🔤willy🔤❗️❗️
+  🔬🐇🔍 🆕🐬 🔤dolphin🔤❗️❗️
+  🔬🐇🔍 🆕🦈❗️❗️
+  🔬🐇🔍 🆕🐡❗️❗️
+  🔬🐇🔍 🆕🐟❗️❗️
+  🎈🐇🔍 🆕🐬 🔤dolphin🔤❗️❗️
+  🎈🐇🔍 🆕🐟❗️❗️
+🍉

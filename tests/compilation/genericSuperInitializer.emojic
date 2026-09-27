@@ -1,0 +1,118 @@
+💭 Subclasses of generic classes calling the superinitializer, which stores the generic arguments that the
+💭 superclass's code uses to store values of T in memory.
+🕊 🐘 🍇
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 d 🔢
+  🆕 🍼 a 🔢 🍇
+    a ➡️ 🖍b
+    a ➡️ 🖍c
+    a ➡️ 🖍d
+  🍉
+  ❗️ 🆙 ➡️ 🔢 🍇
+    ↩️ a ➕ b ➕ c ➕ d
+  🍉
+🍉
+
+🐇 🐠🐚T ⚪🍆 🍇
+  🖍🆕 value T
+  🖍🆕 spare 🍬T
+  🖍🆕 values 🍨🐚T🍆
+
+  🆕 🍼 value T 🍇
+    🤷‍♀️ ➡️ 🖍spare
+    🆕🍨🐚T🍆❗️ ➡️ 🖍values
+    🐻values value❗️
+  🍉
+
+  🆕 ▶️🐣 v T 🍇
+    v ➡️ 🖍value
+    v ➡️ 🖍spare
+    🆕🍨🐚T🍆❗️ ➡️ 🖍values
+    🐻values v❗️
+    🐻values v❗️
+  🍉
+
+  ❗️ 🥇 ➡️ T 🍇
+    ↩️ value
+  🍉
+
+  ❗️ 🐻 v T 🍇
+    🐻values v❗️
+  🍉
+
+  ❗️ 🐽 i 🔢 ➡️ T 🍇
+    ↩️ 🐽values i❗️
+  🍉
+
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ 📏values❓
+  🍉
+
+  ❗️ 🎁 ➡️ 🔡 🍇
+    ↪️ spare ➡️ s 🍇
+      ↩️ 🔤spare🔤
+    🍉
+    ↩️ 🔤no spare🔤
+  🍉
+🍉
+
+🐇 🐟 🐠🐚🔢🍆 🍇
+  🆕 🍇
+    ⤴️🆕 42❗️
+  🍉
+🍉
+
+🐇 🐡 🐠🐚🔡🍆 🍇
+  🆕 🍇
+    ⤴️🐣 🔤blowfish🔤❗️
+  🍉
+🍉
+
+🐇 🦈🐚A ⚪🍆 🐠🐚A🍆 🍇
+  🖍🆕 other A
+
+  🆕 🍼 other A 🍇
+    ⤴️🆕 other❗️
+  🍉
+
+  ❗️ 🥈 ➡️ A 🍇
+    ↩️ other
+  🍉
+🍉
+
+🐇 🐬 🦈🐚🐘🍆 🍇
+  🆕 🍇
+    ⤴️🆕 🆕🐘 3❗️❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🐟❗️ ➡️ fish
+  😀 🔡🥇fish❗️❗️❗️
+  🐻fish 7❗️
+  😀 🔡🐽fish 1❗️❗️❗️
+  😀 🔡📏fish❗️❗️❗️
+  😀 🎁fish❗️❗️
+
+  🆕🐡❗️ ➡️ blowfish
+  😀 🥇blowfish❗️❗️
+  🐻blowfish 🔤puffer🔤❗️
+  😀 🐽blowfish 2❗️❗️
+  😀 🔡📏blowfish❗️❗️❗️
+  😀 🎁blowfish❗️❗️
+
+  🆕🦈🐚🔡🍆 🔤shark🔤❗️ ➡️ shark
+  😀 🥇shark❗️❗️
+  😀 🥈shark❗️❗️
+  🐻shark 🔤hammerhead🔤❗️
+  😀 🐽shark 1❗️❗️
+
+  🆕🐬❗️ ➡️ dolphin
+  😀 🔡🆙🥇dolphin❗️❗️❗️❗️
+  😀 🔡🆙🥈dolphin❗️❗️❗️❗️
+  🐻dolphin 🆕🐘 5❗️❗️
+  😀 🔡🆙🐽dolphin 1❗️❗️❗️❗️
+  😀 🔡📏dolphin❗️❗️❗️
+🍉

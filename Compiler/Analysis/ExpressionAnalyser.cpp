@@ -324,9 +324,10 @@ void ExpressionAnalyser::makeIntoBox(Type &exprType, const TypeExpectation &expe
         case StorageType::Box:
             if (expectation.type() == TypeType::Box &&
                 !exprType.boxedFor().identicalTo(expectation.boxedFor(), typeContext(), nullptr)) {
-                if (expectation.boxedFor().type() == TypeType::MultiProtocol) {
+                if (expectation.boxedFor().type() == TypeType::MultiProtocol &&
+                    exprType.boxedFor().type() != TypeType::MultiProtocol) {
                     // A box for a multiprotocol holds the conformances to all its protocols, which exist only for the
-                    // type of a value that is known where it is boxed.
+                    // type of a value that is known where it is boxed, or in a box for a multiprotocol (ASTRebox).
                     throw CompilerError((*node)->position(), "A value boxed for ",
                                         exprType.boxedFor().toString(typeContext()), " cannot be used as ",
                                         expectation.boxedFor().toString(typeContext()), ".");
