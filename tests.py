@@ -414,7 +414,7 @@ def importing_test(name):
 
 
 def reject_test(filename):
-    completed = run([emojicodec, filename], stderr=PIPE)
+    completed = run([emojicodec, '-S', test_packages, filename], stderr=PIPE)
     output = completed.stderr.decode('utf-8')
     if completed.returncode != 1 or len(re.findall(r"🚨 error:", output)) != 1:
         log(output)

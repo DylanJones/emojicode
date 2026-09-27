@@ -272,7 +272,21 @@ void Compiler::parseInterface(Package *pkg, const SourcePosition &p) {
     if (emojiExists && textExists) {
         throw CompilerError(p, "Package ", pkg->name(), " contains both a 🏛 file and interface.emojii.");
     }
-    pkg->parse(textExists ? textPath : emojiPath);
+    auto path = textExists ? textPath : emojiPath;
+
+    auto &content = sourceManager().read(path)->file();
+    auto firstLine = utf8(content.substr(0, content.find(U'\n')));
+    std::string prefix = kABIVersionPrefix;
+    if (firstLine.compare(0, prefix.size(), prefix) != 0) {
+        throw CompilerError(p, "Package ", pkg->name(), " has no ABI version, so it was compiled by an older ",
+                            "compiler. Recompile it with this compiler.");
+    }
+    auto version = firstLine.substr(prefix.size());
+    if (version != std::to_string(kABIVersion)) {
+        throw CompilerError(p, "Package ", pkg->name(), " was compiled for ABI version ", version,
+                            ", but this compiler uses ABI version ", kABIVersion, ". Recompile it with this compiler.");
+    }
+    pkg->parse(path);
 }
 
 void Compiler::error(const CompilerError &ce) {
