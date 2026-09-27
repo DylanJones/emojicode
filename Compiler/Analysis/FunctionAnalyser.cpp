@@ -184,6 +184,10 @@ void FunctionAnalyser::analyseReturn(ASTBlock *root) {
 }
 
 bool FunctionAnalyser::analyseInitializationRequirements() {
+    // If every path raised an error or called a function that never returns, like 🤯, no instance is ever returned.
+    if (pathAnalyser_.hasCertainly(PathAnalyserIncident::Returned)) {
+        return true;
+    }
     if (isFullyInitializedCheckRequired(function_->functionType())) {
         uninitializedVariablesCheck(function_->position(), "Instance variable \"", "\" must be initialized.");
     }

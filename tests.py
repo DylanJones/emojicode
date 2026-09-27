@@ -119,6 +119,7 @@ compilation_tests = [
     "errorUnwrap",
     "errorAvocado",
     "errorInitializer",
+    "initializerNeverReturns",
     "errorReraiseMem",
     "errorReraiseMem2",
     "errorHandlerDiscardMem",
