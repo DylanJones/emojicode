@@ -1,0 +1,56 @@
+10 elephant
+elephant 1000
+10 1000
+10 1000
+1000
+elephant
+10 elephant
+10 elephant
+2 200
+9 elephant
+9
+10
+elephant 1000
+10 1000
+10 1000
+deinit
+dumbo
+20 mouse
+mouse 2000
+20 2000
+20 2000
+2000
+mouse
+20 mouse
+20 mouse
+2 200
+19 mouse
+19
+20
+mouse 2000
+20 2000
+20 2000
+30 giraffe
+giraffe 3000
+30 3000
+30 3000
+3000
+giraffe
+30 giraffe
+30 giraffe
+2 200
+29 giraffe
+29
+29
+giraffe 2900
+29 2900
+29 2900
+deinit giraffe
+40 elephant
+50 mouse
+60 giraffe
+no value
+end
+deinit
+babar
+deinit giraffe

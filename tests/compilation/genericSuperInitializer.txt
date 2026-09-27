@@ -1,0 +1,15 @@
+42
+7
+2
+no spare
+blowfish
+puffer
+3
+spare
+shark
+shark
+hammerhead
+12
+12
+20
+2

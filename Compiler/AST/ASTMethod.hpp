@@ -46,7 +46,7 @@ protected:
         IntegerLess, IntegerLessOrEqual, IntegerLeftShift, IntegerRightShift, IntegerOr, IntegerAnd, IntegerXor,
         IntegerRemainder, IntegerToDouble, IntegerNot, IntegerInverse, IntegerToByte, ByteToInteger,
         BooleanAnd, BooleanOr, BooleanNegate,
-        Equal, Store, Load, Release, MemoryMove, MemorySet, IsNoValueLeft, IsNoValueRight, Multiprotocol,
+        Equal, Store, Load, Release, MemoryMove, MemoryCopy, MemorySet, IsNoValueLeft, IsNoValueRight, Multiprotocol,
         UnsignedDivide, UnsignedRemainder, UnsignedGreater, UnsignedGreaterOrEqual, UnsignedLess,
         UnsignedLessOrEqual, SignedRightShift,
         /// Converts a value of a C type to the return type of the method.

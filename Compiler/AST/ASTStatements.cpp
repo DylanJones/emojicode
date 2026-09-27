@@ -171,7 +171,7 @@ void ASTRaise::analyse(FunctionAnalyser *analyser) {
 void ASTReturn::analyseMemoryFlow(MFFunctionAnalyser *analyser) {
     if (value_ != nullptr && !initReturn_) {
         analyser->take(value_.get());
-        value_->analyseMemoryFlow(analyser, MFFlowCategory::Return);
+        returnedVariable_ = analyser->analyseReturnValue(value_.get());
     }
 }
 

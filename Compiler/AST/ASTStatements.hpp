@@ -9,10 +9,13 @@
 #ifndef ASTStatements_hpp
 #define ASTStatements_hpp
 
+#include <optional>
 #include <utility>
+#include <vector>
 #include "Scoping/SemanticScopeStats.hpp"
 #include "ASTExpr.hpp"
 #include "Scoping/IDScoper.hpp"
+#include "Scoping/Variable.hpp"
 #include "ErrorSelfDestructing.hpp"
 #include "Releasing.hpp"
 
@@ -119,11 +122,16 @@ public:
     /// Informs the expression that it is used to return the initialized object from an object initializer.
     void setIsInitReturn() { initReturn_ = true; }
 
+    /// The variable whose value this statement returns without retaining it, which it therefore must not release.
+    /// Available once the memory flow of this statement has been analysed.
+    std::optional<VariableID> returnedVariable() const { return returnedVariable_; }
+
 protected:
     void returnReference(FunctionAnalyser *analyser, Type type);
 
     std::shared_ptr<ASTExpr> value_;
     bool initReturn_ = false;
+    std::optional<VariableID> returnedVariable_;
 };
 
 class ASTRaise final : public ASTReturn, private ErrorSelfDestructing {

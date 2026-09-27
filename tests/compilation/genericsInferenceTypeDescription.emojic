@@ -1,0 +1,82 @@
+💭 Generic code of a value or object created with inferred generic arguments uses the type T stands for at run time,
+💭 so the initializer stores the inferred generic arguments, not an empty list.
+🐊 📐 🍇
+  ❗️ 📏 ➡️ 🔢
+  ❗️ 🔢 ➡️ 🔢
+🍉
+
+🕊 📦🐚T⚪🍆 🍇
+  🐊📐
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+
+  ❗️ 🔓 ➡️ T 🍇
+    ↩️ value
+  🍉
+
+  💭 Called through 📐, the generic method is used.
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ ⚖️T
+  🍉
+
+  ❗️ 🔢 ➡️ 🔢 🍇
+    🆕🍨🐚T🍆❗️ ➡️ 🖍🆕 list
+    🐻list value❗️
+    🐻list value❗️
+    ↩️ 📏list❓
+  🍉
+
+  💭 The specialization of this method fails, as the closure returns T from the generic 🔓, so the generic method
+  💭 is used.
+  ❗️ 🅰️ ➡️ 🔢 🍇
+    🍇 ➡️ 🔢
+      🔓👇❗️ ➡️ u
+      🍇 ➡️ T
+        ↩️ u
+      🍉 ➡️ c
+      ⁉️c❗️ ➡️ x
+      ↩️ ⚖️T
+    🍉 ➡️ outer
+    ↩️ ⁉️outer❗️
+  🍉
+🍉
+
+💭 Its methods can be overridden, so they are not specialized.
+🌍 🐇 🎁🐚T⚪🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ ⚖️T
+  🍉
+🍉
+
+🕊 🌰 🍇
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🆕 🍼 a 🔢 🍇
+    a ➡️ 🖍b
+    a ➡️ 🖍c
+  🍉
+🍉
+
+🏁 🍇
+  🖍🆕 measured 📐
+  🆕📦 42❗️ ➡️ 🖍measured
+  😀 🔡 📏measured❗️❗️❗️
+  😀 🔡 🔢measured❗️❗️❗️
+  🆕📦 🔤hello🔤❗️ ➡️ 🖍measured
+  😀 🔡 📏measured❗️❗️❗️
+  😀 🔡 🔢measured❗️❗️❗️
+  🆕📦 🆕🌰 7❗️❗️ ➡️ 🖍measured
+  😀 🔡 📏measured❗️❗️❗️
+  😀 🔡 🔢measured❗️❗️❗️
+
+  😀 🔡 🅰️🆕📦 42❗️❗️❗️❗️
+  😀 🔡 🅰️🆕📦 🔤hello🔤❗️❗️❗️❗️
+  😀 🔡 🅰️🆕📦 🆕🌰 7❗️❗️❗️❗️❗️
+
+  😀 🔡 📏🆕🎁 42❗️❗️❗️❗️
+  😀 🔡 📏🆕🎁 🆕🌰 7❗️❗️❗️❗️❗️
+🍉

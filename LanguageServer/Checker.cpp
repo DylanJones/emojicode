@@ -252,7 +252,9 @@ Analysis Checker::check(const std::string &rootPath) const {
     analysis.index = std::make_unique<Index>();
     analysis.compiler->setAnalysisObserver(analysis.index.get());
     analysis.compiler->add<Compiler::ParsePhase>();
-    analysis.compiler->add<Compiler::AnalysisPhase>(standalone);
+    // No code is generated, so specializations would only repeat the analysis of the generic functions they are made
+    // from, which reports the diagnostics.
+    analysis.compiler->add<Compiler::AnalysisPhase>(standalone, false);
     try {
         analysis.compiler->compile();
         for (auto &path : analysis.compiler->sourceManager().paths()) {
