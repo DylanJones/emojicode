@@ -28,6 +28,16 @@
 🍉
 
 🐇 🔧 🍇
+  🐇❗️ ↔️ ➡️ 🔢 🍇
+    😀 🔤offset evaluated🔤❗️
+    ↩️ 0
+  🍉
+
+  🐇❗️ 📏 ➡️ 🔢 🍇
+    😀 🔤count evaluated🔤❗️
+    ↩️ 0
+  🍉
+
   🐇❗️ 🗑 🍇
     ☣️ 🍇
       🆕🧠 3✖️⚖️🐕❗️ ➡️ mem
@@ -44,6 +54,9 @@
       🆕🧠 4✖️⚖️🔢❗️ ➡️ numbers
       ♻️🐚🔢🍆 numbers 0 4❗️
       😀 🔤numbers need no release🔤❗️
+      💭 The arguments are evaluated anyway, as they are in erased code.
+      ♻️🐚🔢🍆 numbers ↔️🐇🔧❗️ 📏🐇🔧❗️❗️
+      ♻️🐚🔢🍆 numbers ↔️🐇🔧❗️❗️
     🍉
   🍉
 🍉

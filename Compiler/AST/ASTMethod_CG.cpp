@@ -89,25 +89,26 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
             }
             case BuiltInType::Release: {
                 auto type = args_.genericArguments().front()->type();
-                if (args_.args().size() == 2) {  // ♻️ offset count
-                    if (LLVMTypeHelper::isErased(type)) {
-                        auto ptr = buildMemoryAddress(fg, v, args_.args()[0]->generate(fg), type);
-                        fg->buildReleaseErased(ptr, fg->buildTypeDescriptionEntry(type), args_.args()[1]->generate(fg));
-                    }
-                    else if (type.isManaged()) {
-                        auto ptr = buildMemoryAddress(fg, v, args_.args()[0]->generate(fg), type);
-                        fg->createForEachValue(ptr, args_.args()[1]->generate(fg),
-                                               fg->sizeOf(fg->typeHelper().llvmTypeFor(type)),
-                                               [&](llvm::Value *valuePtr) { fg->releaseByReference(valuePtr, type); });
-                    }
+                // The arguments are evaluated whether or not there is anything to release, as in erased code.
+                auto offset = args_.args()[0]->generate(fg);
+                auto count = args_.args().size() == 2 ? args_.args()[1]->generate(fg) : nullptr;  // ♻️ offset count
+                if (!LLVMTypeHelper::isErased(type) && !type.isManaged()) {
                     return nullptr;
                 }
+                auto ptr = buildMemoryAddress(fg, v, offset, type);
                 if (LLVMTypeHelper::isErased(type)) {
-                    auto ptr = buildMemoryAddress(fg, v, args_.args().front()->generate(fg), type);
-                    fg->buildReleaseErased(ptr, fg->buildTypeDescriptionEntry(type));
+                    if (count != nullptr) {
+                        fg->buildReleaseErased(ptr, fg->buildTypeDescriptionEntry(type), count);
+                    }
+                    else {
+                        fg->buildReleaseErased(ptr, fg->buildTypeDescriptionEntry(type));
+                    }
                 }
-                else if (type.isManaged()) {
-                    auto ptr = buildMemoryAddress(fg, v, args_.args().front()->generate(fg), type);
+                else if (count != nullptr) {
+                    fg->createForEachValue(ptr, count, fg->sizeOf(fg->typeHelper().llvmTypeFor(type)),
+                                           [&](llvm::Value *valuePtr) { fg->releaseByReference(valuePtr, type); });
+                }
+                else {
                     fg->releaseByReference(ptr, type);
                 }
                 return nullptr;

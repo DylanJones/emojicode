@@ -5,6 +5,9 @@ released a
 released c
 --
 numbers need no release
+offset evaluated
+count evaluated
+offset evaluated
 end
 released d
 released e
