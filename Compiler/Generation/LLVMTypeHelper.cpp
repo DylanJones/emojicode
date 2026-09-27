@@ -187,8 +187,7 @@ llvm::FunctionType* LLVMTypeHelper::functionTypeFor(Function *function) {
          function->functionType() == FunctionType::ValueTypeInitializer) && function->owner()->storesGenericArgs()) {
         args.emplace_back(genericArgsStore(function->typeContext().calleeType()));
     }
-    // A closure in a type method gets the generic arguments passed to the type method with its captures.
-    if (isTypeMethod(function) && !function->isClosure() && function->owner()->storesGenericArgs()) {
+    if (takesTypeGenericArgs(function)) {
         args.emplace_back(pointer());
     }
     if (!function->genericParameters().empty()) {

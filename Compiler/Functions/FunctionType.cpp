@@ -45,4 +45,8 @@ bool isTypeMethod(Function *function) {
             (function->functionType() == FunctionType::Function && function->owner() != nullptr);
 }
 
+bool takesTypeGenericArgs(Function *function) {
+    return isTypeMethod(function) && !function->isClosure() && function->owner()->storesGenericArgs();
+}
+
 } // namespace EmojicodeCompiler

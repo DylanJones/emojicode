@@ -74,8 +74,7 @@ void ClosureCodeGenerator::loadCapturedVariables(Value *value) {
         setGenericArgsPtr(builder().CreateConstInBoundsGEP2_32(capture_.type, value, 0, index++));
     }
     if (capture_.typeMethodGenericArgs) {
-        // In a type method, genericArgsPtr() is the type description itself.
-        setGenericArgsPtr(loadCapture(index++));
+        setTypeMethodGenericArgs(loadCapture(index++));
     }
 }
 

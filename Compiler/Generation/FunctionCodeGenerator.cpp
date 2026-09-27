@@ -76,7 +76,7 @@ void FunctionCodeGenerator::declareArguments(llvm::Function *function) {
         builder().CreateStore(llvmArg, genericArgsPtr());
     }
 
-    if (isTypeMethod(fn_) && fn_->owner()->storesGenericArgs()) {
+    if (takesTypeGenericArgs(fn_)) {
         auto llvmArg = (it++);
         llvmArg->setName("genericArgs");
         typeMethodGenericArgs_ = llvmArg;
