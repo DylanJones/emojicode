@@ -53,6 +53,7 @@ compilation_tests = [
     "valueTypeMutate",
     "compareNoValue",
     "downcastClass",
+    "castDynamicDispatch",
     "castAny",
     "somethingParameters",
     "castGenericValueType",
