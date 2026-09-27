@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from subprocess import PIPE, CalledProcessError
+from subprocess import PIPE, CalledProcessError, TimeoutExpired
 import glob
 import os
 import dist
@@ -255,6 +255,9 @@ os.environ["EMOJICODE_PACKAGES_PATH"] = os.path.abspath(".")
 os.environ["TEST_ENV_1"] = "The day starts like the rest I've seen"
 # The number of tests run at once, one per core unless EMOJICODE_TEST_JOBS says otherwise.
 jobs = int(os.environ.get("EMOJICODE_TEST_JOBS", os.cpu_count() or 1))
+# The seconds a command, e.g. the compiler or a test program, may run. One that hangs fails its test instead of the
+# whole suite.
+command_timeout = 300
 
 
 source_locks = {}
@@ -284,6 +287,7 @@ def run(args, check=False, **kwargs):
     keep_stderr = 'stderr' not in kwargs
     if keep_stderr:
         kwargs['stderr'] = PIPE
+    kwargs.setdefault('timeout', command_timeout)
     completed = subprocess.run(args, **kwargs)
     if keep_stderr and completed.stderr:
         report.stderr.append(completed.stderr.decode('utf-8', 'replace'))
@@ -488,6 +492,9 @@ def perform(name, function, *args):
         function(*args)
     except CalledProcessError as error:
         log("Command failed with exit code {0}: {1}".format(error.returncode, " ".join(map(str, error.cmd))))
+        fail_test(name)
+    except TimeoutExpired as error:
+        log("Command timed out after {0} s: {1}".format(error.timeout, " ".join(map(str, error.cmd))))
         fail_test(name)
     except Exception:
         # E.g. a missing expected output or output that is not UTF-8, which must not abort the other tests.
