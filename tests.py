@@ -159,6 +159,7 @@ compilation_tests = [
     "errorReraisePrefix",
     "weak",
     "superMemoryFlow",
+    "initializerMemoryFlow",
     "interpolationDereference",
     "interpolationRelease",
     "genericDynDisableLiteralConstraint"
