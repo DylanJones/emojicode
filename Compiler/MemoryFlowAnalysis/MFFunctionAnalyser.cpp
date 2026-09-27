@@ -153,7 +153,7 @@ bool MFFunctionAnalyser::recordVariableGet(size_t id, MFFlowCategory category) {
     auto &var = scope_.getVariable(id);
     // A returned parameter escapes too, as the caller receives it, so that an argument must not be allocated on the
     // stack of the caller.
-    bool returnsValueOfVariable = category.isReturn() && !var.isParam;
+    bool returnsValueOfVariable = category.isReturn() && !var.isParam && !var.isCaptured;
     if (returnsValueOfVariable) {
         var.isReturned = true;
     }
