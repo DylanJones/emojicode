@@ -41,11 +41,9 @@ llvm::Value* unboxSimple(FunctionCodeGenerator &fg, llvm::Value *box, const Type
 
 /// Retains the value of @p type at @p ptr.
 void retainAt(FunctionCodeGenerator &fg, llvm::Value *ptr, const Type &type) {
-    if (!type.isManaged()) {
-        return;
+    if (type.isManaged()) {
+        fg.retainByReference(ptr, type);
     }
-    fg.retain(fg.isManagedByReference(type) ? ptr : fg.builder().CreateLoad(fg.typeHelper().llvmTypeFor(type), ptr),
-              type);
 }
 
 llvm::Function* createWitnessFunction(CodeGenerator *generator, llvm::FunctionType *type, const std::string &name) {

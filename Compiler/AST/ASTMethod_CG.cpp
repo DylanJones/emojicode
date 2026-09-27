@@ -72,7 +72,7 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
                     store->setMetadata(llvm::LLVMContext::MD_tbaa, accessTag);
                 }
                 if (type.isManaged()) {
-                    fg->retain(fg->isManagedByReference(type) ? ptr : val, type);
+                    fg->retainByReference(ptr, type);
                 }
                 return nullptr;
             }
@@ -116,14 +116,12 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
                     fg->buildCopyErased(destination, source, count, fg->buildTypeDescriptionEntry(type));
                     return nullptr;
                 }
-                auto llvmType = fg->typeHelper().llvmTypeFor(type);
+                auto size = fg->sizeOf(fg->typeHelper().llvmTypeFor(type));
                 fg->builder().CreateMemMove(destination, llvm::MaybeAlign(), source, llvm::MaybeAlign(),
-                                            fg->builder().CreateMul(fg->sizeOf(llvmType), count));
+                                            fg->builder().CreateMul(size, count));
                 if (type.isManaged()) {
-                    fg->createCountedLoop(count, [&](llvm::Value *index) {
-                        auto ptr = fg->builder().CreateGEP(llvmType, destination, index);
-                        fg->retain(fg->isManagedByReference(type) ? ptr : fg->builder().CreateLoad(llvmType, ptr),
-                                   type);
+                    fg->createForEachValue(destination, count, size, [&](llvm::Value *ptr) {
+                        fg->retainByReference(ptr, type);
                     });
                 }
                 return nullptr;

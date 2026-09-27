@@ -225,6 +225,8 @@ public:
     /// fales for `type`, the value is loaded before it is passed to release().
     /// @param ptr Pointer to the value to be released.
     void releaseByReference(llvm::Value *ptr, const Type &type);
+    /// Retains the value of type @p type at @p ptr, like releaseByReference() releases it.
+    void retainByReference(llvm::Value *ptr, const Type &type);
     void retain(llvm::Value *value, const Type &type);
     bool isManagedByReference(const Type &type) const;
 
@@ -241,6 +243,10 @@ public:
     void createIf(llvm::Value* cond, const std::function<void()> &then);
     /// Creates a loop that executes the code produced by @p body, which is passed the index, @p count times.
     void createCountedLoop(llvm::Value *count, const std::function<void(llvm::Value *)> &body);
+    /// Creates a loop that executes the code produced by @p body for each of the @p count values of @p size bytes that
+    /// follow each other from @p address on. @p body is passed the address of the value.
+    void createForEachValue(llvm::Value *address, llvm::Value *count, llvm::Value *size,
+                            const std::function<void(llvm::Value *)> &body);
 
     llvm::BasicBlock* createBlock(const llvm::Twine &name = "");
 

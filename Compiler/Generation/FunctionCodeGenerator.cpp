@@ -285,6 +285,13 @@ void FunctionCodeGenerator::createCountedLoop(llvm::Value *count, const std::fun
     builder().SetInsertPoint(cont);
 }
 
+void FunctionCodeGenerator::createForEachValue(llvm::Value *address, llvm::Value *count, llvm::Value *size,
+                                               const std::function<void(llvm::Value *)> &body) {
+    createCountedLoop(count, [&](llvm::Value *index) {
+        body(builder().CreateGEP(builder().getInt8Ty(), address, builder().CreateMul(index, size)));
+    });
+}
+
 llvm::BasicBlock* FunctionCodeGenerator::createBlock(const llvm::Twine &name) {
     auto function = builder().GetInsertBlock()->getParent();
     return llvm::BasicBlock::Create(ctx(), name, function);
@@ -507,8 +514,7 @@ void FunctionCodeGenerator::buildCopyErased(llvm::Value *destination, llvm::Valu
                             builder().CreateMul(size, count));
     createIf(builder().CreateNot(witnessField(this, entry, 5)), [&] {
         auto retain = witnessField(this, entry, 4);
-        createCountedLoop(count, [&](llvm::Value *index) {
-            auto address = builder().CreateGEP(builder().getInt8Ty(), destination, builder().CreateMul(index, size));
+        createForEachValue(destination, count, size, [&](llvm::Value *address) {
             builder().CreateCall(typeHelper().boxRetainRelease(), retain, { address });
         });
     });
@@ -703,6 +709,10 @@ bool FunctionCodeGenerator::isManagedByReference(const Type &type) const {
 
 void FunctionCodeGenerator::releaseByReference(llvm::Value *ptr, const Type &type) {
     release(isManagedByReference(type) ? ptr : builder().CreateLoad(typeHelper().llvmTypeFor(type), ptr), type);
+}
+
+void FunctionCodeGenerator::retainByReference(llvm::Value *ptr, const Type &type) {
+    retain(isManagedByReference(type) ? ptr : builder().CreateLoad(typeHelper().llvmTypeFor(type), ptr), type);
 }
 
 llvm::Value* FunctionCodeGenerator::buildFindProtocolConformance(llvm::Value *box, llvm::Value *boxInfo,
