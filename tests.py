@@ -186,7 +186,9 @@ compilation_tests = [
     "initializerMemoryFlow",
     "interpolationDereference",
     "interpolationRelease",
-    "genericDynDisableLiteralConstraint"
+    "genericDynDisableLiteralConstraint",
+    "reraiseEscapingArgument",
+    "dictionaryCollisions"
 ]
 
 if not (quick or valgrind):

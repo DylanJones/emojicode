@@ -5,6 +5,7 @@
 
 #include "Navigation.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <sstream>
 #include "AST/ASTInitialization.hpp"
 #include "AST/ASTMethod.hpp"

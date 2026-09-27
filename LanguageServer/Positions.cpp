@@ -6,6 +6,7 @@
 #include "Positions.hpp"
 #include "Lex/SourceManager.hpp"
 #include <algorithm>
+#include <cstdint>
 
 namespace EmojicodeLanguageServer {
 
