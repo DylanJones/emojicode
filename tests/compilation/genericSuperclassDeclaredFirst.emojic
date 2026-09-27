@@ -1,5 +1,5 @@
-💭 The generic arguments of a class declared before its superclasses are analysed like those of any other class, so
-💭 the only error is the assignment of 🍩’s 🔢 to s.
+💭 Each class is declared before its generic superclass, whose generic arguments mention the class's own generic
+💭 parameter (see genericSuperclassArguments, which declares them superclass-first).
 🐇 🐟🐚V 📈🐚V🍆🍆 🐐🐚V🍆 🍇
   ❗️ 🐙 ➡️ V 🍇
     ↩️ 🐽 🍫 👇❗️ 0❗️
@@ -28,7 +28,8 @@
   🆕🐟🐚🔢🍆 5 🍿 1 2 🍆❗️ ➡️ g
   😀 🔡 🐙 g❗️❗️❗️
   😀 🔡 🐽 🍫 g❗️ 1❗️❗️❗️
-  🖍🆕 s 🔡
-  🍩 g❗️ ➡️ 🖍s
-  😀 s❗️
+  😀 🔡 🍩 g❗️❗️❗️
+  ↪️ 🐽 g 7❗️ 🍇
+    😀 🔤5 is less than 7🔤❗️
+  🍉
 🍉

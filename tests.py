@@ -107,6 +107,7 @@ compilation_tests = [
     "genericsInferenceClass",
     "genericRecursion",
     "genericSuperclassArguments",
+    "genericSuperclassDeclaredFirst",
     "optionalGenericField",
     "nestedOptionalGenericArgument",
     "variableInitAndScoping",
