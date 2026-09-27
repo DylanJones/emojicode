@@ -1,4 +1,4 @@
-# Agent workflow
+# Emojicode agent workflow
 
 The [Emojicode project](https://github.com/users/DylanJones/projects/1) tracks work by issue. Use its `Status` field as the handoff between implementation, review, and Dylan's merge decision. The GitHub CLI is the supported way to update the board; it needs the `project` OAuth scope (`gh auth refresh -s project` if missing).
 
@@ -24,3 +24,8 @@ Use the same command with the outcome status for each linked issue when a PR add
 Link the PR before setting the review status: the project's enabled PR-link workflow can change a card's status. Check the card after linking or closing a superseded PR, especially when several PRs link to the same issue.
 
 All current PRs are authored as `DylanJones`, the same identity used by `gh` here. GitHub does not permit formal approval of one's own PR, so an agent reviewer should state **"Review verdict: ready to merge"** in a PR comment and set the project status. A reviewer using a different GitHub identity can also submit a formal GitHub approval. A project status or agent verdict is a review handoff, not a merge action.
+
+## Commits
+
+Every commit message starts with an emoji as its first character, e.g. `🦁 Fix sorting edge cases`. Choose one
+that fits the change.
