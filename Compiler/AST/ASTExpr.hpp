@@ -32,6 +32,7 @@ class MFFunctionAnalyser;
 class ASTCall;
 class ASTType;
 class ASTReturn;
+class ASTHandledCall;
 
 /// The superclass of all syntax tree nodes representing an expression.
 ///
@@ -43,6 +44,7 @@ class ASTReturn;
 class ASTExpr : public ASTNode {
     friend ExpressionAnalyser;
     friend ASTReturn;
+    friend ASTHandledCall;
 public:
     explicit ASTExpr(const SourcePosition &p) : ASTNode(p) {}
     /// Set after semantic analysis and transformation.

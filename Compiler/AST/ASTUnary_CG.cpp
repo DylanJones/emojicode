@@ -23,6 +23,15 @@ llvm::Value* createExpectFalse(FunctionCodeGenerator *fg, llvm::Value *value) {
                                          { value, fg->builder().getInt1(false) });
 }
 
+Value* ASTHandledCall::generate(FunctionCodeGenerator *fg) const {
+    if (value_ == nullptr) {  // An optional is unwrapped.
+        return expr_->generate(fg);
+    }
+    auto value = value_;
+    value_ = nullptr;
+    return value;
+}
+
 Value* ASTUnwrap::generate(FunctionCodeGenerator *fg) const {
     if (error_) {
         return generateErrorUnwrap(fg);
@@ -49,8 +58,8 @@ Value* ASTUnwrap::generate(FunctionCodeGenerator *fg) const {
 }
 
 Value* ASTUnwrap::generateErrorUnwrap(FunctionCodeGenerator *fg) const {
-    auto errorDest = prepareErrorDestination(fg, expr_.get());
-    auto value = expr_->generate(fg);
+    auto errorDest = prepareErrorDestination(fg);
+    generateHandledCall(fg);
     fg->createIfElseBranchCond(createExpectFalse(fg, isError(fg, errorDest)), [&]() {
         auto string = std::make_shared<ASTCGUTF8Literal>(position().toRuntimeString(), position());
         auto error = fg->builder().CreateLoad(fg->typeHelper().pointer(), errorDest);
@@ -61,19 +70,19 @@ Value* ASTUnwrap::generateErrorUnwrap(FunctionCodeGenerator *fg) const {
         fg->builder().CreateUnreachable();
         return false;
     }, []() { return true; });
-    return value;
+    return expr_->generate(fg);
 }
 
 Value* ASTReraise::generate(FunctionCodeGenerator *fg) const {
-    dynamic_cast<ASTCall *>(expr_.get())->setErrorPointer(fg->errorPointer());
-    auto value = expr_->generate(fg);
+    handledCall_->setErrorPointer(fg->errorPointer());
+    generateHandledCall(fg);
     fg->createIfElseBranchCond(createExpectFalse(fg, isError(fg, fg->errorPointer())), [this, fg]() {
-        fg->releaseTemporaryObjects(false, expr_->producesTemporaryObject());
+        fg->releaseTemporaryObjects(false, handledCallProducesTemporaryObject());
         release(fg);
         fg->buildErrorReturn();
         return false;
     }, []() { return true; });
-    return value;
+    return expr_->generate(fg);
 }
 
 }  // namespace EmojicodeCompiler

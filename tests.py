@@ -6,6 +6,7 @@ import dist
 import subprocess
 import sys
 import re
+import signal
 import tempfile
 import threading
 import traceback
@@ -183,6 +184,7 @@ compilation_tests = [
     "identifierTest",
     "shortCircuit",
     "errorReraisePrefix",
+    "errorGenericReturn",
     "weak",
     "superMemoryFlow",
     "initializerMemoryFlow",
@@ -190,7 +192,9 @@ compilation_tests = [
     "interpolationRelease",
     "genericDynDisableLiteralConstraint",
     "reraiseEscapingArgument",
-    "dictionaryCollisions"
+    "dictionaryCollisions",
+    "rangeStepZero",
+    "startFlagBareReturn"
 ]
 
 if not (quick or valgrind):
@@ -226,6 +230,7 @@ unoptimized_tests = [
     "specializationCycles",
     "specializationClosures",
     "remoteBoxRelease",
+    "errorGenericReturn",
     "boxValueSemantics",
     "borrowedBoxes",
     "genericStorage",
@@ -237,6 +242,11 @@ unoptimized_tests = [
     "genericsInferenceTypeDescription",
     "errorProneGenericArgs",
     "upcastClass",
+    "rangeStepZero",
+]
+# Compilation tests whose programs print what NAME.txt says and then panic, which aborts them.
+panic_tests = [
+    "rangeStepZero",
 ]
 # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
 # NAME.specializations. A function that is not specialized, but called generically, does not change what a program
@@ -353,7 +363,8 @@ def check_output(name, binary_path):
     completed = run([binary_path], stdout=PIPE)
     exp_path = os.path.join(dist.source, "tests", "compilation", name + ".txt")
     output = completed.stdout.decode('utf-8')
-    if output != open(exp_path, "r", encoding='utf-8').read() or completed.returncode != 0:
+    expected_returncode = -signal.SIGABRT if name in panic_tests else 0
+    if output != open(exp_path, "r", encoding='utf-8').read() or completed.returncode != expected_returncode:
         log(output)
         fail_test(name)
 

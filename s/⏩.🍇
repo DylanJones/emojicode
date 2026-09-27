@@ -19,9 +19,15 @@
     1 ➡️ 🖍step
   🍉
   📗
-    Creates a range from *start* to *stop* with the provided *step*.
+    Creates a range from *start* to *stop* with the provided *step*. The range
+    is empty if *step* goes away from *stop*. If *step* is 0, the program will
+    panic.
   📗
-  🥯🆕 🍼 start 🔢 🍼 stop 🔢 🍼 step 🔢 🍇🍉
+  🥯🆕 🍼 start 🔢 🍼 stop 🔢 🍼 step 🔢 🍇
+    ↪️ step 🙌 0 🎍🐌🍇
+      🤯🐇💻 🔤Created a ⏩ with a step of 0🔤❗️
+    🍉
+  🍉
 
   📗
     Returns the *n*th element of the range, `start + step * n`. *n* is only
