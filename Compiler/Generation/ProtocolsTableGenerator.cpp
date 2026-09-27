@@ -108,10 +108,13 @@ llvm::GlobalVariable* ProtocolsTableGenerator::createDispatchTable(const Type &t
     auto load = llvm::ConstantInt::get(llvm::Type::getInt1Ty(generator_->context()),
                                        (type.type() == TypeType::Class ||
                                         generator_->typeHelper().isRemote(type)) ? 1 : 0);
-    auto conformanceStruct = llvm::ConstantStruct::get(generator_->typeHelper().protocolConformance(),
-                                                       { load, avGep, boxInfo,
-                                                         type.typeDefinition()->boxRetainRelease().first,
-                                                         type.typeDefinition()->boxRetainRelease().second });
+    auto makeUnique = type.typeDefinition()->boxMakeUnique();
+    auto conformanceStruct = llvm::ConstantStruct::get(generator_->typeHelper().protocolConformance(), {
+        load, avGep, boxInfo, type.typeDefinition()->boxRetainRelease().first,
+        type.typeDefinition()->boxRetainRelease().second,
+        makeUnique != nullptr ? static_cast<llvm::Constant *>(makeUnique)
+                              : llvm::ConstantPointerNull::get(generator_->typeHelper().pointer())
+    });
     return getConformanceVariable(type, conformance.type->type(), conformanceStruct);
 }
 

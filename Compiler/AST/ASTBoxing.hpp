@@ -85,14 +85,20 @@ class ASTSimpleToSimpleOptional final : public ASTBoxing {
 class ASTToBox : public ASTBoxing, public MFHeapAutoAllocates {
     using ASTBoxing::ASTBoxing;
 protected:
-    void getPutValueIntoBox(Value *box, Value *value, FunctionCodeGenerator *fg) const;
+    /// Returns the heap object that buildStoreAddress() allocated to store a remote value, or nullptr.
+    Value* getPutValueIntoBox(Value *box, Value *value, FunctionCodeGenerator *fg) const;
     void setBoxInfo(Value *box, FunctionCodeGenerator *fg) const;
-    Value* buildStoreAddress(Value *box, FunctionCodeGenerator *fg) const;
+    /// @param remoteObject Set to the object allocated to store a remote value, or nullptr if none was allocated.
+    Value* buildStoreAddress(Value *box, FunctionCodeGenerator *fg, Value **remoteObject) const;
 
     void analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCategory type) override {
         analyseAllocation(type);
         ASTBoxing::analyseMemoryFlow(analyser, type);
     }
+
+    /// Returns a variable that will hold the heap object in which buildStoreAddress() stores a remote value, which is
+    /// released as a temporary, or nullptr if the value is not stored in such an object or it is not a temporary.
+    Value* temporaryRemoteObjectVariable(FunctionCodeGenerator *fg) const;
 };
 
 class ASTSimpleOptionalToBox final : public ASTToBox {
@@ -124,6 +130,10 @@ class ASTBoxReferenceToReference final : public ASTBoxing {
     Value* generate(FunctionCodeGenerator *fg) const override;
     void toCode(PrettyStream &pretty) const override {}
     void mutateReference(ExpressionAnalyser *analyser) override;
+
+private:
+    /// Whether the value is mutated through the reference, which is only possible if the box is a mutable variable.
+    bool mutated_ = false;
 };
 
 class ASTDereference : public ASTBoxing {

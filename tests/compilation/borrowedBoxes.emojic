@@ -1,0 +1,105 @@
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+
+🐇 🐡 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ♻️ 🍇
+    😀 🔤deinit🔤❗️
+    😀 name❗️
+  🍉
+🍉
+
+💭 Too large to be stored in a box, so copies of a box share the object on the heap that stores it.
+🕊 🐘 🍇
+  🐊 🔼
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 d 🔢
+  🖍🆕 fish 🐡
+  🆕 🍼 a 🔢 name 🔡 🍇
+    0 ➡️ 🖍b
+    0 ➡️ 🖍c
+    0 ➡️ 🖍d
+    🆕🐡 name❗️ ➡️ 🖍fish
+  🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+🍉
+
+💭 Calls a method on a box it borrows, which it must not make unique.
+🐇 🧰 🍇
+  🐇❗️ 📐 value 🔼 ➡️ 🔢 🍇
+    ↩️ 📏 value❗️
+  🍉
+  🐇❗️ 🧮 values 🍨🐚🔼🍆 ➡️ 🔢 🍇
+    0 ➡️ 🖍🆕 sum
+    🔂 value values 🍇
+      sum ⬅️➕ 📏 value❗️
+    🍉
+    ↩️ sum
+  🍉
+🍉
+
+🕊 📮 🍇
+  🖍🆕 stored 🔼
+  🆕 🍼 stored 🔼 🍇🍉
+  ❗️ 🔼 ➡️ 🔼 🍇
+    ↩️ stored
+  🍉
+🍉
+
+💭 Calls a method on an instance variable of 👇, which methods that do not mutate must not change. Its many
+💭 statements keep it from being inlined.
+🕊 🎁🐚T 🔼🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+  ❗️ 🧮 ➡️ 🔢 🍇
+    📏 value❗️ ➡️ n
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    😀 🔤counting🔤❗️
+    ↩️ n
+  🍉
+🍉
+
+🏁 🍇
+  🖍🆕 p 🔼
+  🆕🐘 1 🔤parameter🔤❗️ ➡️ 🖍p
+  p ➡️ q
+  😀 🔡 📐🐇🧰 p❗️❗️❗️
+  😀 🔡 📐🐇🧰 q❗️❗️❗️
+  😀 🔡 📐🐇🧰 p❗️❗️❗️
+
+  🖍🆕 list 🍨🐚🔼🍆
+  🍿 p q 🆕🐘 2 🔤list🔤❗️ 🍆 ➡️ 🖍list
+  list ➡️ copy
+  😀 🔡 🧮🐇🧰 list❗️❗️❗️
+  😀 🔡 🧮🐇🧰 copy❗️❗️❗️
+
+  🆕📮 🆕🐘 3 🔤getter🔤❗️❗️ ➡️ box
+  😀 🔡 📏 🔼box❗️❗️❗️❗️
+  😀 🔡 📏 🔼box❗️❗️❗️❗️
+
+  🆕🎁🐚🐘🍆 🆕🐘 4 🔤instance variable🔤❗️❗️ ➡️ a
+  a ➡️ b
+  😀 🔡 🧮a❗️❗️❗️
+  😀 🔡 🧮b❗️❗️❗️
+  😀 🔤end🔤❗️
+🍉

@@ -107,14 +107,14 @@ std::pair<llvm::Function*, llvm::Function*> buildBoxRetainRelease(CodeGenerator 
         auto ptr = cg->typeHelper().pointer();
         auto mngType = cg->typeHelper().managable(cg->typeHelper().llvmTypeFor(type));
 
-        auto objPtr = releaseFg.buildGetBoxValuePtrAfter(release->args().begin(), ptr, ptr);
+        auto objPtr = releaseFg.buildGetRemoteBoxObjectPtr(release->args().begin());
         auto remotePtr = releaseFg.builder().CreateLoad(ptr, objPtr);
         if (type.isManaged()) {
             releaseFg.release(releaseFg.managableGetValuePtr(mngType, remotePtr), type);
         }
         releaseFg.builder().CreateCall(cg->runTime().releaseWithoutDeinit(), remotePtr);
 
-        auto objPtrRetain = retainFg.buildGetBoxValuePtrAfter(retain->args().begin(), ptr, ptr);
+        auto objPtrRetain = retainFg.buildGetRemoteBoxObjectPtr(retain->args().begin());
         auto remotePtrRetain = retainFg.builder().CreateLoad(ptr, objPtrRetain);
         if (type.isManaged()) {
             retainFg.retain(retainFg.managableGetValuePtr(mngType, remotePtrRetain), type);
@@ -142,6 +142,18 @@ std::pair<llvm::Function*, llvm::Function*> buildBoxRetainRelease(CodeGenerator 
     releaseFg.builder().CreateRetVoid();
     retainFg.builder().CreateRetVoid();
     return std::make_pair(retain, release);
+}
+
+llvm::Function* buildBoxMakeUnique(CodeGenerator *cg, const Type &type) {
+    if (!cg->typeHelper().isRemote(type)) {
+        return nullptr;
+    }
+    auto fn = createFunction(cg, mangleBoxMakeUnique(type));
+    FunctionCodeGenerator fg(fn, cg, std::make_unique<TypeContext>(type));
+    fg.createEntry();
+    fg.makeRemoteBoxValueUnique(fn->args().begin(), type);
+    fg.builder().CreateRetVoid();
+    return fn;
 }
 
 }
