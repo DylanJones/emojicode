@@ -27,7 +27,8 @@ Compiler* SemanticAnalyser::compiler() const {
     return package_->compiler();
 }
 
-SemanticAnalyser::SemanticAnalyser(Package *package, bool imported) : package_(package), imported_(imported) {}
+SemanticAnalyser::SemanticAnalyser(Package *package, bool imported, bool specialize)
+    : package_(package), imported_(imported), specialize_(specialize) {}
 
 SemanticAnalyser::~SemanticAnalyser() = default;
 
@@ -145,7 +146,7 @@ Function* SemanticAnalyser::specialize(Function *function, const Type &calleeTyp
                                        const std::vector<Type> &genericArguments) {
     // A function of an imported package can be specialized if its body is in the package's interface, i.e. it is
     // inline. The specialization belongs to this package.
-    if (!declarationsAnalysed_ || imported_ || !isSpecializable(function) ||
+    if (!specialize_ || !declarationsAnalysed_ || imported_ || !isSpecializable(function) ||
         (function->package() != package_ && !(function->package()->isImported() && function->isInline()))) {
         return nullptr;
     }

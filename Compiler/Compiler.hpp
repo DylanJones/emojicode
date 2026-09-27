@@ -74,10 +74,13 @@ public:
     class AnalysisPhase final : public Phase {
     public:
         /// @param standalone If the package is a standalone package a start flag block is required.
-        AnalysisPhase(bool standalone) : standalone_(standalone) {}
+        /// @param specialize Whether calls of generic functions use specializations, which only generated code
+        ///                   benefits from.
+        AnalysisPhase(bool standalone, bool specialize = true) : standalone_(standalone), specialize_(specialize) {}
         void perform(Compiler *compiler) override;
     private:
         bool standalone_;
+        bool specialize_;
     };
 
     /// Prints the interface. Must be preceded by AnalysisPhase.

@@ -59,7 +59,7 @@ void Compiler::ParsePhase::perform(Compiler *compiler) {
 }
 
 void Compiler::AnalysisPhase::perform(Compiler *compiler) {
-    SemanticAnalyser(compiler->mainPackage(), false).analyse(standalone_);
+    SemanticAnalyser(compiler->mainPackage(), false, specialize_).analyse(standalone_);
     if (compiler->hasError_) return;
     MFAnalyser(compiler->mainPackage()).analyse();
 }
