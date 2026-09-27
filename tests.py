@@ -66,6 +66,7 @@ compilation_tests = [
     "castGenericClass",
     "genericSubclassArguments",
     "genericSubclassInAncestor",
+    "upcastClass",
     "protocolClass",
     "protocolSubclass",
     "protocolValueType",
@@ -240,6 +241,7 @@ unoptimized_tests = [
     "closureGenericArgsCapture",
     "genericsInferenceTypeDescription",
     "errorProneGenericArgs",
+    "upcastClass",
     "rangeStepZero",
 ]
 # Compilation tests whose programs print what NAME.txt says and then panic, which aborts them.
