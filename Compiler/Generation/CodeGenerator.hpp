@@ -16,6 +16,7 @@
 #include <string>
 #include <map>
 #include <set>
+#include <vector>
 #include <llvm/TargetParser/Triple.h>
 
 namespace llvm {
@@ -98,8 +99,16 @@ private:
 
     llvm::TargetMachine *targetMachine_ = nullptr;
 
+    /// The imported functions with a body (i.e. inline functions) whose bodies have not been generated yet.
+    std::vector<Function *> importedFunctions_;
+
+    /// Generates the functions of @p package, or, if it is @p imported, adds them to importedFunctions_.
     void generateFunctions(Package *package, bool imported);
     void generateFunction(Function *function);
+    void generateReification(Function *function, const ReificationContext &context, llvm::Function *fn);
+    /// Generates the bodies of the imported functions that generated code references and removes the others, which
+    /// saves generating and optimizing all the imported inline functions a package does not use.
+    void generateReferencedImportedFunctions();
 
     void addParamAttrs(const Parameter &param, size_t index, llvm::Function *function);
     /// Adds the sign and zero extension attributes C requires to the parameters and return value of a 🎍🌊 function.
