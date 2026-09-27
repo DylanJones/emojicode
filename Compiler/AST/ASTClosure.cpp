@@ -82,6 +82,8 @@ Type ASTClosure::comply(ExpressionAnalyser *analyser, const TypeExpectation &exp
         }
 
         capture_.self = analyser->typeContext().calleeType();
+        // If this closure is inside another closure, it gets 👇 from that one, which must therefore capture it too.
+        analyser->pathAnalyser().record(PathAnalyserIncident::UsedSelf);
     }
     if (closure_->isC()) {
         if (!capture_.captures.empty() || capture_.capturesSelf()) {
