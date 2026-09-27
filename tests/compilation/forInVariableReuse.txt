@@ -8,7 +8,13 @@ Marlin
 Deinit
 Marlin
 Bruce
+Gill
+Deinit
+Gill
+Squirt
 Deinit
 Dory
 Deinit
 Bruce
+Deinit
+Squirt

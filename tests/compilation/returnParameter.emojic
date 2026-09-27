@@ -75,5 +75,13 @@
   🆕🐟 🔤plain🔤❗️ ➡️ 🖍fish
   🔄🐇🔨 fish❗️
   😀 🔡🔀🐇🔨 fish 🆕🐟 🔤other🔤❗️ 👎❗️❗️❗️
+
+  💭 A captured variable, like a parameter, does not own its value, which the closure keeps.
+  🆕🐟 🔤captured🔤❗️ ➡️ captured
+  🍇 ➡️ 🐟
+    ↩️ captured
+  🍉 ➡️ closure
+  😀 🔡⁉️closure❗️❗️❗️
+  😀 🔡⁉️closure❗️❗️❗️
   😀 🔤end🔤❗️
 🍉

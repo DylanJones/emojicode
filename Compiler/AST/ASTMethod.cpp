@@ -158,10 +158,7 @@ Type ASTMethodable::analyseTypeMethodCall(ExpressionAnalyser *analyser, const st
 
 Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const std::u32string &name,
                                              const std::shared_ptr<ASTExpr> &callee) {
-    std::vector<Type> argTypes;
-    for (auto &arg : args_.args()) {
-        argTypes.emplace_back(analyser->analyse(arg));
-    }
+    auto argTypes = analyseArgs(analyser, &args_);
     auto genericArgs = transformTypeAstVector(args_.genericArguments(), analyser->typeContext());
     // The generic parameters of a method, e.g. Element in 🍡🐚🔢🍆, are resolved on the protocol that declares it.
     for (multiprotocolN_ = 0; multiprotocolN_ < calleeType_.protocols().size(); multiprotocolN_++) {

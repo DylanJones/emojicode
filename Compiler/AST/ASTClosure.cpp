@@ -80,7 +80,11 @@ Type ASTClosure::comply(ExpressionAnalyser *analyser, const TypeExpectation &exp
 
 void ASTClosure::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCategory type) {
     analyseAllocation(type);
-    MFFunctionAnalyser(closure_.get()).analyse();
+    MFFunctionAnalyser closureAnalyser(closure_.get());
+    for (auto &capture : capture_.captures) {
+        closureAnalyser.recordCapture(capture.captureId);
+    }
+    closureAnalyser.analyse();
     for (auto &capture : capture_.captures) {
         analyser->recordVariableGet(capture.sourceId, MFFlowCategory::Escaping);
     }

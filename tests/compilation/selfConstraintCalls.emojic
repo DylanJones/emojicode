@@ -1,0 +1,68 @@
+💭 Generic code constrained to 📈 of its parameters calls other such code with explicit and inferred generic
+💭 arguments. Constraints mention a generic parameter of the callee's inferred type and a subclass of a generic class.
+🕊 🧰 🍇
+  🆕 🍇🍉
+  🐇❗️ 🥨🐚T 📈🐚T🍆🍆 a T b T ➡️ T 🍇
+    ↩️ a ✖️ b ➕ b
+  🍉
+  💭 Passes its own generic parameter explicitly.
+  🐇❗️ 🍩🐚U 📈🐚U🍆🍆 a U b U ➡️ U 🍇
+    ↩️ 🥨🐚U🍆🕊🧰 a b❗️
+  🍉
+  🐇❗️ 🔝🐚T 📈🐚T🍆🍆 values 🍨🐚T🍆 ➡️ T 🍇
+    🐽values 0❗️ ➡️ 🖍🆕 largest
+    🔂 value values 🍇
+      ↪️ value ▶️ largest 🍇
+        value ➡️ 🖍largest
+      🍉
+    🍉
+    ↩️ largest
+  🍉
+  💭 Its own generic parameter is inferred as the argument.
+  🐇❗️ 📐🐚U 📈🐚U🍆🍆 values 🍨🐚U🍆 ➡️ U 🍇
+    ↩️ 🔝🕊🧰 values❗️
+  🍉
+🍉
+
+🕊 🎛🐚T 📈🐚T🍆🍆 🍇
+  🖍🆕 values 🍨🐚T🍆
+  🆕 🍼 values 🍨🐚T🍆 🍇🍉
+  ❗️ 🔝 ➡️ T 🍇
+    ↩️ 🔝🕊🧰 values❗️
+  🍉
+  ❗️ 🥨 ➡️ T 🍇
+    ↩️ 🥨🐚T🍆🕊🧰 🐽values 0❗️ 🐽values 1❗️❗️
+  🍉
+🍉
+
+💭 The initializer's generic parameter is constrained by the type's, whose argument is inferred.
+🕊 📦🐚T ⚪🍆 🍇
+  🖍🆕 t T
+  🆕🐚U 🍨🐚T🍆🍆 🍼 t T u U 🍇🍉
+  ❗️ 🥕 ➡️ T 🍇
+    ↩️ t
+  🍉
+🍉
+
+🐇 🐐🐚T ⚪🍆 🍇
+🍉
+
+🐇 🐟 🐐🐚🔢🍆 🍇
+🍉
+
+🕊 🎒🐚X 🐟🍆 🍇
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 🥕 ➡️ 🔢 🍇
+    ↩️ n
+  🍉
+🍉
+
+🏁 🍇
+  😀 🔡 🍩🕊🧰 3 4❗️❗️❗️
+  😀 🔡 📐🕊🧰 🍿 3 9 4 🍆❗️❗️❗️
+  😀 🔡 🔝🆕🎛🐚🔢🍆 🍿 3 9 4 🍆❗️❗️❗️❗️
+  😀 🔡 🥨🆕🎛🐚🔢🍆 🍿 3 9 4 🍆❗️❗️❗️❗️
+  😀 🔡 🥕🆕📦 1 🍿 1 2 🍆❗️❗️❗️❗️
+  😀 🔡 🥕🆕🎒🐚🐟🍆 5❗️❗️❗️❗️
+🍉

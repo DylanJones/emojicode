@@ -152,6 +152,8 @@ public:
     void buildStoreErased(llvm::Value *address, llvm::Value *entry, llvm::Value *box, const Type &type);
     /// Releases the value at @p address, which is of the type described by @p entry.
     void buildReleaseErased(llvm::Value *address, llvm::Value *entry);
+    /// Gets a pointer to the field of the box to which @p box points that holds the object storing its remote value.
+    llvm::Value* buildGetRemoteBoxObjectPtr(llvm::Value *box);
     /// Makes the value of the box to which @p box points unique, using the function of the protocol @p conformance,
     /// if the value is stored remotely. @p box must point to a variable that owns the box.
     void makeBoxValueUnique(llvm::Value *conformance, llvm::Value *box);

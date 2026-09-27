@@ -68,17 +68,18 @@ Type ASTTypeId::getType(const TypeContext &typeContext, bool allowGenericInferen
     for (auto &arg : genericArgs_) {
         args.emplace_back(arg->analyseType(typeContext));
     }
-    type.setGenericArguments(std::vector<Type>(args));
-    if (auto checks = typeContext.deferredChecks()) {
-        if (!(allowGenericInference && args.empty())) {
-            checks->emplace_back([type, context = TypeContext(typeContext, nullptr), p = position()] {
-                type.typeDefinition()->requestReificationAndCheck(context, TypeContext(type), type.genericArguments(),
-                                                                  p);
-            });
-        }
+    type.setGenericArguments(std::move(args));
+    if (allowGenericInference && type.genericArguments().empty()) {
+        return type;
     }
-    else if (!(allowGenericInference && args.empty())) {
-        typeDef->requestReificationAndCheck(typeContext, TypeContext(type), args, position());
+    auto check = [type, context = TypeContext(typeContext, nullptr), p = position()] {
+        type.typeDefinition()->requestReificationAndCheck(context, TypeContext(type), type.genericArguments(), p);
+    };
+    if (auto checks = typeContext.deferredChecks()) {
+        checks->emplace_back(std::move(check));
+    }
+    else {
+        check();
     }
     return type;
 }

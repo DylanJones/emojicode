@@ -8,6 +8,8 @@ generic optional
 other
 deinit
 other
+captured
+captured
 end
 deinit
 kept remote
@@ -17,3 +19,5 @@ deinit
 optional
 deinit
 plain
+deinit
+captured

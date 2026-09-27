@@ -117,11 +117,18 @@ std::optional<GenericInferer> FunctionResolution<T>::checkCallSignature(Function
 }
 
 template <typename T>
-bool FunctionResolution<T>::checkGenericArguments(Function *function, const std::vector<Type> &args) {
+bool FunctionResolution<T>::checkGenericArguments(Function *function, const GenericInferer &inf) {
+    auto args = inf.localArgumentsType();
+    // A constraint can mention the generic parameters of the callee's type, whose arguments this call can infer too.
+    Type callee = callee_;
+    if (inf.inferringType()) {
+        callee.setGenericArguments(inf.typeArguments());
+    }
+    TypeContext instanceContext(callee, function, &args);
     for (size_t i = function->offset(); i < args.size(); i++) {
-        auto constraint = function->constraintForIndex(i).resolveOn(TypeContext(callee_, function, &args));
+        auto constraint = function->constraintForIndex(i).resolveOn(instanceContext);
         if (!args[i].compatibleTo(constraint, typeContext_)) {  // The arguments are types of the calling code.
-            nonCandidates_.emplace_back(function, NonCandidate::Reason::GenericArgument, i);
+            nonCandidates_.emplace_back(function, NonCandidate::Reason::GenericArgument, i - function->offset() + 1);
             return false;
         }
     }
@@ -131,11 +138,18 @@ bool FunctionResolution<T>::checkGenericArguments(Function *function, const std:
 template <typename T>
 void FunctionResolution<T>::addResolver(const FunctionResolver<T> *res) {
     std::set<Function *> blocked;
+    std::set<Function *> overridden;
     for (; res != nullptr; res = res->super_) {
         auto pos = res->map_.find(key_);
         if (pos != res->map_.end()) {
-            overloads_ += pos->second.size();
             for (auto &fn : pos->second) {
+                // A function that a subclass overrides is the same method as the overriding one, not an overload.
+                if (overridden.count(fn.get()) == 0) {
+                    overloads_++;
+                }
+                if (fn->overriding()) {
+                    overridden.emplace(fn->superFunction());
+                }
                 if (blocked.find(fn.get()) != blocked.end()) {
                     if (fn->overriding()) {
                         blocked.emplace(fn->superFunction());
@@ -146,7 +160,7 @@ void FunctionResolution<T>::addResolver(const FunctionResolver<T> *res) {
                 auto inf = checkCallSignature(fn.get());
                 if (inf.has_value() &&
                     checkFunctionAccess(fn.get()) &&
-                    checkGenericArguments(fn.get(), inf->localArgumentsType())) {
+                    checkGenericArguments(fn.get(), *inf)) {
                     candidates_.emplace_back(fn.get(), *inf);
                     if (fn->overriding()) {
                         blocked.emplace(fn->superFunction());

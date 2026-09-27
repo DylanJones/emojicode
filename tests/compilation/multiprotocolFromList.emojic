@@ -1,0 +1,41 @@
+💭 A multiprotocol value in memory, like an element of a list, is stored with its conformances, so it can be
+💭 passed on as a multiprotocol. (Generic code used to store it in a box for ⚪, which does not have them.)
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+🐊 🔽 🍇
+  ❗️ 🔡 ➡️ 🔡
+🍉
+🐇 🐘 🍇
+  🐊 🔼
+  🐊 🔽
+  🖍🆕 n 🔢
+  🆕 🍼 n 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇 ↩️ n 🍉
+  ❗️ 🔡 ➡️ 🔡 🍇 ↩️ 🔤elephant🔤 🍉
+🍉
+🕊 🦒 🍇
+  🐊 🔼
+  🐊 🔽
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 d 🔢
+  🆕 🍼 a 🔢 🍇 0 ➡️ 🖍b 0 ➡️ 🖍c 0 ➡️ 🖍d 🍉
+  ❗️ 📏 ➡️ 🔢 🍇 ↩️ a 🍉
+  ❗️ 🔡 ➡️ 🔡 🍇 ↩️ 🔤giraffe🔤 🍉
+🍉
+🐇 🧰 🍇
+  🐇❗️ 🙈 value 🍱🔼🔽🍱 🍇
+    😀 🔡 📏 value❗️❗️❗️
+    😀 🔡 value❗️❗️
+  🍉
+  🐇❗️ 🙉 list 🍨🐚🍱🔼🔽🍱🍆 🍇
+    🙈🐇🧰 🐽 list 0❗️❗️
+    🙈🐇🧰 🐽 list 1❗️❗️
+  🍉
+🍉
+🏁 🍇
+  🙉🐇🧰 🍿 🆕🐘 7❗️ 🆕🦒 42❗️ 🍆❗️
+  😀 🔤end🔤❗️
+🍉

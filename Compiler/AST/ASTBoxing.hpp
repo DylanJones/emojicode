@@ -88,9 +88,11 @@ class ASTSimpleToSimpleOptional final : public ASTBoxing {
 class ASTToBox : public ASTBoxing, public MFHeapAutoAllocates {
     using ASTBoxing::ASTBoxing;
 protected:
-    void getPutValueIntoBox(Value *box, Value *value, FunctionCodeGenerator *fg) const;
+    /// Returns the heap object that buildStoreAddress() allocated to store a remote value, or nullptr.
+    Value* getPutValueIntoBox(Value *box, Value *value, FunctionCodeGenerator *fg) const;
     void setBoxInfo(Value *box, FunctionCodeGenerator *fg) const;
-    Value* buildStoreAddress(Value *box, FunctionCodeGenerator *fg) const;
+    /// @param remoteObject Set to the object allocated to store a remote value, or nullptr if none was allocated.
+    Value* buildStoreAddress(Value *box, FunctionCodeGenerator *fg, Value **remoteObject) const;
 
     void analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCategory type) override {
         analyseAllocation(type);
@@ -100,9 +102,6 @@ protected:
     /// Returns a variable that will hold the heap object in which buildStoreAddress() stores a remote value, which is
     /// released as a temporary, or nullptr if the value is not stored in such an object or it is not a temporary.
     Value* temporaryRemoteObjectVariable(FunctionCodeGenerator *fg) const;
-
-    /// The heap object that buildStoreAddress() allocated for a remote value, or nullptr.
-    mutable Value *remoteObject_ = nullptr;
 };
 
 class ASTSimpleOptionalToBox final : public ASTToBox {

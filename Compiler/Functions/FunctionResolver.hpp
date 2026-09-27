@@ -30,6 +30,9 @@ template <typename T>
 struct Candidate;
 struct NonCandidate;
 
+/// Analyses the arguments of a call and returns their types, which a FunctionResolution resolves the call with.
+std::vector<Type> analyseArgs(ExpressionAnalyser *analyser, ASTArguments *args);
+
 struct FunctionTableKey {
     FunctionTableKey(std::u32string name, Mood mood, int paramCount)
         : name(std::move(name)), mood(mood), paramCount(paramCount) {}
@@ -109,7 +112,7 @@ public:
 private:
     bool checkFunctionAccess(Function *function);
     std::optional<GenericInferer> checkCallSignature(Function *function);
-    bool checkGenericArguments(Function *function, const std::vector<Type> &args);
+    bool checkGenericArguments(Function *function, const GenericInferer &inf);
     bool moreSpecific(Function *a, Function *b) const;
 
     FunctionTableKey key_;
@@ -123,7 +126,8 @@ private:
     std::optional<Candidate<T>> pick();
 
     std::vector<Candidate<T>> candidates_;
-    /// The number of functions declared with the name, mood and number of parameters of the call.
+    /// The number of functions declared with the name, mood and number of parameters of the call, not counting those
+    /// that are overridden by another of them.
     size_t overloads_ = 0;
     std::vector<NonCandidate> nonCandidates_;
     std::map<std::pair<Function*, Function*>, bool> moreSpecific_;
