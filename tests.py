@@ -76,6 +76,7 @@ compilation_tests = [
     "genericStorage",
     "genericOptionalStorage",
     "listCopyOnWrite",
+    "memoryReleaseCount",
     "genericCallStack",
     "multiprotocolCallee",
     "dictionaryOfBytes",
@@ -202,6 +203,7 @@ unoptimized_tests = [
     "borrowedBoxes",
     "genericStorage",
     "listCopyOnWrite",
+    "memoryReleaseCount",
 ]
 # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
 # NAME.specializations. A function that is not specialized, but called generically, does not change what a program

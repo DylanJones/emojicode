@@ -152,6 +152,9 @@ public:
     void buildStoreErased(llvm::Value *address, llvm::Value *entry, llvm::Value *box, const Type &type);
     /// Releases the value at @p address, which is of the type described by @p entry.
     void buildReleaseErased(llvm::Value *address, llvm::Value *entry);
+    /// Releases the @p count values from @p address on, which are of the type described by @p entry. Values that are
+    /// not managed are not visited at all.
+    void buildReleaseErased(llvm::Value *address, llvm::Value *entry, llvm::Value *count);
     /// Copies @p count values of the type described by @p entry from @p source to @p destination, retaining them.
     void buildCopyErased(llvm::Value *destination, llvm::Value *source, llvm::Value *count, llvm::Value *entry);
     /// Gets a pointer to the field of the box to which @p box points that holds the object storing its remote value.

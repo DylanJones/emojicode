@@ -1,0 +1,58 @@
+💭 ♻️ with a count releases that many values of T, which follow each other in memory, in concrete and generic code.
+🐇 🐕 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ♻️ 🍇
+    😀 🔤released 🧲name🧲🔤❗️
+  🍉
+🍉
+
+🐇 🧺🐚T⚪️🍆 🍇
+  🖍🆕 mem 🧠
+  🆕 a T b T 🍇
+    ☣️ 🍇
+      🆕🧠 2✖️⚖️T❗️ ➡️ 🖍mem
+      a ➡️ 🐽🐚T🍆 mem 0❗️
+      b ➡️ 🐽🐚T🍆 mem ⚖️T❗️
+    🍉
+  🍉
+  ♻️ 🍇
+    ☣️ 🍇
+      ♻️🐚T🍆 mem 0 2❗️
+    🍉
+  🍉
+🍉
+
+💭 A subclass keeps the methods of 🧺 generic, so they release values of the type T stands for at run time.
+🐇 🎒🐚T⚪️🍆 🧺🐚T🍆 🍇
+🍉
+
+🐇 🔧 🍇
+  🐇❗️ 🗑 🍇
+    ☣️ 🍇
+      🆕🧠 3✖️⚖️🐕❗️ ➡️ mem
+      🆕🐕 🔤a🔤❗️ ➡️ 🐽🐚🐕🍆 mem 0❗️
+      🆕🐕 🔤b🔤❗️ ➡️ 🐽🐚🐕🍆 mem ⚖️🐕❗️
+      🆕🐕 🔤c🔤❗️ ➡️ 🐽🐚🐕🍆 mem 2✖️⚖️🐕❗️
+      ♻️🐚🐕🍆 mem 0 0❗️
+      😀 🔤none released🔤❗️
+      ♻️🐚🐕🍆 mem ⚖️🐕 1❗️
+      😀 🔤--🔤❗️
+      ♻️🐚🐕🍆 mem 0 1❗️
+      ♻️🐚🐕🍆 mem 2✖️⚖️🐕 1❗️
+      😀 🔤--🔤❗️
+      🆕🧠 4✖️⚖️🔢❗️ ➡️ numbers
+      ♻️🐚🔢🍆 numbers 0 4❗️
+      😀 🔤numbers need no release🔤❗️
+    🍉
+  🍉
+🍉
+
+🏁 🍇
+  🗑🐇🔧❗️
+  🆕🧺🐚🐕🍆 🆕🐕 🔤d🔤❗️ 🆕🐕 🔤e🔤❗️❗️ ➡️ dogs
+  🆕🧺🐚🔢🍆 1 2❗️ ➡️ numbers
+  🆕🧺🐚🔡🍆 🔤x🔤 🔤y🔤❗️ ➡️ strings
+  🆕🧺🐚🍬🐕🍆 🆕🐕 🔤f🔤❗️ 🤷‍♀️❗️ ➡️ optionals
+  😀 🔤end🔤❗️
+🍉

@@ -507,6 +507,16 @@ void FunctionCodeGenerator::buildReleaseErased(llvm::Value *address, llvm::Value
     });
 }
 
+void FunctionCodeGenerator::buildReleaseErased(llvm::Value *address, llvm::Value *entry, llvm::Value *count) {
+    // The flag is checked once, so that the values of a type that is not managed, like 🔢, aren't visited at all.
+    createIf(builder().CreateNot(witnessField(this, entry, 5)), [&] {
+        auto release = witnessField(this, entry, 3);
+        createForEachValue(address, count, buildValueSize(entry), [&](llvm::Value *valueAddress) {
+            builder().CreateCall(typeHelper().boxRetainRelease(), release, { valueAddress });
+        });
+    });
+}
+
 void FunctionCodeGenerator::buildCopyErased(llvm::Value *destination, llvm::Value *source, llvm::Value *count,
                                             llvm::Value *entry) {
     auto size = buildValueSize(entry);

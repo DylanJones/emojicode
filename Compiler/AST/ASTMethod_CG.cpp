@@ -89,6 +89,19 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
             }
             case BuiltInType::Release: {
                 auto type = args_.genericArguments().front()->type();
+                if (args_.args().size() == 2) {  // ♻️ offset count
+                    if (LLVMTypeHelper::isErased(type)) {
+                        auto ptr = buildMemoryAddress(fg, v, args_.args()[0]->generate(fg), type);
+                        fg->buildReleaseErased(ptr, fg->buildTypeDescriptionEntry(type), args_.args()[1]->generate(fg));
+                    }
+                    else if (type.isManaged()) {
+                        auto ptr = buildMemoryAddress(fg, v, args_.args()[0]->generate(fg), type);
+                        fg->createForEachValue(ptr, args_.args()[1]->generate(fg),
+                                               fg->sizeOf(fg->typeHelper().llvmTypeFor(type)),
+                                               [&](llvm::Value *valuePtr) { fg->releaseByReference(valuePtr, type); });
+                    }
+                    return nullptr;
+                }
                 if (LLVMTypeHelper::isErased(type)) {
                     auto ptr = buildMemoryAddress(fg, v, args_.args().front()->generate(fg), type);
                     fg->buildReleaseErased(ptr, fg->buildTypeDescriptionEntry(type));

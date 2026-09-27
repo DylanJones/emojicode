@@ -67,6 +67,16 @@
   ☣️️ ❗️ ♻️🐚☣️️T⚪️🍆 offset 🔢 📻 🔤ejcBuiltIn🔤
 
   📗
+    Releases *count* values of type T that follow each other from *offset*
+    bytes past the beginning of this memory area on, like calling ♻️ for each
+    of them.
+
+    Values that are not managed, like 🔢, need no release, so their count
+    does not matter.
+  📗
+  ☣️️ ❗️ ♻️🐚☣️️T⚪️🍆 offset 🔢 count 🔢 📻 🔤ejcBuiltIn🔤
+
+  📗
     Copies *bytes* bytes from *source* starting from *sourceOffset* to this
     instane, writing the copied bytes *destinationOffset* bytes past the
     beginning of this memory area.
