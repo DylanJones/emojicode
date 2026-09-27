@@ -119,6 +119,7 @@ compilation_tests = [
     "closureGenerics",
     "closureGenericValueType",
     "closureGenericTypeMethod",
+    "closureGenericArgsCapture",
     "closureError",
     "callableBoxing",
     "errorUnwrap",
@@ -207,6 +208,7 @@ unoptimized_tests = [
     "genericStorage",
     "closureGenericValueType",
     "closureGenericTypeMethod",
+    "closureGenericArgsCapture",
     "genericsInferenceTypeDescription",
 ]
 # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
