@@ -122,6 +122,7 @@ compilation_tests = [
     "superclassArgumentDeclaredLater",
     "optionalGenericField",
     "nestedOptionalGenericArgument",
+    "inheritedGenericMethodOnSelf",
     "variableInitAndScoping",
     "varInitPath",
     "valueTypeRemoteAdditional",

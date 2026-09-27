@@ -28,10 +28,11 @@ namespace EmojicodeCompiler {
 const std::u32string kDefaultNamespace = std::u32string(1, E_HOUSE_BUILDING);
 
 /// Literal constraints (e.g. ⚪️) are analysed when parsed, so all constraints must be checked, not only the first.
+/// A type definition without generic parameters has none to wait for, but a class may still inherit generic arguments.
 template <typename T>
 static bool constraintsAnalysed(const T *generic) {
     auto &params = generic->genericParameters();
-    return !params.empty() && std::all_of(params.begin(), params.end(), [](auto &param) {
+    return std::all_of(params.begin(), params.end(), [](auto &param) {
         return param.constraint->wasAnalysed();
     });
 }
