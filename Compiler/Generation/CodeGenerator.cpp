@@ -250,31 +250,29 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
         i++;
     }
 
-    // The supplementary parameters must be skipped exactly as LLVMTypeHelper::functionTypeFor() adds them.
-    if ((function->functionType() == FunctionType::ObjectInitializer ||
-         function->functionType() == FunctionType::ValueTypeInitializer) && function->owner()->storesGenericArgs()) {
-        if (function->functionType() == FunctionType::ValueTypeInitializer) {  // A class's is a {ptr, i1} struct.
-            fn->addParamAttr(i, llvm::Attribute::NonNull);
-            fn->addParamAttr(i, llvm::Attribute::ReadOnly);
-        }
-        i++;
+    // The generic arguments of an initializer directly follow the parameters (see LLVMTypeHelper::functionTypeFor()).
+    // A class's are a {ptr, i1} struct, which takes no pointer attributes.
+    if (function->functionType() == FunctionType::ValueTypeInitializer && function->owner()->storesGenericArgs()) {
+        fn->addParamAttr(i, llvm::Attribute::NonNull);
+        fn->addParamAttr(i, llvm::Attribute::ReadOnly);
     }
-    if (isTypeMethod(function) && function->owner()->storesGenericArgs()) {
-        i++;
+    // The error pointer is the last parameter and the function's generic arguments come before it. They are found from
+    // the end, so that the other supplementary parameters, like the generic arguments of a type method, which a closure
+    // in it does not take, need not be counted here.
+    auto last = fn->arg_size();
+    if (function->errorProne()) {
+        last--;
+        fn->addParamAttr(last, llvm::Attribute::NonNull);
+        fn->addParamAttr(last, llvm::Attribute::getWithCaptureInfo(fn->getContext(), llvm::CaptureInfo::none()));
+        fn->addParamAttr(last, llvm::Attribute::NoAlias);
     }
     if (!function->genericParameters().empty()) {
+        last--;
         if (dynamic_cast<Class*>(function->owner()) == nullptr) {
-            fn->addParamAttr(i, llvm::Attribute::NonNull);
-            fn->addParamAttr(i, llvm::Attribute::getWithCaptureInfo(fn->getContext(), llvm::CaptureInfo::none()));
-            fn->addParamAttr(i, llvm::Attribute::ReadOnly);
+            fn->addParamAttr(last, llvm::Attribute::NonNull);
+            fn->addParamAttr(last, llvm::Attribute::getWithCaptureInfo(fn->getContext(), llvm::CaptureInfo::none()));
+            fn->addParamAttr(last, llvm::Attribute::ReadOnly);
         }
-        i++;
-    }
-    if (function->errorProne()) {
-        fn->addParamAttr(i, llvm::Attribute::NonNull);
-        fn->addParamAttr(i, llvm::Attribute::getWithCaptureInfo(fn->getContext(), llvm::CaptureInfo::none()));
-        fn->addParamAttr(i, llvm::Attribute::NoAlias);
-        i++;
     }
 
     if (function->isClosure()) {
