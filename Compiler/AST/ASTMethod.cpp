@@ -54,6 +54,9 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
     checkMutation(analyser, callee);
     ensureErrorIsHandled(analyser);
     auto rt = analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
+    if (builtIn_ == BuiltInType::Store || builtIn_ == BuiltInType::Load || builtIn_ == BuiltInType::Release) {
+        analyser->checkMemoryAccessOf(*args_.genericArguments().front(), position());
+    }
     if (!analyser->storesGenericValuesUnboxed(method_->owner()) &&
         (method_->returnType()->type().is<TypeType::GenericVariable>() ||
          method_->returnType()->type().is<TypeType::LocalGenericVariable>() ||

@@ -40,6 +40,25 @@ Type& ASTType::analyseType(const TypeContext &typeContext, bool allowReference, 
     return type_;
 }
 
+bool ASTType::isStoredBoxedByGenericCode() const {
+    if (dynamic_cast<const ASTGenericVariable *>(this) != nullptr) {
+        return optional_;
+    }
+    return dynamic_cast<const ASTCallableType *>(this) != nullptr && mentionsGenericVariable();
+}
+
+bool ASTTypeId::mentionsGenericVariable() const {
+    return std::any_of(genericArgs_.begin(), genericArgs_.end(), [](auto &arg) {
+        return arg->mentionsGenericVariable();
+    });
+}
+
+bool ASTCallableType::mentionsGenericVariable() const {
+    return (return_ != nullptr && return_->mentionsGenericVariable()) ||
+        (errorType_ != nullptr && errorType_->mentionsGenericVariable()) ||
+        std::any_of(params_.begin(), params_.end(), [](auto &param) { return param->mentionsGenericVariable(); });
+}
+
 Type ASTTypeId::getType(const TypeContext &typeContext, bool allowGenericInference) const {
     auto type = package()->getRawType(TypeIdentifier(name_, namespace_, position()));
 

@@ -8,6 +8,7 @@
 #include "ExpressionAnalyser.hpp"
 #include "AnalysisObserver.hpp"
 #include "AST/ASTClosure.hpp"
+#include "AST/ASTType.hpp"
 #include "AST/ASTVariables.hpp"
 #include "AST/ASTTypeExpr.hpp"
 #include "Compiler.hpp"
@@ -135,6 +136,14 @@ static bool containsTypeGenericVariable(const Type &type) {
 void ExpressionAnalyser::usesGenericArgumentsOf(const Type &type) {
     if (containsTypeGenericVariable(type)) {
         pathAnalyser().record(PathAnalyserIncident::UsedSelf);
+    }
+}
+
+void ExpressionAnalyser::checkMemoryAccessOf(const ASTType &type, const SourcePosition &p) const {
+    auto function = typeContext().function();
+    if (function != nullptr && function->enclosingSpecialization() != nullptr && type.isStoredBoxedByGenericCode()) {
+        throw CompilerError(p, "A specialization cannot access values of ", type.type().toString(typeContext()),
+                            " in memory, which generic code stores in boxes.");
     }
 }
 

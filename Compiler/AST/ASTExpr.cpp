@@ -21,6 +21,7 @@ ASTSizeOf::ASTSizeOf(std::unique_ptr<ASTType> type, const SourcePosition &p) : A
 
 Type ASTSizeOf::analyse(ExpressionAnalyser *analyser) {
     type_->analyseType(analyser->typeContext());
+    analyser->checkMemoryAccessOf(*type_, position());  // A size is typically used with memory.
     analyser->usesGenericArgumentsOf(type_->type());
     return analyser->integer();
 }

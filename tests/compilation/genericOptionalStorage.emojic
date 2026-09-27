@@ -1,0 +1,40 @@
+💭 Memory of 🍬T, which generic code stores in boxes, written by the initializer called with 🔢 and read by the
+💭 methods of 🧺, which stay generic as 🧺 has a subclass. The initializer is therefore not specialized either.
+🕊 📦🐚T⚪🍆 🍇
+  🖍🆕 mem 🧠
+  🆕 a 🍬T 🍇
+    ☣️ 🍇
+      🆕🧠 2✖️⚖️🍬T❗️ ➡️ 🖍mem
+      a ➡️ 🐽🐚🍬T🍆 mem 0❗️
+      a ➡️ 🐽🐚🍬T🍆 mem ⚖️🍬T❗️
+    🍉
+  🍉
+  ❗️ 🎁 i 🔢 ➡️ 🍬T 🍇
+    ☣️ 🍇
+      ↩️ 🐽🐚🍬T🍆 mem i✖️⚖️🍬T❗️
+    🍉
+  🍉
+🍉
+
+🐇 🧺🐚T⚪🍆 🍇
+  🆕 🍇🍉
+  ❗️ 🥇 box 📦🐚T🍆 ➡️ 🍬T 🍇
+    ↩️ 🎁box 1❗️
+  🍉
+🍉
+
+🐇 🎒🐚T⚪🍆 🧺🐚T🍆 🍇
+🍉
+
+🏁 🍇
+  🆕📦🐚🔢🍆 42❗️ ➡️ b
+  🎁b 1❗️ ➡️ first
+  ↪️ first ➡️ v 🍇
+    😀 🔡 v❗️❗️
+  🍉
+  🆕🧺🐚🔢🍆❗️ ➡️ basket
+  🥇basket b❗️ ➡️ second
+  ↪️ second ➡️ v 🍇
+    😀 🔡 v❗️❗️
+  🍉
+🍉
