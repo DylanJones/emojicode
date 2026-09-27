@@ -16,6 +16,7 @@
 #include "Prettyprint/PrettyPrinter.hpp"
 #include <llvm/Support/CommandLine.h>
 #include <llvm/ADT/SmallString.h>
+#include <llvm/ADT/StringRef.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/Program.h>
@@ -275,7 +276,8 @@ void Compiler::parseInterface(Package *pkg, const SourcePosition &p) {
     auto path = textExists ? textPath : emojiPath;
 
     auto &content = sourceManager().read(path)->file();
-    auto firstLine = utf8(content.substr(0, content.find(U'\n')));
+    // Trailing whitespace, like the carriage return of a CRLF line ending, is not part of the version.
+    auto firstLine = llvm::StringRef(utf8(content.substr(0, content.find(U'\n')))).rtrim().str();
     std::string prefix = kABIVersionPrefix;
     if (firstLine.compare(0, prefix.size(), prefix) != 0) {
         throw CompilerError(p, "Package ", pkg->name(), " has no ABI version, so it was compiled by an older ",
