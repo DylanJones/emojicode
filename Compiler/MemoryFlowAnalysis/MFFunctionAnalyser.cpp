@@ -19,7 +19,6 @@
 #include "Types/Class.hpp"
 #include "Package/Package.hpp"
 #include "Compiler.hpp"
-#include <algorithm>
 
 namespace EmojicodeCompiler {
 
@@ -138,16 +137,16 @@ void MFFunctionAnalyser::releaseVariables(ASTBlock *block) const {
     // Otherwise, determine whether the last statement of the block is a return statement.
     // If it is a return statement, add the release statements to the return statement.
     else if (auto returnStmt = block->getReturn()) {
-        releaseAllVariables(returnStmt, block->scopeStats(), block->position(), returnStmt->returnedVariables());
+        releaseAllVariables(returnStmt, block->scopeStats(), block->position(), returnStmt->returnedVariable());
     }
 }
 
 void MFFunctionAnalyser::releaseAllVariables(Releasing *releasing, const SemanticScopeStats &stats,
-                                             const SourcePosition &p, const std::vector<size_t> &returned) const {
+                                             const SourcePosition &p, std::optional<VariableID> returned) const {
     for (size_t i = 0; i < stats.allVariablesCount; i++) {
         VariableID variableId = i;
         auto &var = scope_.getVariable(variableId);
-        if (shouldReleaseVariable(var) && std::find(returned.begin(), returned.end(), variableId) == returned.end()) {
+        if (shouldReleaseVariable(var) && returned != variableId) {
             releasing->addRelease(std::make_unique<ASTRelease>(false, variableId, var.type, p));
         }
     }
@@ -157,9 +156,10 @@ bool MFFunctionAnalyser::recordVariableGet(size_t id, MFFlowCategory category) {
     auto &var = scope_.getVariable(id);
     // A returned parameter escapes too, as the caller receives it, so that an argument must not be allocated on the
     // stack of the caller.
-    bool returnsValueOfVariable = category.isReturn() && !var.isParam && !var.isCaptured;
+    bool returnsValueOfVariable = category.isReturn() && returnedVariable_ != nullptr && !var.isParam &&
+        !var.isCaptured;
     if (returnsValueOfVariable) {
-        returnedVariables_.emplace_back(id);
+        *returnedVariable_ = id;
     }
     if (category.isEscaping()) {
         auto type = var.type.unoptionalized();
@@ -171,10 +171,12 @@ bool MFFunctionAnalyser::recordVariableGet(size_t id, MFFlowCategory category) {
     return returnsValueOfVariable;
 }
 
-std::vector<size_t> MFFunctionAnalyser::analyseReturnValue(ASTExpr *value) {
-    returnedVariables_.clear();
+std::optional<VariableID> MFFunctionAnalyser::analyseReturnValue(ASTExpr *value) {
+    std::optional<VariableID> returned;
+    auto enclosing = std::exchange(returnedVariable_, &returned);
     value->analyseMemoryFlow(this, MFFlowCategory::Return);
-    return std::move(returnedVariables_);
+    returnedVariable_ = enclosing;
+    return returned;
 }
 
 void MFFunctionAnalyser::take(ASTExpr *expr) {

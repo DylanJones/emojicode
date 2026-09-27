@@ -11,7 +11,9 @@
 
 #include "MFFlowCategory.hpp"
 #include "Scoping/IDScoper.hpp"
+#include "Scoping/Variable.hpp"
 #include "Types/Type.hpp"
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -75,12 +77,12 @@ public:
     /// retained.
     bool recordVariableGet(size_t id, MFFlowCategory category);
     /// Analyses @p value, the value returned by a return statement.
-    /// @returns The IDs of the variables whose values are returned without being retained (see recordVariableGet()).
-    /// Only this return statement must not release them: on any other path they must be released as usual.
-    std::vector<size_t> analyseReturnValue(ASTExpr *value);
+    /// @returns The variable whose value is returned without being retained (see recordVariableGet()), if any. Only
+    /// this return statement must not release it: on any other path it must be released as usual.
+    std::optional<VariableID> analyseReturnValue(ASTExpr *value);
     /// Records the declaration of a variable of type @p type that has a value from the start, i.e. an optional one
     /// without a value, so that it is released at any return from now on.
-    void recordVariableDeclaration(size_t id, Type type) { scope_.getVariable(id).type = std::move(type); }
+    void recordVariableDeclaration(VariableID id, Type type) { scope_.getVariable(id).type = std::move(type); }
     /// Records that the variable @p id of the closure being analysed is a captured variable, whose value is owned by
     /// the closure's captures. Must be called before analyse().
     void recordCapture(size_t id) { scope_.getVariable(id).isCaptured = true; }
@@ -104,9 +106,9 @@ public:
     void popScope(ASTBlock *block);
 
     /// Adds release statments to `releasing` for all variables in the function’s scope (as described by the provided
-    /// scope stats) that must be released, except for the variables in @p returned, whose values `releasing` returns.
+    /// scope stats) that must be released, except for @p returned, whose value `releasing` returns.
     void releaseAllVariables(Releasing *releasing, const SemanticScopeStats &stats, const SourcePosition &p,
-                             const std::vector<size_t> &returned = {}) const;
+                             std::optional<VariableID> returned = std::nullopt) const;
 
     /// Informs the analyser that a loop has been entered.
     void enterLoop() { inLoop_++; }
@@ -131,8 +133,9 @@ private:
 
     unsigned int inLoop_ = 0;
 
-    /// The variables returned by the return statement being analysed, see analyseReturnValue().
-    std::vector<size_t> returnedVariables_;
+    /// Where recordVariableGet() records the variable whose value the return statement being analysed returns, see
+    /// analyseReturnValue(). Null while no return value is analysed.
+    std::optional<VariableID> *returnedVariable_ = nullptr;
 
     void releaseVariables(ASTBlock *block) const;
 
