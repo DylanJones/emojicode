@@ -142,9 +142,13 @@ void FunctionAnalyser::initOptionalInstanceVariables() {
 void FunctionAnalyser::analyseReturn(ASTBlock *root) {
     if (function_ == function_->package()->startFlagFunction() && function_->returnType()->type() == Type::noReturn()) {
         function_->setReturnType(std::make_unique<ASTLiteralType>(integer()));
-        auto value = std::make_shared<ASTNumberLiteral>(static_cast<int64_t>(0), std::u32string(), root->position());
-        root->appendNode(std::make_unique<ASTReturn>(value, root->position()));
-        root->setReturnedCertainly();
+        // A body that ends with a call to a function that never returns, like 🤯, must not be followed by a return.
+        if (!pathAnalyser_.hasCertainly(PathAnalyserIncident::Returned)) {
+            auto value = std::make_shared<ASTNumberLiteral>(static_cast<int64_t>(0), std::u32string(),
+                                                            root->position());
+            root->appendNode(std::make_unique<ASTReturn>(value, root->position()));
+            root->setReturnedCertainly();
+        }
     }
     else if (function_->functionType() == FunctionType::ObjectInitializer &&
             !pathAnalyser_.hasCertainly(PathAnalyserIncident::Returned)) {
@@ -157,7 +161,8 @@ void FunctionAnalyser::analyseReturn(ASTBlock *root) {
         root->appendNode(std::move(ret));
         root->setReturnedCertainly();
     }
-    else if (function_->functionType() == FunctionType::ValueTypeInitializer) {
+    else if (function_->functionType() == FunctionType::ValueTypeInitializer &&
+             !pathAnalyser_.hasCertainly(PathAnalyserIncident::Returned)) {
         root->appendNode(std::make_unique<ASTReturn>(nullptr, root->position()));
         root->setReturnedCertainly();
     }
