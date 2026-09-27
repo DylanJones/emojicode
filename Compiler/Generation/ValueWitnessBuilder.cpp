@@ -72,6 +72,8 @@ llvm::Constant* ValueWitnessBuilder::witnessFor(const Type &otype) {
         buildLoad(type, name + ".load"),
         buildStore(type, name + ".store"),
         buildRelease(type, name + ".release"),
+        buildRetain(type, name + ".retain"),
+        llvm::ConstantInt::getBool(generator_->context(), !type.isManaged()),
     });
     auto variable = new llvm::GlobalVariable(*generator_->module(), typeHelper.valueWitness(), true,
                                              llvm::GlobalValue::PrivateLinkage, witness, name);
@@ -188,6 +190,15 @@ llvm::Function* ValueWitnessBuilder::buildRelease(const Type &type, const std::s
     if (type.isManaged()) {
         fg.releaseByReference(fn->getArg(0), type);
     }
+    fg.builder().CreateRetVoid();
+    return fn;
+}
+
+llvm::Function* ValueWitnessBuilder::buildRetain(const Type &type, const std::string &name) {
+    auto fn = createWitnessFunction(generator_, generator_->typeHelper().boxRetainRelease(), name);
+    FunctionCodeGenerator fg(fn, generator_, std::make_unique<TypeContext>());
+    fg.createEntry();
+    retainAt(fg, fn->getArg(0), type);
     fg.builder().CreateRetVoid();
     return fn;
 }

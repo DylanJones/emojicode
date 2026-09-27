@@ -86,7 +86,8 @@ public:
     /// It is used to store generic arguments inside an instantance and for operations involving types like casting.
     llvm::StructType* typeDescription() const { return typeDescription_; }
     /// The operations on a value of a type in memory, which generic code performs without knowing the type: its size,
-    /// copying it into a box and back, and releasing it (see ValueWitnessBuilder). A type description points to one.
+    /// copying it into a box and back, releasing and retaining it (see ValueWitnessBuilder). A type description points
+    /// to one.
     llvm::StructType* valueWitness() const { return valueWitness_; }
     /// An erased reference is a reference to a box, which may refer to a value of a generic parameter in memory: the
     /// address of the value and the entry of the type description of its type, or null. If the entry is null, the

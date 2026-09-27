@@ -84,6 +84,23 @@
   ☣️️ ❗️ 🚜 destinationOffset 🔢 source 🧠 sourceOffset 🔢 bytes 🔢 📻 🔤ejcBuiltIn🔤
 
   📗
+    Copies *count* values of type T from *source* starting from *sourceOffset*
+    to this instance, writing the copied values *destinationOffset* bytes past
+    the beginning of this memory area.
+
+    This has the same effect as reading each value with 🐽 and writing it with
+    ➡️ 🐽, but values that are not managed, like 🔢, are copied as a whole.
+
+    >!H If the memory area represented is smaller than
+    >!H `count ✖️ ⚖️T ➕ destinationOffset` bytes or *source* is smaller than
+    >!H `count ✖️ ⚖️T ➕ sourceOffset` bytes, undefined behavior is caused!
+
+    >!N The values previously at the destination are overwritten without being
+    >!N released. Release them with ♻️ first if necessary.
+  📗
+  ☣️️ ❗️ 📋🐚☣️️T⚪️🍆 destinationOffset 🔢 source 🧠 sourceOffset 🔢 count 🔢 📻 🔤ejcBuiltIn🔤
+
+  📗
     Sets the first *bytes* bytes starting from *offset* bytes past the address
     represented by this instance to *byteValue*.
 
