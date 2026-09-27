@@ -74,6 +74,10 @@ public:
     /// value must not be retained. Neither a parameter nor a captured variable owns its value, which must therefore be
     /// retained.
     bool recordVariableGet(size_t id, MFFlowCategory category);
+    /// Analyses @p value, the value returned by a return statement.
+    /// @returns The IDs of the variables whose values are returned without being retained (see recordVariableGet()).
+    /// Only this return statement must not release them: on any other path they must be released as usual.
+    std::vector<size_t> analyseReturnValue(ASTExpr *value);
     /// Records that the variable @p id of the closure being analysed is a captured variable, whose value is owned by
     /// the closure's captures. Must be called before analyse().
     void recordCapture(size_t id) { scope_.getVariable(id).isCaptured = true; }
@@ -97,8 +101,9 @@ public:
     void popScope(ASTBlock *block);
 
     /// Adds release statments to `releasing` for all variables in the function’s scope (as described by the provided
-    /// scope stats) that must be released.
-    void releaseAllVariables(Releasing *releasing, const SemanticScopeStats &stats, const SourcePosition &p) const;
+    /// scope stats) that must be released, except for the variables in @p returned, whose values `releasing` returns.
+    void releaseAllVariables(Releasing *releasing, const SemanticScopeStats &stats, const SourcePosition &p,
+                             const std::vector<size_t> &returned = {}) const;
 
     /// Informs the analyser that a loop has been entered.
     void enterLoop() { inLoop_++; }
@@ -111,7 +116,6 @@ private:
     struct MFLocalVariable {
         bool isParam = false;
         bool isCaptured = false;
-        bool isReturned = false;
         size_t param;
         MFFlowCategory flowCategory = MFFlowCategory::Borrowing;
         Type type = Type::noReturn();
@@ -123,6 +127,9 @@ private:
     bool thisEscapes_ = false;
 
     unsigned int inLoop_ = 0;
+
+    /// The variables returned by the return statement being analysed, see analyseReturnValue().
+    std::vector<size_t> returnedVariables_;
 
     void releaseVariables(ASTBlock *block) const;
 
