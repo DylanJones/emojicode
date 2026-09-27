@@ -11,6 +11,13 @@
     😀 🔤Deinit🔤❗️
     😀 name❗️
   🍉
+
+  🐇❗️ 🎣 fail 👌 ➡️ 🐟 🚧🚧 🍇
+    ↪️ fail 🍇
+      🚨🆕🚧🔤Failed🔤❗️
+    🍉
+    ↩️ 🆕🐟 🔤Gill🔤❗️
+  🍉
 🍉
 
 🏁 🍇
@@ -37,4 +44,15 @@
   🖍🆕 other 🐟
   🆕🐟 🔤Bruce🔤❗️ ➡️ 🖍other
   🗣other❗️
+
+  💭 Both the value and the error variable of 🆗 are initialized, which would make one declared after them seem initialized.
+  🆗 caught 🎣🐇🐟 👎❗️ 🍇
+    🗣caught❗️
+  🍉
+  🙅 error 🍇
+    😀 💬error❗️ ❗️
+  🍉
+  🖍🆕 last 🐟
+  🆕🐟 🔤Squirt🔤❗️ ➡️ 🖍last
+  🗣last❗️
 🍉
