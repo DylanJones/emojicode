@@ -138,18 +138,10 @@ bool FunctionResolution<T>::checkGenericArguments(Function *function, const Gene
 template <typename T>
 void FunctionResolution<T>::addResolver(const FunctionResolver<T> *res) {
     std::set<Function *> blocked;
-    std::set<Function *> overridden;
     for (; res != nullptr; res = res->super_) {
         auto pos = res->map_.find(key_);
         if (pos != res->map_.end()) {
             for (auto &fn : pos->second) {
-                // A function that a subclass overrides is the same method as the overriding one, not an overload.
-                if (overridden.count(fn.get()) == 0) {
-                    overloads_++;
-                }
-                if (fn->overriding()) {
-                    overridden.emplace(fn->superFunction());
-                }
                 if (blocked.find(fn.get()) != blocked.end()) {
                     if (fn->overriding()) {
                         blocked.emplace(fn->superFunction());
@@ -237,9 +229,12 @@ std::optional<Candidate<T>> FunctionResolution<T>::pick() {
 template <typename T>
 T* FunctionResolution<T>::resolveAndReificate(ASTArguments *args, Type *type) {
     auto caller = typeContext_.function();
-    if (overloads_ > 1 && caller != nullptr && caller->enclosingSpecialization() != nullptr) {
-        // With concrete types in place of generic parameters, another overload could be chosen than in generic code.
-        throw CompilerError(p_, "A specialization cannot call an overloaded function.");
+    if (candidates_.size() > 1 && caller != nullptr && caller->enclosingSpecialization() != nullptr) {
+        // With concrete types in place of generic parameters, more overloads may accept the arguments, and another
+        // one than in generic code could be chosen. The overload that generic code chose accepts any type a generic
+        // parameter stands for, so if only one overload accepts the arguments, it is that one.
+        throw CompilerError(p_, "A specialization cannot call a function of which several overloads accept the "
+                                "arguments.");
     }
     auto candidate = resolve();
     if (!candidate.has_value()) {

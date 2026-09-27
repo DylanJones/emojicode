@@ -82,9 +82,13 @@ compilation_tests = [
     "directCalls",
     "genericStorage",
     "genericOptionalStorage",
+    "listCopyOnWrite",
+    "memoryReleaseCount",
     "genericCallStack",
     "multiprotocolCallee",
     "dictionaryOfBytes",
+    "dictionarySpecialization",
+    "specializationOverloads",
     "protocolValueTypeRemote",
     "protocolEnum",
     "protocolGenericLayerClass",
@@ -220,6 +224,8 @@ unoptimized_tests = [
     "boxValueSemantics",
     "borrowedBoxes",
     "genericStorage",
+    "listCopyOnWrite",
+    "memoryReleaseCount",
     "closureGenericValueType",
     "closureGenericTypeMethod",
     "closureGenericArgsCapture",
@@ -239,6 +245,8 @@ specialization_tests = [
     "selfConstraint",
     "specializationFallback",
     "numericMatrix",
+    "dictionarySpecialization",
+    "specializationOverloads",
     "specializationClosures",
 ]
 # Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions
@@ -462,9 +470,12 @@ def importing_test(name):
 
 
 def reject_test(filename):
-    completed = run([emojicodec, filename], stderr=PIPE)
+    completed = run([emojicodec, '-S', test_packages, filename], stderr=PIPE)
     output = completed.stderr.decode('utf-8')
-    if completed.returncode != 1 or len(re.findall(r"🚨 error:", output)) != 1:
+    # NAME.txt, if there is one, holds text that the error must contain, e.g. to tell apart errors of the same check.
+    expected_path = os.path.splitext(filename)[0] + ".txt"
+    expected = open(expected_path, encoding='utf-8').read().strip() if os.path.exists(expected_path) else ""
+    if completed.returncode != 1 or len(re.findall(r"🚨 error:", output)) != 1 or expected not in output:
         log(output)
         fail_test(filename)
 

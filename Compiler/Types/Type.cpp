@@ -199,8 +199,11 @@ bool Type::canHaveProtocol() const {
 
 void Type::sortMultiProtocolType() {
     assert(type() == TypeType::MultiProtocol);
-    std::sort(genericArguments_.begin(), genericArguments_.end(), [](const Type &a, const Type &b) {
-        return a.protocol() < b.protocol();
+    // By name, not by address, which differs from run to run: The order determines the mangled names of
+    // specializations and the layout of the conformance tables, which a package and its importers must agree on.
+    std::stable_sort(genericArguments_.begin(), genericArguments_.end(), [](const Type &a, const Type &b) {
+        return std::make_pair(a.protocol()->package()->name(), a.protocol()->name()) <
+            std::make_pair(b.protocol()->package()->name(), b.protocol()->name());
     });
 }
 

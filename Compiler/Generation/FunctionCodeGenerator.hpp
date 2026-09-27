@@ -152,6 +152,11 @@ public:
     void buildStoreErased(llvm::Value *address, llvm::Value *entry, llvm::Value *box, const Type &type);
     /// Releases the value at @p address, which is of the type described by @p entry.
     void buildReleaseErased(llvm::Value *address, llvm::Value *entry);
+    /// Releases the @p count values from @p address on, which are of the type described by @p entry. Values that are
+    /// not managed are not visited at all.
+    void buildReleaseErased(llvm::Value *address, llvm::Value *entry, llvm::Value *count);
+    /// Copies @p count values of the type described by @p entry from @p source to @p destination, retaining them.
+    void buildCopyErased(llvm::Value *destination, llvm::Value *source, llvm::Value *count, llvm::Value *entry);
     /// Gets a pointer to the field of the box to which @p box points that holds the object storing its remote value.
     llvm::Value* buildGetRemoteBoxObjectPtr(llvm::Value *box);
     /// Makes the value of the box to which @p box points unique, using the function of the protocol @p conformance,
@@ -223,6 +228,8 @@ public:
     /// fales for `type`, the value is loaded before it is passed to release().
     /// @param ptr Pointer to the value to be released.
     void releaseByReference(llvm::Value *ptr, const Type &type);
+    /// Retains the value of type @p type at @p ptr, like releaseByReference() releases it.
+    void retainByReference(llvm::Value *ptr, const Type &type);
     void retain(llvm::Value *value, const Type &type);
     bool isManagedByReference(const Type &type) const;
 
@@ -237,6 +244,12 @@ public:
                                 const std::function<bool()> &otherwise);
     /// Creates an if block. The code produced by the @then function is only executed if the condition is true.
     void createIf(llvm::Value* cond, const std::function<void()> &then);
+    /// Creates a loop that executes the code produced by @p body, which is passed the index, @p count times.
+    void createCountedLoop(llvm::Value *count, const std::function<void(llvm::Value *)> &body);
+    /// Creates a loop that executes the code produced by @p body for each of the @p count values of @p size bytes that
+    /// follow each other from @p address on. @p body is passed the address of the value.
+    void createForEachValue(llvm::Value *address, llvm::Value *count, llvm::Value *size,
+                            const std::function<void(llvm::Value *)> &body);
 
     llvm::BasicBlock* createBlock(const llvm::Twine &name = "");
 

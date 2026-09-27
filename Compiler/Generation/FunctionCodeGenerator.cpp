@@ -275,6 +275,28 @@ void FunctionCodeGenerator::createIf(llvm::Value *cond, const std::function<void
     builder().SetInsertPoint(cont);
 }
 
+void FunctionCodeGenerator::createCountedLoop(llvm::Value *count, const std::function<void(llvm::Value *)> &body) {
+    auto entry = builder().GetInsertBlock();
+    auto loop = createBlock("loop");
+    auto cont = createBlock("loopCont");
+    builder().CreateCondBr(builder().CreateICmpSGT(count, int64(0)), loop, cont);
+    builder().SetInsertPoint(loop);
+    auto index = builder().CreatePHI(builder().getInt64Ty(), 2);
+    index->addIncoming(int64(0), entry);
+    body(index);
+    auto next = builder().CreateAdd(index, int64(1));
+    index->addIncoming(next, builder().GetInsertBlock());
+    builder().CreateCondBr(builder().CreateICmpSLT(next, count), loop, cont);
+    builder().SetInsertPoint(cont);
+}
+
+void FunctionCodeGenerator::createForEachValue(llvm::Value *address, llvm::Value *count, llvm::Value *size,
+                                               const std::function<void(llvm::Value *)> &body) {
+    createCountedLoop(count, [&](llvm::Value *index) {
+        body(builder().CreateGEP(builder().getInt8Ty(), address, builder().CreateMul(index, size)));
+    });
+}
+
 llvm::BasicBlock* FunctionCodeGenerator::createBlock(const llvm::Twine &name) {
     auto function = builder().GetInsertBlock()->getParent();
     return llvm::BasicBlock::Create(ctx(), name, function);
@@ -403,13 +425,12 @@ llvm::Value* FunctionCodeGenerator::buildTypeDescriptionEntry(const Type &type) 
     return TypeDescriptionGenerator(this, TypeDescriptionUser::Function).entryFor(type);
 }
 
-/// Returns the function at @p index of the value witness of the type described by @p entry.
+/// Returns the field at @p index of the value witness of the type described by @p entry.
 static llvm::Value* witnessField(FunctionCodeGenerator *fg, llvm::Value *entry, unsigned index) {
     auto &th = fg->typeHelper();
     auto witness = fg->builder().CreateLoad(th.pointer(),
                                             fg->builder().CreateConstInBoundsGEP2_32(th.typeDescription(), entry, 0, 2));
-    return fg->builder().CreateLoad(index == 0 ? static_cast<llvm::Type *>(llvm::Type::getInt64Ty(fg->ctx()))
-                                               : th.pointer(),
+    return fg->builder().CreateLoad(th.valueWitness()->getElementType(index),
                                     fg->builder().CreateConstInBoundsGEP2_32(th.valueWitness(), witness, 0, index));
 }
 
@@ -486,7 +507,32 @@ void FunctionCodeGenerator::buildStoreErased(llvm::Value *address, llvm::Value *
 }
 
 void FunctionCodeGenerator::buildReleaseErased(llvm::Value *address, llvm::Value *entry) {
-    builder().CreateCall(typeHelper().boxRetainRelease(), witnessField(this, entry, 3), { address });
+    createIf(builder().CreateNot(witnessField(this, entry, 5)), [&] {
+        builder().CreateCall(typeHelper().boxRetainRelease(), witnessField(this, entry, 3), { address });
+    });
+}
+
+void FunctionCodeGenerator::buildReleaseErased(llvm::Value *address, llvm::Value *entry, llvm::Value *count) {
+    // The flag is checked once, so that the values of a type that is not managed, like 🔢, aren't visited at all.
+    createIf(builder().CreateNot(witnessField(this, entry, 5)), [&] {
+        auto release = witnessField(this, entry, 3);
+        createForEachValue(address, count, buildValueSize(entry), [&](llvm::Value *valueAddress) {
+            builder().CreateCall(typeHelper().boxRetainRelease(), release, { valueAddress });
+        });
+    });
+}
+
+void FunctionCodeGenerator::buildCopyErased(llvm::Value *destination, llvm::Value *source, llvm::Value *count,
+                                            llvm::Value *entry) {
+    auto size = buildValueSize(entry);
+    builder().CreateMemMove(destination, llvm::MaybeAlign(), source, llvm::MaybeAlign(),
+                            builder().CreateMul(size, count));
+    createIf(builder().CreateNot(witnessField(this, entry, 5)), [&] {
+        auto retain = witnessField(this, entry, 4);
+        createForEachValue(destination, count, size, [&](llvm::Value *address) {
+            builder().CreateCall(typeHelper().boxRetainRelease(), retain, { address });
+        });
+    });
 }
 
 llvm::Value* FunctionCodeGenerator::buildErasedReferenceBox(llvm::Value *reference, const Type &otype) {
@@ -678,6 +724,10 @@ bool FunctionCodeGenerator::isManagedByReference(const Type &type) const {
 
 void FunctionCodeGenerator::releaseByReference(llvm::Value *ptr, const Type &type) {
     release(isManagedByReference(type) ? ptr : builder().CreateLoad(typeHelper().llvmTypeFor(type), ptr), type);
+}
+
+void FunctionCodeGenerator::retainByReference(llvm::Value *ptr, const Type &type) {
+    retain(isManagedByReference(type) ? ptr : builder().CreateLoad(typeHelper().llvmTypeFor(type), ptr), type);
 }
 
 llvm::Value* FunctionCodeGenerator::buildFindProtocolConformance(llvm::Value *box, llvm::Value *boxInfo,

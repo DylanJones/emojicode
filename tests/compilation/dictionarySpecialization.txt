@@ -1,0 +1,9 @@
+49
+-1
+squares has 8
+copy lacks 8
+40
+39
+39
+40
+0

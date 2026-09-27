@@ -1,0 +1,149 @@
+💭 Copies of the storage of a 🍨 made by copy-on-write, and 📋 on 🧠, which copies unmanaged values as a whole
+💭 and retains managed ones: every copy must be independent and every object released exactly once.
+🐇 🐟 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ❗️ 📛 ➡️ 🔡 🍇
+    ↩️ name
+  🍉
+  ♻️ 🍇
+    😀 🔤released 🧲name🧲🔤❗️
+  🍉
+🍉
+
+🕊 🏷 🍇
+  🖍🆕 n 🔢
+  🖍🆕 fish 🐟
+  🆕 🍼 n 🔢 🍼 fish 🐟 🍇🍉
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔤🧲n🧲 🧲📛fish❗️🧲🔤
+  🍉
+🍉
+
+🐇 🧺 🍇
+  🆕 🍇🍉
+  💭 Class methods stay generic, so these copy the storage with a witness.
+  ❗️ 🔀🐚T⚪🍆 list 🍨🐚T🍆 value T ➡️ 🍨🐚T🍆 🍇
+    list ➡️ 🖍🆕 copy
+    value ➡️ 🐽copy 0❗️
+    ↩️ copy
+  🍉
+  ❗️ 📋🐚T⚪🍆 list 🍨🐚T🍆 ➡️ 🍨🐚T🍆 🍇
+    📏list❓ ➡️ count
+    ☣️ 🍇
+      🆕🧠 count ✖️ ⚖️T❗️ ➡️ source
+      🔂 i 🆕⏩ 0 count❗️ 🍇
+        🐽list i❗️ ➡️ 🐽🐚T🍆 source i ✖️ ⚖️T❗️
+      🍉
+      🆕🧠 count ✖️ ⚖️T❗️ ➡️ memory
+      📋🐚T🍆 memory 0 source 0 count❗️
+      🔂 i 🆕⏩ 0 count❗️ 🍇
+        ♻️🐚T🍆 source i ✖️ ⚖️T❗️
+      🍉
+      🆕🍨🐚T🍆▶️🍪 memory count❗️ ➡️ result
+      🔂 i 🆕⏩ 0 count❗️ 🍇
+        ♻️🐚T🍆 memory i ✖️ ⚖️T❗️
+      🍉
+      ↩️ result
+    🍉
+  🍉
+  💭 Generic code stores values of 🍬T in boxes.
+  ❗️ 🍬🐚T⚪🍆 value T ➡️ 🍬T 🍇
+    ☣️ 🍇
+      🆕🧠 2 ✖️ ⚖️🍬T❗️ ➡️ source
+      value ➡️ 🐽🐚🍬T🍆 source 0❗️
+      🤷‍♀️ ➡️ 🐽🐚🍬T🍆 source ⚖️🍬T❗️
+      🆕🧠 2 ✖️ ⚖️🍬T❗️ ➡️ memory
+      📋🐚🍬T🍆 memory 0 source 0 2❗️
+      ♻️🐚🍬T🍆 source 0❗️
+      ♻️🐚🍬T🍆 source ⚖️🍬T❗️
+      🐽🐚🍬T🍆 memory 0❗️ ➡️ result
+      ♻️🐚🍬T🍆 memory 0❗️
+      ♻️🐚🍬T🍆 memory ⚖️🍬T❗️
+      ↩️ result
+    🍉
+  🍉
+🍉
+
+🏁 🍇
+  🆕🧺❗️ ➡️ basket
+
+  🍿 1 2 3 🍆 ➡️ ints
+  ints ➡️ 🖍🆕 ints2
+  42 ➡️ 🐽ints2 0❗️
+  🔀basket ints 7❗️ ➡️ ints3
+  😀 🔤🧲🐽ints 0❗️🧲 🧲🐽ints2 0❗️🧲 🧲🐽ints3 0❗️🧲 🧲🐽ints3 2❗️🧲🔤❗️
+
+  🍿 🔤a🔤 🔤b🔤 🍆 ➡️ strings
+  strings ➡️ 🖍🆕 strings2
+  🔤z🔤 ➡️ 🐽strings2 0❗️
+  🔀basket strings 🔤y🔤❗️ ➡️ strings3
+  😀 🔤🧲🐽strings 0❗️🧲 🧲🐽strings2 0❗️🧲 🧲🐽strings3 0❗️🧲 🧲🐽strings3 1❗️🧲🔤❗️
+
+  🍿 🆕🐟 🔤cod🔤❗️ 🆕🐟 🔤eel🔤❗️ 🍆 ➡️ fishes
+  fishes ➡️ 🖍🆕 fishes2
+  🆕🐟 🔤ray🔤❗️ ➡️ 🐽fishes2 0❗️
+  🔀basket fishes 🆕🐟 🔤koi🔤❗️❗️ ➡️ fishes3
+  😀 🔤🧲📛🐽fishes 0❗️❗️🧲 🧲📛🐽fishes2 0❗️❗️🧲 🧲📛🐽fishes3 0❗️❗️🧲 🧲📛🐽fishes3 1❗️❗️🧲🔤❗️
+
+  🆕🍨🐚🍬🔢🍆❗️ ➡️ 🖍🆕 optionals
+  🐻optionals 🤷‍♀️❗️
+  🐻optionals 5❗️
+  🔀basket optionals 6❗️ ➡️ optionals2
+  ↪️ 🐽optionals2 1❗️ ➡️ o 🍇
+    😀 🔤🧲o🧲 🧲📏optionals❓🧲🔤❗️
+  🍉
+
+  🍿 🆕🏷 1 🆕🐟 🔤tuna🔤❗️❗️ 🍆 ➡️ labels
+  🔀basket labels 🆕🏷 2 🆕🐟 🔤carp🔤❗️❗️❗️ ➡️ labels2
+  😀 🔤🧲🔡 🐽labels 0❗️❗️🧲 🧲🔡 🐽labels2 0❗️❗️🧲🔤❗️
+
+  🍿 🍿 1 🍆 🍿 2 🍆 🍆 ➡️ nested
+  🔀basket nested 🍿 3 🍆❗️ ➡️ 🖍🆕 nested2
+  🐻 🐽nested2 1❗️ 4❗️
+  😀 🔤🧲📏🐽nested 1❗️❓🧲 🧲📏🐽nested2 1❗️❓🧲 🧲🐽🐽nested2 0❗️ 0❗️🧲🔤❗️
+
+  🆕🍨🐚⚪️🍆❗️ ➡️ 🖍🆕 somethings
+  🐻somethings 1❗️
+  🐻somethings 🆕🐟 🔤pike🔤❗️❗️
+  🔀🐚⚪️🍆basket somethings 🔤one🔤❗️ ➡️ somethings2
+  ↪️ 🔲🐽somethings 0❗️ 🔢 ➡️ n 🍇
+    😀 🔤first is 🧲n🧲🔤❗️
+  🍉
+  ↪️ 🔲🐽somethings2 0❗️ 🔡 ➡️ t 🍇
+    😀 🔤copy's first is 🧲t🧲🔤❗️
+  🍉
+
+  📋basket ints❗️ ➡️ ints4
+  📋basket strings❗️ ➡️ strings4
+  📋basket fishes❗️ ➡️ fishes4
+  📋basket labels❗️ ➡️ labels4
+  😀 🔤🧲🐽ints4 2❗️🧲 🧲🐽strings4 1❗️🧲 🧲📛🐽fishes4 1❗️❗️🧲 🧲🔡 🐽labels4 0❗️❗️🧲🔤❗️
+
+  ↪️ 🍬basket 🆕🐟 🔤gar🔤❗️❗️ ➡️ fish 🍇
+    😀 📛fish❗️❗️
+  🍉
+
+  💭 📋 with concrete types, of which 🔡 is managed and 🔢 is not.
+  ☣️ 🍇
+    🆕🧠 2 ✖️ ⚖️🔡❗️ ➡️ source
+    🔤p🔤 ➡️ 🐽🐚🔡🍆 source 0❗️
+    🔤q🔤 ➡️ 🐽🐚🔡🍆 source ⚖️🔡❗️
+    🆕🧠 2 ✖️ ⚖️🔡❗️ ➡️ memory
+    📋🐚🔡🍆 memory 0 source 0 2❗️
+    ♻️🐚🔡🍆 source 0❗️
+    ♻️🐚🔡🍆 source ⚖️🔡❗️
+    😀 🔤🧲🐽🐚🔡🍆 memory 0❗️🧲 🧲🐽🐚🔡🍆 memory ⚖️🔡❗️🧲🔤❗️
+    ♻️🐚🔡🍆 memory 0❗️
+    ♻️🐚🔡🍆 memory ⚖️🔡❗️
+
+    🆕🧠 3 ✖️ ⚖️🔢❗️ ➡️ intSource
+    🔂 i 🆕⏩ 0 3❗️ 🍇
+      i ✖️ 10 ➡️ 🐽🐚🔢🍆 intSource i ✖️ ⚖️🔢❗️
+    🍉
+    🆕🧠 4 ✖️ ⚖️🔢❗️ ➡️ intMemory
+    📋🐚🔢🍆 intMemory ⚖️🔢 intSource 0 3❗️
+    😀 🔡 🐽🐚🔢🍆 intMemory 3 ✖️ ⚖️🔢❗️❗️❗️
+  🍉
+  😀 🔤done🔤❗️
+🍉

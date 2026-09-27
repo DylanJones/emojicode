@@ -50,6 +50,8 @@ LLVMTypeHelper::LLVMTypeHelper(llvm::LLVMContext &context, CodeGenerator *codeGe
         pointer(),  // copies a value from memory into a box: void (ptr value, ptr box)
         pointer(),  // copies the value in a box into memory: void (ptr value, ptr box)
         pointer(),  // releases a value in memory: void (ptr value)
+        pointer(),  // retains a value in memory: void (ptr value)
+        llvm::Type::getInt1Ty(context_),  // whether a value can be copied by copying its bytes, i.e. is not managed
     }, "valueWitness");
     erasedReference_ = llvm::StructType::create({ pointer(), pointer() }, "erasedReference");
     valueWitnessCopy_ = llvm::FunctionType::get(llvm::Type::getVoidTy(context_), { pointer(), pointer() }, false);
