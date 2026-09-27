@@ -450,9 +450,19 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
                 return true;
             }
             return compatibleToResolved(to, tc, inf);
-        case TypeType::Class:
-            return type() == TypeType::Class && klass()->inheritsFrom(to.klass()) &&
-                identicalGenericArguments(to, tc, inf);
+        case TypeType::Class: {
+            if (type() != TypeType::Class || !klass()->inheritsFrom(to.klass())) {
+                return false;
+            }
+            if (klass() == to.klass()) {
+                return identicalGenericArguments(to, tc, inf);
+            }
+            // The arguments to the superclass are those of the superclass declaration, e.g. 🔡 V for
+            // 🐇 🎁🐚V⚪️🍆 📦🐚🔡 V🍆, and must be resolved on the arguments of this type.
+            Type resolved = *this;
+            resolved.setGenericArguments(selfResolvedGenericArgs());
+            return resolved.identicalGenericArguments(to, tc, inf);
+        }
         case TypeType::ValueType:
             return type() == TypeType::ValueType && typeDefinition() == to.typeDefinition() &&
                 identicalGenericArguments(to, tc, inf);
