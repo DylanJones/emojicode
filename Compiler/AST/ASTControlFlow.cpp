@@ -74,11 +74,10 @@ void ASTRepeatWhile::analyseMemoryFlow(MFFunctionAnalyser *analyser) {
 }
 
 void ASTErrorHandler::analyse(FunctionAnalyser *analyser) {
-    auto call = dynamic_cast<ASTCall *>(value_.get());
+    auto call = handleCall(&value_);
     if (call == nullptr) {
         throw CompilerError(position(), "Expression is not a call.");
     }
-    call->setHandledError();
 
     valueType_ = analyser->expect(TypeExpectation(false, false), &value_);
 
