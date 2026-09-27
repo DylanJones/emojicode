@@ -141,8 +141,8 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
                 return fg->builder().CreateGEP(type, v, args_.args().front()->generate(fg));
             }
             case BuiltInType::Multiprotocol:
-                return MultiprotocolCallCodeGenerator(fg, callType_).generate(callee_->generate(fg), calleeType_, args_,
-                                                                              method_, errorPointer(), multiprotocolN_);
+                return MultiprotocolCallCodeGenerator(fg, callType_).generate(v, calleeType_, args_, method_,
+                                                                              errorPointer(), multiprotocolN_);
             default:
                 break;
         }
@@ -157,7 +157,8 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
     auto ret = CallCodeGenerator(fg, callType_).generate(callee_->generate(fg), calleeType_,
                                                          args_, method_, errorPointer(), supplArgs);
 
-    if (!supplArgs.empty()) {
+    // An erased reference that the method returns may point into the generic arguments (see entryFor()).
+    if (!supplArgs.empty() && !LLVMTypeHelper::isErasedReference(method_->returnType()->type())) {
         tdg.restoreStack();
     }
 

@@ -1,0 +1,33 @@
+💭 The callee of a call of a method of a multiprotocol is evaluated once.
+🐊 🔼 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+🐊 🔽 🍇
+  ❗️ 🔡 ➡️ 🔡
+🍉
+
+🕊 🐭 🍇
+  🐊 🔼
+  🐊 🔽
+  🖍🆕 a 🔢
+  🆕 🍼 a 🔢 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+  ❗️ 🔡 ➡️ 🔡 🍇
+    ↩️ 🔤mouse🔤
+  🍉
+🍉
+
+🐇 🏭 🍇
+  🆕 🍇🍉
+  ❗️ 🎁 ➡️ 🍱🔼🔽🍱 🍇
+    😀 🔤made🔤❗️
+    ↩️ 🆕🐭 3❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🏭❗️ ➡️ factory
+  😀 🔡 📏 🎁factory❗️❗️❗️❗️
+🍉

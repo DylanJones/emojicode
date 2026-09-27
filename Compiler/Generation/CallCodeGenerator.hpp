@@ -65,7 +65,13 @@ protected:
                                                const std::vector<Type> &genericArgs,
                                                llvm::Value *conformance, bool uniqueBox);
     llvm::Value* buildFindProtocolConformance(const std::vector<llvm::Value *> &args, const Type &protocol);
+    /// Frees the generic arguments passed to @p function after it returned, unless it returns an erased reference,
+    /// which may point into them (see TypeDescriptionGenerator::entryFor()).
+    void restoreStack(Function *function);
 private:
+    /// Calls @p function with @p args as determined by the call type.
+    llvm::Value* dispatch(Function *function, const Type &type, const ASTArguments &astArgs,
+                          const std::vector<llvm::Value *> &args);
     /// Marks @p value, if it is a call, as not returning if @p function never returns (see Function::neverReturns()).
     llvm::Value* markNeverReturning(llvm::Value *value, Function *function);
     /// Calls the trampoline of a 🎍🌊 function that takes or returns C structs by value. @see needsCTrampoline()

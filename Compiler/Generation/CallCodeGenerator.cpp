@@ -13,6 +13,7 @@
 #include "Functions/Initializer.hpp"
 #include "Types/Protocol.hpp"
 #include "Types/TypeDefinition.hpp"
+#include "Generation/LLVMTypeHelper.hpp"
 #include "Generation/TypeDescriptionGenerator.hpp"
 #include <llvm/Support/raw_ostream.h>
 #include <stdexcept>
@@ -50,7 +51,20 @@ llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, 
         return value;
     }
     auto args = createArgsVector(callee, astArgs, errorPointer, supplArgs);
+    auto value = dispatch(function, type, astArgs, args);
+    restoreStack(function);
+    return value;
+}
 
+void CallCodeGenerator::restoreStack(Function *function) {
+    auto returnType = function->returnType();
+    if (tdg_ != nullptr && (returnType == nullptr || !LLVMTypeHelper::isErasedReference(returnType->type()))) {
+        tdg_->restoreStack();
+    }
+}
+
+llvm::Value* CallCodeGenerator::dispatch(Function *function, const Type &type, const ASTArguments &astArgs,
+                                         const std::vector<llvm::Value *> &args) {
     assert(function != nullptr);
     switch (callType_) {
         case CallType::StaticContextfreeDispatch:
@@ -84,11 +98,9 @@ llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, 
                                                  isMutableVariable(type));
         }
         case CallType::None:
-            throw std::domain_error("CallType::None is not a valid call type");
+            break;
     }
-    if (tdg_ != nullptr) {
-        tdg_->restoreStack();
-    }
+    throw std::domain_error("CallType::None is not a valid call type");
 }
 
 llvm::Value* CallCodeGenerator::generateCTrampolineCall(Function *function, llvm::Function *trampoline,
@@ -166,8 +178,10 @@ llvm::Value *MultiprotocolCallCodeGenerator::generate(llvm::Value *callee, const
         conformance = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
                                                  fg()->builder().CreateConstGEP2_32(mpt, mpl, 0, multiprotocolN));
     }
-    return createDynamicProtocolDispatch(function, std::move(argsv), args.genericArgumentTypes(), conformance,
-                                         isMutableVariable(calleeType));
+    auto value = createDynamicProtocolDispatch(function, std::move(argsv), args.genericArgumentTypes(), conformance,
+                                               isMutableVariable(calleeType));
+    restoreStack(function);
+    return value;
 }
 
 llvm::Value *CallCodeGenerator::dispatchFromVirtualTable(Function *function, llvm::Value *virtualTable,
