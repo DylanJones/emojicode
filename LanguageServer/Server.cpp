@@ -7,6 +7,7 @@
 #include "Completion.hpp"
 #include "SemanticTokens.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <iostream>
 #include <tuple>
 
