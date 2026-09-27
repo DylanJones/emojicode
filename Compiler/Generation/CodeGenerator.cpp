@@ -250,17 +250,24 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
         i++;
     }
 
-    if (function->functionType() == FunctionType::ValueTypeInitializer) {
-        if (function->typeContext().calleeType().typeDefinition()->storesGenericArgs()) {
+    // The supplementary parameters must be skipped exactly as LLVMTypeHelper::functionTypeFor() adds them.
+    if ((function->functionType() == FunctionType::ObjectInitializer ||
+         function->functionType() == FunctionType::ValueTypeInitializer) && function->owner()->storesGenericArgs()) {
+        if (function->functionType() == FunctionType::ValueTypeInitializer) {  // A class's is a {ptr, i1} struct.
             fn->addParamAttr(i, llvm::Attribute::NonNull);
             fn->addParamAttr(i, llvm::Attribute::ReadOnly);
-            i++;
         }
+        i++;
     }
-    if (!function->genericParameters().empty() && dynamic_cast<Class*>(function->owner()) == nullptr) {
-        fn->addParamAttr(i, llvm::Attribute::NonNull);
-        fn->addParamAttr(i, llvm::Attribute::getWithCaptureInfo(fn->getContext(), llvm::CaptureInfo::none()));
-        fn->addParamAttr(i, llvm::Attribute::ReadOnly);
+    if (isTypeMethod(function) && function->owner()->storesGenericArgs()) {
+        i++;
+    }
+    if (!function->genericParameters().empty()) {
+        if (dynamic_cast<Class*>(function->owner()) == nullptr) {
+            fn->addParamAttr(i, llvm::Attribute::NonNull);
+            fn->addParamAttr(i, llvm::Attribute::getWithCaptureInfo(fn->getContext(), llvm::CaptureInfo::none()));
+            fn->addParamAttr(i, llvm::Attribute::ReadOnly);
+        }
         i++;
     }
     if (function->errorProne()) {

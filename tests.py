@@ -122,6 +122,7 @@ compilation_tests = [
     "errorReraiseMem",
     "errorReraiseMem2",
     "errorHandlerDiscardMem",
+    "errorProneGenericArgs",
     "valueTypeCopySelf",
     "valueTypeBoxCopySelf",
     "remoteBoxRelease",
@@ -199,6 +200,7 @@ unoptimized_tests = [
     "boxValueSemantics",
     "borrowedBoxes",
     "genericStorage",
+    "errorProneGenericArgs",
 ]
 # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
 # NAME.specializations. A function that is not specialized, but called generically, does not change what a program
