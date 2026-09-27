@@ -96,7 +96,7 @@ public:
                              Function **specialization = nullptr);
 
     /// Records that the code needs the type for which a generic parameter of the type in @p type stands at run time,
-    /// which it gets from 👇, so that a closure captures it.
+    /// which it gets from the generic arguments stored in 👇, so that a closure captures them.
     void usesGenericArgumentsOf(const Type &type);
     /// Throws if this is a specialization and generic code stores values of @p type in memory differently (see
     /// ASTType::isStoredBoxedByGenericCode()), so that the generic function is used, which shares memory with the

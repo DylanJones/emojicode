@@ -24,7 +24,9 @@ class Type;
 ///  - the size of a value of C in memory,
 ///  - a function copying a value from memory into a box, which it retains,
 ///  - a function copying the value in a box into memory, which it retains,
-///  - a function releasing a value in memory.
+///  - a function releasing a value in memory,
+///  - a function retaining a value in memory,
+///  - whether a value can be copied by copying its bytes, i.e. the functions retaining and releasing it do nothing.
 /// The boxes are those of a generic parameter constrained to ⚪, i.e. their first field is the box info of the value's
 /// type (not a protocol conformance), or null if they contain no value.
 class ValueWitnessBuilder {
@@ -42,6 +44,7 @@ private:
     llvm::Function* buildLoad(const Type &type, const std::string &name);
     llvm::Function* buildStore(const Type &type, const std::string &name);
     llvm::Function* buildRelease(const Type &type, const std::string &name);
+    llvm::Function* buildRetain(const Type &type, const std::string &name);
 };
 
 }  // namespace EmojicodeCompiler

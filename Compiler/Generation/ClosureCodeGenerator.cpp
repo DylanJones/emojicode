@@ -70,6 +70,12 @@ void ClosureCodeGenerator::loadCapturedVariables(Value *value) {
     if (capture_.genericArgsOf != nullptr) {
         setFunctionGenericArgs(loadCapture(index++));
     }
+    if (capture_.typeGenericArgs) {
+        setGenericArgsPtr(builder().CreateConstInBoundsGEP2_32(capture_.type, value, 0, index++));
+    }
+    if (capture_.typeMethodGenericArgs) {
+        setTypeMethodGenericArgs(loadCapture(index++));
+    }
 }
 
 }  // namespace EmojicodeCompiler

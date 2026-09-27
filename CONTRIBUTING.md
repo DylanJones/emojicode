@@ -22,6 +22,12 @@ Contributing is as easy as
 - Before submitting any pull request, make sure all tests pass. If you add a feature, add tests too.
 - `docs/grammar.ebnf` describes exactly the syntax that the compiler accepts. If you change the lexer or the parser,
   update the grammar and run `ninja grammar`, which checks the grammar against the compiler.
+- If you change what compiled packages and their importers must agree on, such as the layout of boxes, box infos,
+  protocol conformances, type descriptions, value witnesses or class infos, a calling convention, or the format of
+  interfaces (🏛), increase `kABIVersion` in `Compiler/Package/Package.hpp` and the version in the first line of each
+  `tests/packages/*/interface.emojii`, except `abiVersionMismatch`, which must keep an older version, and
+  `abiVersionMissing`, which must have none. Keep the CRLF line endings of `abiVersionCRLF`. The compiler then refuses
+  to import packages compiled by an earlier version and asks for them to be recompiled.
 - Try to follow the coding style established in the file you're editing.
 
 ## Commit message

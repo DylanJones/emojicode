@@ -1,0 +1,153 @@
+💭 Error-prone functions that also take generic arguments: the error pointer is their last parameter.
+🐇 🐠🐚T ⚪🍆 🍇
+  🖍🆕 value T
+  🖍🆕 kind 🔡
+
+  🆕 v T fail 👌 🚧🚧 🍇
+    ↪️ fail 🍇
+      🚨🆕🚧 🔤failed🔤❗️
+    🍉
+    v ➡️ 🖍value
+    🔤plain🔤 ➡️ 🖍kind
+  🍉
+
+  🆕 ▶️🔀🐚U ⚪🍆 v T u U fail 👌 🚧🚧 🍇
+    ↪️ fail 🍇
+      🚨🆕🚧 🔤failed🔤❗️
+    🍉
+    v ➡️ 🖍value
+    🔤generic🔤 ➡️ 🖍kind
+  🍉
+
+  🐇❗️ 🏭 v T fail 👌 ➡️ 🐠🐚T🍆 🚧🚧 🍇
+    ↪️ fail 🍇
+      🚨🆕🚧 🔤failed🔤❗️
+    🍉
+    ↩️ 🔺🆕🐠🐚T🍆 v fail❗️
+  🍉
+
+  🐇❗️ 🔃🐚A ⚪🍆 a A fail 👌 ➡️ 🔡 🚧🚧 🍇
+    ↪️ fail 🍇
+      🚨🆕🚧 🔤failed🔤❗️
+    🍉
+    🍿 a a a 🍆 ➡️ list
+    ↩️ 🔡📏list❓❗️
+  🍉
+
+  ❗️ 🔄🐚A ⚪🍆 a A fail 👌 ➡️ 🔢 🚧🚧 🍇
+    ↪️ fail 🍇
+      🚨🆕🚧 🔤failed🔤❗️
+    🍉
+    🍿 a a 🍆 ➡️ list
+    ↩️ 📏list❓
+  🍉
+
+  ❗️ 🥇 ➡️ T 🍇
+    ↩️ value
+  🍉
+
+  ❗️ 🎁 ➡️ 🔡 🍇
+    ↩️ kind
+  🍉
+🍉
+
+🐇 🐟 🐠🐚🔢🍆 🍇 🍉
+
+🐇 🐙🐚A ⚪🍆 🐠🐚A🍆 🍇 🍉
+
+🐇 🐋 🍇
+  🖍🆕 n 🔢
+
+  🆕 🍇
+    0 ➡️ 🖍n
+  🍉
+
+  🆕 ▶️🔀🐚U ⚪🍆 u U m 🔢 fail 👌 🚧🚧 🍇
+    ↪️ fail 🍇
+      🚨🆕🚧 🔤failed🔤❗️
+    🍉
+    m ➡️ 🖍n
+  🍉
+
+  ❗️ 🔄🐚A ⚪🍆 a A fail 👌 ➡️ 🔢 🚧🚧 🍇
+    ↪️ fail 🍇
+      🚨🆕🚧 🔤failed🔤❗️
+    🍉
+    🍿 a a 🍆 ➡️ list
+    ↩️ 📏list❓
+  🍉
+
+  ❗️ 🥇 ➡️ 🔢 🍇
+    ↩️ n
+  🍉
+🍉
+
+🐇 🦈🐚A ⚪🍆 🐋 🍇
+  🖍🆕 a A
+
+  🆕 v A fail 👌 🚧🚧 🍇
+    ↪️ fail 🍇
+      🚨🆕🚧 🔤failed🔤❗️
+    🍉
+    v ➡️ 🖍a
+    ⤴️🆕❗️
+  🍉
+
+  ❗️ 🥈 ➡️ A 🍇
+    ↩️ a
+  🍉
+🍉
+
+🏁 🍇
+  🆗 f 🆕🐠🐚🔢🍆 1 👎❗️ 🍇 😀 🔡🥇f❗️❗️❗️ 😀 🎁f❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 1🔤❗️ 🍉
+  🆗 f 🆕🐠🐚🔡🍆 🔤x🔤 👍❗️ 🍇 😀 🥇f❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 2🔤❗️ 🍉
+
+  🆗 f 🆕🐠🐚🔡🍆▶️🔀 🔤three🔤 4 👎❗️ 🍇 😀 🥇f❗️❗️ 😀 🎁f❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 3🔤❗️ 🍉
+  🆗 f 🆕🐠🐚🔡🍆▶️🔀 🔤x🔤 4 👍❗️ 🍇 😀 🥇f❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 4🔤❗️ 🍉
+
+  🆗 f 🏭🐇🐠🐚🔢🍆 5 👎❗️ 🍇 😀 🔡🥇f❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 5🔤❗️ 🍉
+  🆗 f 🏭🐇🐠🐚🔢🍆 0 👍❗️ 🍇 😀 🔡🥇f❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 6🔤❗️ 🍉
+
+  🆗 s 🔃🐇🐠🐚🔢🍆 🔤x🔤 👎❗️ 🍇 😀 s❗️ 🍉
+  🙅 e 🍇 😀 🔤error 7🔤❗️ 🍉
+  🆗 s 🔃🐇🐠🐚🔢🍆 🔤x🔤 👍❗️ 🍇 😀 s❗️ 🍉
+  🙅 e 🍇 😀 🔤error 8🔤❗️ 🍉
+
+  🍺🆕🐠🐚🔡🍆 🔤fish🔤 👎❗️ ➡️ fish
+  🆗 x 🔄fish 9 👎❗️ 🍇 😀 🔡x❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 9🔤❗️ 🍉
+  🆗 x 🔄fish 🔤x🔤 👍❗️ 🍇 😀 🔡x❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 10🔤❗️ 🍉
+
+  🆗 f 🆕🐟 11 👎❗️ 🍇 😀 🔡🥇f❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 11🔤❗️ 🍉
+  🆗 f 🆕🐟▶️🔀 12 🔤u🔤 👍❗️ 🍇 😀 🔡🥇f❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 12🔤❗️ 🍉
+
+  🆗 f 🆕🐙🐚🔡🍆▶️🔀 🔤thirteen🔤 🔤u🔤 👎❗️ 🍇 😀 🥇f❗️❗️ 😀 🎁f❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 13🔤❗️ 🍉
+  🆗 f 🆕🐙🐚🔡🍆 🔤x🔤 👍❗️ 🍇 😀 🥇f❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 14🔤❗️ 🍉
+
+  🆗 w 🆕🐋▶️🔀 🔤u🔤 15 👎❗️ 🍇 😀 🔡🥇w❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 15🔤❗️ 🍉
+  🆗 w 🆕🐋▶️🔀 🔤u🔤 0 👍❗️ 🍇 😀 🔡🥇w❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 16🔤❗️ 🍉
+
+  🆕🐋❗️ ➡️ whale
+  🆗 x 🔄whale 17 👎❗️ 🍇 😀 🔡x❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 17🔤❗️ 🍉
+  🆗 x 🔄whale 🔤x🔤 👍❗️ 🍇 😀 🔡x❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 18🔤❗️ 🍉
+
+  🆗 f 🆕🦈🐚🔡🍆 🔤nineteen🔤 👎❗️ 🍇 😀 🥈f❗️❗️ 😀 🔡🥇f❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 19🔤❗️ 🍉
+  🆗 f 🆕🦈🐚🔢🍆 0 👍❗️ 🍇 😀 🔡🥈f❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error 20🔤❗️ 🍉
+🍉

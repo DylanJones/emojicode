@@ -1,0 +1,12 @@
+5
+6
+15
+15
+7
+square
+rose
+rose
+rose
+tulip
+basket
+42

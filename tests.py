@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from subprocess import PIPE, CalledProcessError
+from subprocess import PIPE, CalledProcessError, TimeoutExpired
 import glob
 import os
 import dist
@@ -36,10 +36,13 @@ compilation_tests = [
     "classOverride",
     "classSuper",
     "classSubInstanceVar",
+    "subclassDeclaredFirst",
+    "genericSubclassDeclaredFirst",
     "overload",
     "optionalParameter",
     "returnInBlock",
     "returnInIf",
+    "elseRelease",
     "forInVariableReuse",
     "identityOperator",
     "typesAsValues",
@@ -53,12 +56,15 @@ compilation_tests = [
     "valueTypeMutate",
     "compareNoValue",
     "downcastClass",
+    "castDynamicDispatch",
     "castAny",
     "somethingParameters",
     "castGenericValueType",
+    "castGenericSubclass",
     "castBindingRemote",
     "castGenericClass",
     "genericSubclassArguments",
+    "genericSubclassInAncestor",
     "upcastClass",
     "protocolClass",
     "protocolSubclass",
@@ -74,12 +80,17 @@ compilation_tests = [
     "selfConstraintCalls",
     "numericMatrix",
     "specializationCycles",
+    "specializationClosures",
     "directCalls",
     "genericStorage",
     "genericOptionalStorage",
+    "listCopyOnWrite",
+    "memoryReleaseCount",
     "genericCallStack",
     "multiprotocolCallee",
     "dictionaryOfBytes",
+    "dictionarySpecialization",
+    "specializationOverloads",
     "protocolValueTypeRemote",
     "protocolEnum",
     "protocolGenericLayerClass",
@@ -89,6 +100,7 @@ compilation_tests = [
     "multiprotocolValueType",
     "multiprotocolToProtocol",
     "multiprotocolFromList",
+    "multiprotocolToMultiprotocol",
     "reboxToSomething",
     "castOwnership",
     "assignmentByCallProtocol",
@@ -98,14 +110,20 @@ compilation_tests = [
     "genericProtocol",
     "genericProtocolValueType",
     "genericTypeMethod",
+    "genericSuperInitializer",
     "genericLocalAsArgToGeneric",
     "genericArgumentOfCaller",
     "genericToConstraintOptional",
     "genericsInferenceValueType",
     "genericsInferenceClass",
+    "genericsInferenceTypeDescription",
     "genericRecursion",
+    "genericSuperclassArguments",
+    "genericSuperclassDeclaredFirst",
+    "superclassArgumentDeclaredLater",
     "optionalGenericField",
     "nestedOptionalGenericArgument",
+    "inheritedGenericMethodOnSelf",
     "variableInitAndScoping",
     "varInitPath",
     "valueTypeRemoteAdditional",
@@ -115,7 +133,11 @@ compilation_tests = [
     "closureCaptureValueType",
     "closureCaptureThisClass",
     "closureCaptureNonEscaping",
+    "closureNestedCaptureThis",
     "closureGenerics",
+    "closureGenericValueType",
+    "closureGenericTypeMethod",
+    "closureGenericArgsCapture",
     "closureError",
     "callableBoxing",
     "errorUnwrap",
@@ -124,6 +146,7 @@ compilation_tests = [
     "errorReraiseMem",
     "errorReraiseMem2",
     "errorHandlerDiscardMem",
+    "errorProneGenericArgs",
     "valueTypeCopySelf",
     "valueTypeBoxCopySelf",
     "remoteBoxRelease",
@@ -140,6 +163,7 @@ compilation_tests = [
     "ffiStructPointer",
     "ffiCallbacks",
     "unsafeBlockReturnRelease",
+    "returnedVariableRelease",
     "threadUnjoined",
     "mutexTryLock",
     "inferLiteralFromExpec",
@@ -161,9 +185,12 @@ compilation_tests = [
     "errorReraisePrefix",
     "weak",
     "superMemoryFlow",
+    "initializerMemoryFlow",
     "interpolationDereference",
     "interpolationRelease",
-    "genericDynDisableLiteralConstraint"
+    "genericDynDisableLiteralConstraint",
+    "reraiseEscapingArgument",
+    "dictionaryCollisions"
 ]
 
 if not (quick or valgrind):
@@ -197,10 +224,18 @@ unoptimized_tests = [
     "specializationFallback",
     "specializationScoping",
     "specializationCycles",
+    "specializationClosures",
     "remoteBoxRelease",
     "boxValueSemantics",
     "borrowedBoxes",
     "genericStorage",
+    "listCopyOnWrite",
+    "memoryReleaseCount",
+    "closureGenericValueType",
+    "closureGenericTypeMethod",
+    "closureGenericArgsCapture",
+    "genericsInferenceTypeDescription",
+    "errorProneGenericArgs",
     "upcastClass",
 ]
 # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
@@ -216,10 +251,13 @@ specialization_tests = [
     "selfConstraint",
     "specializationFallback",
     "numericMatrix",
+    "dictionarySpecialization",
+    "specializationOverloads",
+    "specializationClosures",
 ]
 # Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions
-# whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies. Lines
-# starting with # are comments.
+# whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies. No function
+# whose name matches the REGEX of a line "! REGEX" may be defined. Lines starting with # are comments.
 ir_tests = [
     "directCalls",
 ]
@@ -228,10 +266,13 @@ host_tests = [
     "ffiHostLib",
 ]
 # Programs that import a package of the same name with "Package" appended, which is compiled first. They test code
-# that is only generated in importers, like the bodies of inlined methods.
+# that is only generated in importers, like the bodies of inlined methods. Their IR is checked against NAME.ir and
+# NAME.specializations, if present.
 importing_tests = [
+    "lazyInline",
     "inlineClosure",
     "importedSpecialization",
+    "importedSubclassDeclaredFirst",
 ]
 reject_tests = glob.glob(os.path.join(dist.source, "tests", "reject",
                                       "*.emojic"))
@@ -249,6 +290,9 @@ os.environ["EMOJICODE_PACKAGES_PATH"] = os.path.abspath(".")
 os.environ["TEST_ENV_1"] = "The day starts like the rest I've seen"
 # The number of tests run at once, one per core unless EMOJICODE_TEST_JOBS says otherwise.
 jobs = int(os.environ.get("EMOJICODE_TEST_JOBS", os.cpu_count() or 1))
+# The seconds a command, e.g. the compiler or a test program, may run. One that hangs fails its test instead of the
+# whole suite.
+command_timeout = 300
 
 
 source_locks = {}
@@ -278,6 +322,7 @@ def run(args, check=False, **kwargs):
     keep_stderr = 'stderr' not in kwargs
     if keep_stderr:
         kwargs['stderr'] = PIPE
+    kwargs.setdefault('timeout', command_timeout)
     completed = subprocess.run(args, **kwargs)
     if keep_stderr and completed.stderr:
         report.stderr.append(completed.stderr.decode('utf-8', 'replace'))
@@ -348,15 +393,25 @@ def ir_test(name):
         with source_lock(source_path):
             run([emojicodec, source_path, '--emit-llvm', '-o', os.path.join(directory, name)], check=True)
         ir = open(os.path.join(directory, name + ".ll"), "r", encoding='utf-8').read()
+    check_ir(name, ir, os.path.join(dist.source, "tests", "compilation", name + ".ir"))
+
+
+def check_ir(name, ir, check_path):
+    """Checks the IR against the file at check_path (see ir_tests)."""
     functions = {m.group(1): m.group(2) for m in
                  re.finditer(r'^define [^\n]*@"?([^"(\s]+)"?\([^\n]*\{\n(.*?)^\}', ir, re.S | re.M)}
     bodies = []
     failed = False
-    check_path = os.path.join(dist.source, "tests", "compilation", name + ".ir")
     for line in open(check_path, "r", encoding='utf-8').read().splitlines():
         if not line or line.startswith('#'):
             continue
         kind, pattern = line[0], line[2:]
+        if kind == '!':
+            for function_name in functions:
+                if re.search(pattern, function_name):
+                    log("{0}: unexpectedly defined".format(function_name))
+                    failed = True
+            continue
         if kind == '@':
             bodies = [(n, b) for n, b in functions.items() if re.search(pattern, n)]
             if not bodies:
@@ -400,14 +455,18 @@ def importing_test(name):
          os.path.join(directory, package + ".🍇"), '-O'], check=True)
     run([emojicodec, '-S', os.path.join(directory, "packages"), os.path.join(directory, name + ".emojic"), '-O'],
         check=True)
-    # The specializations of the package's functions that the program creates, if listed.
+    # The specializations of the package's functions that the program creates and the functions it defines, if listed.
     exp_path = os.path.join(directory, name + ".specializations")
-    if os.path.exists(exp_path):
+    check_path = os.path.join(directory, name + ".ir")
+    if os.path.exists(exp_path) or os.path.exists(check_path):
         with tempfile.TemporaryDirectory() as ir_directory:
             run([emojicodec, '-S', os.path.join(directory, "packages"), os.path.join(directory, name + ".emojic"),
                  '--emit-llvm', '-o', os.path.join(ir_directory, name)], check=True)
             ir = open(os.path.join(ir_directory, name + ".ll"), "r", encoding='utf-8').read()
-        check_specializations(name, ir, exp_path)
+        if os.path.exists(exp_path):
+            check_specializations(name, ir, exp_path)
+        if os.path.exists(check_path):
+            check_ir(name, ir, check_path)
     completed = run([os.path.join(directory, name)], stdout=PIPE)
     output = completed.stdout.decode('utf-8')
     if output != open(os.path.join(directory, name + ".txt"), "r", encoding='utf-8').read() or \
@@ -417,9 +476,12 @@ def importing_test(name):
 
 
 def reject_test(filename):
-    completed = run([emojicodec, filename], stderr=PIPE)
+    completed = run([emojicodec, '-S', test_packages, filename], stderr=PIPE)
     output = completed.stderr.decode('utf-8')
-    if completed.returncode != 1 or len(re.findall(r"🚨 error:", output)) != 1:
+    # NAME.txt, if there is one, holds text that the error must contain, e.g. to tell apart errors of the same check.
+    expected_path = os.path.splitext(filename)[0] + ".txt"
+    expected = open(expected_path, encoding='utf-8').read().strip() if os.path.exists(expected_path) else ""
+    if completed.returncode != 1 or len(re.findall(r"🚨 error:", output)) != 1 or expected not in output:
         log(output)
         fail_test(filename)
 
@@ -482,6 +544,9 @@ def perform(name, function, *args):
         function(*args)
     except CalledProcessError as error:
         log("Command failed with exit code {0}: {1}".format(error.returncode, " ".join(map(str, error.cmd))))
+        fail_test(name)
+    except TimeoutExpired as error:
+        log("Command timed out after {0} s: {1}".format(error.timeout, " ".join(map(str, error.cmd))))
         fail_test(name)
     except Exception:
         # E.g. a missing expected output or output that is not UTF-8, which must not abort the other tests.

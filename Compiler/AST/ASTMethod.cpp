@@ -54,7 +54,8 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
     checkMutation(analyser, callee);
     ensureErrorIsHandled(analyser);
     auto rt = analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
-    if (builtIn_ == BuiltInType::Store || builtIn_ == BuiltInType::Load || builtIn_ == BuiltInType::Release) {
+    if (builtIn_ == BuiltInType::Store || builtIn_ == BuiltInType::Load || builtIn_ == BuiltInType::Release ||
+        builtIn_ == BuiltInType::MemoryCopy) {
         analyser->checkMemoryAccessOf(*args_.genericArguments().front(), position());
     }
     if (!analyser->storesGenericValuesUnboxed(method_->owner()) &&
@@ -203,6 +204,7 @@ void ASTMethodable::prepareBuiltIns(Compiler *c) {
         {{c->sReal, 0x1f522}, BuiltInType::DoubleToInteger},
         {{c->sMemory, E_RECYCLING_SYMBOL}, BuiltInType::Release},
         {{c->sMemory, 0x1F69C}, BuiltInType::MemoryMove},
+        {{c->sMemory, 0x1F4CB}, BuiltInType::MemoryCopy},
         {{c->sMemory, 0x270D}, BuiltInType::MemorySet},
         {{c->sMemory, 0x1F43D}, BuiltInType::Load},
     };

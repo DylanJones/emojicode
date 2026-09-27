@@ -35,6 +35,12 @@ struct Capture {
     /// The generic function enclosing the closure, whose generic arguments are captured so that the closure can
     /// describe its generic variables at run-time, or nullptr if there are none.
     Function *genericArgsOf = nullptr;
+    /// Whether the closure captures the generic arguments of the value type in whose method it is, instead of 👇,
+    /// which an escaping closure cannot capture, so that it can describe the generic variables of the type.
+    bool typeGenericArgs = false;
+    /// Whether the closure is in a type method of a type that stores generic arguments, and captures the description
+    /// of them passed to the type method, so that it can describe the generic variables of the type at run-time.
+    bool typeMethodGenericArgs = false;
 
     bool capturesSelf() const { return self.type() != TypeType::NoReturn; }
 };
@@ -59,8 +65,19 @@ private:
 
     llvm::Value* storeCapturedVariables(FunctionCodeGenerator *fg, const Capture &capture) const;
 
+    /// Generic arguments that a closure captures, and whether they are a copy, which its deinitializer frees.
+    struct CapturedGenericArgs {
+        llvm::Value *value = nullptr;
+        bool copy = false;
+    };
+    /// Returns the generic arguments @p genericArgs of the enclosing function to capture, or a copy of @p variables if
+    /// the closure is escaping.
+    CapturedGenericArgs captureGenericArgs(FunctionCodeGenerator *fg, llvm::Value *genericArgs,
+                                           const std::vector<Type> &variables) const;
+
     void applyBoxingFromExpectation(ExpressionAnalyser *analyser, const TypeExpectation &expectation);
-    llvm::Value* createDeinit(CodeGenerator *cg, const Capture &capture) const;
+    llvm::Value* createDeinit(CodeGenerator *cg, const Capture &capture, bool freeFunctionGenericArgs,
+                              bool freeTypeMethodGenericArgs) const;
 };
 
 class ASTCallableBox final : public ASTBoxing, public MFHeapAutoAllocates {

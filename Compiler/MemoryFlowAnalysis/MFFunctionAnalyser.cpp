@@ -107,17 +107,20 @@ void MFFunctionAnalyser::popScope(ASTBlock *block) {
         if (var.isParam) {
             function_->setParameterMFType(var.param, var.flowCategory);
         }
-        else if (!var.flowCategory.isEscaping()) {
-            for (auto init : var.inits) {
-                init->allocateOnStack();
+        else {
+            if (!var.flowCategory.isEscaping()) {
+                for (auto init : var.inits) {
+                    init->allocateOnStack();
+                }
             }
+            // A variable in a later scope may get the same ID, and must not inherit the type or flow category.
+            var = MFLocalVariable();
         }
-        var.inits.clear();
     }
 }
 
 bool MFFunctionAnalyser::shouldReleaseVariable(const MFLocalVariable &var) const {
-    return !var.isParam && !var.isReturned && var.type.isManaged();
+    return !var.isParam && var.type.isManaged();
 }
 
 void MFFunctionAnalyser::releaseVariables(ASTBlock *block) const {
@@ -134,16 +137,16 @@ void MFFunctionAnalyser::releaseVariables(ASTBlock *block) const {
     // Otherwise, determine whether the last statement of the block is a return statement.
     // If it is a return statement, add the release statements to the return statement.
     else if (auto returnStmt = block->getReturn()) {
-        releaseAllVariables(returnStmt, block->scopeStats(), block->position());
+        releaseAllVariables(returnStmt, block->scopeStats(), block->position(), returnStmt->returnedVariable());
     }
 }
 
 void MFFunctionAnalyser::releaseAllVariables(Releasing *releasing, const SemanticScopeStats &stats,
-                                             const SourcePosition &p) const {
+                                             const SourcePosition &p, std::optional<VariableID> returned) const {
     for (size_t i = 0; i < stats.allVariablesCount; i++) {
         VariableID variableId = i;
         auto &var = scope_.getVariable(variableId);
-        if (shouldReleaseVariable(var)) {
+        if (shouldReleaseVariable(var) && returned != variableId) {
             releasing->addRelease(std::make_unique<ASTRelease>(false, variableId, var.type, p));
         }
     }
@@ -153,9 +156,10 @@ bool MFFunctionAnalyser::recordVariableGet(size_t id, MFFlowCategory category) {
     auto &var = scope_.getVariable(id);
     // A returned parameter escapes too, as the caller receives it, so that an argument must not be allocated on the
     // stack of the caller.
-    bool returnsValueOfVariable = category.isReturn() && !var.isParam && !var.isCaptured;
+    bool returnsValueOfVariable = category.isReturn() && returnedVariable_ != nullptr && !var.isParam &&
+        !var.isCaptured;
     if (returnsValueOfVariable) {
-        var.isReturned = true;
+        *returnedVariable_ = id;
     }
     if (category.isEscaping()) {
         auto type = var.type.unoptionalized();
@@ -165,6 +169,14 @@ bool MFFunctionAnalyser::recordVariableGet(size_t id, MFFlowCategory category) {
         }
     }
     return returnsValueOfVariable;
+}
+
+std::optional<VariableID> MFFunctionAnalyser::analyseReturnValue(ASTExpr *value) {
+    std::optional<VariableID> returned;
+    auto enclosing = std::exchange(returnedVariable_, &returned);
+    value->analyseMemoryFlow(this, MFFlowCategory::Return);
+    returnedVariable_ = enclosing;
+    return returned;
 }
 
 void MFFunctionAnalyser::take(ASTExpr *expr) {

@@ -1,0 +1,21 @@
+1 42 7 3
+a z y b
+cod ray koi eel
+5 2
+1 tuna 2 carp
+1 2 3
+first is 1
+copy's first is one
+3 b eel 1 tuna
+gar
+released gar
+p q
+20
+done
+released ray
+released koi
+released carp
+released pike
+released cod
+released eel
+released tuna

@@ -16,6 +16,7 @@
 #include "Prettyprint/PrettyPrinter.hpp"
 #include <llvm/Support/CommandLine.h>
 #include <llvm/ADT/SmallString.h>
+#include <llvm/ADT/StringRef.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/Program.h>
@@ -59,7 +60,7 @@ void Compiler::ParsePhase::perform(Compiler *compiler) {
 }
 
 void Compiler::AnalysisPhase::perform(Compiler *compiler) {
-    SemanticAnalyser(compiler->mainPackage(), false).analyse(standalone_);
+    SemanticAnalyser(compiler->mainPackage(), false, specialize_).analyse(standalone_);
     if (compiler->hasError_) return;
     MFAnalyser(compiler->mainPackage()).analyse();
 }
@@ -272,7 +273,22 @@ void Compiler::parseInterface(Package *pkg, const SourcePosition &p) {
     if (emojiExists && textExists) {
         throw CompilerError(p, "Package ", pkg->name(), " contains both a 🏛 file and interface.emojii.");
     }
-    pkg->parse(textExists ? textPath : emojiPath);
+    auto path = textExists ? textPath : emojiPath;
+
+    auto &content = sourceManager().read(path)->file();
+    // Trailing whitespace, like the carriage return of a CRLF line ending, is not part of the version.
+    auto firstLine = llvm::StringRef(utf8(content.substr(0, content.find(U'\n')))).rtrim().str();
+    std::string prefix = kABIVersionPrefix;
+    if (firstLine.compare(0, prefix.size(), prefix) != 0) {
+        throw CompilerError(p, "Package ", pkg->name(), " has no ABI version, so it was compiled by an older ",
+                            "compiler. Recompile it with this compiler.");
+    }
+    auto version = firstLine.substr(prefix.size());
+    if (version != std::to_string(kABIVersion)) {
+        throw CompilerError(p, "Package ", pkg->name(), " was compiled for ABI version ", version,
+                            ", but this compiler uses ABI version ", kABIVersion, ". Recompile it with this compiler.");
+    }
+    pkg->parse(path);
 }
 
 void Compiler::error(const CompilerError &ce) {
