@@ -135,7 +135,7 @@ static bool containsTypeGenericVariable(const Type &type) {
 
 void ExpressionAnalyser::usesGenericArgumentsOf(const Type &type) {
     if (containsTypeGenericVariable(type)) {
-        pathAnalyser().record(PathAnalyserIncident::UsedSelf);
+        pathAnalyser().record(PathAnalyserIncident::UsedTypeGenericArguments);
     }
 }
 
@@ -153,6 +153,12 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
     // The generic arguments are passed as type descriptions, which describe those of the type with those in 👇.
     for (auto &argument : genericArgs) {
         usesGenericArgumentsOf(argument);
+    }
+    // So are those of the type to a type method or an initializer of a type that stores them.
+    if (function->owner() != nullptr && function->owner()->storesGenericArgs() &&
+        (isTypeMethod(function) || function->functionType() == FunctionType::ObjectInitializer ||
+         function->functionType() == FunctionType::ValueTypeInitializer)) {
+        usesGenericArgumentsOf(type);
     }
 
     // The generic arguments are types of the calling code, e.g. its own generic parameters, so they must be checked

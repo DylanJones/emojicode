@@ -179,9 +179,10 @@ Type ASTCollectionLiteral::complyPairs(ExpressionAnalyser *analyser, const TypeE
 void ASTCollectionLiteral::setElementType(const Type &variable, ExpressionAnalyser *analyser) {
     auto boxed = variable.resolveOn(TypeContext(type_));
     auto unboxed = boxed.unboxedType();
+    // The element type, like 🍨🐚T🍆, is described at run time.
+    analyser->usesGenericArgumentsOf(boxed);
     if (unboxed == TypeType::GenericVariable || unboxed == TypeType::LocalGenericVariable) {
         elementType_ = boxed;  // Generic here, so stored with the witness of the type it stands for.
-        analyser->usesGenericArgumentsOf(boxed);
     }
     else {
         elementType_ = boxed.unboxed().withMinimalBoxing();

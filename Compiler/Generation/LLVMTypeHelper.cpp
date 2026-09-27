@@ -135,6 +135,12 @@ llvm::StructType* LLVMTypeHelper::llvmTypeForCapture(const Capture &capture, llv
     if (capture.genericArgsOf != nullptr) {
         types.emplace_back(pointer());
     }
+    if (capture.typeGenericArgs) {
+        types.emplace_back(pointer());
+    }
+    if (capture.typeMethodGenericArgs) {
+        types.emplace_back(pointer());
+    }
     return llvm::StructType::get(context_, types);
 }
 
@@ -183,7 +189,7 @@ llvm::FunctionType* LLVMTypeHelper::functionTypeFor(Function *function) {
          function->functionType() == FunctionType::ValueTypeInitializer) && function->owner()->storesGenericArgs()) {
         args.emplace_back(genericArgsStore(function->typeContext().calleeType()));
     }
-    if (isTypeMethod(function) && function->owner()->storesGenericArgs()) {
+    if (takesTypeGenericArgs(function)) {
         args.emplace_back(pointer());
     }
     if (!function->genericParameters().empty()) {

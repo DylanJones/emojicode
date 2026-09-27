@@ -183,7 +183,7 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
 
     std::vector<llvm::Value *> supplArgs;
     auto tdg = TypeDescriptionGenerator(fg, TypeDescriptionGenerator::User::Function);
-    if (isTypeMethod(method_) && method_->owner()->storesGenericArgs()) {
+    if (takesTypeGenericArgs(method_)) {
         supplArgs.emplace_back(tdg.generate(callee_->expressionType().typeOfTypeValue().selfResolvedGenericArgs()));
     }
 

@@ -289,6 +289,10 @@ protected:
     virtual void declareArguments(llvm::Function *function);
     Function* function() const { return fn_; }
     void setFunctionGenericArgs(llvm::Value *value) { functionGenericArgs_ = value; }
+    /// Makes genericArgsPtr() return @p ptr, e.g. a pointer to generic arguments of the callee captured by a closure.
+    void setGenericArgsPtr(llvm::Value *ptr) { genericArgsPtr_ = ptr; }
+    /// Sets the generic arguments of the type of a type method, which genericArgsPtr() returns in it and its closures.
+    void setTypeMethodGenericArgs(llvm::Value *genericArgs) { typeMethodGenericArgs_ = genericArgs; }
 
 private:
     Function *const fn_;
@@ -296,6 +300,7 @@ private:
     CGScoper scoper_;
     llvm::Value *functionGenericArgs_ = nullptr;
     llvm::Value *typeMethodGenericArgs_ = nullptr;
+    llvm::Value *genericArgsPtr_ = nullptr;
 
     CodeGenerator *const generator_;
     llvm::IRBuilder<> builder_;

@@ -1,0 +1,60 @@
+💭 A closure written in a specialization has the specialized type as 👇, so the methods it calls on 👇 are
+💭 specialized too, also in nested closures, and return values of the concrete type the closure returns.
+🕊 🔲🐚T ⚪️🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+  ❗️ 🔓 ➡️ T 🍇
+    ↩️ value
+  🍉
+  ❗️ 🔐 ➡️ T 🍇
+    🍇 ➡️ T
+      ↩️ 🔓👇❗️
+    🍉 ➡️ get
+    ↩️ ⁉️get❗️
+  🍉
+  ❗️ 🪆 ➡️ T 🍇
+    🍇 ➡️ T
+      🍇 ➡️ T
+        ↩️ 🔓👇❗️
+      🍉 ➡️ inner
+      ↩️ ⁉️inner❗️
+    🍉 ➡️ outer
+    ↩️ ⁉️outer❗️
+  🍉
+  🖍❗️ 🔄 new T 🍇
+    new ➡️ 🖍value
+  🍉
+  💭 A closure in a mutating method calls a mutating method on 👇.
+  🖍❗️ 🎛 new T 🍇
+    🍇
+      🔄👇 new❗️
+    🍉 ➡️ set
+    ⁉️set❗️
+  🍉
+🍉
+
+💭 An escaping closure captures an instance of a class.
+🐇 🫙🐚T ⚪️🍆 🍇
+  🖍🆕 value T
+  🆕 🍼 value T 🍇🍉
+  🔏❗️ 🔓 ➡️ T 🍇
+    ↩️ value
+  🍉
+  🔏❗️ 🔐 ➡️ 🍇➡️T🍉 🍇
+    ↩️ 🍇🎍🥡 ➡️ T
+      ↩️ 🔓👇❗️
+    🍉
+  🍉
+🍉
+
+🏁 🍇
+  🆕🔲🐚🔢🍆 42❗️ ➡️ 🖍🆕 box
+  😀 🔡 🔐box❗️❗️❗️
+  😀 🔡 🪆box❗️❗️❗️
+  🎛box 7❗️
+  😀 🔡 🔐box❗️❗️❗️
+
+  🆕🫙🐚🔡🍆 🔤jar🔤❗️ ➡️ jar
+  🔐jar❗️ ➡️ get
+  😀 ⁉️get❗️❗️
+🍉
