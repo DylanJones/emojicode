@@ -40,6 +40,10 @@ void mangleTypeName(std::stringstream &stream, const Type &typeb, bool withGener
     auto mangleComponent = [&stream, withGenericArguments](const Type &component) {
         if (withGenericArguments) {
             stream << '<';
+            // A callable can take or return a value boxed that is not boxed otherwise, which makes it another type.
+            if (component.type() == TypeType::Box && component.withMinimalBoxing().type() != TypeType::Box) {
+                stream << "box_";
+            }
         }
         mangleTypeName(stream, component, withGenericArguments);
         if (withGenericArguments) {

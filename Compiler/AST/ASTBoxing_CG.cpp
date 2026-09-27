@@ -78,7 +78,7 @@ void ASTBoxing::releaseRemoteAllocationIfTaken(Value *box, FunctionCodeGenerator
         return;
     }
     auto ptr = fg->typeHelper().pointer();
-    auto remote = fg->builder().CreateLoad(ptr, fg->buildGetBoxValuePtrAfter(box, ptr, ptr));
+    auto remote = fg->builder().CreateLoad(ptr, fg->buildGetRemoteBoxObjectPtr(box));
     fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), remote);
 }
 
@@ -114,19 +114,19 @@ Value* ASTSimpleToSimpleOptional::generate(FunctionCodeGenerator *fg) const {
 
 Value* ASTSimpleToBox::generate(FunctionCodeGenerator *fg) const {
     auto box = fg->createEntryAlloca(fg->typeHelper().box());
-    remoteObject_ = nullptr;
+    Value *remoteObject;
     if (isValueTypeInit()) {
         setBoxInfo(box, fg);
-        valueTypeInit(fg, buildStoreAddress(box, fg));
+        valueTypeInit(fg, buildStoreAddress(box, fg, &remoteObject));
     }
     else {
-        getPutValueIntoBox(box, expr_->generate(fg), fg);
+        remoteObject = getPutValueIntoBox(box, expr_->generate(fg), fg);
     }
     // The value is released as a temporary, but a heap object storing it is not. It is released after the value,
     // which is in it.
-    if (remoteObject_ != nullptr) {
+    if (remoteObject != nullptr) {
         if (auto objectVariable = temporaryRemoteObjectVariable(fg)) {
-            fg->builder().CreateStore(remoteObject_, objectVariable);
+            fg->builder().CreateStore(remoteObject, objectVariable);
             fg->addTemporaryRemoteObject(objectVariable);
         }
     }
@@ -146,9 +146,9 @@ Value* ASTSimpleOptionalToBox::generate(FunctionCodeGenerator *fg) const {
         return fg->buildBoxWithoutValue();
     }, [&] {
         auto box = fg->createEntryAlloca(fg->typeHelper().box());
-        getPutValueIntoBox(box, fg->buildGetOptionalValue(value, expr_->expressionType()), fg);
+        auto remoteObject = getPutValueIntoBox(box, fg->buildGetOptionalValue(value, expr_->expressionType()), fg);
         if (objectVariable != nullptr) {
-            fg->builder().CreateStore(remoteObject_, objectVariable);
+            fg->builder().CreateStore(remoteObject, objectVariable);
         }
         return fg->builder().CreateLoad(fg->typeHelper().box(), box);
     });
@@ -166,19 +166,22 @@ Value* ASTToBox::temporaryRemoteObjectVariable(FunctionCodeGenerator *fg) const 
     return fg->createEntryAlloca(fg->typeHelper().pointer());
 }
 
-Value* ASTToBox::buildStoreAddress(Value *box, FunctionCodeGenerator *fg) const {
+Value* ASTToBox::buildStoreAddress(Value *box, FunctionCodeGenerator *fg, Value **remoteObject) const {
     auto containedType = expr_->expressionType().unboxed().unoptionalized();
     if (fg->typeHelper().isRemote(containedType)) {
         auto mngType = fg->typeHelper().managable(fg->typeHelper().llvmTypeFor(containedType));
-        remoteObject_ = allocate(fg, mngType);
-        return fg->buildSetRemoteBoxObject(box, mngType, remoteObject_);
+        *remoteObject = allocate(fg, mngType);
+        return fg->buildSetRemoteBoxObject(box, mngType, *remoteObject);
     }
+    *remoteObject = nullptr;
     return getBoxValuePtr(box, fg);
 }
 
-void ASTToBox::getPutValueIntoBox(Value *box, Value *value, FunctionCodeGenerator *fg) const {
+Value* ASTToBox::getPutValueIntoBox(Value *box, Value *value, FunctionCodeGenerator *fg) const {
     setBoxInfo(box, fg);
-    fg->builder().CreateStore(value, buildStoreAddress(box, fg));
+    Value *remoteObject;
+    fg->builder().CreateStore(value, buildStoreAddress(box, fg, &remoteObject));
+    return remoteObject;
 }
 
 void ASTToBox::setBoxInfo(Value *box, FunctionCodeGenerator *fg) const {

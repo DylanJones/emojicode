@@ -158,18 +158,13 @@ Function* SemanticAnalyser::specialize(Function *function, const Type &calleeTyp
     auto key = std::make_pair(function, arguments);
     auto existing = specializations_.find(key);
     if (existing != specializations_.end()) {
-        auto specialization = existing->second;
-        if (specialization != nullptr && !specializationStack_.empty() &&
-            unfinishedSpecializations_.count(specialization) > 0 && specialization != specializationStack_.back()) {
-            specializationDependencies_[specializationStack_.back()].insert(specialization);
-        }
-        return specialization;
+        recordCall(existing->second);
+        return existing->second;
     }
     if (specializationStack_.size() >= kMaxSpecializationDepth) {
         return nullptr;
     }
-    // A function could otherwise specialize itself with ever larger types, e.g. by calling itself with a list of its
-    // generic argument.
+    // A function being specialized is not specialized with other arguments, which could grow without bound.
     for (auto specialization : specializationStack_) {
         if (specialization->specializedFunction() == function) {
             return nullptr;
@@ -200,42 +195,37 @@ Function* SemanticAnalyser::specialize(Function *function, const Type &calleeTyp
     // Registered before the analysis, so that a recursive call uses the specialization too.
     auto specialization = created.get();
     specializations_.emplace(key, specialization);
-    unfinishedSpecializations_.emplace(specialization, std::move(created));
+    unfinishedSpecializations_.emplace_back(std::move(created));
     specializationStack_.push_back(specialization);
     auto compiled = analyseSpecialization(specialization);
     specializationStack_.pop_back();
     if (compiled) {
-        finishSpecialization(specialization);
+        recordCall(specialization);
     }
     else {
         discardSpecialization(specialization, true);
     }
     if (specializationStack_.empty()) {
+        // None of the specializations left can be discarded anymore, including those that call each other.
+        for (auto &unfinished : unfinishedSpecializations_) {
+            package_->addSpecialization(std::move(unfinished));
+        }
+        unfinishedSpecializations_.clear();
+        specializationDependencies_.clear();
         unusedSpecializations_.clear();
     }
     return compiled ? specialization : nullptr;
 }
 
-void SemanticAnalyser::finishSpecialization(Function *specialization) {
-    auto dependencies = specializationDependencies_.find(specialization);
-    if (dependencies != specializationDependencies_.end() && !dependencies->second.empty()) {
-        return;
-    }
-    specializationDependencies_.erase(specialization);
-    auto owned = unfinishedSpecializations_.find(specialization);
-    package_->addSpecialization(std::move(owned->second));
-    unfinishedSpecializations_.erase(owned);
+std::vector<std::unique_ptr<Function>>::iterator SemanticAnalyser::findUnfinished(Function *specialization) {
+    return std::find_if(unfinishedSpecializations_.begin(), unfinishedSpecializations_.end(),
+                        [specialization](auto &unfinished) { return unfinished.get() == specialization; });
+}
 
-    std::vector<Function *> waiting;
-    for (auto &pair : specializationDependencies_) {
-        if (pair.second.erase(specialization) > 0 && pair.second.empty()) {
-            waiting.emplace_back(pair.first);
-        }
-    }
-    for (auto function : waiting) {
-        if (std::find(specializationStack_.begin(), specializationStack_.end(), function) == specializationStack_.end()) {
-            finishSpecialization(function);
-        }
+void SemanticAnalyser::recordCall(Function *specialization) {
+    if (specialization != nullptr && !specializationStack_.empty() && specialization != specializationStack_.back() &&
+        findUnfinished(specialization) != unfinishedSpecializations_.end()) {
+        specializationDependencies_[specializationStack_.back()].insert(specialization);
     }
 }
 
@@ -248,8 +238,8 @@ void SemanticAnalyser::discardSpecialization(Function *specialization, bool fail
         specializations_.erase(key);  // It may be used once the specialization it called is not.
     }
     specializationDependencies_.erase(specialization);
-    auto owned = unfinishedSpecializations_.find(specialization);
-    unusedSpecializations_.emplace_back(std::move(owned->second));
+    auto owned = findUnfinished(specialization);
+    unusedSpecializations_.emplace_back(std::move(*owned));
     unfinishedSpecializations_.erase(owned);
 
     std::vector<Function *> callers;
@@ -259,7 +249,7 @@ void SemanticAnalyser::discardSpecialization(Function *specialization, bool fail
         }
     }
     for (auto caller : callers) {
-        if (unfinishedSpecializations_.count(caller) > 0) {
+        if (findUnfinished(caller) != unfinishedSpecializations_.end()) {
             discardSpecialization(caller, false);
         }
     }
@@ -327,9 +317,16 @@ void SemanticAnalyser::enqueueFunctionsOfTypeDefinition(TypeDefinition *typeDef)
 
 void SemanticAnalyser::enqueueFunction(Function *function) {
     analyseFunctionDeclaration(function);
-    if (!function->isExternal()) {
-        queue_.emplace(function);
+    if (function->isExternal()) {
+        return;
     }
+    if (!specializationStack_.empty()) {
+        // A function made for a specialization, like a callable thunk, is owned by its AST, which is freed if the
+        // specialization is discarded, so it is analysed now rather than from the queue.
+        FunctionAnalyser(function, this).analyse();
+        return;
+    }
+    queue_.emplace(function);
 }
 
 void SemanticAnalyser::analyseFunctionDeclaration(Function *function) const {

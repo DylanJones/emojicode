@@ -348,8 +348,7 @@ void FunctionCodeGenerator::makeRemoteBoxValueUnique(llvm::Value *box, const Typ
     auto llvmType = typeHelper().llvmTypeFor(type);
     auto mngType = typeHelper().managable(llvmType);
     auto valuePtrPtr = buildGetBoxValuePtr(box);
-    auto objectPtr = buildGetBoxValuePtrAfter(box, typeHelper().pointer(), typeHelper().pointer());
-    auto object = builder().CreateLoad(typeHelper().pointer(), objectPtr);
+    auto object = builder().CreateLoad(typeHelper().pointer(), buildGetRemoteBoxObjectPtr(box));
     auto isUnique = builder().CreateCall(generator()->runTime().isOnlyReference(), object);
     createIf(builder().CreateNot(isUnique), [&] {
         // The contents of the value are not retained, as this box's references to them move to the copy.
@@ -365,8 +364,12 @@ llvm::Value* FunctionCodeGenerator::buildSetRemoteBoxObject(llvm::Value *box, ll
     // The first element in the value area is a direct pointer to the struct.
     builder().CreateStore(valuePtr, buildGetBoxValuePtr(box));
     // The second is a pointer to the object for management.
-    builder().CreateStore(object, buildGetBoxValuePtrAfter(box, typeHelper().pointer(), typeHelper().pointer()));
+    builder().CreateStore(object, buildGetRemoteBoxObjectPtr(box));
     return valuePtr;
+}
+
+llvm::Value* FunctionCodeGenerator::buildGetRemoteBoxObjectPtr(llvm::Value *box) {
+    return buildGetBoxValuePtrAfter(box, typeHelper().pointer(), typeHelper().pointer());
 }
 
 llvm::Value* FunctionCodeGenerator::managableGetValuePtr(llvm::StructType *managable, llvm::Value *managablePtr) {

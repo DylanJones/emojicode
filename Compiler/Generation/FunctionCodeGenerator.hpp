@@ -114,6 +114,8 @@ public:
     /// Makes the box to which @p box points store its value in @p object, a managable of type @p managable, and returns
     /// a pointer to the value in the object.
     llvm::Value* buildSetRemoteBoxObject(llvm::Value *box, llvm::StructType *managable, llvm::Value *object);
+    /// Gets a pointer to the field of the box to which @p box points that holds the object storing its remote value.
+    llvm::Value* buildGetRemoteBoxObjectPtr(llvm::Value *box);
     /// Makes the value of the box to which @p box points unique, using the function of the protocol @p conformance,
     /// if the value is stored remotely. @p box must point to a variable that owns the box.
     void makeBoxValueUnique(llvm::Value *conformance, llvm::Value *box);

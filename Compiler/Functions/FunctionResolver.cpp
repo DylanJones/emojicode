@@ -138,11 +138,18 @@ bool FunctionResolution<T>::checkGenericArguments(Function *function, const Gene
 template <typename T>
 void FunctionResolution<T>::addResolver(const FunctionResolver<T> *res) {
     std::set<Function *> blocked;
+    std::set<Function *> overridden;
     for (; res != nullptr; res = res->super_) {
         auto pos = res->map_.find(key_);
         if (pos != res->map_.end()) {
-            overloads_ += pos->second.size();
             for (auto &fn : pos->second) {
+                // A function that a subclass overrides is the same method as the overriding one, not an overload.
+                if (overridden.count(fn.get()) == 0) {
+                    overloads_++;
+                }
+                if (fn->overriding()) {
+                    overridden.emplace(fn->superFunction());
+                }
                 if (blocked.find(fn.get()) != blocked.end()) {
                     if (fn->overriding()) {
                         blocked.emplace(fn->superFunction());

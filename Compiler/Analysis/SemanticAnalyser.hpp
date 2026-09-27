@@ -39,6 +39,8 @@ public:
     /// flag function be present.
     void analyse(bool executable);
 
+    /// Analyses the declaration of the function and queues the analysis of its body, or analyses it right away while a
+    /// specialization is analysed.
     void enqueueFunction(Function *);
 
     /// Returns the specialization of @p function for @p genericArguments, which the caller should call instead of
@@ -72,10 +74,13 @@ private:
     void analyseQueue();
     /// Analyses @p specialization with trapped errors and returns whether it compiled.
     bool analyseSpecialization(Function *specialization);
-    /// Uses @p specialization once no specialization it calls is unfinished.
-    void finishSpecialization(Function *specialization);
+    /// Records that the specialization being analysed calls @p specialization, if it is unfinished, so that it is
+    /// discarded if @p specialization is.
+    void recordCall(Function *specialization);
     /// Discards @p specialization and those that call it. If @p failed, it is not created anew.
     void discardSpecialization(Function *specialization, bool failed);
+    /// Returns the position of @p specialization in unfinishedSpecializations_, or its end.
+    std::vector<std::unique_ptr<Function>>::iterator findUnfinished(Function *specialization);
     void enqueueFunctionsOfTypeDefinition(TypeDefinition *typeDef);
     /// Analyses the protocols to which @p type conforms. Their generic arguments are checked by appending checks to
     /// @p constraintChecks.
@@ -89,9 +94,10 @@ private:
     /// The specializations by generic function and generic arguments, or nullptr if the function could not be
     /// specialized with them.
     std::map<std::pair<Function *, std::vector<Type>>, Function *> specializations_;
-    /// Specializations that are analysed or wait for specializations they call to be analysed. They are owned here until
-    /// they are used or discarded.
-    std::map<Function *, std::unique_ptr<Function>> unfinishedSpecializations_;
+    /// The specializations analysed since the outermost specialization being analysed began, in the order in which
+    /// they were created. They are owned here until that one is analysed, as a specialization that fails discards those
+    /// that call it, possibly recursively. Then they are used.
+    std::vector<std::unique_ptr<Function>> unfinishedSpecializations_;
     /// The specializations being analysed, the innermost last.
     std::vector<Function *> specializationStack_;
     /// The unfinished specializations that an unfinished specialization calls, which it can only be used with.

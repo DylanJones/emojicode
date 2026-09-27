@@ -1,6 +1,10 @@
 # 🔍 and 🔎 of 🧰: 🤯 is called directly and nothing follows it.
 @ ^_\.vt_1f9f0\.type\.1f50[de]-
 + call void @sPanic\([^\n]*\n\s*unreachable
+# The initializer of 🧰 that takes a number: 🤯 ends it, and no return follows.
+@ ^_\.vt_1f9f0\.init\.1f195-
++ call void @sPanic\([^\n]*\n\s*unreachable
+- unreachable\n\s*ret
 # 💌 of 🧰: 💬 of 🚧 is 🔏.
 @ ^_\.vt_1f9f0\.type\.1f48c-
 + call ptr @s\.class_1f6a7\.1f4ac

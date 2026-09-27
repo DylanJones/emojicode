@@ -2,10 +2,16 @@
 """Generates EmojiNames.hpp, the Unicode names of the emoji the lexer accepts, for completing emoji by name.
 
 The emoji are read from isEmoji() in Compiler/Lex/EmojiTokenization.cpp. Run this after changing that function.
+The names come from the unicodedata2 package if it is installed (pip install unicodedata2), because Python's
+unicodedata often lags behind the Unicode version of the emoji tables.
 """
 import os
 import re
-import unicodedata
+
+try:
+    import unicodedata2 as unicodedata
+except ImportError:
+    import unicodedata
 
 here = os.path.dirname(os.path.abspath(__file__))
 source = open(os.path.join(here, "..", "Compiler", "Lex", "EmojiTokenization.cpp"), encoding="utf-8").read()
