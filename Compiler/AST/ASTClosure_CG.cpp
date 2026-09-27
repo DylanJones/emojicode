@@ -90,6 +90,11 @@ llvm::Value* ASTClosure::createDeinit(CodeGenerator *cg, const Capture &capture)
             fg.builder().CreateCall(fg.generator()->runTime().free(),
                                     fg.builder().CreateLoad(fg.typeHelper().pointer(), ptr));
         }
+        if (capture.typeGenericArgs) {
+            auto ptr = fg.builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++);
+            fg.builder().CreateCall(fg.generator()->runTime().releaseMemory(),
+                                    fg.builder().CreateLoad(fg.typeHelper().pointer(), ptr));
+        }
     }
 
     fg.builder().CreateRetVoid();
@@ -143,6 +148,13 @@ llvm::Value* ASTClosure::storeCapturedVariables(FunctionCodeGenerator *fg, const
             }
             auto copy = TypeDescriptionGenerator(fg, TypeDescriptionUser::Class).generate(variables);
             genericArgs = fg->builder().CreateExtractValue(copy, 0);
+        }
+        fg->builder().CreateStore(genericArgs, fg->builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++));
+    }
+    if (capture.typeGenericArgs) {
+        auto genericArgs = fg->builder().CreateLoad(fg->genericArgsType(), fg->genericArgsPtr());
+        if (isEscaping_) {
+            fg->builder().CreateCall(fg->generator()->runTime().retain(), genericArgs);
         }
         fg->builder().CreateStore(genericArgs, fg->builder().CreateConstInBoundsGEP2_32(capture.type, captures, 0, i++));
     }

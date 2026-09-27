@@ -28,6 +28,8 @@ public:
         Returned,
         /// $this$, as represented by ASTThis was used.
         UsedSelf,
+        /// The generic arguments of the type of $this$ were used, e.g. to describe a type at run time.
+        UsedTypeGenericArguments,
         /// A local variable was initialized (set to a value).
         VariableInit,
         /// An instance variable was initialized (set to a value).

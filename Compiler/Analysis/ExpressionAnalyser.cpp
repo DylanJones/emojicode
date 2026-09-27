@@ -135,7 +135,7 @@ static bool containsTypeGenericVariable(const Type &type) {
 
 void ExpressionAnalyser::usesGenericArgumentsOf(const Type &type) {
     if (containsTypeGenericVariable(type)) {
-        pathAnalyser().record(PathAnalyserIncident::UsedSelf);
+        pathAnalyser().record(PathAnalyserIncident::UsedTypeGenericArguments);
     }
 }
 
