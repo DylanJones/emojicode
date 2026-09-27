@@ -35,6 +35,9 @@ struct Capture {
     /// The generic function enclosing the closure, whose generic arguments are captured so that the closure can
     /// describe its generic variables at run-time, or nullptr if there are none.
     Function *genericArgsOf = nullptr;
+    /// Whether the closure captures the generic arguments of the value type in whose method it is, instead of 👇,
+    /// which an escaping closure cannot capture, so that it can describe the generic variables of the type.
+    bool typeGenericArgs = false;
 
     bool capturesSelf() const { return self.type() != TypeType::NoReturn; }
 };

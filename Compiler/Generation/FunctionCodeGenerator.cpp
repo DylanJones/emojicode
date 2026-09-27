@@ -712,6 +712,9 @@ llvm::Type* FunctionCodeGenerator::instanceVariableType(size_t id) {
 }
 
 llvm::Value* FunctionCodeGenerator::genericArgsPtr() {
+    if (genericArgsPtr_ != nullptr) {
+        return genericArgsPtr_;
+    }
     if (fn_ != nullptr && isTypeMethod(fn_)) {
         return typeMethodGenericArgs_;
     }

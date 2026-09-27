@@ -55,7 +55,20 @@ Type ASTClosure::comply(ExpressionAnalyser *analyser, const TypeExpectation &exp
         throw;
     }
     capture_.captures = dynamic_cast<CapturingSemanticScoper &>(closureAnaly.scoper()).captures();
-    if (closureAnaly.pathAnalyser().hasPotentially(PathAnalyserIncident::UsedSelf)) {
+    auto usesSelf = closureAnaly.pathAnalyser().hasPotentially(PathAnalyserIncident::UsedSelf);
+    if (closureAnaly.pathAnalyser().hasPotentially(PathAnalyserIncident::UsedTypeGenericArguments)) {
+        auto &callee = analyser->typeContext().calleeType();
+        if (!usesSelf && callee.type() == TypeType::ValueType && callee.typeDefinition()->storesGenericArgs()) {
+            // A value type stores its generic arguments as a reference-counted type description, which the closure
+            // can keep, even if it outlives the value. A closure around this one must capture them too.
+            capture_.typeGenericArgs = true;
+            analyser->pathAnalyser().record(PathAnalyserIncident::UsedTypeGenericArguments);
+        }
+        else {
+            usesSelf = true;
+        }
+    }
+    if (usesSelf) {
         analyser->checkThisUse(position());
 
         if (isEscaping_ && (analyser->typeContext().calleeType().type() == TypeType::ValueType ||

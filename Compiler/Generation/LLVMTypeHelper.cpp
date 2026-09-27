@@ -133,6 +133,9 @@ llvm::StructType* LLVMTypeHelper::llvmTypeForCapture(const Capture &capture, llv
     if (capture.genericArgsOf != nullptr) {
         types.emplace_back(pointer());
     }
+    if (capture.typeGenericArgs) {
+        types.emplace_back(pointer());
+    }
     return llvm::StructType::get(context_, types);
 }
 
