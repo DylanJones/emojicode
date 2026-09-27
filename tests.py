@@ -87,6 +87,7 @@ compilation_tests = [
     "multiprotocolValueType",
     "multiprotocolToProtocol",
     "multiprotocolFromList",
+    "multiprotocolToMultiprotocol",
     "reboxToSomething",
     "castOwnership",
     "assignmentByCallProtocol",

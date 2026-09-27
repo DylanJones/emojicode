@@ -488,11 +488,12 @@ bool Type::isCompatibleToTypeAsValue(const Type &to, const TypeContext &tc,
 }
 
 bool Type::isCompatibleToMultiProtocol(const Type &to, const TypeContext &ct, GenericInferer *inf) const {
-    if (type() == TypeType::MultiProtocol) {
-        return std::equal(protocols().begin(), protocols().end(), to.protocols().begin(), to.protocols().end(),
-                          [&](const Type &a, const Type &b) {
-                              return a.compatibleTo(b, ct, inf);
-                          });
+    if (type() == TypeType::MultiProtocol) {  // Reboxing makes a table of the conformances to the protocols of to.
+        return std::all_of(to.protocols().begin(), to.protocols().end(), [&](const Type &b) {
+            return std::any_of(protocols().begin(), protocols().end(), [&](const Type &a) {
+                return a.compatibleTo(b, ct, inf);
+            });
+        });
     }
 
     return std::all_of(to.protocols().begin(), to.protocols().end(), [&](const Type &p) {
