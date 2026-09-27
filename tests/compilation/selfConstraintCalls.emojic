@@ -9,6 +9,14 @@
   🐇❗️ 🍩🐚U 📈🐚U🍆🍆 a U b U ➡️ U 🍇
     ↩️ 🥨🐚U🍆🕊🧰 a b❗️
   🍉
+  💭 Its own generic parameter, passed bare, is inferred as the argument rather than its constraint.
+  🐇❗️ 🍪🐚U 📈🐚U🍆🍆 a U b U ➡️ U 🍇
+    ↩️ 🥨🕊🧰 a b❗️
+  🍉
+  💭 Its own generic parameter, passed bare, is inferred as the argument of a type.
+  🐇❗️ 🧮🐚U 📈🐚U🍆🍆 a U b U ➡️ U 🍇
+    ↩️ 🥨🆕🎛 🍿 a b 🍆❗️❗️
+  🍉
   🐇❗️ 🔝🐚T 📈🐚T🍆🍆 values 🍨🐚T🍆 ➡️ T 🍇
     🐽values 0❗️ ➡️ 🖍🆕 largest
     🔂 value values 🍇
@@ -32,6 +40,10 @@
   🍉
   ❗️ 🥨 ➡️ T 🍇
     ↩️ 🥨🐚T🍆🕊🧰 🐽values 0❗️ 🐽values 1❗️❗️
+  🍉
+  💭 The type's generic parameter is inferred as the argument of a method.
+  ❗️ 🍪 ➡️ T 🍇
+    ↩️ 🥨🕊🧰 🐽values 0❗️ 🐽values 1❗️❗️
   🍉
 🍉
 
@@ -60,9 +72,12 @@
 
 🏁 🍇
   😀 🔡 🍩🕊🧰 3 4❗️❗️❗️
+  😀 🔡 🍪🕊🧰 3 4❗️❗️❗️
+  😀 🔡 🧮🕊🧰 3 4❗️❗️❗️
   😀 🔡 📐🕊🧰 🍿 3 9 4 🍆❗️❗️❗️
   😀 🔡 🔝🆕🎛🐚🔢🍆 🍿 3 9 4 🍆❗️❗️❗️❗️
   😀 🔡 🥨🆕🎛🐚🔢🍆 🍿 3 9 4 🍆❗️❗️❗️❗️
+  😀 🔡 🍪🆕🎛🐚🔢🍆 🍿 3 9 4 🍆❗️❗️❗️❗️
   😀 🔡 🥕🆕📦 1 🍿 1 2 🍆❗️❗️❗️❗️
   😀 🔡 🥕🆕🎒🐚🐟🍆 5❗️❗️❗️❗️
 🍉

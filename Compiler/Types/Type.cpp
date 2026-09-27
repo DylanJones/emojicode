@@ -405,9 +405,9 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
         });
     }
 
-    if ((this->type() == TypeType::GenericVariable && to.type() == TypeType::GenericVariable) ||
-        (this->type() == TypeType::LocalGenericVariable && to.type() == TypeType::LocalGenericVariable)) {
-        // A variable of the calling code, e.g. its own generic parameter, can be inferred for one of the callee.
+    if (type() == TypeType::GenericVariable || type() == TypeType::LocalGenericVariable) {
+        // A variable of the calling code, e.g. its own generic parameter or one of its type, can be inferred for one
+        // of the callee. It must not be resolved to its constraint first, which an F-bounded constraint rejects.
         if (to.type() == TypeType::GenericVariable && inf != nullptr && inf->inferringType()) {
             inf->addType(to.genericVariableIndex(), *this, tc);
             return true;
@@ -416,6 +416,9 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
             inf->addLocal(to.genericVariableIndex(), *this, tc);
             return true;
         }
+    }
+    if ((this->type() == TypeType::GenericVariable && to.type() == TypeType::GenericVariable) ||
+        (this->type() == TypeType::LocalGenericVariable && to.type() == TypeType::LocalGenericVariable)) {
         if (this->genericVariableIndex() == to.genericVariableIndex() && this->typeDefinition_ == to.typeDefinition_ &&
             this->localResolutionConstraint_ == to.localResolutionConstraint_) {
             return true;
