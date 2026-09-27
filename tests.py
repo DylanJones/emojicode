@@ -72,6 +72,7 @@ compilation_tests = [
     "selfConstraintCalls",
     "numericMatrix",
     "specializationCycles",
+    "specializationClosures",
     "directCalls",
     "genericStorage",
     "genericOptionalStorage",
@@ -198,6 +199,7 @@ unoptimized_tests = [
     "specializationFallback",
     "specializationScoping",
     "specializationCycles",
+    "specializationClosures",
     "remoteBoxRelease",
     "boxValueSemantics",
     "borrowedBoxes",
@@ -218,6 +220,7 @@ specialization_tests = [
     "selfConstraint",
     "specializationFallback",
     "numericMatrix",
+    "specializationClosures",
 ]
 # Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions
 # whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies. Lines
