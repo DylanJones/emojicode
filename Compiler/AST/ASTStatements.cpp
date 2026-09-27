@@ -92,6 +92,13 @@ void ASTReturn::analyse(FunctionAnalyser *analyser) {
         if (value_ != nullptr) {
             throw CompilerError(position(), "No return type declared. Use ↩️↩️.");
         }
+        if (isReturnForbidden(analyser->function()->functionType())) {
+            // ↩️↩️ returns the instance from an initializer.
+            value_ = analyser->analyseInitializerReturn(position());
+            if (value_ != nullptr) {
+                setIsInitReturn();
+            }
+        }
         return;
     }
 

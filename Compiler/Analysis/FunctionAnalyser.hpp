@@ -46,6 +46,11 @@ public:
     void uninitializedVariablesCheck(const SourcePosition &p, const char *errorMessageFront,
                                      const char *errorMessageBack) const;
 
+    /// Analyses a ↩️↩️ at @p p in an initializer, which returns the instance: Throws an error unless the instance is
+    /// fully initialized there. Returns the expression that returns the object from an object initializer, or
+    /// nullptr for a value type initializer.
+    std::shared_ptr<ASTExpr> analyseInitializerReturn(const SourcePosition &p);
+
     ~FunctionAnalyser();
 
 private:
@@ -56,6 +61,8 @@ private:
 
     void analyseReturn(ASTBlock *root);
     bool analyseInitializationRequirements();
+    /// Returns the analysed expression that returns the initialized object from an object initializer.
+    std::shared_ptr<ASTExpr> initializedObject(const SourcePosition &p);
 
     void analyseBabyBottle();
     void initOptionalInstanceVariables();

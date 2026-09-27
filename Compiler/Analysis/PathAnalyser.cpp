@@ -29,7 +29,8 @@ void PathAnalyser::copyCertainIncidents() {
     currentBranch_->certainIncidents.insert(incs.begin(), incs.end());
 
     // Execution does not continue after a branch that returned (or raised an error, or called a function that never
-    // returns), so only the other branches determine whether the instance has been initialized afterwards. The
+    // returns), so only the other branches determine whether the instance has been initialized afterwards. (A ↩️↩️ in
+    // an initializer requires the instance to be initialized, see FunctionAnalyser::analyseInitializerReturn().) The
     // initialization of local variables is not treated this way, as their release at a return does not consider the
     // path (see MFFunctionAnalyser::releaseAllVariables()).
     for (auto &incident : intersectCertainIncidents(true)) {

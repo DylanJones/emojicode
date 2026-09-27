@@ -120,6 +120,7 @@ compilation_tests = [
     "errorAvocado",
     "errorInitializer",
     "initializerNeverReturns",
+    "initializerVoidReturn",
     "errorReraiseMem",
     "errorReraiseMem2",
     "errorHandlerDiscardMem",
