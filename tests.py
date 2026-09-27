@@ -96,6 +96,7 @@ compilation_tests = [
     "genericProtocol",
     "genericProtocolValueType",
     "genericTypeMethod",
+    "genericSuperInitializer",
     "genericLocalAsArgToGeneric",
     "genericArgumentOfCaller",
     "genericToConstraintOptional",
