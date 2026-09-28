@@ -163,11 +163,11 @@ Type ASTCollectionLiteral::complyPairs(ExpressionAnalyser *analyser, const TypeE
 
     setElementType(analyser->compiler()->sDictionary->typeForVariable(0), analyser);
     for (auto it = values_.begin(); it != values_.end(); it++) {
-        analyser->comply(TypeExpectation(analyser->compiler()->sString->type()), &(*it));
+        complyElement(analyser, analyser->compiler()->sString->type(), &(*it));
         if (++it == values_.end()) {
             throw CompilerError(position(), "A value must be provided for every key.");
         }
-        analyser->comply(TypeExpectation(elementType_), &(*it));
+        complyElement(analyser, elementType_, &(*it));
     }
     initializer_ = type_.typeDefinition()->inits().lookup(U"🍪", Mood::Imperative,
                                                           { analyser->compiler()->sMemory->type(), analyser->compiler()->sMemory->type(), analyser->integer() }, type_, analyser->typeContext(),
@@ -186,6 +186,15 @@ void ASTCollectionLiteral::setElementType(const Type &variable, ExpressionAnalys
     }
     else {
         elementType_ = boxed.unboxed().withMinimalBoxing();
+    }
+}
+
+void ASTCollectionLiteral::complyElement(ExpressionAnalyser *analyser, const Type &type,
+                                         std::shared_ptr<ASTExpr> *node) const {
+    auto elementType = analyser->comply(TypeExpectation(type), node);
+    if (!elementType.compatibleTo(type, analyser->typeContext())) {
+        throw CompilerError((*node)->position(), elementType.toString(analyser->typeContext()),
+                            " is not compatible to ", type.toString(analyser->typeContext()), ".");
     }
 }
 
@@ -209,7 +218,7 @@ Type ASTCollectionLiteral::comply(ExpressionAnalyser *analyser, const TypeExpect
 
     setElementType(analyser->compiler()->sList->typeForVariable(0), analyser);
     for (auto &valueNode : values_) {
-        analyser->comply(TypeExpectation(elementType_), &valueNode);
+        complyElement(analyser, elementType_, &valueNode);
     }
     initializer_ = type_.typeDefinition()->inits().lookup(U"🍪", Mood::Imperative,
             { analyser->compiler()->sMemory->type(), analyser->integer() }, type_, analyser->typeContext(),
