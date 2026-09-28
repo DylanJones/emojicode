@@ -145,6 +145,7 @@ compilation_tests = [
     "errorUnwrap",
     "errorAvocado",
     "errorInitializer",
+    "errorInheritedInitializer",
     "initializerNeverReturns",
     "initializerVoidReturn",
     "errorReraiseMem",
@@ -250,6 +251,7 @@ unoptimized_tests = [
     "closureGenericArgsCapture",
     "genericsInferenceTypeDescription",
     "errorProneGenericArgs",
+    "errorInheritedInitializer",
     "upcastClass",
     "rangeStepZero",
     "typeValueGenericArgs",
@@ -283,6 +285,7 @@ specialization_tests = [
 ir_tests = [
     "directCalls",
     "typeValueGenericArgs",
+    "errorInheritedInitializer",
 ]
 # Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
 host_tests = [

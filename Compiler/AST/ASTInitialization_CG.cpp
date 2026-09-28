@@ -108,7 +108,21 @@ Value* ASTInitialization::initObject(FunctionCodeGenerator *fg, const ASTArgumen
     auto obj = stackInit ? fg->stackAlloc(llvmType) : fg->alloc(llvmType);
     fg->builder().CreateStore(type.klass()->classInfo(), fg->buildGetClassInfoPtrFromObject(obj));
     auto suppl = gArgsDescs != nullptr ? std::vector<llvm::Value*> { gArgsDescs } : std::vector<llvm::Value*>();
-    return CallCodeGenerator(fg, CallType::StaticDispatch).generate(obj, type, args, function, errorPointer, suppl);
+    auto ret = CallCodeGenerator(fg, CallType::StaticDispatch).generate(obj, type, args, function, errorPointer,
+                                                                        suppl);
+    if (!stackInit && errorPointer != nullptr && function->owner() != type.klass()) {
+        // An inherited initializer (the class does not declare its own and directly uses a superclass's) releases
+        // the fields it initialized itself, but only releases the receiver if the object's runtime class info is
+        // its own owner's, which lets a subclass's explicit superinitializer call keep ownership of that release.
+        // That never matches here, as obj's class info is the class actually being instantiated: release obj here.
+        auto pointerType = fg->typeHelper().pointer();
+        auto isError = fg->builder().CreateICmpNE(llvm::ConstantPointerNull::get(pointerType),
+                                                   fg->builder().CreateLoad(pointerType, errorPointer));
+        fg->createIf(isError, [&] {
+            fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), obj);
+        });
+    }
+    return ret;
 }
 
 Value* ASTInitialization::generateMemoryAllocation(FunctionCodeGenerator *fg) const {
