@@ -79,7 +79,8 @@ private:
     Value* generateErrorUnwrap(FunctionCodeGenerator *fg) const;
 };
 
-class ASTReraise final : public ASTUnaryMFForwarding, public ErrorHandling, public Releasing {
+class ASTReraise final : public ASTUnaryMFForwarding, public ErrorHandling, public Releasing,
+                          private ErrorSelfDestructing {
     using ASTUnaryMFForwarding::ASTUnaryMFForwarding;
 public:
     Type analyse(ExpressionAnalyser *analyser) override;

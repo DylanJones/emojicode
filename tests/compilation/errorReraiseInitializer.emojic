@@ -1,0 +1,120 @@
+🐇 🐫 🚧 🍇
+  🆕🍇
+    ⤴️🆕 🔤raised🔤❗️
+  🍉
+🍉
+
+🐇 💰 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ♻️ 🍇
+    😀 name❗️
+  🍉
+🍉
+
+🐇 🐁 🍇
+  🐇❗️ 🙋 🚧🐫 🍇
+    🚨🆕🐫❗️
+  🍉
+🍉
+
+🐇 🐠 🍇
+  🆕 🚧🐫 🍇
+    🔺🙋🐇🐁❗️
+  🍉
+
+  ♻️ 🍇
+    😀 🔤deinit🐠🔤❗️
+  🍉
+🍉
+
+🐇 🐟 🍇
+  🖍🆕 resourceA 💰
+
+  🆕 🚧🐫 🍇
+    🆕💰 🔤A🔤❗️ ➡️ 🖍resourceA
+  🍉
+
+  🆕 ▶️🆒 🚧🐫 🍇
+    🆕💰 🔤B🔤❗️ ➡️ 🖍resourceA
+    🔺🙋🐇🐁❗️
+  🍉
+
+  🆕 ▶️🈺 🚧🐫 🍇
+    🔺🙋🐇🐁❗️
+    🆕💰 🔤C🔤❗️ ➡️ 🖍resourceA
+  🍉
+
+  ♻️ 🍇
+    😀 🔤deinit🐟🔤❗️
+  🍉
+🍉
+
+🐇 🐡 🐟 🍇
+  🖍🆕 resourceB 💰
+  🖍🆕 resourceC 💰
+
+  🆕 ▶️👅 🚧🐫 🍇
+    🆕💰 🔤D🔤❗️ ➡️ 🖍resourceB
+    🆕💰 🔤E🔤❗️ ➡️ 🖍resourceC
+    ⤴️🆕❗️
+    🔺🙋🐇🐁❗️
+  🍉
+
+  🆕 ▶️🎯 🚧🐫 🍇
+    🆕💰 🔤F🔤❗️ ➡️ 🖍resourceB
+    🆕💰 🔤G🔤❗️ ➡️ 🖍resourceC
+    ⤴️🆕❗️
+  🍉
+
+  ♻️ 🍇
+    😀 🔤deinit🐡🔤❗️
+  🍉
+🍉
+
+🏁 🍇
+  🔂 i 🆕⏩ 0 3❗️ 🍇
+    🆗 a 🆕🐠❗️ 🍇
+      😀 🔤not error🔤❗️
+    🍉
+    🙅 error 🍇
+      😀 🔤error🔤❗️
+    🍉
+  🍉
+
+  🔂 i 🆕⏩ 0 3❗️ 🍇
+    🆗 b 🆕🐟▶️🆒❗️ 🍇
+      😀 🔤not error🔤❗️
+    🍉
+    🙅 error 🍇
+      😀 🔤error🔤❗️
+    🍉
+  🍉
+
+  🔂 i 🆕⏩ 0 3❗️ 🍇
+    🆗 c 🆕🐟▶️🈺❗️ 🍇
+      😀 🔤not error🔤❗️
+    🍉
+    🙅 error 🍇
+      😀 🔤error🔤❗️
+    🍉
+  🍉
+
+  🔂 i 🆕⏩ 0 3❗️ 🍇
+    🆗 d 🆕🐡▶️👅❗️ 🍇
+      😀 🔤not error🔤❗️
+    🍉
+    🙅 error 🍇
+      😀 🔤error🔤❗️
+    🍉
+  🍉
+
+  🆗 e 🆕🐡▶️🎯❗️ 🍇
+    😀 🔤not error🔤❗️
+  🍉
+  🙅 error 🍇
+    😀 🔤error🔤❗️
+  🍉
+🍉
