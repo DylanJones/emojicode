@@ -277,8 +277,14 @@ Type Type::resolveOnSuperArgumentsAndConstraints(const TypeContext &typeContext)
 std::vector<Type> Type::selfResolvedGenericArgs() const {
     TypeContext typeContext(*this);
     auto args = genericArguments_;
-    for (auto &g : args) {
-        g = g.resolveOn(typeContext);
+    // Only the superclass-declaration prefix is resolved: those arguments belong to the superclass declaration and
+    // may mention this type's own generic variables, which must be substituted with the arguments actually written
+    // here. The type's own arguments, in contrast, are exactly what the code wrote (e.g. List<V> for a Tree<V> that
+    // grows into a Tree<List<V>>) and must be kept as-is: V refers to this type's own runtime generic argument, not
+    // something to substitute again, which would never end (see the comment in resolveOn()).
+    auto superArgumentCount = typeDefinition()->superGenericArguments().size();
+    for (size_t i = 0; i < superArgumentCount && i < args.size(); i++) {
+        args[i] = args[i].resolveOn(typeContext);
     }
     return args;
 }

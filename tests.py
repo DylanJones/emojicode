@@ -248,6 +248,7 @@ unoptimized_tests = [
     "errorProneGenericArgs",
     "upcastClass",
     "rangeStepZero",
+    "genericSelfLargerArgument",
     "superResultRelease",
     "multiprotocolResultRelease",
 ]
