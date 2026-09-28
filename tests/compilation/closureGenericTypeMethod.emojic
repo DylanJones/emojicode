@@ -1,3 +1,4 @@
+💭 test: unoptimized
 💭 A closure in a type method of a generic type captures the generic arguments passed to the type method, as it has no
 💭 👇 to take them from, to use the type T stands for at run time.
 🕊 🔲🐚T⚪🍆 🍇
