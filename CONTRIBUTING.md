@@ -30,6 +30,45 @@ Contributing is as easy as
   to import packages compiled by an earlier version and asks for them to be recompiled.
 - Try to follow the coding style established in the file you're editing.
 
+## Adding a Test
+
+`tests.py` finds compilation, library, host and importing tests on disk, so adding one of these is only a matter of
+adding files, without editing `tests.py` itself:
+
+- A **compilation test** is `tests/compilation/NAME.emojic` plus the output it must print, `NAME.txt`. A file that
+  is only meant to be `📜`-included by another test, not compiled on its own, has no `NAME.txt`; list it under
+  `formatted_includes` in `tests.py` instead, next to the test(s) that include it.
+- A **library test** is `tests/s/NAME.emojic`; its exit code must be 0.
+- A **host test** is `tests/host/NAME.emojic` plus the C program that calls its `🎍🌊` functions, `NAME.c`, and the
+  output the linked program must print, `NAME.txt`.
+- An **importing test** is `tests/importing/NAME.emojic` plus the package it imports, `NAMEPackage.🍇`, and the
+  output the program must print, `NAME.txt`.
+- A **reject test** (`tests/reject/*.emojic`, must fail to compile) or **parse test** (`tests/parse/*.emojic`, must
+  parse) is found the same way as before.
+
+A compilation test whose specializations or LLVM IR must be checked also gets a `NAME.specializations` or `NAME.ir`
+file (see the comments above `specialization_tests`/`ir_tests` in `tests.py` for their format); this is picked up
+automatically too.
+
+A compilation or library test can start with a directive comment, on its own line among its leading `💭` comments:
+
+    💭 test: unoptimized panic
+
+A compilation test's tokens: `unoptimized` also compiles and runs it without optimizations; `panic` means its
+program panics (aborts with SIGABRT) after printing what `NAME.txt` says; `stress` excludes it from quick and
+valgrind runs because it takes seconds to run; `leak_check` also runs it, at both optimized and unoptimized settings,
+with `EMOJICODE_CHECK_DESCRIPTION_LEAKS` set, so that an unbalanced dynamic generic type description
+alloc/free aborts it regardless of optimization. A library test's only token is `slow`: like `stress`, it takes
+seconds to run and so is scheduled first, but it is not excluded from quick runs (valgrind runs do not include
+library tests at all). See the top of `tests.py` for the full, current list.
+
+A file that looks like a test but is missing a file its category requires, or that carries an unrecognized directive
+token, fails the suite rather than being silently skipped, so check the test output if you add a file and the suite
+does not seem to pick it up.
+
+If you change discovery or scheduling in `tests.py` itself, run `ninja -C build testspy`, which checks them against
+isolated fixtures instead of the real `tests/` tree.
+
 ## Commit message
 
 It's a convention that every commit message begins with an emoji. This emojis doesn't have to have any deeper meaning, we just want Emojicode's GitHub page to look nice. Feel free to choose any you like, we advise you, however, to choose emojis wisely and with regard to what people might associate it with.

@@ -1,3 +1,4 @@
+💭 test: unoptimized leak_check
 💭 A same-class error-prone generic initializer that directly raises must not leak the dynamically allocated generic
 💭 type description it stored on the receiver before failing (#133). A purely inherited initializer, reached by
 💭 directly instantiating a subclass that declares neither fields nor an initializer of its own, must not leak it
