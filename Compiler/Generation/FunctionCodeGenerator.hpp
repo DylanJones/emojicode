@@ -36,6 +36,14 @@ public:
 
     void releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast);
 
+    /// Returns a mark that can later be passed to releaseTemporaryObjectsSince() to release only the temporaries
+    /// registered after this call.
+    size_t mark() const { return temporaryObjects_.size(); }
+
+    /// Releases and removes the temporary values registered since @p mark was obtained from mark(), leaving any
+    /// earlier entries — e.g. those belonging to a sibling expression that has not been consumed yet — untouched.
+    void releaseTemporaryObjectsSince(FunctionCodeGenerator *fg, size_t mark);
+
 private:
     struct Temporary {
         Temporary(llvm::Value *value, Type type, bool remoteObject)
@@ -44,6 +52,8 @@ private:
         Type type;
         bool remoteObject;
     };
+
+    void release(FunctionCodeGenerator *fg, const Temporary &temporary);
 
     std::vector<Temporary> temporaryObjects_;
 };
@@ -279,6 +289,14 @@ public:
     /// @see addTemporaryObject
     void releaseTemporaryObjects(bool clearQueue = true, bool skipLast = false) {
         tom_.releaseTemporaryObjects(this, clearQueue, skipLast);
+    }
+
+    /// Returns a mark that can later be passed to releaseTemporaryObjectsSince() to release only the temporaries
+    /// registered after this call, leaving earlier ones — e.g. those of a sibling argument that has not been
+    /// consumed by its call yet — untouched.
+    size_t temporaryObjectsMark() const { return tom_.mark(); }
+    void releaseTemporaryObjectsSince(size_t mark) {
+        tom_.releaseTemporaryObjectsSince(this, mark);
     }
 
     /// Returns the the TemporaryObjectsManager and resets the FunctionCodeGenerator’s internal one.

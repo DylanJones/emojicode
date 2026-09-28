@@ -608,18 +608,30 @@ void TemporaryObjectsManager::releaseTemporaryObjects(FunctionCodeGenerator *fg,
     if (temporaryObjects_.empty()) return;
     auto end = skipLast ? temporaryObjects_.end() - 1 : temporaryObjects_.end();
     for (auto it = temporaryObjects_.begin(); it < end; it++) {
-        if (it->remoteObject) {
-            auto object = fg->builder().CreateLoad(fg->typeHelper().pointer(), it->value);
-            fg->createIf(fg->builder().CreateIsNotNull(object), [&] {
-                fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), object);
-            });
-        }
-        else {
-            fg->release(it->value, it->type);
-        }
+        release(fg, *it);
     }
     if (clearQueue) {
         temporaryObjects_.clear();
+    }
+}
+
+void TemporaryObjectsManager::releaseTemporaryObjectsSince(FunctionCodeGenerator *fg, size_t mark) {
+    if (mark >= temporaryObjects_.size()) return;
+    for (auto it = temporaryObjects_.begin() + mark; it != temporaryObjects_.end(); it++) {
+        release(fg, *it);
+    }
+    temporaryObjects_.erase(temporaryObjects_.begin() + mark, temporaryObjects_.end());
+}
+
+void TemporaryObjectsManager::release(FunctionCodeGenerator *fg, const Temporary &temporary) {
+    if (temporary.remoteObject) {
+        auto object = fg->builder().CreateLoad(fg->typeHelper().pointer(), temporary.value);
+        fg->createIf(fg->builder().CreateIsNotNull(object), [&] {
+            fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), object);
+        });
+    }
+    else {
+        fg->release(temporary.value, temporary.type);
     }
 }
 
