@@ -289,6 +289,7 @@ importing_tests = [
     "inlineClosure",
     "importedSpecialization",
     "importedSubclassDeclaredFirst",
+    "emptyDictionaryDefault",
 ]
 reject_tests = glob.glob(os.path.join(dist.source, "tests", "reject",
                                       "*.emojic"))
