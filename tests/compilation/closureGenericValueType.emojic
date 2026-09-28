@@ -1,3 +1,4 @@
+💭 test: unoptimized
 💭 An escaping closure in a method of a generic value type, which cannot capture 👇, captures the generic arguments
 💭 of the type to use the type T stands for at run time, even after the value is gone.
 🕊 📦🐚T⚪🍆 🍇
