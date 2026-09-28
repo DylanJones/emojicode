@@ -600,6 +600,13 @@ llvm::Value* FunctionCodeGenerator::createEntryAlloca(llvm::Type *type, const ll
     return builder.CreateAlloca(type, nullptr, name);
 }
 
+llvm::Value* FunctionCodeGenerator::createPendingPointerAlloca() {
+    llvm::IRBuilder<> builder(&function_->getEntryBlock(), function_->getEntryBlock().begin());
+    auto alloca = builder.CreateAlloca(typeHelper().pointer());
+    builder.CreateStore(llvm::ConstantPointerNull::get(typeHelper().pointer()), alloca);
+    return alloca;
+}
+
 llvm::Constant* FunctionCodeGenerator::boxInfoFor(const Type &type) {
     return generator()->boxInfoFor(type);
 }

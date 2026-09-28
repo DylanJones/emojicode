@@ -265,6 +265,12 @@ public:
     bool isManagedByReference(const Type &type) const;
 
     llvm::Value* createEntryAlloca(llvm::Type *type, const llvm::Twine &name = "");
+    /// Creates a pointer-typed entry alloca that is initialized to null in the entry block itself, unlike a plain
+    /// createEntryAlloca(), whose value on a path that never assigns to it is undefined. Use this for a pointer
+    /// variable that a protected temporary (see addPendingReceiver(), addPendingRawAllocation()) tracks and that a
+    /// later checkpoint reads with a null check, since such a variable may be read on a path, e.g. one that skips a
+    /// short-circuiting 🤝/👐 operand, on which the code that would store into it never runs.
+    llvm::Value* createPendingPointerAlloca();
 
     /// Creates an if-else branch condition. If the condition evaluates to true, the code produces by the @c then
     /// function is executed, otherwise the code produced by @c otherwise.
