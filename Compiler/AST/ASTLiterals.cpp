@@ -23,6 +23,7 @@
 #include "Types/ValueType.hpp"
 #include "Types/CommonTypeFinder.hpp"
 #include "Types/TypeExpectation.hpp"
+#include <optional>
 
 namespace EmojicodeCompiler {
 
@@ -130,24 +131,89 @@ ASTCollectionLiteral::ASTCollectionLiteral(const SourcePosition &p) : ASTExpr(p)
 
 ASTCollectionLiteral::~ASTCollectionLiteral() = default;
 
-Type ASTCollectionLiteral::analyse(ExpressionAnalyser *analyser) {
-     finder_ = std::make_unique<CommonTypeFinder>(analyser->semanticAnalyser());
+/// @returns True if @p type is the type of an empty collection literal, or of one whose elements are all such literals,
+/// which Type::compatibleTo accepts for a collection of any element type.
+static bool isEmptyCollectionLiteral(const Type &type) {
+    if (!type.is<TypeType::ListLiteral>() && !type.is<TypeType::DictionaryLiteral>()) {
+        return false;
+    }
+    auto &element = type.genericArguments().front();
+    return element.type() == TypeType::NoReturn || isEmptyCollectionLiteral(element);
+}
 
+/// Merges the types of two empty collection literals (see isEmptyCollectionLiteral()) into the type of one both fit.
+/// @returns Nothing if there is none, as one is a list and the other a dictionary literal at the same depth.
+static std::optional<Type> mergeEmptyCollectionLiterals(const Type &a, const Type &b) {
+    if (a.type() == TypeType::NoReturn) {
+        return b;
+    }
+    if (b.type() == TypeType::NoReturn) {
+        return a;
+    }
+    if (a.type() != b.type()) {
+        return std::nullopt;
+    }
+    auto element = mergeEmptyCollectionLiterals(a.genericArguments().front(), b.genericArguments().front());
+    if (!element) {
+        return std::nullopt;
+    }
+    return a.is<TypeType::ListLiteral>() ? Type::listLiteral(*element) : Type::dictionaryLiteral(*element);
+}
+
+Type ASTCollectionLiteral::analyse(ExpressionAnalyser *analyser) {
+    finder_ = std::make_unique<CommonTypeFinder>(analyser->semanticAnalyser());
+
+    std::vector<Type> types;
     if (pairs_) {
         for (auto it = values_.begin(); it != values_.end(); it++) {
             analyser->analyse(*it);
             if (++it == values_.end()) {
                 throw CompilerError(position(), "A value must be provided for every key.");
             }
-            finder_->addType(analyser->analyse(*it), analyser->typeContext());
+            types.emplace_back(analyser->analyse(*it));
         }
-        return Type::dictionaryLiteral(finder_->getCommonType());
+    }
+    else {
+        for (auto &valueNode : values_) {
+            types.emplace_back(analyser->analyse(valueNode));
+        }
     }
 
-    for (auto &valueNode : values_) {
-        finder_->addType(analyser->analyse(valueNode), analyser->typeContext());
+    auto element = commonElementType(types, analyser->typeContext());
+    return pairs_ ? Type::dictionaryLiteral(element) : Type::listLiteral(element);
+}
+
+Type ASTCollectionLiteral::commonElementType(const std::vector<Type> &types, const TypeContext &typeContext) {
+    if (types.empty()) {
+        return Type::noReturn();  // Type::compatibleTo accepts an empty literal for any element type.
     }
-    return Type::listLiteral(finder_->getCommonType());
+    // An empty literal as element fits the element type of the others, and must not widen it to ⚪️.
+    std::vector<Type> empty;
+    for (auto &type : types) {
+        if (isEmptyCollectionLiteral(type)) {
+            empty.emplace_back(type);
+        }
+        else {
+            finder_->addType(type, typeContext);
+        }
+    }
+    if (empty.size() == types.size()) {
+        std::optional<Type> merged = Type::noReturn();
+        for (auto &type : empty) {
+            if (merged) {
+                merged = mergeEmptyCollectionLiterals(*merged, type);
+            }
+        }
+        if (merged) {
+            return *merged;
+        }
+    }
+    for (auto &type : empty) {
+        if (empty.size() == types.size() || !type.compatibleTo(finder_->getCommonType(), typeContext)) {
+            finder_->addType(type, typeContext);
+        }
+    }
+    return finder_->getCommonType();
 }
 
 /// Returns the collection type a collection literal is expected to be. Like with number literals, the expectation may
@@ -176,11 +242,11 @@ Type ASTCollectionLiteral::complyPairs(ExpressionAnalyser *analyser, const TypeE
 
     setElementType(analyser->compiler()->sDictionary->typeForVariable(0), analyser);
     for (auto it = values_.begin(); it != values_.end(); it++) {
-        analyser->comply(TypeExpectation(analyser->compiler()->sString->type()), &(*it));
+        complyElement(analyser, analyser->compiler()->sString->type(), &(*it));
         if (++it == values_.end()) {
             throw CompilerError(position(), "A value must be provided for every key.");
         }
-        analyser->comply(TypeExpectation(elementType_), &(*it));
+        complyElement(analyser, elementType_, &(*it));
     }
     initializer_ = type_.typeDefinition()->inits().lookup(U"🍪", Mood::Imperative,
                                                           { analyser->compiler()->sMemory->type(), analyser->compiler()->sMemory->type(), analyser->integer() }, type_, analyser->typeContext(),
@@ -199,6 +265,15 @@ void ASTCollectionLiteral::setElementType(const Type &variable, ExpressionAnalys
     }
     else {
         elementType_ = boxed.unboxed().withMinimalBoxing();
+    }
+}
+
+void ASTCollectionLiteral::complyElement(ExpressionAnalyser *analyser, const Type &type,
+                                         std::shared_ptr<ASTExpr> *node) const {
+    auto elementType = analyser->comply(TypeExpectation(type), node);
+    if (!elementType.compatibleTo(type, analyser->typeContext())) {
+        throw CompilerError((*node)->position(), elementType.toString(analyser->typeContext()),
+                            " is not compatible to ", type.toString(analyser->typeContext()), ".");
     }
 }
 
@@ -223,7 +298,7 @@ Type ASTCollectionLiteral::comply(ExpressionAnalyser *analyser, const TypeExpect
 
     setElementType(analyser->compiler()->sList->typeForVariable(0), analyser);
     for (auto &valueNode : values_) {
-        analyser->comply(TypeExpectation(elementType_), &valueNode);
+        complyElement(analyser, elementType_, &valueNode);
     }
     initializer_ = type_.typeDefinition()->inits().lookup(U"🍪", Mood::Imperative,
             { analyser->compiler()->sMemory->type(), analyser->integer() }, type_, analyser->typeContext(),

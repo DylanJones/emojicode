@@ -66,6 +66,9 @@ void FunctionCodeGenerator::declareArguments(llvm::Function *function) {
     unsigned int i = 0;
     auto it = function->args().begin();
     if (hasThisArgument(fn_)) {
+        if (readsTypeGenericArgsFromThis(fn_)) {
+            typeMethodGenericArgs_ = buildGetGenericArgsFromTypeValue(&*it);
+        }
         (it++)->setName("this");
     }
     for (auto &arg : fn_->parameters()) {
@@ -137,6 +140,15 @@ llvm::Value* FunctionCodeGenerator::buildGetClassInfoPtrFromObject(Value *object
 
 llvm::Value* FunctionCodeGenerator::buildGetClassInfoFromObject(llvm::Value *object) {
     return builder().CreateLoad(typeHelper().pointer(), buildGetClassInfoPtrFromObject(object), "info");
+}
+
+llvm::Value* FunctionCodeGenerator::buildGetClassInfoFromTypeValue(llvm::Value *typeValue) {
+    auto ptr = builder().CreateConstInBoundsGEP2_32(typeHelper().typeDescription(), typeValue, 0, 0);
+    return builder().CreateLoad(typeHelper().pointer(), ptr, "info");
+}
+
+llvm::Value* FunctionCodeGenerator::buildGetGenericArgsFromTypeValue(llvm::Value *typeValue) {
+    return builder().CreateConstInBoundsGEP1_32(typeHelper().typeDescription(), typeValue, 1, "typeGenericArgs");
 }
 
 llvm::Value* FunctionCodeGenerator::buildGetBoxConformance(llvm::Value *boxInfo, const Type &type,

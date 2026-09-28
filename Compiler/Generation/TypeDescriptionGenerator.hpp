@@ -24,6 +24,8 @@ class ASTType;
 
 enum class TypeDescriptionUser {
     Class, ValueTypeOrValue, Function,
+    /// A class type value, which describes the class and its generic arguments and lives as long as the program.
+    TypeValue,
 };
 
 /// The TypeDescriptionGenerator creates a %typeDescription* pointing to the first element of an array describing one or
