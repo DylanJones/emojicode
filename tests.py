@@ -14,291 +14,164 @@ import traceback
 quick = len(sys.argv) > 1 and sys.argv[1] == 'quick'
 valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
 
-compilation_tests = [
-    "hello",
-    "endOfFile",
-    "print",
-    "intTest",
-    "if",
-    "vars",
-    "repeatedPackageImport",
-    "enum",
-    "enumMethod",
-    "enumTypeMethod",
-    "unwrap",
-    "imperativeInterrogative",
-    "assignmentMethod",
-    "assignmentByCall",
-    "repeatWhile",
-    "conditionalProduce",
-    "stringConcat",
-    "babyBottleInitializer",
-    "classInheritance",
-    "classOverride",
-    "classSuper",
-    "classSubInstanceVar",
-    "subclassDeclaredFirst",
-    "genericSubclassDeclaredFirst",
-    "overload",
-    "optionalParameter",
-    "returnInBlock",
-    "returnInIf",
-    "elseRelease",
-    "forInVariableReuse",
-    "identityOperator",
-    "typesAsValues",
-    "class",
-    "ivarAssign",
-    "useAndAssign",
-    "privateClassMethod",
-    "assignmentByCallInstanceVariable",
-    "valueType",
-    "valueTypeSelf",
-    "valueTypeMutate",
-    "compareNoValue",
-    "downcastClass",
-    "castDynamicDispatch",
-    "castAny",
-    "somethingParameters",
-    "castGenericValueType",
-    "castGenericSubclass",
-    "castBindingRemote",
-    "castGenericClass",
-    "genericSubclassArguments",
-    "genericSubclassOwnParameter",
-    "genericSubclassInAncestor",
-    "upcastClass",
-    "protocolClass",
-    "protocolSubclass",
-    "protocolValueType",
-    "valueTypeIterator",
-    "listIterator",
-    "specialization",
-    "typeSpecialization",
-    "specializationFallback",
-    "specializationScoping",
-    "specializationMangling",
-    "selfConstraint",
-    "selfConstraintCalls",
-    "numericMatrix",
-    "specializationCycles",
-    "specializationClosures",
-    "directCalls",
-    "genericStorage",
-    "genericOptionalStorage",
-    "listCopyOnWrite",
-    "memoryReleaseCount",
-    "genericCallStack",
-    "multiprotocolCallee",
-    "dictionaryOfBytes",
-    "dictionarySpecialization",
-    "specializationOverloads",
-    "protocolValueTypeRemote",
-    "protocolEnum",
-    "protocolGenericLayerClass",
-    "protocolGenericLayerValueType",
-    "protocolMulti",
-    "protocolMutating",
-    "multiprotocolValueType",
-    "multiprotocolToProtocol",
-    "multiprotocolFromList",
-    "multiprotocolToMultiprotocol",
-    "reboxToSomething",
-    "castOwnership",
-    "assignmentByCallProtocol",
-    "commonType",
-    "generics",
-    "genericsValueType",
-    "genericProtocol",
-    "genericProtocolValueType",
-    "genericTypeMethod",
-    "genericSuperInitializer",
-    "genericLocalAsArgToGeneric",
-    "genericArgumentOfCaller",
-    "genericToConstraintOptional",
-    "genericsInferenceValueType",
-    "genericsInferenceClass",
-    "genericsInferenceTypeDescription",
-    "genericRecursion",
-    "genericSuperclassArguments",
-    "genericSuperclassDeclaredFirst",
-    "superclassArgumentDeclaredLater",
-    "optionalGenericField",
-    "nestedOptionalGenericArgument",
-    "inheritedGenericMethodOnSelf",
-    "variableInitAndScoping",
-    "varInitPath",
-    "valueTypeRemoteAdditional",
-    "closureBasic",
-    "closureCapture",
-    "closureCaptureThis",
-    "closureCaptureValueType",
-    "closureCaptureThisClass",
-    "closureCaptureNonEscaping",
-    "closureNestedCaptureThis",
-    "closureGenerics",
-    "closureGenericValueType",
-    "closureGenericTypeMethod",
-    "closureGenericArgsCapture",
-    "closureError",
-    "callableBoxing",
-    "errorUnwrap",
-    "errorAvocado",
-    "errorInitializer",
-    "initializerNeverReturns",
-    "initializerVoidReturn",
-    "errorReraiseMem",
-    "errorReraiseMem2",
-    "errorHandlerDiscardMem",
-    "errorProneGenericArgs",
-    "valueTypeCopySelf",
-    "valueTypeBoxCopySelf",
-    "remoteBoxRelease",
-    "boxValueSemantics",
-    "borrowedBoxes",
-    "includer",
-    "threads",
-    "linkHints",
-    "linkHintFlag",
-    "linkHintSource",
-    "ffiScalars",
-    "ffiPointers",
-    "ffiStructByValue",
-    "ffiStructPointer",
-    "ffiCallbacks",
-    "unsafeBlockReturnRelease",
-    "returnedVariableRelease",
-    "threadUnjoined",
-    "mutexTryLock",
-    "inferLiteralFromExpec",
-    "emptyLiteralArgument",
-    "sequenceTypeNames",
-    "typeValues",
-    "typeValueGenericArgs",
-    "castTypeValue",
-    "deinitializer",
-    "rcOrder",
-    "rcOrderVt",
-    "rcTempOrder",
-    "rcInstanceVariable",
-    "rcOnlyReference",
-    "rcIvarArgMut",
-    "rcEscaping",
-    "returnParameter",
-    "classEscapingParamOverride",
-    "references",
-    "identifierTest",
-    "shortCircuit",
-    "errorReraisePrefix",
-    "errorGenericReturn",
-    "weak",
-    "superMemoryFlow",
-    "initializerMemoryFlow",
-    "interpolationDereference",
-    "interpolationRelease",
-    "superResultRelease",
-    "multiprotocolResultRelease",
-    "genericDynDisableLiteralConstraint",
-    "reraiseEscapingArgument",
-    "dictionaryCollisions",
-    "rangeStepZero",
-    "startFlagBareReturn",
-    "returnEmptyCollectionLiteral",
-    "requiredInitGenericParam"
-]
+# Test discovery
+#
+# Compilation, library, host and importing tests are found on disk, so adding one only adds files (see
+# CONTRIBUTING.md). A test may start with a directive comment, on its own line among the file's leading "💭"
+# comments, of the form
+#
+#   💭 test: TOKEN TOKEN ...
+#
+# A compilation test's tokens may be:
+# - "unoptimized": also compiled and run without optimizations, which inline code that tests otherwise only test
+#   inlined.
+# - "panic": its program prints what NAME.txt says and then panics, which aborts it.
+# - "stress": it takes seconds to run, so it is excluded from quick and valgrind runs and starts first, along with
+#   the other slow tests, so that it does not end up running alone at the end.
+# A library test's tokens may be "slow": like "stress", it takes seconds to run and so starts first, but unlike
+# "stress" it is not excluded from quick runs (valgrind runs do not include library tests at all).
+#
+# A file that looks like a test but is missing a file its category requires (e.g. NAME.txt), or that carries an
+# unrecognized directive token, fails the suite instead of being silently skipped.
+COMPILATION_DIRECTIVES = {"unoptimized", "panic", "stress"}
+LIBRARY_DIRECTIVES = {"slow"}
 
-if not (quick or valgrind):
-    compilation_tests.extend([
-      "stressTest1",
-      "stressTest2",
-      "stressTest3",
-      "stressTest4"
-    ])
+DIRECTIVE_RE = re.compile(r'^💭\s*test:\s*(.*)$')
 
-library_tests = [
-    "primitives",
-    "mathTest",
-    "rangeTest",
-    "stringTest",
-    "dataTest",
-    "systemTest",
-    "listTest",
-    "enumerator",
-    "dictionaryTest",
-    "jsonTest",
-    "fileTest"
-]
-# Compilation tests that are also compiled and run without optimizations, which inline code that tests otherwise
-# only test inlined.
-unoptimized_tests = [
-    "valueTypeIterator",
-    "listIterator",
-    "specialization",
-    "typeSpecialization",
-    "specializationFallback",
-    "specializationScoping",
-    "specializationCycles",
-    "specializationClosures",
-    "remoteBoxRelease",
-    "errorGenericReturn",
-    "boxValueSemantics",
-    "borrowedBoxes",
-    "genericStorage",
-    "listCopyOnWrite",
-    "memoryReleaseCount",
-    "closureGenericValueType",
-    "closureGenericTypeMethod",
-    "closureGenericArgsCapture",
-    "genericsInferenceTypeDescription",
-    "errorProneGenericArgs",
-    "upcastClass",
-    "rangeStepZero",
-    "typeValueGenericArgs",
-    "superResultRelease",
-    "multiprotocolResultRelease",
-]
-# Compilation tests whose programs print what NAME.txt says and then panic, which aborts them.
-panic_tests = [
-    "rangeStepZero",
-]
-# Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
-# NAME.specializations. A function that is not specialized, but called generically, does not change what a program
-# prints.
-specialization_tests = [
-    "specialization",
-    "typeSpecialization",
-    "specializationScoping",
-    "specializationMangling",
-    "specializationCycles",
-    "genericRecursion",
-    "selfConstraint",
-    "specializationFallback",
-    "numericMatrix",
-    "dictionarySpecialization",
-    "specializationOverloads",
-    "specializationClosures",
-]
-# Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions
-# whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies. No function
-# whose name matches the REGEX of a line "! REGEX" may be defined. Lines starting with # are comments.
-ir_tests = [
-    "directCalls",
-    "typeValueGenericArgs",
-]
-# Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
-host_tests = [
-    "ffiHostLib",
-]
-# Programs that import a package of the same name with "Package" appended, which is compiled first. They test code
-# that is only generated in importers, like the bodies of inlined methods. Their IR is checked against NAME.ir and
-# NAME.specializations, if present.
-importing_tests = [
-    "lazyInline",
-    "inlineClosure",
-    "importedSpecialization",
-    "importedSubclassDeclaredFirst",
-    "emptyDictionaryDefault",
-]
+
+def read_directives(path, allowed):
+    """Returns the tokens of the "💭 test: ..." directive among path's leading comments, if any. Fails the suite if
+    an unrecognized token is used."""
+    tokens = set()
+    with open(path, "r", encoding='utf-8') as f:
+        for line in f:
+            stripped = line.strip()
+            if not stripped.startswith('💭'):
+                break
+            match = DIRECTIVE_RE.match(stripped)
+            if match:
+                tokens = set(match.group(1).split())
+                break
+    unknown = tokens - allowed
+    if unknown:
+        sys.exit("🛑 {0}: unknown test directive(s): {1}".format(path, ", ".join(sorted(unknown))))
+    return tokens
+
+
+def require(path, description):
+    if not os.path.exists(path):
+        sys.exit("🛑 {0} is missing.".format(description))
+
+
+def names_with_extension(directory, extension):
+    return sorted(os.path.splitext(os.path.basename(p))[0]
+                  for p in glob.glob(os.path.join(directory, "*" + extension)))
+
+
+def discover_compilation_tests(directory, include_fragments, quick, valgrind):
+    """Finds the compilation tests in directory and returns a dict of the lists tests.py schedules from them:
+    compilation_tests, stress_tests, unoptimized_tests, panic_tests, specialization_tests and ir_tests (see the
+    module docstring above for directive semantics).
+
+    quick and valgrind runs exclude the "stress" tests, which take seconds to run; that exclusion is applied to
+    compilation_tests before unoptimized_tests, specialization_tests and ir_tests are derived from it, so a stress
+    test's other tasks are excluded consistently with its own compilation task."""
+    compilation_test_directives = {}
+    for name in names_with_extension(directory, ".emojic"):
+        if name in include_fragments:
+            continue
+        require(os.path.join(directory, name + ".txt"),
+                "tests/compilation/{0}.txt, the expected output of {0}.emojic (or {0} must be listed in "
+                "formatted_includes if it is an include-only fragment)".format(name))
+        compilation_test_directives[name] = read_directives(os.path.join(directory, name + ".emojic"),
+                                                             COMPILATION_DIRECTIVES)
+
+    compilation_tests = sorted(compilation_test_directives)
+    stress_tests = [name for name in compilation_tests if "stress" in compilation_test_directives[name]]
+    if quick or valgrind:
+        compilation_tests = [name for name in compilation_tests if name not in stress_tests]
+
+    # Compilation tests that are also compiled and run without optimizations, which inline code that tests otherwise
+    # only test inlined.
+    unoptimized_tests = [name for name in compilation_tests if "unoptimized" in compilation_test_directives[name]]
+    # Compilation tests whose programs print what NAME.txt says and then panic, which aborts them.
+    panic_tests = [name for name in compilation_tests if "panic" in compilation_test_directives[name]]
+    # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
+    # NAME.specializations. A function that is not specialized, but called generically, does not change what a
+    # program prints.
+    specialization_tests = [name for name in compilation_tests
+                             if os.path.exists(os.path.join(directory, name + ".specializations"))]
+    # Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the
+    # functions whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their
+    # bodies. No function whose name matches the REGEX of a line "! REGEX" may be defined. Lines starting with # are
+    # comments.
+    ir_tests = [name for name in compilation_tests
+                if os.path.exists(os.path.join(directory, name + ".ir"))]
+
+    return {
+        "compilation_tests": compilation_tests,
+        "stress_tests": stress_tests,
+        "unoptimized_tests": unoptimized_tests,
+        "panic_tests": panic_tests,
+        "specialization_tests": specialization_tests,
+        "ir_tests": ir_tests,
+    }
+
+
+def discover_library_tests(directory):
+    """Finds the library tests in directory and returns (library_tests, library_test_directives)."""
+    library_test_directives = {name: read_directives(os.path.join(directory, name + ".emojic"), LIBRARY_DIRECTIVES)
+                               for name in names_with_extension(directory, ".emojic")}
+    return sorted(library_test_directives), library_test_directives
+
+
+def discover_host_tests(directory):
+    """Finds the host tests in directory: Emojicode packages whose C functions (🎍🌊) are called by a C program of
+    the same name, which also provides main. Requires each to have a NAME.c and NAME.txt."""
+    host_tests = names_with_extension(directory, ".emojic")
+    for name in host_tests:
+        require(os.path.join(directory, name + ".c"), "tests/host/{0}.c".format(name))
+        require(os.path.join(directory, name + ".txt"), "tests/host/{0}.txt".format(name))
+    return host_tests
+
+
+def discover_importing_tests(directory):
+    """Finds the importing tests in directory: programs that import a package of the same name with "Package"
+    appended, which is compiled first. They test code that is only generated in importers, like the bodies of
+    inlined methods. Requires each to have a NAMEPackage.🍇 and NAME.txt. Their IR is checked against NAME.ir and
+    NAME.specializations, if present."""
+    importing_tests = names_with_extension(directory, ".emojic")
+    for name in importing_tests:
+        require(os.path.join(directory, name + "Package.🍇"), "tests/importing/{0}Package.🍇".format(name))
+        require(os.path.join(directory, name + ".txt"), "tests/importing/{0}.txt".format(name))
+    return importing_tests
+
+
+compilation_directory = os.path.join(dist.source, "tests", "compilation")
+# Formatting a file also formats the files it includes, which only it includes, so they are covered by its lock.
+# A file listed here is an include-only fragment, not a test of its own, so it needs no NAME.txt.
+formatted_includes = {
+    "includer": ["included"],
+}
+include_fragments = {fragment for fragments in formatted_includes.values() for fragment in fragments}
+
+discovered_compilation_tests = discover_compilation_tests(compilation_directory, include_fragments, quick, valgrind)
+compilation_tests = discovered_compilation_tests["compilation_tests"]
+stress_tests = discovered_compilation_tests["stress_tests"]
+unoptimized_tests = discovered_compilation_tests["unoptimized_tests"]
+panic_tests = discovered_compilation_tests["panic_tests"]
+specialization_tests = discovered_compilation_tests["specialization_tests"]
+ir_tests = discovered_compilation_tests["ir_tests"]
+
+library_directory = os.path.join(dist.source, "tests", "s")
+library_tests, library_test_directives = discover_library_tests(library_directory)
+
+host_directory = os.path.join(dist.source, "tests", "host")
+host_tests = discover_host_tests(host_directory)
+
+importing_directory = os.path.join(dist.source, "tests", "importing")
+importing_tests = discover_importing_tests(importing_directory)
+
 reject_tests = glob.glob(os.path.join(dist.source, "tests", "reject",
                                       "*.emojic"))
 parse_tests = glob.glob(os.path.join(dist.source, "tests", "parse",
@@ -520,25 +393,6 @@ def parse_test(filename):
         fail_test(filename)
 
 
-def available_compilation_tests():
-    paths = glob.glob(os.path.join(dist.source, "tests", "compilation",
-                                   "*.emojic"))
-
-    map_it = map(lambda f: os.path.splitext(os.path.basename(f))[0], paths)
-    tests = list(map_it)
-    tests.remove('included')
-    return tests
-
-
-avl_compilation_tests = available_compilation_tests()
-
-
-# Formatting a file also formats the files it includes, which only it includes, so they are covered by its lock.
-formatted_includes = {
-    "includer": ["included"],
-}
-
-
 def formatted_test(name, formatted):
     """Formats the sources of the compilation tests in formatted, compiles the test name from them and checks its
     output. The sources are restored before the program runs."""
@@ -600,13 +454,10 @@ def run_all(tasks):
 
 
 # Tests that take seconds to run, which start first so that they do not end up running alone at the end.
-slow_tests = ["stressTest2", "stressTest3", "jsonTest", "stressTest1", "stressTest4"]
+slow_tests = set(stress_tests) | {name for name, tokens in library_test_directives.items() if "slow" in tokens}
 
 
 def test():
-    for test in compilation_tests:
-        avl_compilation_tests.remove(test)
-
     # Tests write only to their own directories or files. Formatting rewrites a source, which is locked meanwhile (see
     # source_lock()), so all tests can run at once.
     tasks = [(test, compilation_test, test) for test in compilation_tests]
@@ -623,9 +474,6 @@ def test():
     tasks += [(test, parse_test, test) for test in parse_tests]
     tasks.sort(key=lambda task: task[2] not in slow_tests)  # A stable sort, which keeps the order otherwise.
     run_all(tasks)
-
-    for file in avl_compilation_tests:
-        print("☢️  {0} is not in compilation test list.".format(file))
 
     if len(failed_tests) == 0:
         print("✅ ✅  All tests passed.")
@@ -654,7 +502,8 @@ def run_valgrind():
     if failed_tests:
         sys.exit(1)
 
-if valgrind:
-    run_valgrind()
-else:
-    test()
+if __name__ == "__main__":
+    if valgrind:
+        run_valgrind()
+    else:
+        test()
