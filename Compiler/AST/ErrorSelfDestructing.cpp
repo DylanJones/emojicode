@@ -39,6 +39,17 @@ void ErrorSelfDestructing::buildDestruct(FunctionCodeGenerator *fg) const {
         }
         auto clInf = fg->buildGetClassInfoFromObject(fg->thisValue());
         fg->createIf(fg->builder().CreateICmpEQ(clInf, class_->classInfo()), [&] {
+            if (class_->storesGenericArgs()) {
+                // The receiver's generic type description may have been dynamically allocated (see
+                // TypeDescriptionGenerator); a normal deinitializer would free it, but that does not run for a
+                // partially initialized object, so this is the only opportunity to release it before the receiver
+                // itself is freed below.
+                auto gargs = fg->builder().CreateLoad(fg->genericArgsType(), fg->genericArgsPtr());
+                fg->createIf(fg->builder().CreateIsNull(fg->builder().CreateExtractValue(gargs, { 1 })), [&] {
+                    fg->builder().CreateCall(fg->generator()->runTime().free(),
+                                             { fg->builder().CreateExtractValue(gargs, { 0 }) });
+                });
+            }
             fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), fg->thisValue());
         });
     }

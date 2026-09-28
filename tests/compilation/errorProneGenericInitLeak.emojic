@@ -1,0 +1,22 @@
+💭 A same-class error-prone generic initializer that directly raises must not leak the dynamically allocated
+💭 generic type description it stored on the receiver before failing.
+🐇 🐠🐚T⚪🍆 🍇
+  🆕 fail 👌 🚧🚧 🍇
+    ↪️ fail 🍇 🚨🆕🚧 🔤failed🔤❗️ 🍉
+  🍉
+🍉
+
+🌍 🐇 🎁🐚T⚪🍆 🍇
+  🆕 🍇🍉
+
+  ❗️ 🧪 fail 👌 🍇
+    🆗 f 🆕🐠🐚T🍆 fail❗️ 🍇 🍉
+    🙅 e 🍇 🍉
+  🍉
+🍉
+
+🏁 🍇
+  🆕🎁🐚🔡🍆❗️ ➡️ factory
+  🔂 i 🆕⏩ 0 100❗️ 🍇 🧪factory 👍❗️ 🍉
+  😀 🔤done🔤❗️
+🍉
