@@ -65,6 +65,7 @@ compilation_tests = [
     "castBindingRemote",
     "castGenericClass",
     "genericSubclassArguments",
+    "genericSubclassOwnParameter",
     "genericSubclassInAncestor",
     "upcastClass",
     "protocolClass",

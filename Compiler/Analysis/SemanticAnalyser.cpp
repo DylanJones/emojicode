@@ -185,6 +185,8 @@ Function* SemanticAnalyser::specialize(Function *function, const Type &calleeTyp
     auto created = function->makeSpecialization();
     size_t argument = 0;
     if (genericOwner) {
+        // The arguments of the type start with those of its superclass, which are not the owner's parameters.
+        argument = callee.genericArguments().size() - owner->genericParameters().size();
         for (auto &parameter : owner->genericParameters()) {
             created->bindVariable(parameter.name, arguments[argument++]);
         }
