@@ -18,6 +18,7 @@
 #include <cstring>
 #include <iostream>
 #include <random>
+#include <tuple>
 
 runtime::internal::ControlBlock ejcIgnoreBlock;
 
@@ -280,6 +281,28 @@ extern "C" TypeDescription* ejcIndexTypeDescription(TypeDescription *arg, runtim
         arg += typeDescriptionLength(arg);
     }
     return arg;
+}
+
+/// Returns a copy of the type description at @p arg that lives as long as the program, the same copy for equal
+/// descriptions. A class type value is such a description, as it may outlive the description it was created from.
+extern "C" TypeDescription* ejcTypeValue(TypeDescription *arg) {
+    using Entry = std::tuple<RunTimeTypeInfo *, bool, void *>;
+    static std::mutex mutex;
+    static std::map<std::vector<Entry>, std::unique_ptr<TypeDescription[]>> descriptions;
+    auto length = typeDescriptionLength(arg);
+    std::vector<Entry> key;
+    key.reserve(length);
+    for (runtime::Integer i = 0; i < length; i++) {
+        key.emplace_back(arg[i].rtti, arg[i].optional, arg[i].valueWitness);
+    }
+    std::lock_guard<std::mutex> lock(mutex);
+    auto it = descriptions.find(key);
+    if (it == descriptions.end()) {
+        auto copy = std::make_unique<TypeDescription[]>(length);
+        std::copy(arg, arg + length, copy.get());
+        it = descriptions.emplace(std::move(key), std::move(copy)).first;
+    }
+    return it->second.get();
 }
 
 extern "C" void ejcMemoryRealloc(int8_t **pointerPtr, runtime::Integer newSize) {

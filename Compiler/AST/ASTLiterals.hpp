@@ -123,6 +123,8 @@ protected:
     std::unique_ptr<CommonTypeFinder> finder_;
     Value* generatePairs(FunctionCodeGenerator *fg) const;
     Type complyPairs(ExpressionAnalyser *analyser, const TypeExpectation &expectation);
+    /// Returns the element type of a literal whose elements are of the types @p types.
+    Type commonElementType(const std::vector<Type> &types, const TypeContext &typeContext);
 
     /// The type of the elements in the memory passed to the initializer: the type the collection's generic parameter
     /// stands for, or the generic parameter in a box if it is generic here (see ValueWitnessBuilder).
@@ -130,6 +132,9 @@ protected:
     /// Sets elementType_ for the generic argument of type_ that is the generic parameter @p variable of the collection
     /// type.
     void setElementType(const Type &variable, ExpressionAnalyser *analyser);
+    /// Complies @p node, an element, key or value, with @p type. The collection type may have been taken from the
+    /// expectation, which only tells the kind of literal apart, so the element must be checked to be compatible.
+    void complyElement(ExpressionAnalyser *analyser, const Type &type, std::shared_ptr<ASTExpr> *node) const;
     /// Stores @p values, the values of elements, in memory for the initializer and returns a pointer to the memory.
     Value* storeElements(FunctionCodeGenerator *fg, const std::vector<Value *> &values, const char *name) const;
     /// Saves the stack if storeElements() allocates its memory dynamically, which restoreStack() frees after the

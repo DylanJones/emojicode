@@ -119,15 +119,20 @@ void ASTReturn::analyse(FunctionAnalyser *analyser) {
     auto rtType = analyser->function()->returnType()->type();
 
     auto type = analyser->ExpressionAnalyser::analyse(value_);
-    if (!type.compatibleTo(rtType, analyser->typeContext())) {
-        analyser->error(CompilerError(position(), "Declared return type is ",
-                                                  rtType.toString(analyser->typeContext())));
-    }
-    if (analyser->function()->returnType()->type().isReference()) {
+    if (rtType.isReference()) {
+        checkReturnType(analyser, type, rtType);
         returnReference(analyser, type);
     }
     else {
-        analyser->comply(TypeExpectation(rtType), &value_);
+        // Comply before checking, so that a literal, like an empty collection literal, takes on the return type.
+        checkReturnType(analyser, analyser->comply(TypeExpectation(rtType), &value_), rtType);
+    }
+}
+
+void ASTReturn::checkReturnType(FunctionAnalyser *analyser, const Type &type, const Type &rtType) const {
+    if (!type.compatibleTo(rtType, analyser->typeContext())) {
+        analyser->error(CompilerError(position(), "Declared return type is ",
+                                                  rtType.toString(analyser->typeContext())));
     }
 }
 

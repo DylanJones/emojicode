@@ -1,3 +1,4 @@
+💭 test: unoptimized
 💭 The value returned by a call of a method of a multiprotocol is released after the statement unless it is taken.
 
 🐇 🎈 🔡 🍇

@@ -74,6 +74,11 @@ void RunTimeHelper::declareRunTime() {
     typeDescriptionLength_->addFnAttr(llvm::Attribute::Speculatable);
     typeDescriptionLength_->addParamAttr(0, llvm::Attribute::NonNull);
 
+    typeValue_ = declareRunTimeFunction("ejcTypeValue", generator_->typeHelper().pointer(),
+                                        generator_->typeHelper().pointer());
+    typeValue_->addParamAttr(0, llvm::Attribute::NonNull);
+    typeValue_->addRetAttr(llvm::Attribute::NonNull);
+
     indexTypeDescription_ = declareRunTimeFunction("ejcIndexTypeDescription",
                                                     generator_->typeHelper().pointer(),
                                                     { generator_->typeHelper().pointer(),

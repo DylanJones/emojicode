@@ -128,6 +128,7 @@ public:
 
 protected:
     void returnReference(FunctionAnalyser *analyser, Type type);
+    void checkReturnType(FunctionAnalyser *analyser, const Type &type, const Type &rtType) const;
 
     std::shared_ptr<ASTExpr> value_;
     bool initReturn_ = false;
