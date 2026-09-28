@@ -32,6 +32,8 @@ add_subdirectory(c)
 
 add_custom_target(dist python3 ${PROJECT_SOURCE_DIR}/dist.py)
 add_custom_target(tests python3 ${PROJECT_SOURCE_DIR}/tests.py)
+# Regression tests for tests.py's own test discovery and scheduling, run against isolated fixtures.
+add_custom_target(testspy python3 ${PROJECT_SOURCE_DIR}/test_tests.py -v)
 add_custom_target(magicinstall python3 ${PROJECT_SOURCE_DIR}/dist.py install)
 # The tree-sitter grammar that editors use is checked too if the tree-sitter CLI is installed.
 find_program(TREE_SITTER tree-sitter)
