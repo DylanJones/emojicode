@@ -67,6 +67,8 @@ public:
     llvm::Function* checkGenericArgs() const { return checkGenericArgs_; }
     llvm::Function* typeDescriptionLength() const { return typeDescriptionLength_; }
     llvm::Function* indexTypeDescription() const { return indexTypeDescription_; }
+    /// Returns a copy of a type description that lives as long as the program, as a class type value. (ejcTypeValue)
+    llvm::Function* typeValue() const { return typeValue_; }
 
     llvm::Function* isOnlyReference() const { return isOnlyReference_; }
 
@@ -97,6 +99,7 @@ private:
     llvm::Function *checkGenericArgs_ = nullptr;
     llvm::Function *typeDescriptionLength_ = nullptr;
     llvm::Function *indexTypeDescription_ = nullptr;
+    llvm::Function *typeValue_ = nullptr;
 
     llvm::GlobalVariable *boxInfoClassObjects_ = nullptr;
     llvm::GlobalVariable *boxInfoCallables_ = nullptr;

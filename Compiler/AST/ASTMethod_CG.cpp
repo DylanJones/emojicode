@@ -182,6 +182,7 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
         }
     }
 
+    // A type method of a class reads the generic arguments from the type value (see readsTypeGenericArgsFromThis()).
     std::vector<llvm::Value *> supplArgs;
     auto tdg = TypeDescriptionGenerator(fg, TypeDescriptionGenerator::User::Function);
     if (takesTypeGenericArgs(method_)) {

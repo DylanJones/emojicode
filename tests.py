@@ -174,6 +174,8 @@ compilation_tests = [
     "emptyLiteralArgument",
     "sequenceTypeNames",
     "typeValues",
+    "typeValueGenericArgs",
+    "castTypeValue",
     "deinitializer",
     "rcOrder",
     "rcOrderVt",
@@ -250,6 +252,7 @@ unoptimized_tests = [
     "errorProneGenericArgs",
     "upcastClass",
     "rangeStepZero",
+    "typeValueGenericArgs",
     "superResultRelease",
     "multiprotocolResultRelease",
 ]
@@ -279,6 +282,7 @@ specialization_tests = [
 # whose name matches the REGEX of a line "! REGEX" may be defined. Lines starting with # are comments.
 ir_tests = [
     "directCalls",
+    "typeValueGenericArgs",
 ]
 # Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
 host_tests = [

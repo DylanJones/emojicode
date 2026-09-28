@@ -75,6 +75,8 @@ Value* ASTInitialization::generateClassInit(FunctionCodeGenerator *fg) const {
         }
     }
     else {
+        // initializer_ is the type method that calls the required initializer on the class the type value stands for,
+        // which takes the generic arguments of the class from the type value.
         obj = CallCodeGenerator(fg, CallType::DynamicDispatchOnType)
             .generate(typeExpr_->generate(fg), typeExpr_->expressionType(), args_, initializer_, errorPointer());
     }
