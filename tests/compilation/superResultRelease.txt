@@ -1,0 +1,22 @@
+interpolated!
+Released interpolated
+argument
+Released argument
+3
+Released callee
+Released compared
+equal
+Released discarded
+assigned
+Released assigned
+returned
+Released first
+Released avocado
+Released avocado
+value block
+done
+--
+Released first
+Failed
+-----
+Released returned

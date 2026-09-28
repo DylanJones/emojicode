@@ -1,0 +1,12 @@
+interpolated!
+Released interpolated
+argument
+Released argument
+Released compared
+equal
+Released discarded
+assigned
+returned
+Released returned
+-----
+Released assigned

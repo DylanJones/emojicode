@@ -192,6 +192,8 @@ compilation_tests = [
     "initializerMemoryFlow",
     "interpolationDereference",
     "interpolationRelease",
+    "superResultRelease",
+    "multiprotocolResultRelease",
     "genericDynDisableLiteralConstraint",
     "reraiseEscapingArgument",
     "dictionaryCollisions",
@@ -245,6 +247,8 @@ unoptimized_tests = [
     "errorProneGenericArgs",
     "upcastClass",
     "rangeStepZero",
+    "superResultRelease",
+    "multiprotocolResultRelease",
 ]
 # Compilation tests whose programs print what NAME.txt says and then panic, which aborts them.
 panic_tests = [
