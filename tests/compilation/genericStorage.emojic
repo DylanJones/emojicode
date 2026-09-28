@@ -1,3 +1,4 @@
+💭 test: unoptimized
 💭 Generic code storing values of the types its generic parameters stand for in memory, as 🍨 and 🍯 do: of
 💭 integers, strings, value types stored remotely, protocols, and elements mutated in place through 🐽.
 🐊 🔼 🍇
