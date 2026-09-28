@@ -1,0 +1,14 @@
+💭 A generic class that uses itself with a larger generic argument (polymorphic recursion) must not make the
+💭 compiler recurse forever while resolving the type of the erased method that constructs it (issue #115).
+🐇 🌲🐚V⚪️🍆 🍇
+  🔑 🆕 🍇 🍉
+
+  ❗️ 🌰 ➡️ 🌲🐚🍨🐚V🍆🍆 🍇
+    ↩️ 🆕🌲🐚🍨🐚V🍆🍆❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🌲🐚🔡🍆❗️ ➡️ o
+  😀🔤ok🔤❗️
+🍉

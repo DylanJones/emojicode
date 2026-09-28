@@ -119,6 +119,7 @@ compilation_tests = [
     "genericsInferenceClass",
     "genericsInferenceTypeDescription",
     "genericRecursion",
+    "genericSelfLargerArgument",
     "genericSuperclassArguments",
     "genericSuperclassDeclaredFirst",
     "superclassArgumentDeclaredLater",
