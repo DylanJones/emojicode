@@ -1,0 +1,44 @@
+💭 A subclass initializer that calls its superinitializer successfully and then itself raises must still
+💭 release the instance variables the superclass initialized, not just the ones it set itself (#126).
+🐇 🐫 🚧 🍇
+  🆕🍇
+    ⤴️🆕 🔤camel🔤❗️
+  🍉
+🍉
+
+🐇 💰 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ♻️ 🍇
+    😀 name❗️
+  🍉
+🍉
+
+🐇 🐟 🍇
+  🖍🆕 resourceA 💰
+
+  🆕 🚧🐫 🍇
+    🆕💰 🔤A🔤❗️ ➡️ 🖍resourceA
+  🍉
+🍉
+
+🐇 🐡 🐟 🍇
+  🖍🆕 resourceB 💰
+
+  🆕 🚧🐫 🍇
+    🆕💰 🔤B🔤❗️ ➡️ 🖍resourceB
+    ⤴️🆕❗️
+    🚨🆕🐫❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆗 a 🆕🐡❗️ 🍇
+    😀 🔤not error🔤 ❗️
+  🍉
+  🙅 error 🍇
+    😀 🔤error🔤 ❗️
+  🍉
+🍉

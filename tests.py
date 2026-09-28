@@ -149,6 +149,7 @@ compilation_tests = [
     "initializerVoidReturn",
     "errorReraiseMem",
     "errorReraiseMem2",
+    "errorSuperInitReleaseInherited",
     "errorHandlerDiscardMem",
     "errorProneGenericArgs",
     "valueTypeCopySelf",
