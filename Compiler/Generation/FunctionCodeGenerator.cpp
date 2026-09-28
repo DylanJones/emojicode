@@ -608,14 +608,24 @@ void TemporaryObjectsManager::releaseTemporaryObjects(FunctionCodeGenerator *fg,
     if (temporaryObjects_.empty()) return;
     auto end = skipLast ? temporaryObjects_.end() - 1 : temporaryObjects_.end();
     for (auto it = temporaryObjects_.begin(); it < end; it++) {
-        if (it->remoteObject) {
-            auto object = fg->builder().CreateLoad(fg->typeHelper().pointer(), it->value);
-            fg->createIf(fg->builder().CreateIsNotNull(object), [&] {
-                fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), object);
-            });
-        }
-        else {
-            fg->release(it->value, it->type);
+        switch (it->kind) {
+            case Kind::RemoteObject: {
+                auto object = fg->builder().CreateLoad(fg->typeHelper().pointer(), it->value);
+                fg->createIf(fg->builder().CreateIsNotNull(object), [&] {
+                    fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), object);
+                });
+                break;
+            }
+            case Kind::RawAllocation: {
+                auto pointer = fg->builder().CreateLoad(fg->typeHelper().pointer(), it->value);
+                fg->createIf(fg->builder().CreateIsNotNull(pointer), [&] {
+                    fg->builder().CreateCall(fg->generator()->runTime().free(), pointer);
+                });
+                break;
+            }
+            case Kind::Managed:
+                fg->release(it->value, it->type);
+                break;
         }
     }
     if (clearQueue) {

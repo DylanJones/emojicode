@@ -26,23 +26,30 @@ struct SourcePosition;
 class TemporaryObjectsManager {
 public:
     void addTemporaryObject(llvm::Value *value, const Type &type) {
-        temporaryObjects_.emplace_back(value, type, false);
+        temporaryObjects_.emplace_back(value, type, Kind::Managed);
     }
     /// Registers a variable that holds the heap object storing a remote value in a temporary box, or null if no object
     /// was allocated. The object is released without deinitialization, as the value in it is a temporary of its own.
     void addTemporaryRemoteObject(llvm::Value *objectVariable) {
-        temporaryObjects_.emplace_back(objectVariable, Type::noReturn(), true);
+        temporaryObjects_.emplace_back(objectVariable, Type::noReturn(), Kind::RemoteObject);
+    }
+    /// Registers a variable that holds a pointer to a plain heap allocation that has no object semantics (e.g. a
+    /// malloc’d block), or null if it should not be freed, for example because ownership of it was already
+    /// transferred elsewhere. The allocation is released with free() rather than with deinitialization.
+    void addTemporaryRawAllocation(llvm::Value *pointerVariable) {
+        temporaryObjects_.emplace_back(pointerVariable, Type::noReturn(), Kind::RawAllocation);
     }
 
     void releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast);
 
 private:
+    enum class Kind { Managed, RemoteObject, RawAllocation };
     struct Temporary {
-        Temporary(llvm::Value *value, Type type, bool remoteObject)
-            : value(value), type(std::move(type)), remoteObject(remoteObject) {}
+        Temporary(llvm::Value *value, Type type, Kind kind)
+            : value(value), type(std::move(type)), kind(kind) {}
         llvm::Value *value;
         Type type;
-        bool remoteObject;
+        Kind kind;
     };
 
     std::vector<Temporary> temporaryObjects_;
@@ -273,6 +280,9 @@ public:
     }
     void addTemporaryRemoteObject(llvm::Value *objectVariable) {
         tom_.addTemporaryRemoteObject(objectVariable);
+    }
+    void addTemporaryRawAllocation(llvm::Value *pointerVariable) {
+        tom_.addTemporaryRawAllocation(pointerVariable);
     }
     /// Releases all temporary values that were previously registered with addTemporaryObject() in the order
     /// they were added.

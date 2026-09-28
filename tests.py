@@ -200,6 +200,8 @@ compilation_tests = [
     "multiprotocolResultRelease",
     "genericDynDisableLiteralConstraint",
     "reraiseEscapingArgument",
+    "reraiseInitializerArgument",
+    "reraiseInitializerArgumentGenericArgs",
     "dictionaryCollisions",
     "rangeStepZero",
     "startFlagBareReturn",
@@ -255,6 +257,8 @@ unoptimized_tests = [
     "typeValueGenericArgs",
     "superResultRelease",
     "multiprotocolResultRelease",
+    "reraiseInitializerArgument",
+    "reraiseInitializerArgumentGenericArgs",
 ]
 # Compilation tests whose programs print what NAME.txt says and then panic, which aborts them.
 panic_tests = [
@@ -283,6 +287,8 @@ specialization_tests = [
 ir_tests = [
     "directCalls",
     "typeValueGenericArgs",
+    "reraiseInitializerArgument",
+    "reraiseInitializerArgumentGenericArgs",
 ]
 # Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
 host_tests = [
