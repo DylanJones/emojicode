@@ -25,16 +25,24 @@
 💭 🦐 does the same from 🐟, one level further, without declaring an initializer of its own either.
 🐇 🦐🐚T⚪🍆 🐟🐚T🍆 🍇🍉
 
+💭 💰's deinitializer is a sentinel: it must fire exactly once whenever a 💰 instance is actually released (either
+💭 as a field of a failed initializer being cleaned up, or as part of a successfully constructed object's own
+💭 destruction), and never as a side effect of freeing a type description.
 🐇 💰 🍇
   🖍🆕 n 🔢
 
   🆕 🍇
     0 ➡️ 🖍n
   🍉
+
+  ♻️ 🍇
+    😀 🔤💰 deinit🔤❗️
+  🍉
 🍉
 
 💭 🦑 declares its own field and explicitly calls 🐠's initializer, so the description it received from its caller
-💭 must be freed exactly once, by 🦑's own frame, if 🦑 raises after a successful super call.
+💭 must be freed exactly once, by 🦑's own frame, if 🦑 raises after a successful super call. Its own deinitializer
+💭 sentinel must never fire when 🦑 (or a subclass of it) fails to initialize, only on normal destruction.
 🐇 🦑🐚T⚪🍆 🐠🐚T🍆 🍇
   🖍🆕 resource 💰
 
@@ -42,6 +50,30 @@
     🆕💰❗️ ➡️ 🖍resource
     ⤴️🆕 v 👎❗️
     ↪️ raise 🍇 🚨🆕🚧 🔤failed🔤❗️ 🍉
+  🍉
+
+  ♻️ 🍇
+    😀 🔤🦑 deinit🔤❗️
+  🍉
+🍉
+
+💭 🐳 extends 🦑 one level further, forming a multi-level explicit-super chain (🐳 ➡️ 🦑 ➡️ 🐠), and can fail before,
+💭 during, or after its own explicit superinitializer call. Its own field (🖍extra) and deinitializer sentinel let
+💭 execution confirm that failure releases exactly the fields certainly initialized so far, frees the shared
+💭 description exactly once regardless of which frame in the chain observes the failure, and never runs 🐳's own
+💭 deinitializer for a partially initialized object.
+🐇 🐳🐚T⚪🍆 🦑🐚T🍆 🍇
+  🖍🆕 extra 💰
+
+  🆕 v T before 👌 duringFail 👌 after 👌 🚧🚧 🍇
+    ↪️ before 🍇 🚨🆕🚧 🔤failed before super🔤❗️ 🍉
+    🆕💰❗️ ➡️ 🖍extra
+    ⤴️🆕 v duringFail❗️
+    ↪️ after 🍇 🚨🆕🚧 🔤failed after super🔤❗️ 🍉
+  🍉
+
+  ♻️ 🍇
+    😀 🔤🐳 deinit🔤❗️
   🍉
 🍉
 
@@ -74,6 +106,14 @@
     🆗 f 🆕🦑🐚T🍆 v raise❗️ 🍇🍉
     🙅 e 🍇 😀 🔤error🔤❗️ 🍉
   🍉
+
+  💭 Exercises 🐳, a two-level explicit-super chain (🐳 ➡️ 🦑 ➡️ 🐠) with a managed generic field: v is a class
+  💭 instance, so releasing 🐠's field on failure is a real release that must happen before the shared description
+  💭 is freed. Covers failure before, during, and after 🐳's own explicit superinitializer call.
+  ❗️ 🦈 v T before 👌 duringFail 👌 after 👌 🍇
+    🆗 f 🆕🐳🐚T🍆 v before duringFail after❗️ 🍇🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
 🍉
 
 🏁 🍇
@@ -104,6 +144,16 @@
   🙅 e 🍇 😀 🔤error🔤❗️ 🍉
   🆗 f 🆕🦑🐚🔢🍆 7 👎❗️ 🍇 😀 🔡🥇f❗️❗️❗️ 🍉
   🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+
+  🆕🎁🐚💰🍆❗️ ➡️ resourceFactory
+  😀 🔤whale success🔤❗️
+  🦈resourceFactory 🆕💰❗️ 👎 👎 👎❗️
+  😀 🔤whale fail before🔤❗️
+  🦈resourceFactory 🆕💰❗️ 👍 👎 👎❗️
+  😀 🔤whale fail during🔤❗️
+  🦈resourceFactory 🆕💰❗️ 👎 👍 👎❗️
+  😀 🔤whale fail after🔤❗️
+  🦈resourceFactory 🆕💰❗️ 👎 👎 👍❗️
 
   😀 🔤done🔤❗️
 🍉

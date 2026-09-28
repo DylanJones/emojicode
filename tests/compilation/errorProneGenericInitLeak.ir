@@ -28,5 +28,20 @@
 + call ptr @malloc\(
 - call void @free\(
 
+# 🦑's initializer has two independent failure paths that each free the description exactly once: the super call
+# to 🐠 failing, and 🦑's own raise after a successful super call. Requiring exactly two matches (rather than just
+# "at least one") means deleting either path's free is caught, unlike a plain presence check.
 @ _\.class_1f991\.init
-+ call void @free\(
+= 2 call void @free\(
+
+# 🦈 constructs 🐳, which owns a frame of its own like 🦑, so this call site must not free the description either.
+@ 1f988-
++ call ptr @malloc\(
+- call void @free\(
+
+# 🐳 forms a multi-level explicit-super chain (🐳 ➡️ 🦑 ➡️ 🐠) and can fail before, during, or after its own call to
+# 🦑's initializer. Each of the three paths frees the shared description exactly once, from 🐳's own frame (the
+# intermediate 🦑/🐠 frames never own it here, since the receiver's runtime class info is 🐳's, not theirs).
+# Requiring exactly three matches catches removing the free on any one of the three paths.
+@ _\.class_1f433\.init
+= 3 call void @free\(

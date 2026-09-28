@@ -280,8 +280,9 @@ specialization_tests = [
     "specializationClosures",
 ]
 # Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions
-# whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies. No function
-# whose name matches the REGEX of a line "! REGEX" may be defined. Lines starting with # are comments.
+# whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies, while a
+# line "= N REGEX" requires their bodies to contain exactly N non-overlapping matches. No function whose name
+# matches the REGEX of a line "! REGEX" may be defined. Lines starting with # are comments.
 ir_tests = [
     "directCalls",
     "typeValueGenericArgs",
@@ -445,6 +446,15 @@ def check_ir(name, ir, check_path):
             if not bodies:
                 log("No function matches " + pattern)
                 failed = True
+            continue
+        if kind == '=':
+            count_text, pattern = pattern.split(' ', 1)
+            count = int(count_text)
+            for function_name, body in bodies:
+                actual = len(re.findall(pattern, body))
+                if actual != count:
+                    log("{0}: expected {1} matches of {2}, found {3}".format(function_name, count, pattern, actual))
+                    failed = True
             continue
         for function_name, body in bodies:
             if (re.search(pattern, body) is not None) != (kind == '+'):
