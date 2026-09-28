@@ -428,6 +428,9 @@ bool Type::compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *i
     }
     if ((is<TypeType::ListLiteral>() || is<TypeType::DictionaryLiteral>()) &&
             to.is<TypeType::ValueType>() && to.typeDefinition()->canInitFrom(*this)) {
+        if (genericArguments_.front().type() == TypeType::NoReturn) {
+            return true;  // An empty literal has no elements and can be of any element type.
+        }
         return std::equal(genericArguments().begin(), genericArguments().end(),
                 to.genericArguments().begin(), to.genericArguments().end(), [&](const Type &a, const Type &b) {
             return a.compatibleTo(b, tc, inf);

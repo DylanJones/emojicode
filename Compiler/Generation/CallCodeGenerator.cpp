@@ -221,7 +221,8 @@ llvm::Value *CallCodeGenerator::dispatchFromVirtualTable(Function *function, llv
 
 llvm::Value *CallCodeGenerator::createDynamicDispatch(Function *function, const std::vector<llvm::Value *> &args,
                                                       const std::vector<Type> &genericArgs) {
-    auto info = callType_ == CallType::DynamicDispatchOnType ? args.front() : fg()->buildGetClassInfoFromObject(args.front());
+    auto info = callType_ == CallType::DynamicDispatchOnType ? fg()->buildGetClassInfoFromTypeValue(args.front()) :
+        fg()->buildGetClassInfoFromObject(args.front());
     auto tablePtr = fg()->builder().CreateConstInBoundsGEP2_32(fg_->typeHelper().classInfo(), info, 0, 1);
     auto table = fg()->builder().CreateLoad(fg()->typeHelper().pointer(), tablePtr, "table");
     return dispatchFromVirtualTable(function, table, args, genericArgs);

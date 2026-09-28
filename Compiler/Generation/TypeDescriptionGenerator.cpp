@@ -191,7 +191,7 @@ llvm::Value* TypeDescriptionGenerator::finish() {
 
     llvm::Value *current, *alloc;
     auto typeDesc = fg_->typeHelper().typeDescription();
-    if (user_ == User::Function) {
+    if (user_ == User::Function || user_ == User::TypeValue) {
         stack_ = fg_->builder().CreateStackSave();
         current = alloc = fg_->builder().CreateAlloca(typeDesc, size);
     }
@@ -223,6 +223,11 @@ llvm::Value* TypeDescriptionGenerator::finish() {
         auto sct = llvm::ConstantStruct::getAnon({ llvm::UndefValue::get(fg_->typeHelper().pointer()),
             llvm::ConstantInt::getFalse(fg_->ctx()) });;
         return fg_->builder().CreateInsertValue(sct, alloc, { 0 });
+    }
+    if (user_ == User::TypeValue) {
+        auto value = fg_->builder().CreateCall(fg_->generator()->runTime().typeValue(), alloc);
+        fg_->builder().CreateStackRestore(stack_);
+        return value;
     }
     return alloc;
 }

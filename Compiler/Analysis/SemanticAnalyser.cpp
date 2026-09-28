@@ -185,6 +185,8 @@ Function* SemanticAnalyser::specialize(Function *function, const Type &calleeTyp
     auto created = function->makeSpecialization();
     size_t argument = 0;
     if (genericOwner) {
+        // The arguments of the type start with those of its superclass, which are not the owner's parameters.
+        argument = callee.genericArguments().size() - owner->genericParameters().size();
         for (auto &parameter : owner->genericParameters()) {
             created->bindVariable(parameter.name, arguments[argument++]);
         }
@@ -598,14 +600,12 @@ Type SemanticAnalyser::defaultLiteralType(const Type &type) const {
     if (type.is<TypeType::RealLiteral>()) {
         return compiler()->sReal->type();
     }
-    if (type.is<TypeType::ListLiteral>()) {
-        Type dtype = compiler()->sList->type();
-        dtype.setGenericArgument(0, type.genericArguments()[0]);
-        return dtype;
-    }
-    if (type.is<TypeType::DictionaryLiteral>()) {
-        Type dtype = compiler()->sDictionary->type();
-        dtype.setGenericArgument(0, type.genericArguments()[0]);
+    if (type.is<TypeType::ListLiteral>() || type.is<TypeType::DictionaryLiteral>()) {
+        Type dtype = type.is<TypeType::ListLiteral>() ? compiler()->sList->type() : compiler()->sDictionary->type();
+        auto &element = type.genericArguments()[0];
+        // An empty literal has no elements to infer the element type from. One of them as element is defaulted too.
+        dtype.setGenericArgument(0, element.type() == TypeType::NoReturn ? Type::something()
+                                                                         : defaultLiteralType(element));
         return dtype;
     }
     return type;

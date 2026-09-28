@@ -1,0 +1,52 @@
+💭 A specialized method of a generic subclass binds the subclass's own generic parameters to its own arguments,
+💭 not to the superclass arguments that come first.
+🐇 🅰️🐚T⚪️🍆 🍇
+  🆕 🍇🍉
+  ❗️ 🍎 ➡️ 🔢 🍇 ↩️ ⚖️T 🍉
+🍉
+
+🐇 🌲🐚V⚪️🍆 🅰️🐚👌🍆 🍇
+  🖍🆕 value V
+  🆕 🍼 value V 🍇 ⤴️🆕❗️ 🍉
+  ❗️ 🌰 ➡️ 🔢 🍇 ↩️ ⚖️V 🍉
+  ❗️ 🍐 ➡️ V 🍇 ↩️ value 🍉
+  ❗️ 🥝🐚X⚪️🍆 x X ➡️ 🔢 🍇
+    ↩️ ⚖️X
+  🍉
+  ❗️ 🍑🐚X⚪️🍆 x X ➡️ X 🍇
+    ↩️ x
+  🍉
+🍉
+
+🐇 🌴🐚W⚪️🍆 🅰️🐚🔢🍆 🍇
+  🖍🆕 value W
+  🆕 🍼 value W 🍇 ⤴️🆕❗️ 🍉
+  ❗️ 🌰 ➡️ 🔢 🍇 ↩️ ⚖️W 🍉
+  ❗️ 🍐 ➡️ W 🍇 ↩️ value 🍉
+🍉
+
+🐇 🌵🐚V⚪️🍆 🅰️🐚👌🍆 🍇
+  🔑 🆕 🍇 ⤴️🆕❗️ 🍉
+  ❗️ 🌰 ➡️ 🔢 🍇 ↩️ ⚖️V 🍉
+🍉
+
+🏁 🍇
+  🆕🌲🐚🔡🍆 🔤tree🔤❗️ ➡️ a
+  😀 🔡 🌰a❗️❗️❗️
+  😀 🔡 🍎a❗️❗️❗️
+  😀 🍐a❗️❗️
+  😀 🔡 🥝a 🔤x🔤❗️❗️❗️
+  😀 🔡 🥝a 👍❗️❗️❗️
+  😀 🍑a 🔤kiwi🔤❗️❗️
+
+  🆕🌴🐚👌🍆 👍❗️ ➡️ b
+  😀 🔡 🌰b❗️❗️❗️
+  😀 🔡 🍎b❗️❗️❗️
+  ↪️ 🍐b❗️ 🍇
+    😀 🔤true🔤❗️
+  🍉
+
+  🆕🌵🐚🔡🍆❗️ ➡️ c
+  😀 🔡 🌰c❗️❗️❗️
+  😀 🔡 🍎c❗️❗️❗️
+🍉
