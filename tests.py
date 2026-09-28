@@ -196,7 +196,8 @@ compilation_tests = [
     "reraiseEscapingArgument",
     "dictionaryCollisions",
     "rangeStepZero",
-    "startFlagBareReturn"
+    "startFlagBareReturn",
+    "returnEmptyCollectionLiteral"
 ]
 
 if not (quick or valgrind):
