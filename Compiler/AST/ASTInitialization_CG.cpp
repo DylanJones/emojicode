@@ -110,19 +110,21 @@ Value* ASTInitialization::initObject(FunctionCodeGenerator *fg, const ASTArgumen
 
     // The receiver is allocated before its arguments are evaluated, but only the initializer call below, which is
     // never reached if evaluating an argument reraises, transfers ownership of it (and of any dynamically allocated
-    // generic argument descriptions). Register both for release on that path, without deinitializing the receiver’s
-    // uninitialized fields, and disarm the registrations once the initializer call is reached.
+    // generic argument descriptions). Register both as pending (see FunctionCodeGenerator::addPendingReceiver()) so
+    // they are released, without deinitializing the receiver’s uninitialized fields, if that happens, while still
+    // surviving checkpoints argument evaluation may hit that must not assume this call has been reached (e.g.
+    // short-circuiting 🤝/👐). Disarm the registrations once the initializer call is reached.
     llvm::Value *pendingObjVar = nullptr;
     if (!stackInit) {
         pendingObjVar = fg->createEntryAlloca(fg->typeHelper().pointer());
         fg->builder().CreateStore(obj, pendingObjVar);
-        fg->addTemporaryRemoteObject(pendingObjVar);
+        fg->addPendingReceiver(pendingObjVar);
     }
     llvm::Value *pendingGArgsVar = nullptr;
     if (gArgsDescs != nullptr && !llvm::isa<llvm::Constant>(gArgsDescs)) {
         pendingGArgsVar = fg->createEntryAlloca(fg->typeHelper().pointer());
         fg->builder().CreateStore(fg->builder().CreateExtractValue(gArgsDescs, { 0 }), pendingGArgsVar);
-        fg->addTemporaryRawAllocation(pendingGArgsVar);
+        fg->addPendingRawAllocation(pendingGArgsVar);
     }
 
     auto suppl = gArgsDescs != nullptr ? std::vector<llvm::Value*> { gArgsDescs } : std::vector<llvm::Value*>();

@@ -202,6 +202,7 @@ compilation_tests = [
     "reraiseEscapingArgument",
     "reraiseInitializerArgument",
     "reraiseInitializerArgumentGenericArgs",
+    "reraiseInitializerArgumentLogical",
     "dictionaryCollisions",
     "rangeStepZero",
     "startFlagBareReturn",
@@ -259,6 +260,7 @@ unoptimized_tests = [
     "multiprotocolResultRelease",
     "reraiseInitializerArgument",
     "reraiseInitializerArgumentGenericArgs",
+    "reraiseInitializerArgumentLogical",
 ]
 # Compilation tests whose programs print what NAME.txt says and then panic, which aborts them.
 panic_tests = [
@@ -289,6 +291,7 @@ ir_tests = [
     "typeValueGenericArgs",
     "reraiseInitializerArgument",
     "reraiseInitializerArgumentGenericArgs",
+    "reraiseInitializerArgumentLogical",
 ]
 # Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
 host_tests = [

@@ -1,0 +1,53 @@
+💭 ASTBinaryOperator::generateLogical() releases ordinary temporary objects after each operand of 🤝/👐. A receiver
+💭 allocated for a pending initializer call must survive those checkpoints, since the initializer has not taken
+💭 ownership of it yet, or it is released, and later used as if it still were valid, before it is even reached.
+🐇 📦 🍇
+  🖍🆕 x 👌
+  🆕 🍼 x 👌 🍇🍉
+🍉
+
+🐇 🎈 🍇
+  🖍🆕 inner 📦
+  🖍🆕 y 👌
+  🆕 🍼 inner 📦 🍼 y 👌 🍇🍉
+🍉
+
+🐇 🐟 🍇
+  🐇❗️ 🥭 v 👌 fail 👌 ➡️ 👌 🚧🚧 🍇
+    ↪️ fail 🍇 🚨🆕🚧 🔤failed🔤❗️ 🍉
+    ↩️ v
+  🍉
+
+  💭 Neither operand reraises: this alone crashed before the fix, because the pending receiver was tracked as an
+  💭 ordinary temporary and released after the left operand, before the initializer was ever reached.
+  🐇❗️ 🙋 a 👌 b 👌 ➡️ 📦 🍇
+    ↩️ 🆕📦 a 🤝 b❗️
+  🍉
+
+  💭 The right operand reraises after the left operand's temporary-release checkpoint already ran.
+  🐇❗️ 🐝 a 👌 fail 👌 ➡️ 📦 🚧🚧 🍇
+    ↩️ 🆕📦 a 🤝 🔺🥭🐇🐟 a fail❗️❗️
+  🍉
+
+  💭 The receiver of a nested construction, used as one initializer's first argument, must independently survive
+  💭 the checkpoint hit while evaluating its own arguments, while the outer receiver, already pending, must too.
+  🐇❗️ 🦋 a 👌 fail 👌 ➡️ 🎈 🚧🚧 🍇
+    ↩️ 🆕🎈 🆕📦 a 🤝 🔺🥭🐇🐟 a fail❗️❗️ a❗️
+  🍉
+🍉
+
+🏁 🍇
+  🔂 i 🆕⏩ 0 100❗️ 🍇
+    🙋🐇🐟 👍 👍❗️
+    🙋🐇🐟 👍 👎❗️
+    🆗 s 🐝🐇🐟 👍 👍❗️ 🍇🍉
+    🙅 e 🍇🍉
+    🆗 s2 🐝🐇🐟 👍 👎❗️ 🍇🍉
+    🙅 e2 🍇🍉
+    🆗 s3 🦋🐇🐟 👍 👍❗️ 🍇🍉
+    🙅 e3 🍇🍉
+    🆗 s4 🦋🐇🐟 👍 👎❗️ 🍇🍉
+    🙅 e4 🍇🍉
+  🍉
+  😀 🔤done🔤❗️
+🍉
