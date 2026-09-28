@@ -123,6 +123,8 @@ protected:
     std::unique_ptr<CommonTypeFinder> finder_;
     Value* generatePairs(FunctionCodeGenerator *fg) const;
     Type complyPairs(ExpressionAnalyser *analyser, const TypeExpectation &expectation);
+    /// Returns the element type of a literal whose elements are of the types @p types.
+    Type commonElementType(const std::vector<Type> &types, const TypeContext &typeContext);
 
     /// The type of the elements in the memory passed to the initializer: the type the collection's generic parameter
     /// stands for, or the generic parameter in a box if it is generic here (see ValueWitnessBuilder).

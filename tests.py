@@ -171,6 +171,7 @@ compilation_tests = [
     "threadUnjoined",
     "mutexTryLock",
     "inferLiteralFromExpec",
+    "emptyLiteralArgument",
     "sequenceTypeNames",
     "typeValues",
     "deinitializer",
