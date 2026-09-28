@@ -288,6 +288,15 @@ ir_tests = [
     "typeValueGenericArgs",
     "errorProneGenericInitLeak",
 ]
+# Compilation tests run, at both optimized and unoptimized settings, with EMOJICODE_CHECK_DESCRIPTION_LEAKS set. The
+# runtime then counts calls to ejcAllocDescription/ejcFreeDescription (the malloc/free pair generated exclusively
+# for dynamic class generic-argument type descriptions, see TypeDescriptionGenerator) and aborts at exit if they are
+# unbalanced. Unlike ir_tests, which inspects unoptimized IR text and so cannot see calls an optimizer's tail-merging
+# collapses together, this observes actual executed allocation/deallocation counts and so still catches an ownership
+# bug (a missing or duplicated free) at -O.
+leak_check_tests = [
+    "errorProneGenericInitLeak",
+]
 # Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
 host_tests = [
     "ffiHostLib",
@@ -376,9 +385,9 @@ def library_test(name):
         log(completed.stdout.decode('utf-8'))
 
 
-def check_output(name, binary_path):
+def check_output(name, binary_path, env=None):
     """Runs the program of the compilation test name and checks its output."""
-    completed = run([binary_path], stdout=PIPE)
+    completed = run([binary_path], stdout=PIPE, env=env)
     exp_path = os.path.join(dist.source, "tests", "compilation", name + ".txt")
     output = completed.stdout.decode('utf-8')
     expected_returncode = -signal.SIGABRT if name in panic_tests else 0
@@ -395,6 +404,18 @@ def compilation_test(name, optimize=True):
         with source_lock(source_path):
             run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
         check_output(name, binary_path)
+
+
+def leak_check_test(name, optimize=True):
+    """Like compilation_test, but with EMOJICODE_CHECK_DESCRIPTION_LEAKS set (see leak_check_tests), so that the
+    program aborts (and so fails check_output's return code comparison) if it leaked or double-freed a dynamic
+    generic type description, regardless of optimization."""
+    source_path = test_paths(name, 'compilation')[0]
+    with tempfile.TemporaryDirectory() as directory:
+        binary_path = os.path.join(directory, name)
+        with source_lock(source_path):
+            run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
+        check_output(name, binary_path, env=dict(os.environ, EMOJICODE_CHECK_DESCRIPTION_LEAKS='1'))
 
 
 def specialization_test(name):
@@ -626,6 +647,8 @@ def test():
         tasks += [(test + " (formatted)", prettyprint_test, test) for test in compilation_tests]
         tasks += [("includer (included formatted)", formatted_test, 'includer', ['included'])]
     tasks += [(test + " (unoptimized)", compilation_test, test, False) for test in unoptimized_tests]
+    tasks += [(test + " (leak check)", leak_check_test, test) for test in leak_check_tests]
+    tasks += [(test + " (leak check, unoptimized)", leak_check_test, test, False) for test in leak_check_tests]
     tasks += [(test, library_test, test) for test in library_tests]
     tasks += [(test, host_test, test) for test in host_tests]
     tasks += [(test, importing_test, test) for test in importing_tests]

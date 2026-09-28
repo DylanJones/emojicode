@@ -198,7 +198,7 @@ llvm::Value* TypeDescriptionGenerator::finish() {
     else {
         auto allocSize = fg_->builder().CreateMul(fg_->sizeOf(typeDesc), size);
         if (user_ == User::Class) {
-            current = alloc = fg_->builder().CreateCall(fg_->generator()->runTime().malloc(), allocSize);
+            current = alloc = fg_->builder().CreateCall(fg_->generator()->runTime().allocDescription(), allocSize);
         }
         else {
             auto size = fg_->builder().CreateAdd(fg_->sizeOf(fg_->typeHelper().pointer()), allocSize);

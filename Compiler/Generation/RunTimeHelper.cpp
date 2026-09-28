@@ -121,17 +121,17 @@ void RunTimeHelper::declareRunTime() {
     buildRetainRelease(Type(Type::noReturn(), {}, Type::noReturn()), "callable.boxRetain", "callable.boxRelease",
                        boxInfoCallables_);
 
-    malloc_ = declareRunTimeFunction("malloc", generator_->typeHelper().pointer(),
+    allocDescription_ = declareRunTimeFunction("ejcAllocDescription", generator_->typeHelper().pointer(),
                                     llvm::Type::getInt64Ty(generator_->context()));
-    malloc_->removeFnAttr(llvm::Attribute::NoRecurse);
-    malloc_->addRetAttr(llvm::Attribute::NonNull);
-    malloc_->addFnAttr(llvm::Attribute::getWithAllocSizeArgs(generator_->context(), 0, std::nullopt));
-    malloc_->addRetAttr(llvm::Attribute::NoAlias);
+    allocDescription_->removeFnAttr(llvm::Attribute::NoRecurse);
+    allocDescription_->addRetAttr(llvm::Attribute::NonNull);
+    allocDescription_->addFnAttr(llvm::Attribute::getWithAllocSizeArgs(generator_->context(), 0, std::nullopt));
+    allocDescription_->addRetAttr(llvm::Attribute::NoAlias);
 
-    free_ = declareRunTimeFunction("free", llvm::Type::getVoidTy(generator_->context()),
+    freeDescription_ = declareRunTimeFunction("ejcFreeDescription", llvm::Type::getVoidTy(generator_->context()),
                                    generator_->typeHelper().pointer());
-    free_->removeFnAttr(llvm::Attribute::NoRecurse);
-    free_->addParamAttr(0, llvm::Attribute::NonNull);
+    freeDescription_->removeFnAttr(llvm::Attribute::NoRecurse);
+    freeDescription_->addParamAttr(0, llvm::Attribute::NonNull);
 }
 
 llvm::Function* RunTimeHelper::declareRunTimeFunction(const char *name, llvm::Type *returnType,

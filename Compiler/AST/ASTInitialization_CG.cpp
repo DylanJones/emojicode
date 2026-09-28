@@ -83,7 +83,7 @@ Value* ASTInitialization::generateClassInit(FunctionCodeGenerator *fg) const {
                     null, fg->builder().CreateLoad(fg->typeHelper().pointer(), errorPointer()));
                 fg->createIf(isError, [&] {
                     fg->createIf(fg->builder().CreateIsNull(fg->builder().CreateExtractValue(gargs, { 1 })), [&] {
-                        fg->builder().CreateCall(fg->generator()->runTime().free(),
+                        fg->builder().CreateCall(fg->generator()->runTime().freeDescription(),
                                                  { fg->builder().CreateExtractValue(gargs, { 0 }) });
                     });
                 });

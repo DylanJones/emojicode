@@ -61,8 +61,10 @@ public:
     /// Returns the table of a multiprotocol box with the given conformances. (ejcMultiprotocolTable)
     llvm::Function* multiprotocolTable() const { return multiprotocolTable_; }
 
-    llvm::Function* malloc() const { return malloc_; }
-    llvm::Function* free() const { return free_; }
+    /// Allocates a dynamic class generic-arguments type description. (ejcAllocDescription)
+    llvm::Function* allocDescription() const { return allocDescription_; }
+    /// Frees a dynamic class generic-arguments type description allocated with allocDescription(). (ejcFreeDescription)
+    llvm::Function* freeDescription() const { return freeDescription_; }
 
     llvm::Function* checkGenericArgs() const { return checkGenericArgs_; }
     llvm::Function* typeDescriptionLength() const { return typeDescriptionLength_; }
@@ -114,8 +116,8 @@ private:
     llvm::Function *releaseLocal_ = nullptr;
     llvm::Function *isOnlyReference_ = nullptr;
 
-    llvm::Function *malloc_ = nullptr;
-    llvm::Function *free_ = nullptr;
+    llvm::Function *allocDescription_ = nullptr;
+    llvm::Function *freeDescription_ = nullptr;
 
     llvm::GlobalVariable *somethingRTTI_ = nullptr;
     llvm::GlobalVariable *someobjectRTTI_ = nullptr;

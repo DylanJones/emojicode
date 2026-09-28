@@ -105,14 +105,14 @@ llvm::Value* ASTClosure::createDeinit(CodeGenerator *cg, const Capture &capture,
             }
         }
         if (capture.genericArgsOf != nullptr) {
-            if (freeFunctionGenericArgs) callWithField(fg.generator()->runTime().free(), i);
+            if (freeFunctionGenericArgs) callWithField(fg.generator()->runTime().freeDescription(), i);
             i++;
         }
         if (capture.typeGenericArgs) {
             callWithField(fg.generator()->runTime().releaseMemory(), i++);
         }
         if (capture.typeMethodGenericArgs) {
-            if (freeTypeMethodGenericArgs) callWithField(fg.generator()->runTime().free(), i);
+            if (freeTypeMethodGenericArgs) callWithField(fg.generator()->runTime().freeDescription(), i);
             i++;
         }
     }

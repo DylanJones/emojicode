@@ -46,7 +46,7 @@ void ErrorSelfDestructing::buildDestruct(FunctionCodeGenerator *fg) const {
                 // itself is freed below.
                 auto gargs = fg->builder().CreateLoad(fg->genericArgsType(), fg->genericArgsPtr());
                 fg->createIf(fg->builder().CreateIsNull(fg->builder().CreateExtractValue(gargs, { 1 })), [&] {
-                    fg->builder().CreateCall(fg->generator()->runTime().free(),
+                    fg->builder().CreateCall(fg->generator()->runTime().freeDescription(),
                                              { fg->builder().CreateExtractValue(gargs, { 0 }) });
                 });
             }

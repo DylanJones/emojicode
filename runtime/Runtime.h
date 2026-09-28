@@ -27,6 +27,13 @@ struct Capture;
 extern "C" int8_t* ejcAlloc(int64_t size);
 extern "C" [[noreturn]] void ejcPanic(const char *message);
 
+/// Allocates a dynamic class generic-arguments type description (see TypeDescriptionGenerator). Unlike ejcAlloc,
+/// the returned memory is not reference-counted and is not an object; it must be released with ejcFreeDescription
+/// exactly once by whichever frame owns it.
+extern "C" int8_t* ejcAllocDescription(int64_t size);
+/// Frees a description allocated with ejcAllocDescription.
+extern "C" void ejcFreeDescription(int8_t *ptr);
+
 namespace runtime {
 
 using Integer = int64_t;
