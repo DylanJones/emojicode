@@ -28,7 +28,8 @@ valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
 # - "panic": its program prints what NAME.txt says and then panics, which aborts it.
 # - "stress": it takes seconds to run, so it is excluded from quick and valgrind runs and starts first, along with
 #   the other slow tests, so that it does not end up running alone at the end.
-# A library test's tokens may be "slow", for the same reason as "stress" above.
+# A library test's tokens may be "slow": like "stress", it takes seconds to run and so starts first, but unlike
+# "stress" it is not excluded from quick runs (valgrind runs do not include library tests at all).
 #
 # A file that looks like a test but is missing a file its category requires (e.g. NAME.txt), or that carries an
 # unrecognized directive token, fails the suite instead of being silently skipped.
@@ -67,6 +68,85 @@ def names_with_extension(directory, extension):
                   for p in glob.glob(os.path.join(directory, "*" + extension)))
 
 
+def discover_compilation_tests(directory, include_fragments, quick, valgrind):
+    """Finds the compilation tests in directory and returns a dict of the lists tests.py schedules from them:
+    compilation_tests, stress_tests, unoptimized_tests, panic_tests, specialization_tests and ir_tests (see the
+    module docstring above for directive semantics).
+
+    quick and valgrind runs exclude the "stress" tests, which take seconds to run; that exclusion is applied to
+    compilation_tests before unoptimized_tests, specialization_tests and ir_tests are derived from it, so a stress
+    test's other tasks are excluded consistently with its own compilation task."""
+    compilation_test_directives = {}
+    for name in names_with_extension(directory, ".emojic"):
+        if name in include_fragments:
+            continue
+        require(os.path.join(directory, name + ".txt"),
+                "tests/compilation/{0}.txt, the expected output of {0}.emojic (or {0} must be listed in "
+                "formatted_includes if it is an include-only fragment)".format(name))
+        compilation_test_directives[name] = read_directives(os.path.join(directory, name + ".emojic"),
+                                                             COMPILATION_DIRECTIVES)
+
+    compilation_tests = sorted(compilation_test_directives)
+    stress_tests = [name for name in compilation_tests if "stress" in compilation_test_directives[name]]
+    if quick or valgrind:
+        compilation_tests = [name for name in compilation_tests if name not in stress_tests]
+
+    # Compilation tests that are also compiled and run without optimizations, which inline code that tests otherwise
+    # only test inlined.
+    unoptimized_tests = [name for name in compilation_tests if "unoptimized" in compilation_test_directives[name]]
+    # Compilation tests whose programs print what NAME.txt says and then panic, which aborts them.
+    panic_tests = [name for name in compilation_tests if "panic" in compilation_test_directives[name]]
+    # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
+    # NAME.specializations. A function that is not specialized, but called generically, does not change what a
+    # program prints.
+    specialization_tests = [name for name in compilation_tests
+                             if os.path.exists(os.path.join(directory, name + ".specializations"))]
+    # Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the
+    # functions whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their
+    # bodies. No function whose name matches the REGEX of a line "! REGEX" may be defined. Lines starting with # are
+    # comments.
+    ir_tests = [name for name in compilation_tests
+                if os.path.exists(os.path.join(directory, name + ".ir"))]
+
+    return {
+        "compilation_tests": compilation_tests,
+        "stress_tests": stress_tests,
+        "unoptimized_tests": unoptimized_tests,
+        "panic_tests": panic_tests,
+        "specialization_tests": specialization_tests,
+        "ir_tests": ir_tests,
+    }
+
+
+def discover_library_tests(directory):
+    """Finds the library tests in directory and returns (library_tests, library_test_directives)."""
+    library_test_directives = {name: read_directives(os.path.join(directory, name + ".emojic"), LIBRARY_DIRECTIVES)
+                               for name in names_with_extension(directory, ".emojic")}
+    return sorted(library_test_directives), library_test_directives
+
+
+def discover_host_tests(directory):
+    """Finds the host tests in directory: Emojicode packages whose C functions (🎍🌊) are called by a C program of
+    the same name, which also provides main. Requires each to have a NAME.c and NAME.txt."""
+    host_tests = names_with_extension(directory, ".emojic")
+    for name in host_tests:
+        require(os.path.join(directory, name + ".c"), "tests/host/{0}.c".format(name))
+        require(os.path.join(directory, name + ".txt"), "tests/host/{0}.txt".format(name))
+    return host_tests
+
+
+def discover_importing_tests(directory):
+    """Finds the importing tests in directory: programs that import a package of the same name with "Package"
+    appended, which is compiled first. They test code that is only generated in importers, like the bodies of
+    inlined methods. Requires each to have a NAMEPackage.🍇 and NAME.txt. Their IR is checked against NAME.ir and
+    NAME.specializations, if present."""
+    importing_tests = names_with_extension(directory, ".emojic")
+    for name in importing_tests:
+        require(os.path.join(directory, name + "Package.🍇"), "tests/importing/{0}Package.🍇".format(name))
+        require(os.path.join(directory, name + ".txt"), "tests/importing/{0}.txt".format(name))
+    return importing_tests
+
+
 compilation_directory = os.path.join(dist.source, "tests", "compilation")
 # Formatting a file also formats the files it includes, which only it includes, so they are covered by its lock.
 # A file listed here is an include-only fragment, not a test of its own, so it needs no NAME.txt.
@@ -75,60 +155,22 @@ formatted_includes = {
 }
 include_fragments = {fragment for fragments in formatted_includes.values() for fragment in fragments}
 
-compilation_test_directives = {}
-for name in names_with_extension(compilation_directory, ".emojic"):
-    if name in include_fragments:
-        continue
-    require(os.path.join(compilation_directory, name + ".txt"),
-            "tests/compilation/{0}.txt, the expected output of {0}.emojic (or {0} must be listed in "
-            "formatted_includes if it is an include-only fragment)".format(name))
-    compilation_test_directives[name] = read_directives(os.path.join(compilation_directory, name + ".emojic"),
-                                                         COMPILATION_DIRECTIVES)
-
-compilation_tests = sorted(compilation_test_directives)
-# Compilation tests that are also compiled and run without optimizations, which inline code that tests otherwise
-# only test inlined.
-unoptimized_tests = [name for name in compilation_tests if "unoptimized" in compilation_test_directives[name]]
-# Compilation tests whose programs print what NAME.txt says and then panic, which aborts them.
-panic_tests = [name for name in compilation_tests if "panic" in compilation_test_directives[name]]
-# Compilation tests that take seconds to run.
-stress_tests = [name for name in compilation_tests if "stress" in compilation_test_directives[name]]
-# Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
-# NAME.specializations. A function that is not specialized, but called generically, does not change what a program
-# prints.
-specialization_tests = [name for name in compilation_tests
-                         if os.path.exists(os.path.join(compilation_directory, name + ".specializations"))]
-# Programs whose unoptimized LLVM IR is checked against NAME.ir. In NAME.ir, a line "@ REGEX" selects the functions
-# whose names match, and the lines "+ REGEX" and "- REGEX" after it must and must not match their bodies. No function
-# whose name matches the REGEX of a line "! REGEX" may be defined. Lines starting with # are comments.
-ir_tests = [name for name in compilation_tests
-            if os.path.exists(os.path.join(compilation_directory, name + ".ir"))]
-
-# quick and valgrind runs exclude the "stress" tests, which take seconds to run.
-if quick or valgrind:
-    compilation_tests = [name for name in compilation_tests if name not in stress_tests]
+discovered_compilation_tests = discover_compilation_tests(compilation_directory, include_fragments, quick, valgrind)
+compilation_tests = discovered_compilation_tests["compilation_tests"]
+stress_tests = discovered_compilation_tests["stress_tests"]
+unoptimized_tests = discovered_compilation_tests["unoptimized_tests"]
+panic_tests = discovered_compilation_tests["panic_tests"]
+specialization_tests = discovered_compilation_tests["specialization_tests"]
+ir_tests = discovered_compilation_tests["ir_tests"]
 
 library_directory = os.path.join(dist.source, "tests", "s")
-library_test_directives = {name: read_directives(os.path.join(library_directory, name + ".emojic"),
-                                                   LIBRARY_DIRECTIVES)
-                           for name in names_with_extension(library_directory, ".emojic")}
-library_tests = sorted(library_test_directives)
+library_tests, library_test_directives = discover_library_tests(library_directory)
 
-# Emojicode packages whose C functions (🎍🌊) are called by a C program of the same name, which also provides main.
 host_directory = os.path.join(dist.source, "tests", "host")
-host_tests = names_with_extension(host_directory, ".emojic")
-for name in host_tests:
-    require(os.path.join(host_directory, name + ".c"), "tests/host/{0}.c".format(name))
-    require(os.path.join(host_directory, name + ".txt"), "tests/host/{0}.txt".format(name))
+host_tests = discover_host_tests(host_directory)
 
-# Programs that import a package of the same name with "Package" appended, which is compiled first. They test code
-# that is only generated in importers, like the bodies of inlined methods. Their IR is checked against NAME.ir and
-# NAME.specializations, if present.
 importing_directory = os.path.join(dist.source, "tests", "importing")
-importing_tests = names_with_extension(importing_directory, ".emojic")
-for name in importing_tests:
-    require(os.path.join(importing_directory, name + "Package.🍇"), "tests/importing/{0}Package.🍇".format(name))
-    require(os.path.join(importing_directory, name + ".txt"), "tests/importing/{0}.txt".format(name))
+importing_tests = discover_importing_tests(importing_directory)
 
 reject_tests = glob.glob(os.path.join(dist.source, "tests", "reject",
                                       "*.emojic"))
@@ -460,7 +502,8 @@ def run_valgrind():
     if failed_tests:
         sys.exit(1)
 
-if valgrind:
-    run_valgrind()
-else:
-    test()
+if __name__ == "__main__":
+    if valgrind:
+        run_valgrind()
+    else:
+        test()

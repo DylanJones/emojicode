@@ -56,12 +56,16 @@ A compilation or library test can start with a directive comment, on its own lin
 
 A compilation test's tokens: `unoptimized` also compiles and runs it without optimizations; `panic` means its
 program panics (aborts with SIGABRT) after printing what `NAME.txt` says; `stress` excludes it from quick and
-valgrind runs because it takes seconds to run. A library test's only token is `slow`, for the same reason as
-`stress`. See the top of `tests.py` for the full, current list.
+valgrind runs because it takes seconds to run. A library test's only token is `slow`: like `stress`, it takes seconds
+to run and so is scheduled first, but it is not excluded from quick runs (valgrind runs do not include library tests
+at all). See the top of `tests.py` for the full, current list.
 
 A file that looks like a test but is missing a file its category requires, or that carries an unrecognized directive
 token, fails the suite rather than being silently skipped, so check the test output if you add a file and the suite
 does not seem to pick it up.
+
+If you change discovery or scheduling in `tests.py` itself, run `ninja -C build testspy`, which checks them against
+isolated fixtures instead of the real `tests/` tree.
 
 ## Commit message
 
