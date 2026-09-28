@@ -1,22 +1,109 @@
-💭 A same-class error-prone generic initializer that directly raises must not leak the dynamically allocated
-💭 generic type description it stored on the receiver before failing.
+💭 A same-class error-prone generic initializer that directly raises must not leak the dynamically allocated generic
+💭 type description it stored on the receiver before failing (#133). A purely inherited initializer, reached by
+💭 directly instantiating a subclass that declares neither fields nor an initializer of its own, must not leak it
+💭 either: the receiver's runtime class info then never matches the initializer's own owner, so the caller that
+💭 requested the object, not the initializer itself, owns the description. A statically known description (no
+💭 dynamic generic argument) must never be passed to free(), and an initializer that fails after a successful
+💭 explicit superinitializer call must free the description exactly once, from the frame that owns it.
+
 🐇 🐠🐚T⚪🍆 🍇
-  🆕 fail 👌 🚧🚧 🍇
+  🖍🆕 value T
+
+  🆕 v T fail 👌 🚧🚧 🍇
     ↪️ fail 🍇 🚨🆕🚧 🔤failed🔤❗️ 🍉
+    v ➡️ 🖍value
+  🍉
+
+  ❗️ 🥇 ➡️ T 🍇
+    ↩️ value
+  🍉
+🍉
+
+💭 🐟 declares neither fields nor an initializer, and directly inherits 🐠's error-prone initializer.
+🐇 🐟🐚T⚪🍆 🐠🐚T🍆 🍇🍉
+
+💭 🦐 does the same from 🐟, one level further, without declaring an initializer of its own either.
+🐇 🦐🐚T⚪🍆 🐟🐚T🍆 🍇🍉
+
+🐇 💰 🍇
+  🖍🆕 n 🔢
+
+  🆕 🍇
+    0 ➡️ 🖍n
+  🍉
+🍉
+
+💭 🦑 declares its own field and explicitly calls 🐠's initializer, so the description it received from its caller
+💭 must be freed exactly once, by 🦑's own frame, if 🦑 raises after a successful super call.
+🐇 🦑🐚T⚪🍆 🐠🐚T🍆 🍇
+  🖍🆕 resource 💰
+
+  🆕 v T raise 👌 🚧🚧 🍇
+    🆕💰❗️ ➡️ 🖍resource
+    ⤴️🆕 v 👎❗️
+    ↪️ raise 🍇 🚨🆕🚧 🔤failed🔤❗️ 🍉
   🍉
 🍉
 
 🌍 🐇 🎁🐚T⚪🍆 🍇
   🆕 🍇🍉
 
-  ❗️ 🧪 fail 👌 🍇
-    🆗 f 🆕🐠🐚T🍆 fail❗️ 🍇 🍉
-    🙅 e 🍇 🍉
+  💭 Exercises 🐠, a same-class error-prone generic initializer, with a description dynamically built from this
+  💭 method's own unresolved T, matching the original leak (malloc'd here, must be freed by 🐠's own frame).
+  ❗️ 🧪 v T fail 👌 🍇
+    🆗 f 🆕🐠🐚T🍆 v fail❗️ 🍇🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
+
+  💭 Exercises 🐟, which directly inherits 🐠's initializer without declaring one of its own: there is no owning
+  💭 frame inside the inherited initializer, so this call site must free the dynamic description itself.
+  ❗️ 🔬 v T fail 👌 🍇
+    🆗 f 🆕🐟🐚T🍆 v fail❗️ 🍇🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
+
+  💭 Same as 🔬, one level further removed from the declaring class.
+  ❗️ 🧫 v T fail 👌 🍇
+    🆗 f 🆕🦐🐚T🍆 v fail❗️ 🍇🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
+
+  💭 Exercises 🦑, which owns a frame (it declares its own field and calls 🐠's initializer explicitly), so this
+  💭 call site must not free the description itself: 🦑's own frame must free it exactly once instead.
+  ❗️ 🧬 v T raise 👌 🍇
+    🆗 f 🆕🦑🐚T🍆 v raise❗️ 🍇🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
   🍉
 🍉
 
 🏁 🍇
-  🆕🎁🐚🔡🍆❗️ ➡️ factory
-  🔂 i 🆕⏩ 0 100❗️ 🍇 🧪factory 👍❗️ 🍉
+  🆕🎁🐚🔢🍆❗️ ➡️ factory
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🧪factory i 👍❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🧪factory i 👎❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🔬factory i 👍❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🔬factory i 👎❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🧫factory i 👍❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🧫factory i 👎❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🧬factory i 👍❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🧬factory i 👎❗️ 🍉
+
+  🆗 f 🆕🐠🐚🔢🍆 1 👍❗️ 🍇🍉
+  🙅 e 🍇 😀 🔤static error🔤❗️ 🍉
+  🆗 f 🆕🐠🐚🔢🍆 2 👎❗️ 🍇 😀 🔡🥇f❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+
+  🆗 f 🆕🐟🐚🔢🍆 3 👍❗️ 🍇🍉
+  🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🆗 f 🆕🐟🐚🔢🍆 4 👎❗️ 🍇 😀 🔡🥇f❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+
+  🆗 f 🆕🦐🐚🔢🍆 5 👍❗️ 🍇🍉
+  🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+
+  🆗 f 🆕🦑🐚🔢🍆 6 👍❗️ 🍇🍉
+  🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🆗 f 🆕🦑🐚🔢🍆 7 👎❗️ 🍇 😀 🔡🥇f❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+
   😀 🔤done🔤❗️
 🍉

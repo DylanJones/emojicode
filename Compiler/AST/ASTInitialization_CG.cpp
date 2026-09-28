@@ -72,6 +72,22 @@ Value* ASTInitialization::generateClassInit(FunctionCodeGenerator *fg) const {
             auto gargs = storesGenericArgs ? genericArgs(fg) : nullptr;
             obj = initObject(fg, args_, initializer_, typeExpr_->expressionType(), errorPointer(),
                              initType_ == InitType::ClassStack, gargs);
+            // A purely inherited initializer (one the instantiated class does not itself own) stamps the receiver
+            // with the instantiated class's info, which never matches the initializer's own owning class. Its
+            // ErrorSelfDestructing therefore never runs, so there is no callee frame that owns this description on
+            // failure; this call site is the only remaining owner.
+            if (storesGenericArgs && isErrorProne() &&
+                initializer_->owner() != typeExpr_->expressionType().klass()) {
+                auto null = llvm::ConstantPointerNull::get(fg->typeHelper().pointer());
+                auto isError = fg->builder().CreateICmpNE(
+                    null, fg->builder().CreateLoad(fg->typeHelper().pointer(), errorPointer()));
+                fg->createIf(isError, [&] {
+                    fg->createIf(fg->builder().CreateIsNull(fg->builder().CreateExtractValue(gargs, { 1 })), [&] {
+                        fg->builder().CreateCall(fg->generator()->runTime().free(),
+                                                 { fg->builder().CreateExtractValue(gargs, { 0 }) });
+                    });
+                });
+            }
         }
     }
     else {

@@ -1,0 +1,32 @@
+# 🧪 constructs 🐠 directly (a same-class call): 🐠's own initializer owns the receiver, so it must own and free its
+# dynamically allocated generic description on failure, not this call site.
+@ 1f9ea-
++ call ptr @malloc\(
+- call void @free\(
+
+# 🐠's own initializer frees the dynamic description it stored on the receiver before releasing the receiver, but
+# only on the path where the receiver's runtime class info matches its own (never for a static description).
+@ _\.class_1f420\.init
++ call void @free\(
+
+# 🔬 constructs 🐟, which directly inherits 🐠's initializer without declaring one of its own: the receiver's
+# runtime class info then never matches 🐠's, so 🐠's initializer never frees the description it was given. This
+# call site is the only remaining owner and must free it itself on failure (#133).
+@ 1f52c-
++ call ptr @malloc\(
++ call void @free\(
+
+# 🧫 does the same for 🦐, one level further from the class that declares the initializer.
+@ 1f9eb-
++ call ptr @malloc\(
++ call void @free\(
+
+# 🧬 constructs 🦑, which owns a frame of its own (it declares a field and calls 🐠's initializer explicitly via
+# super), so this call site must not free the description itself: 🦑's own initializer frees it exactly once,
+# whether it fails during the super call or after it.
+@ 1f9ec-
++ call ptr @malloc\(
+- call void @free\(
+
+@ _\.class_1f991\.init
++ call void @free\(
