@@ -1,0 +1,28 @@
+💭 A required initializer with a generic-typed parameter in a generic subclass used to crash the compiler: the thunk
+💭 built for it looked up the superclass's initializer using the parameter's type before that type was analysed.
+
+🐇 🅰️ 🍇
+  🆕 🍇🍉
+🍉
+
+🐇 🌲🐚V↘️🔸🔡🍆 🅰️ 🍇
+  🖍🆕 value V
+
+  🔑 🆕 v V 🍇
+    v ➡️ 🖍value
+    ⤴️🆕❗️
+  🍉
+
+  ❗️ 🙋 ➡️ 🔡 🍇
+    ↩️ 🔡value❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🌲🐚🔡🍆 🔤tree🔤❗️ ➡️ a
+  😀 🙋a❗️❗️
+
+  🐇🌲🐚🔡🍆 ➡️ treeType
+  🆕⬛️treeType 🔤sapling🔤❗️ ➡️ b
+  😀 🙋b❗️❗️
+🍉

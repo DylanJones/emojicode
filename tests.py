@@ -203,7 +203,8 @@ compilation_tests = [
     "dictionaryCollisions",
     "rangeStepZero",
     "startFlagBareReturn",
-    "returnEmptyCollectionLiteral"
+    "returnEmptyCollectionLiteral",
+    "requiredInitGenericParam"
 ]
 
 if not (quick or valgrind):
