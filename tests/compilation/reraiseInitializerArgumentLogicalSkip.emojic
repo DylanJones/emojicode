@@ -1,3 +1,4 @@
+💭 test: unoptimized
 💭 A construction inside the right operand of 🤝/👐 must not corrupt the pending-registration tracking storage when
 💭 the right operand is never evaluated because of short-circuiting. Before the fix, the tracking variable holding
 💭 the pending receiver (or pending dynamic generic argument descriptions) was only initialized to null on the path

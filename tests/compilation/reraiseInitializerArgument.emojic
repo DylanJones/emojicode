@@ -1,3 +1,4 @@
+💭 test: unoptimized
 💭 A class's receiver is allocated before its initializer's arguments are evaluated. If evaluating an argument
 💭 reraises, the initializer, which is what would make it own the receiver, is never entered, so the receiver must
 💭 still be released, without running a destructor over its uninitialized fields.

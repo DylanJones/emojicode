@@ -1,3 +1,4 @@
+💭 test: unoptimized
 💭 As reraiseInitializerArgument, but the receiver's class stores its generic arguments, and the initializer is
 💭 called with a local generic argument of the calling generic method. The generic argument descriptions it is
 💭 passed are then allocated dynamically, rather than being a compile-time constant, and must be freed if evaluating

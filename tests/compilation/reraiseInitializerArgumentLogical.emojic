@@ -1,3 +1,4 @@
+💭 test: unoptimized
 💭 ASTBinaryOperator::generateLogical() releases ordinary temporary objects after each operand of 🤝/👐. A receiver
 💭 allocated for a pending initializer call must survive those checkpoints, since the initializer has not taken
 💭 ownership of it yet, or it is released, and later used as if it still were valid, before it is even reached.

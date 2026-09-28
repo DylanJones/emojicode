@@ -1,3 +1,4 @@
+💭 test: unoptimized
 💭 Copies of the storage of a 🍨 made by copy-on-write, and 📋 on 🧠, which copies unmanaged values as a whole
 💭 and retains managed ones: every copy must be independent and every object released exactly once.
 🐇 🐟 🍇
