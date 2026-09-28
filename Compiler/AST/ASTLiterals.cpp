@@ -150,9 +150,22 @@ Type ASTCollectionLiteral::analyse(ExpressionAnalyser *analyser) {
     return Type::listLiteral(finder_->getCommonType());
 }
 
+/// Returns the collection type a collection literal is expected to be. Like with number literals, the expectation may
+/// wrap it in an optional or a box, in which case the analyser wraps the complied value accordingly.
+static Type collectionExpectation(const TypeExpectation &expectation) {
+    auto target = expectation.unboxed();
+    if (target.type() == TypeType::Optional) {
+        target = target.optionalType();
+    }
+    target.setMutable(false);
+    target.setReference(false);
+    return target;
+}
+
 Type ASTCollectionLiteral::complyPairs(ExpressionAnalyser *analyser, const TypeExpectation &expectation) {
-    if (expectation.type() == TypeType::ValueType && expectation.typeDefinition()->canInitFrom(expressionType())) {
-        type_ = expectation.copyType();
+    auto target = collectionExpectation(expectation);
+    if (target.type() == TypeType::ValueType && target.typeDefinition()->canInitFrom(expressionType())) {
+        type_ = target;
     }
     else {
         finder_->issueWarning(position(), analyser->compiler());
@@ -197,8 +210,9 @@ void ASTCollectionLiteral::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlo
 
 Type ASTCollectionLiteral::comply(ExpressionAnalyser *analyser, const TypeExpectation &expectation) {
     if (pairs_) return complyPairs(analyser, expectation);
-    if (expectation.type() == TypeType::ValueType && expectation.typeDefinition()->canInitFrom(expressionType())) {
-        type_ = expectation.copyType();
+    auto target = collectionExpectation(expectation);
+    if (target.type() == TypeType::ValueType && target.typeDefinition()->canInitFrom(expressionType())) {
+        type_ = target;
     }
     else {
         finder_->issueWarning(position(), analyser->compiler());

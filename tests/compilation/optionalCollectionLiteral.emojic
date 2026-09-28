@@ -1,0 +1,30 @@
+💭 A collection literal expected as an optional collection has the type of the collection, even if it is empty.
+🏁 🍇
+  🖍🆕 o 🍬🍨🐚🔢🍆
+  🍿🍆 ➡️ 🖍 o
+  😀 🔡📏🍺o❓ 10❗️❗️
+
+  🖍🆕 d 🍬🍯🐚🔢🍆
+  🍿➡️🍆 ➡️ 🖍 d
+  😀 🔡📏🍺d❓ 10❗️❗️
+
+  💭 The expected optional collection is boxed.
+  📣 🍿 🍿🍆 🤷‍♀️ 🍿 4 5 🍆 🍆 🍨🐚🍬🍨🐚🔢🍆🍆 ➡️ lists
+  🔂 list lists 🍇
+    ↪️ list ➡️ l 🍇
+      😀 🔡📏l❓ 10❗️❗️
+    🍉
+    🙅 🍇
+      😀 🔤none🔤❗️
+    🍉
+  🍉
+
+  💭 Non-empty literals still infer their type.
+  🖍🆕 n 🍬🍨🐚🔢🍆
+  🍿 1 2 3 🍆 ➡️ 🖍 n
+  😀 🔡📏🍺n❓ 10❗️❗️
+
+  🖍🆕 m 🍬🍯🐚🔢🍆
+  🍿 🔤a🔤 ➡️ 5 🍆 ➡️ 🖍 m
+  😀 🔡🍺🐽🍺m 🔤a🔤❗️ 10❗️❗️
+🍉

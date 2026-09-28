@@ -170,6 +170,7 @@ compilation_tests = [
     "threadUnjoined",
     "mutexTryLock",
     "inferLiteralFromExpec",
+    "optionalCollectionLiteral",
     "sequenceTypeNames",
     "typeValues",
     "deinitializer",
