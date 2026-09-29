@@ -19,6 +19,24 @@ error
 💰 deinit
 🦑 deinit
 💰 deinit
+squid argument fail
+argument error
+argument error
+argument error
+squid argument ok, fail after entry
+💰 deinit
+error
+💰 deinit
+error
+💰 deinit
+error
+squid argument ok, success
+🦑 deinit
+💰 deinit
+🦑 deinit
+💰 deinit
+🦑 deinit
+💰 deinit
 static error
 2
 error
@@ -42,7 +60,10 @@ whale fail during
 💰 deinit
 💰 deinit
 error
+💰 deinit
 whale fail after
 💰 deinit
+💰 deinit
 error
+💰 deinit
 done

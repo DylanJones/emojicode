@@ -1,5 +1,11 @@
 # 🧪 constructs 🐠 directly (a same-class call): 🐠's own initializer owns the receiver, so it must own and free its
 # dynamically allocated generic description on failure, not this call site.
+#
+# A call site does emit a guarded pending-description cleanup (#118) at each later checkpoint, but the call disarms
+# it (stores null into its tracking variable) once the initializer is entered, so after promotion to registers that
+# cleanup reads `ejcFreeDescription(ptr null)`. None of 🧪's, 🧬's or 🦈's arguments can reraise before the
+# initializer is entered, so any free of an actual description value (`ptr %…`) there would be a post-entry double
+# free. 🧯 below covers the pre-entry case, where the call site must free it.
 @ 1f9ea-
 + call ptr @ejcAllocDescription\(
 - call void @ejcFreeDescription\(ptr %
@@ -27,6 +33,15 @@
 @ 1f9ec-
 + call ptr @ejcAllocDescription\(
 - call void @ejcFreeDescription\(ptr %
+
+# 🧯 constructs 🦑 like 🧬, but with an argument that can reraise before 🦑's initializer is entered. Exactly one free
+# of the live description must remain: the one on that pre-entry reraise path, where this call site still owns it.
+# The cleanups after the initializer call must be disarmed (`ptr null`); a second live free would free it again
+# after 🦑's own frame took ownership. The receiver is likewise released without deinitialization only on that path.
+@ 1f9ef-
++ call ptr @ejcAllocDescription\(
+= 1 call void @ejcFreeDescription\(ptr %
+= 1 call void @ejcReleaseWithoutDeinit\(ptr %alloc\)
 
 # 🦑's initializer has two independent failure paths that each free the description exactly once: the super call
 # to 🐠 failing, and 🦑's own raise after a successful super call. Requiring exactly two matches (rather than just

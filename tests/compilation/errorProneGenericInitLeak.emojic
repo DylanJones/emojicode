@@ -5,7 +5,9 @@
 💭 either: the receiver's runtime class info then never matches the initializer's own owner, so the caller that
 💭 requested the object, not the initializer itself, owns the description. A statically known description (no
 💭 dynamic generic argument) must never be passed to free(), and an initializer that fails after a successful
-💭 explicit superinitializer call must free the description exactly once, from the frame that owns it.
+💭 explicit superinitializer call must free the description exactly once, from the frame that owns it. The call site
+💭 owns the description only until the initializer is entered: if evaluating an argument reraises before then, the
+💭 call site must free it (#118), but never afterwards, when the initializer's own frame owns it.
 
 🐇 🐠🐚T⚪🍆 🍇
   🖍🆕 value T
@@ -63,10 +65,12 @@
 💭 execution confirm 🐳's own field is released on every failure path and that 🐳's own deinitializer never runs for
 💭 a partially initialized object. Description ownership itself (freed exactly once regardless of which frame in the
 💭 chain observes the failure, at both optimized and unoptimized settings) is verified independently by the
-💭 EMOJICODE_CHECK_DESCRIPTION_LEAKS execution check (see leak_check_tests in tests.py), not by this output: after a
-💭 successful super call (the "after" case), the already-initialized inherited fields (🦑's resource, 🐠's value) are
-💭 not yet released here, a separate, tracked gap (#126) in inherited-field cleanup that this test does not claim to
-💭 cover or depend on.
+💭 EMOJICODE_CHECK_DESCRIPTION_LEAKS execution check (see leak_check_tests in tests.py), not by this output. Each of
+💭 🦈's cases creates exactly three 💰 instances when it gets that far (the caller's v, 🦑's resource and 🐳's extra),
+💭 and each must be released exactly once (#126): when 🦑 raises after its own successful super call (the "during"
+💭 case) or 🐳 raises after its successful super call (the "after" case), the already-initialized inherited fields
+💭 (🦑's resource, and 🐠's reference to v) are released by the failing frame, and v's last reference, held by the
+💭 caller, is released after the error is handled.
 🐇 🐳🐚T⚪🍆 🦑🐚T🍆 🍇
   🖍🆕 extra 💰
 
@@ -112,6 +116,25 @@
     🙅 e 🍇 😀 🔤error🔤❗️ 🍉
   🍉
 
+  ❗️ 🍷 fail 👌 value 👌 ➡️ 👌 🚧🚧 🍇
+    ↪️ fail 🍇 🚨🆕🚧 🔤argument failed🔤❗️ 🍉
+    ↩️ value
+  🍉
+
+  💭 Exercises 🦑 again, but with an argument that can reraise before 🦑's initializer is entered. Until then, this
+  💭 call site still owns the dynamic description and must free it; once the initializer is entered, 🦑's own frame
+  💭 owns it, so this call site must not free it again, whether 🦑 then raises or succeeds.
+  ❗️ 🧯 v T argFail 👌 raise 👌 ➡️ 👌 🚧🚧 🍇
+    🆗 f 🆕🦑🐚T🍆 v 🔺🍷👇 argFail raise❗️❗️ 🍇🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+    ↩️ 👍
+  🍉
+
+  ❗️ 🪣 v T argFail 👌 raise 👌 🍇
+    🆗 ok 🧯👇 v argFail raise❗️ 🍇🍉
+    🙅 e 🍇 😀 🔤argument error🔤❗️ 🍉
+  🍉
+
   💭 Exercises 🐳, a two-level explicit-super chain (🐳 ➡️ 🦑 ➡️ 🐠) with a managed generic field: v is a class
   💭 instance, so releasing 🐠's field on failure is a real release that must happen before the shared description
   💭 is freed. Covers failure before, during, and after 🐳's own explicit superinitializer call.
@@ -131,6 +154,12 @@
   🔂 i 🆕⏩ 0 3❗️ 🍇 🧫factory i 👎❗️ 🍉
   🔂 i 🆕⏩ 0 3❗️ 🍇 🧬factory i 👍❗️ 🍉
   🔂 i 🆕⏩ 0 3❗️ 🍇 🧬factory i 👎❗️ 🍉
+  😀 🔤squid argument fail🔤❗️
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🪣factory i 👍 👎❗️ 🍉
+  😀 🔤squid argument ok, fail after entry🔤❗️
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🪣factory i 👎 👍❗️ 🍉
+  😀 🔤squid argument ok, success🔤❗️
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🪣factory i 👎 👎❗️ 🍉
 
   🆗 f 🆕🐠🐚🔢🍆 1 👍❗️ 🍇🍉
   🙅 e 🍇 😀 🔤static error🔤❗️ 🍉
