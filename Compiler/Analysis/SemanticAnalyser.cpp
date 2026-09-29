@@ -82,6 +82,9 @@ void SemanticAnalyser::analyse(bool executable) {
     for (auto &klass : package_->classes()) {
         for (auto init : klass->inits().list()) {
             if (init->required()) {
+                // The thunk's superclass lookup and parameters need init's signature analysed already, but the
+                // initializer itself is not declared until enqueueFunctionsOfTypeDefinition() below.
+                analyseFunctionDeclaration(init);
                 klass->typeMethods().add(buildRequiredInitThunk(klass.get(), init, this));
             }
         }

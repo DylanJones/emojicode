@@ -1,0 +1,19 @@
+💭 A generic subclass implements a required initializer with a generic-typed parameter, but not another required
+💭 initializer of its superclass, which must still be reported instead of crashing the compiler (see issue #119).
+
+🐇 🅰️ 🍇
+  🔑 🆕 🍇🍉
+🍉
+
+🐇 🌲🐚V⚪️🍆 🅰️ 🍇
+  🖍🆕 value V
+
+  🔑 🆕 v V 🍇
+    v ➡️ 🖍value
+    ⤴️🆕❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🌲🐚🔡🍆 🔤tree🔤❗️ ➡️ a
+🍉
