@@ -1,0 +1,20 @@
+💭 test: unoptimized
+💭 A generic class that uses itself with a larger generic argument (polymorphic recursion) must not make the
+💭 compiler recurse forever while resolving the type of the erased method that constructs it (issue #115). The class
+💭 is public, so 🌰 is called through the erased implementation instead of a specialization; its result must carry
+💭 the runtime generic argument the caller actually wrote, 🍨🐚🔡🍆, not a further expanded 🍨🐚🍨🐚🔡🍆🍆.
+🌍 🐇 🌲🐚V⚪️🍆 🍇
+  🔑 🆕 🍇 🍉
+
+  ❗️ 🌰 ➡️ 🌲🐚🍨🐚V🍆🍆 🍇
+    ↩️ 🆕🌲🐚🍨🐚V🍆🍆❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🌲🐚🔡🍆❗️ ➡️ o
+  🖍🆕 a ⚪️
+  🌰o❗️ ➡️ 🖍a
+  🍺 🔲 a 🌲🐚🍨🐚🔡🍆🍆
+  😀🔤ok🔤❗️
+🍉

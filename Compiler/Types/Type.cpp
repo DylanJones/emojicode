@@ -277,8 +277,14 @@ Type Type::resolveOnSuperArgumentsAndConstraints(const TypeContext &typeContext)
 std::vector<Type> Type::selfResolvedGenericArgs() const {
     TypeContext typeContext(*this);
     auto args = genericArguments_;
-    for (auto &g : args) {
-        g = g.resolveOn(typeContext);
+    // Only the superclass-declaration prefix is resolved: those arguments belong to the superclass declaration and
+    // may mention this type's own generic variables, which must be substituted with the arguments actually written
+    // here. The type's own arguments, in contrast, are exactly what the code wrote (e.g. List<V> for a Tree<V> that
+    // grows into a Tree<List<V>>) and must be kept as-is: V refers to this type's own runtime generic argument, not
+    // something to substitute again, which would never end (see the comment in resolveOn()).
+    auto superArgumentCount = typeDefinition()->superGenericArguments().size();
+    for (size_t i = 0; i < superArgumentCount && i < args.size(); i++) {
+        args[i] = args[i].resolveOn(typeContext);
     }
     return args;
 }
@@ -320,6 +326,9 @@ Type Type::resolveOn(const TypeContext &typeContext) const {
         return keepStorage((*typeContext.functionGenericArguments())[t.genericVariableIndex()]);
     }
 
+    // Whether the substitution below replaced a generic variable of the callee's own type, as opposed to one that
+    // still belongs to a superclass declaration further up the inheritance chain.
+    bool ownArgument = false;
     if (typeContext.calleeType().canHaveGenericArguments()) {
         // The arguments for the superclasses, which come first, are those of the superclass declarations and refer to
         // generic parameters that come later, so they are resolved again. The type's own arguments are types of the
@@ -336,14 +345,20 @@ Type Type::resolveOn(const TypeContext &typeContext) const {
                 break;
             }
             t = tn;
-            if (index >= superArgumentCount || t.unboxedType() != TypeType::GenericVariable ||
-                t.genericVariableIndex() <= index) {
+            ownArgument = index >= superArgumentCount;
+            if (ownArgument || t.unboxedType() != TypeType::GenericVariable || t.genericVariableIndex() <= index) {
                 break;
             }
         }
     }
 
-    if (t.type() != TypeType::Box) {
+    // A type substituted in for one of the callee's own generic variables, e.g. List<V> for V, is that of the code
+    // that called into the callee and must not have its own generic arguments resolved again on typeContext: V
+    // within List<V> is the very variable just substituted, so resolving it again would substitute List<V> for it
+    // once more, and so on forever (the polymorphic recursion of e.g. a Tree<V> that grows into a Tree<List<V>>).
+    // A substitution still within the superclass-declared prefix may legitimately produce a compound type
+    // mentioning a variable of a yet further ancestor, which does need to be resolved on the same typeContext.
+    if (!ownArgument && t.type() != TypeType::Box) {
         for (auto &arg : t.genericArguments_) {
             arg = arg.resolveOn(typeContext);
         }
