@@ -12,6 +12,7 @@
 #include "MemoryFlowAnalysis/MFFunctionAnalyser.hpp"
 #include "Types/TypeExpectation.hpp"
 #include "Functions/Function.hpp"
+#include "Functions/FunctionType.hpp"
 #include "Scoping/SemanticScoper.hpp"
 #include "Compiler.hpp"
 #include "Types/Class.hpp"
@@ -69,6 +70,9 @@ Type ASTReraise::analyse(ExpressionAnalyser *analyser) {
                                       call->errorType().toString(analyser->typeContext()),
                                       " which cannot be reraised as it is not compatible to ",
                                       fta.toString(analyser->typeContext()), "."));
+    }
+    if (isReturnForbidden(fa->function()->functionType())) {
+        analyseInstanceVariables(fa, position());
     }
     stats_ = analyser->scoper().createStats();
     return t;
