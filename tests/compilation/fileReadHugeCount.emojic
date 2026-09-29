@@ -1,0 +1,8 @@
+💭 test: unoptimized panic
+📦 files 🏠
+🏁 🍇
+  🍺🆕📄▶️📜 🔤/dev/null🔤❗️ ➡️ file
+  😀 🔡📏🍺📓file 0❗️❓❗️❗️
+  💭 The buffer for the bytes is allocated before reading, so a huge count panics rather than crashing.
+  😀 🔡📏🍺📓file 4611686018427387904❗️❓❗️❗️
+🍉

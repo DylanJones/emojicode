@@ -1,0 +1,9 @@
+💭 test: unoptimized panic
+🏁 🍇
+  🆕🍯🐚🔢🍆▶️🐴 0❗️ ➡️ empty
+  😀 🔡📏empty❓❗️❗️
+  💭 2^60 buckets are doubled to 2^61, whose size in bytes wraps around to leave only the header. Filling in the
+  💭 buckets would overflow the heap, so the capacity is rejected.
+  🆕🍯🐚🔢🍆▶️🐴 1152921504606846976❗️ ➡️ d
+  😀 🔡📏d❓❗️❗️
+🍉

@@ -6,8 +6,19 @@
 
   🆕 🍼count🔢 🍼size🔢 🍇
     ☣️ 🍇
-      🆕🧠 size✖️⚖️Element❗️ ➡️ 🖍data
+      🆕🧠 📐🐇🍧🐚Element🍆 size❗️❗️ ➡️ 🖍data
     🍉
+  🍉
+
+  📗
+    Returns the number of bytes needed to store *capacity* elements. Panics if
+    *capacity* is negative or the result would overflow.
+  📗
+  🐇❗️ 📐 capacity 🔢 ➡️ 🔢 🍇
+    ↪️ capacity ◀️ 0 👐 🤜⚖️Element ▶️ 0 🤝 capacity ▶️ 9223372036854775807 ➗ ⚖️Element🤛 🍇
+      🤯🐇💻 🔤Invalid 🍨 capacity🔤❗️
+    🍉
+    ↩️ capacity✖️⚖️Element
   🍉
 
   📗 Clone the storage area. 📗
@@ -41,7 +52,7 @@
     ↪️ minimum ▶️ size 🍇
       minimum ➡️ 🖍size
       ☣️ 🍇
-        🏗 data size✖️⚖️Element❗️
+        🏗 data 📐🐇🍧🐚Element🍆 size❗️❗️
       🍉
     🍉
   🍉
@@ -67,7 +78,7 @@
     ↪️ size 🙌 count 🎍🐌🍇
       size ⬅️✖️ 2
       ☣️ 🍇
-        🏗 data size✖️⚖️Element❗️
+        🏗 data 📐🐇🍧🐚Element🍆 size❗️❗️
       🍉
     🍉
   🍉

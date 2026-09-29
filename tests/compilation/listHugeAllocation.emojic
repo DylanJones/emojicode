@@ -1,0 +1,9 @@
+💭 test: unoptimized panic
+🏁 🍇
+  🆕🍨🐚🔢🍆 0 3❗️ ➡️ small
+  😀 🔡📏small❓❗️❗️
+  💭 2^59 elements of 8 bytes each fit in an 🔢 but not in memory: the allocation fails and panics rather than
+  💭 storing through a null pointer.
+  🆕🍨🐚🔢🍆▶️🐴 576460752303423488❗️ ➡️ l
+  😀 🔡📏l❓❗️❗️
+🍉

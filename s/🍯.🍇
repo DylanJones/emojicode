@@ -58,6 +58,9 @@
   🖍🆕 data 🧠
 
   🆕 ▶️🐴 🍼capacity🔢 🍇
+    ↪️ capacity ◀️ 0 👐 capacity ▶️ 9223372036854775807 ➗ ⚖️🍬🐝🐚🔡Element🍆 🍇
+      🤯🐇💻 🔤Invalid 🍯 capacity🔤❗️
+    🍉
     ☣️ 🍇
       capacity✖️⚖️🍬🐝🐚🔡Element🍆 ➡️ length
       🆕🧠 length❗️ ➡️ 🖍data
@@ -163,6 +166,9 @@
       ↩️ 7159
     🍉
 
+    ↪️ n ▶️ 4611686018427387903 🍇
+      🤯🐇💻 🔤Invalid 🍯 capacity🔤❗️
+    🍉
     ↩️ n✖️2
   🍉
 
