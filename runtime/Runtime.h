@@ -92,6 +92,10 @@ private:
 
 template <typename T>
 inline MemoryPointer<T> allocate(int64_t n = 1) {
+    constexpr auto header = static_cast<int64_t>(sizeof(runtime::internal::ControlBlock *));
+    if (n < 0 || static_cast<uint64_t>(n) > static_cast<uint64_t>(INT64_MAX - header) / sizeof(T)) {
+        ejcPanic("Invalid allocation size");
+    }
     return MemoryPointer<T>(ejcAlloc(sizeof(T) * n + sizeof(runtime::internal::ControlBlock *)));
 }
 
@@ -104,7 +108,11 @@ public:
     static Subclass* init(Args&& ...args) {
         static_assert(util::is_complete<ClassInfoFor<Subclass>>::value,
                       "Provide class info for this class with SET_INFO_FOR.");
-        return new(malloc(sizeof(Subclass))) Subclass(std::forward<Args>(args)...);
+        auto ptr = malloc(sizeof(Subclass));
+        if (ptr == nullptr) {
+            ejcPanic("Out of memory");
+        }
+        return new(ptr) Subclass(std::forward<Args>(args)...);
     }
 
     internal::ControlBlock* controlBlock() const { return block_; }

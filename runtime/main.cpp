@@ -48,14 +48,27 @@ runtime::internal::ControlBlock* runtime::internal::newControlBlock() {
 }
 
 extern "C" int8_t* ejcAlloc(runtime::Integer size) {
+    // size includes the control block pointer header. A size below that comes from a negative count or from
+    // arithmetic that wrapped, and storing the header would write past the block.
+    if (size < static_cast<runtime::Integer>(sizeof(runtime::internal::ControlBlock*))) {
+        ejcPanic("Invalid allocation size");
+    }
     auto ptr = malloc(size);
-    *static_cast<runtime::internal::ControlBlock**>(ptr) = new runtime::internal::ControlBlock;
+    auto controlBlock = new(std::nothrow) runtime::internal::ControlBlock;
+    if (ptr == nullptr || controlBlock == nullptr) {
+        ejcPanic("Out of memory");
+    }
+    *static_cast<runtime::internal::ControlBlock**>(ptr) = controlBlock;
     return static_cast<int8_t*>(ptr);
 }
 
 extern "C" int8_t* ejcAllocDescription(runtime::Integer size) {
     if (checkDescriptionLeaks) descriptionAllocationBalance.fetch_add(1, std::memory_order_relaxed);
-    return static_cast<int8_t*>(malloc(size));
+    auto ptr = malloc(size);
+    if (ptr == nullptr) {
+        ejcPanic("Out of memory");
+    }
+    return static_cast<int8_t*>(ptr);
 }
 
 extern "C" void ejcFreeDescription(int8_t *ptr) {
@@ -333,7 +346,15 @@ extern "C" TypeDescription* ejcTypeValue(TypeDescription *arg) {
 }
 
 extern "C" void ejcMemoryRealloc(int8_t **pointerPtr, runtime::Integer newSize) {
-    *pointerPtr = static_cast<int8_t*>(realloc(*pointerPtr, newSize + sizeof(runtime::internal::ControlBlock*)));
+    constexpr auto header = static_cast<runtime::Integer>(sizeof(runtime::internal::ControlBlock*));
+    if (newSize < 0 || newSize > INT64_MAX - header) {
+        ejcPanic("Invalid allocation size");
+    }
+    auto ptr = static_cast<int8_t*>(realloc(*pointerPtr, newSize + header));
+    if (ptr == nullptr) {
+        ejcPanic("Out of memory");
+    }
+    *pointerPtr = ptr;
 }
 
 extern "C" runtime::Integer ejcMemoryCompare(int8_t **self, int8_t *other, runtime::Integer bytes) {

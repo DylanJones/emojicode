@@ -1,0 +1,9 @@
+💭 test: unoptimized panic
+🏁 🍇
+  🆕🍨🐚🔢🍆 0 0❗️ ➡️ empty
+  😀 🔡📏empty❓❗️❗️
+  💭 (2^61 + 1) * 8 bytes wraps around to 8 bytes. Allocating that little and then filling in 2^61 + 1 elements
+  💭 would overflow the heap, so the capacity is rejected.
+  🆕🍨🐚🔢🍆 0 2305843009213693953❗️ ➡️ l
+  😀 🔡📏l❓❗️❗️
+🍉
