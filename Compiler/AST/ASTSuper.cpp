@@ -57,6 +57,15 @@ void ASTSuper::analyseSuperInit(ExpressionAnalyser *analyser) {
     analyseSuperInitErrorProneness(analyser, initializer);
     function_ = initializer;
     analyser->pathAnalyser().record(PathAnalyserIncident::CalledSuperInitializer);
+
+    // Once the superinitializer has returned successfully, all instance variables declared by the superclass
+    // are guaranteed to be initialized, even though this initializer never sets them itself. Record this so that,
+    // e.g., ErrorSelfDestructing releases them too if this initializer itself later raises an error.
+    for (auto &var : analyser->scoper().instanceScope()->map()) {
+        if (var.second.inherited()) {
+            analyser->pathAnalyser().record(PathAnalyserIncident(true, var.second.id()));
+        }
+    }
 }
 
 void ASTSuper::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCategory type) {
