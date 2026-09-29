@@ -2,7 +2,7 @@
 # dynamically allocated generic description on failure, not this call site.
 @ 1f9ea-
 + call ptr @ejcAllocDescription\(
-- call void @ejcFreeDescription\(
+- call void @ejcFreeDescription\(ptr %
 
 # 🐠's own initializer frees the dynamic description it stored on the receiver before releasing the receiver, but
 # only on the path where the receiver's runtime class info matches its own (never for a static description).
@@ -26,7 +26,7 @@
 # whether it fails during the super call or after it.
 @ 1f9ec-
 + call ptr @ejcAllocDescription\(
-- call void @ejcFreeDescription\(
+- call void @ejcFreeDescription\(ptr %
 
 # 🦑's initializer has two independent failure paths that each free the description exactly once: the super call
 # to 🐠 failing, and 🦑's own raise after a successful super call. Requiring exactly two matches (rather than just
@@ -37,7 +37,7 @@
 # 🦈 constructs 🐳, which owns a frame of its own like 🦑, so this call site must not free the description either.
 @ 1f988-
 + call ptr @ejcAllocDescription\(
-- call void @ejcFreeDescription\(
+- call void @ejcFreeDescription\(ptr %
 
 # 🐳 forms a multi-level explicit-super chain (🐳 ➡️ 🦑 ➡️ 🐠) and can fail before, during, or after its own call to
 # 🦑's initializer. Each of the three paths frees the shared description exactly once, from 🐳's own frame (the

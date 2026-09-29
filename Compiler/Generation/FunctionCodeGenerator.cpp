@@ -624,31 +624,49 @@ void TemporaryObjectsManager::releaseTemporaryObjects(FunctionCodeGenerator *fg,
             continue;
         }
         if (it < end) {
-            switch (it->kind) {
-                case Kind::RemoteObject: {
-                    auto object = fg->builder().CreateLoad(fg->typeHelper().pointer(), it->value);
-                    fg->createIf(fg->builder().CreateIsNotNull(object), [&] {
-                        fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), object);
-                    });
-                    break;
-                }
-                case Kind::RawAllocation: {
-                    auto pointer = fg->builder().CreateLoad(fg->typeHelper().pointer(), it->value);
-                    fg->createIf(fg->builder().CreateIsNotNull(pointer), [&] {
-                        fg->builder().CreateCall(fg->generator()->runTime().free(), pointer);
-                    });
-                    break;
-                }
-                case Kind::Managed:
-                    fg->release(it->value, it->type);
-                    break;
-            }
+            release(fg, *it);
         }
         if (!clearQueue) {
             kept.push_back(*it);
         }
     }
     temporaryObjects_ = std::move(kept);
+}
+
+void TemporaryObjectsManager::releaseTemporaryObjectsSince(FunctionCodeGenerator *fg, size_t mark) {
+    if (mark >= temporaryObjects_.size()) return;
+    // Protected entries stay: they belong to a call that has not been reached yet (see releaseTemporaryObjects()).
+    std::vector<Temporary> kept(temporaryObjects_.begin(), temporaryObjects_.begin() + mark);
+    for (auto it = temporaryObjects_.begin() + mark; it != temporaryObjects_.end(); it++) {
+        if (it->protectedEntry) {
+            kept.push_back(*it);
+            continue;
+        }
+        release(fg, *it);
+    }
+    temporaryObjects_ = std::move(kept);
+}
+
+void TemporaryObjectsManager::release(FunctionCodeGenerator *fg, const Temporary &temporary) {
+    switch (temporary.kind) {
+        case Kind::RemoteObject: {
+            auto object = fg->builder().CreateLoad(fg->typeHelper().pointer(), temporary.value);
+            fg->createIf(fg->builder().CreateIsNotNull(object), [&] {
+                fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), object);
+            });
+            break;
+        }
+        case Kind::RawAllocation: {
+            auto pointer = fg->builder().CreateLoad(fg->typeHelper().pointer(), temporary.value);
+            fg->createIf(fg->builder().CreateIsNotNull(pointer), [&] {
+                fg->builder().CreateCall(fg->generator()->runTime().freeDescription(), pointer);
+            });
+            break;
+        }
+        case Kind::Managed:
+            fg->release(temporary.value, temporary.type);
+            break;
+    }
 }
 
 void FunctionCodeGenerator::release(llvm::Value *value, const Type &otype) {

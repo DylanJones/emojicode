@@ -2,4 +2,4 @@
 # neither ejcRelease nor a global constant would clean up, are released if evaluating an argument reraises.
 @ ^_\.class_1f41f\.type\.1f64b-
 + call void @ejcReleaseWithoutDeinit\(ptr %alloc\)
-+ call void @free\(
++ call void @ejcFreeDescription\(
