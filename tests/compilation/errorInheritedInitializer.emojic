@@ -1,0 +1,51 @@
+💭 test: unoptimized
+🐇 💰 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ♻️ 🍇
+    😀 name❗️
+  🍉
+🍉
+
+🐇 🐠 🍇
+  🖍🆕 resource 💰
+
+  🆕 fail 👌 🚧🚧 🍇
+    🆕💰 🔤res🔤❗️ ➡️ 🖍resource
+    ↪️ fail 🍇
+      🚨🆕🚧 🔤failed🔤❗️
+    🍉
+  🍉
+
+  💭 Only a successfully constructed 🐠 (or subclass) may be deinitialized normally, never a failed, partial one.
+  ♻️ 🍇
+    😀 🔤deinit🐠🔤❗️
+  🍉
+🍉
+
+💭 🐟 declares neither fields nor an initializer, and directly inherits 🐠's error-prone initializer.
+🐇 🐟 🐠 🍇 🍉
+
+💭 🦐 does the same from 🐟, one level further, without declaring an initializer of its own either.
+🐇 🦐 🐟 🍇 🍉
+
+🏁 🍇
+  🔂 i 🆕⏩ 0 2❗️ 🍇
+    🆗 f 🆕🐟 👍❗️ 🍇 😀 🔤not error🔤❗️ 🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
+  🔂 i 🆕⏩ 0 2❗️ 🍇
+    🆗 f 🆕🐟 👎❗️ 🍇 😀 🔤not error🔤❗️ 🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
+  🔂 i 🆕⏩ 0 2❗️ 🍇
+    🆗 f 🆕🦐 👍❗️ 🍇 😀 🔤not error🔤❗️ 🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
+  🔂 i 🆕⏩ 0 2❗️ 🍇
+    🆗 f 🆕🦐 👎❗️ 🍇 😀 🔤not error🔤❗️ 🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
+🍉

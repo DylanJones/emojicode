@@ -1,5 +1,8 @@
 # 🧪 constructs 🐠 directly (a same-class call): 🐠's own initializer owns the receiver, so it must own and free its
-# dynamically allocated generic description on failure, not this call site.
+# dynamically allocated generic description on failure, not this call site. The caller's pending cleanup (#118),
+# which frees the description if an argument raises before initializer entry, is disarmed once the initializer is
+# called; with no such argument here it only remains as a free of a null constant, so only a free of a live
+# description (a register operand) would be a double free after entry.
 @ 1f9ea-
 + call ptr @ejcAllocDescription\(
 - call void @ejcFreeDescription\(ptr %
@@ -23,7 +26,7 @@
 
 # 🧬 constructs 🦑, which owns a frame of its own (it declares a field and calls 🐠's initializer explicitly via
 # super), so this call site must not free the description itself: 🦑's own initializer frees it exactly once,
-# whether it fails during the super call or after it.
+# whether it fails during the super call or after it. As for 🧪, only a free of a live description is prohibited.
 @ 1f9ec-
 + call ptr @ejcAllocDescription\(
 - call void @ejcFreeDescription\(ptr %
@@ -34,7 +37,7 @@
 @ _\.class_1f991\.init
 = 2 call void @ejcFreeDescription\(
 
-# 🦈 constructs 🐳, which owns a frame of its own like 🦑, so this call site must not free the description either.
+# 🦈 constructs 🐳, which owns a frame of its own like 🦑, so this call site must not free a live description either.
 @ 1f988-
 + call ptr @ejcAllocDescription\(
 - call void @ejcFreeDescription\(ptr %

@@ -42,7 +42,10 @@ whale fail during
 💰 deinit
 💰 deinit
 error
+💰 deinit
 whale fail after
 💰 deinit
+💰 deinit
 error
+💰 deinit
 done

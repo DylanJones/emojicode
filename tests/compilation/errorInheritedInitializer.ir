@@ -1,0 +1,12 @@
+# 🏁: each 🆕🐟/🆕🦐 call directly invokes 🐠's inherited error-prone initializer, and must release its own raw
+# allocation without deinitializing it if the call errors, since 🐠's initializer only releases the receiver itself
+# when the receiver's runtime class info is its own, which is never the case when it is inherited like this.
+@ ^fn_1f3c1$
++ %alloc = call ptr @ejcAlloc\(
++ call void @ejcReleaseWithoutDeinit\(ptr %alloc\)
++ %alloc15 = call ptr @ejcAlloc\(
++ call void @ejcReleaseWithoutDeinit\(ptr %alloc15\)
++ %alloc32 = call ptr @ejcAlloc\(
++ call void @ejcReleaseWithoutDeinit\(ptr %alloc32\)
++ %alloc49 = call ptr @ejcAlloc\(
++ call void @ejcReleaseWithoutDeinit\(ptr %alloc49\)

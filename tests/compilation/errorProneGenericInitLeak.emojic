@@ -63,10 +63,10 @@
 💭 execution confirm 🐳's own field is released on every failure path and that 🐳's own deinitializer never runs for
 💭 a partially initialized object. Description ownership itself (freed exactly once regardless of which frame in the
 💭 chain observes the failure, at both optimized and unoptimized settings) is verified independently by the
-💭 EMOJICODE_CHECK_DESCRIPTION_LEAKS execution check (see leak_check_tests in tests.py), not by this output: after a
-💭 successful super call (the "after" case), the already-initialized inherited fields (🦑's resource, 🐠's value) are
-💭 not yet released here, a separate, tracked gap (#126) in inherited-field cleanup that this test does not claim to
-💭 cover or depend on.
+💭 EMOJICODE_CHECK_DESCRIPTION_LEAKS execution check (see leak_check_tests in tests.py), not by this output. Inherited
+💭 fields initialized by a successful super call are released exactly once by the failing frame (#126): in the
+💭 "during" case, 🦑's frame releases its resource and 🐠's value; in the "after" case, 🐳's frame releases both, so
+💭 each prints one 💰 deinit before the error plus one for v when 🦈 releases its argument afterwards.
 🐇 🐳🐚T⚪🍆 🦑🐚T🍆 🍇
   🖍🆕 extra 💰
 
