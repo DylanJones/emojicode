@@ -102,6 +102,14 @@
   ❗️ 🔚 📻 🔤filesFileSeekToEnd🔤
   📗 Seeks the file pointer to the given position. 📗
   ❗️ 🔛 position 🔢 📻 🔤filesFileSeekTo🔤
+  📗
+    Returns the position of the file pointer as the number of bytes from the
+    beginning of the file. The position can be passed to 🔛.
+
+    An error is raised if the position cannot be determined, for instance after
+    a read failed.
+  📗
+  ❗️ ⏱️ ➡️ 🔢 🚧🚧🔸↕️  📻 🔤filesFileTell🔤
 
   📗
     This class method tries to write the given 📇 to the given path. If the file
