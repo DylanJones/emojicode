@@ -1,0 +1,5 @@
+# 🙋 of 🐟: both the receiver of 🎁 and the dynamically allocated generic argument descriptions it is passed, which
+# neither ejcRelease nor a global constant would clean up, are released if evaluating an argument reraises.
+@ ^_\.class_1f41f\.type\.1f64b-
++ call void @ejcReleaseWithoutDeinit\(ptr %alloc\)
++ call void @free\(

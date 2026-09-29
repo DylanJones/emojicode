@@ -1,0 +1,60 @@
+💭 test: unoptimized
+💭 A construction inside the right operand of 🤝/👐 must not corrupt the pending-registration tracking storage when
+💭 the right operand is never evaluated because of short-circuiting. Before the fix, the tracking variable holding
+💭 the pending receiver (or pending dynamic generic argument descriptions) was only initialized to null on the path
+💭 that actually reaches the construction inside initObject(). Skipping the right operand left that variable holding
+💭 an uninitialized value, which the checkpoint releaseTemporaryObjects() runs right after the 🤝/👐 merge could read
+💭 and misinterpret as a live object to release.
+🐇 📦 🍇
+  🖍🆕 x 👌
+  🆕 🍼 x 👌 🍇🍉
+🍉
+
+🐇 🎁🐚T⚪️🍆 🍇
+  🖍🆕 x T
+  🆕 🍼 x T 🍇🍉
+🍉
+
+🐇 🐟 🍇
+  🐇❗️ 🥭 x 📦 ➡️ 👌 🍇
+    ↩️ 👍
+  🍉
+  🐇❗️ 🥭🐚T⚪️🍆 x 🎁🐚T🍆 ➡️ 👌 🍇
+    ↩️ 👍
+  🍉
+
+  💭 AND: a false left operand skips the right operand, which constructs a plain heap receiver.
+  🐇❗️ 🙋 a 👌 ➡️ 👌 🍇
+    ↩️ a 🤝 🥭🐇🐟 🆕📦 👍❗️❗️
+  🍉
+
+  💭 OR: a true left operand skips the right operand, which constructs a plain heap receiver.
+  🐇❗️ 🐝 a 👌 ➡️ 👌 🍇
+    ↩️ a 👐 🥭🐇🐟 🆕📦 👍❗️❗️
+  🍉
+
+  💭 AND: a false left operand skips the right operand, which constructs a receiver whose class stores generic
+  💭 arguments. Those are dynamically allocated here, since v is a local generic argument of this generic method.
+  🐇❗️ 🦋🐚T⚪️🍆 a 👌 v T ➡️ 👌 🍇
+    ↩️ a 🤝 🥭🐇🐟 🆕🎁🐚T🍆 v❗️❗️
+  🍉
+
+  💭 OR: a true left operand skips the right operand, which constructs a receiver with dynamic generic arguments.
+  🐇❗️ 🐙🐚T⚪️🍆 a 👌 v T ➡️ 👌 🍇
+    ↩️ a 👐 🥭🐇🐟 🆕🎁🐚T🍆 v❗️❗️
+  🍉
+🍉
+
+🏁 🍇
+  🔂 i 🆕⏩ 0 100❗️ 🍇
+    🙋🐇🐟 👎❗️
+    🙋🐇🐟 👍❗️
+    🐝🐇🐟 👍❗️
+    🐝🐇🐟 👎❗️
+    🦋🐇🐟 👎 42❗️
+    🦋🐇🐟 👍 42❗️
+    🐙🐇🐟 👍 42❗️
+    🐙🐇🐟 👎 42❗️
+  🍉
+  😀 🔤done🔤❗️
+🍉

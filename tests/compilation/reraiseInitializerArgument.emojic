@@ -1,0 +1,40 @@
+💭 test: unoptimized
+💭 A class's receiver is allocated before its initializer's arguments are evaluated. If evaluating an argument
+💭 reraises, the initializer, which is what would make it own the receiver, is never entered, so the receiver must
+💭 still be released, without running a destructor over its uninitialized fields.
+🐇 💰 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+🍉
+
+🐇 📦 🍇
+  🖍🆕 a 💰
+  🖍🆕 b 💰
+  🆕 🍼 a 💰 🍼 b 💰 🍇🍉
+🍉
+
+🐇 🐟 🍇
+  🐇❗️ 🥭 fail 👌 tag 🔡 ➡️ 💰 🚧🚧 🍇
+    ↪️ fail 🍇 🚨🆕🚧 🔤failed🔤❗️ 🍉
+    ↩️ 🆕💰 tag❗️
+  🍉
+
+  🐇❗️ 🙋 first 👌 second 👌 ➡️ 📦 🚧🚧 🍇
+    ↩️ 🆕📦 🔺🥭🐇🐟 first 🔤a🔤❗️ 🔺🥭🐇🐟 second 🔤b🔤❗️❗️
+  🍉
+🍉
+
+🏁 🍇
+  🔂 i 🆕⏩ 0 100❗️ 🍇
+    💭 the first argument reraises before the receiver's initializer is ever entered
+    🆗 s 🙋🐇🐟 👍 👍❗️ 🍇🍉
+    🙅 e 🍇🍉
+    💭 the second argument reraises after the first, managed, argument was already evaluated
+    🆗 s2 🙋🐇🐟 👎 👍❗️ 🍇🍉
+    🙅 e2 🍇🍉
+    💭 both arguments succeed, so the receiver is actually constructed
+    🆗 s3 🙋🐇🐟 👎 👎❗️ 🍇🍉
+    🙅 e3 🍇🍉
+  🍉
+  😀 🔤done🔤❗️
+🍉

@@ -600,27 +600,55 @@ llvm::Value* FunctionCodeGenerator::createEntryAlloca(llvm::Type *type, const ll
     return builder.CreateAlloca(type, nullptr, name);
 }
 
+llvm::Value* FunctionCodeGenerator::createPendingPointerAlloca() {
+    llvm::IRBuilder<> builder(&function_->getEntryBlock(), function_->getEntryBlock().begin());
+    auto alloca = builder.CreateAlloca(typeHelper().pointer());
+    builder.CreateStore(llvm::ConstantPointerNull::get(typeHelper().pointer()), alloca);
+    return alloca;
+}
+
 llvm::Constant* FunctionCodeGenerator::boxInfoFor(const Type &type) {
     return generator()->boxInfoFor(type);
 }
 
-void TemporaryObjectsManager::releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast) {
+void TemporaryObjectsManager::releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast,
+                                                       bool includeProtected) {
     if (temporaryObjects_.empty()) return;
     auto end = skipLast ? temporaryObjects_.end() - 1 : temporaryObjects_.end();
-    for (auto it = temporaryObjects_.begin(); it < end; it++) {
-        if (it->remoteObject) {
-            auto object = fg->builder().CreateLoad(fg->typeHelper().pointer(), it->value);
-            fg->createIf(fg->builder().CreateIsNotNull(object), [&] {
-                fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), object);
-            });
+    // A protected entry not visited here (includeProtected is false) must never be dropped, whatever clearQueue
+    // says, since it is still owned by a call that has not been reached yet on this path.
+    std::vector<Temporary> kept;
+    for (auto it = temporaryObjects_.begin(); it != temporaryObjects_.end(); it++) {
+        if (it->protectedEntry && !includeProtected) {
+            kept.push_back(*it);
+            continue;
         }
-        else {
-            fg->release(it->value, it->type);
+        if (it < end) {
+            switch (it->kind) {
+                case Kind::RemoteObject: {
+                    auto object = fg->builder().CreateLoad(fg->typeHelper().pointer(), it->value);
+                    fg->createIf(fg->builder().CreateIsNotNull(object), [&] {
+                        fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), object);
+                    });
+                    break;
+                }
+                case Kind::RawAllocation: {
+                    auto pointer = fg->builder().CreateLoad(fg->typeHelper().pointer(), it->value);
+                    fg->createIf(fg->builder().CreateIsNotNull(pointer), [&] {
+                        fg->builder().CreateCall(fg->generator()->runTime().free(), pointer);
+                    });
+                    break;
+                }
+                case Kind::Managed:
+                    fg->release(it->value, it->type);
+                    break;
+            }
+        }
+        if (!clearQueue) {
+            kept.push_back(*it);
         }
     }
-    if (clearQueue) {
-        temporaryObjects_.clear();
-    }
+    temporaryObjects_ = std::move(kept);
 }
 
 void FunctionCodeGenerator::release(llvm::Value *value, const Type &otype) {

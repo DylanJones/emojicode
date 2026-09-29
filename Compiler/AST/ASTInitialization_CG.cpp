@@ -123,8 +123,41 @@ Value* ASTInitialization::initObject(FunctionCodeGenerator *fg, const ASTArgumen
     auto llvmType = fg->typeHelper().llvmTypeForTypeDefinition(type);
     auto obj = stackInit ? fg->stackAlloc(llvmType) : fg->alloc(llvmType);
     fg->builder().CreateStore(type.klass()->classInfo(), fg->buildGetClassInfoPtrFromObject(obj));
+
+    // The receiver is allocated before its arguments are evaluated, but only the initializer call below, which is
+    // never reached if evaluating an argument reraises, transfers ownership of it (and of any dynamically allocated
+    // generic argument descriptions). Register both as pending (see FunctionCodeGenerator::addPendingReceiver()) so
+    // they are released, without deinitializing the receiver’s uninitialized fields, if that happens, while still
+    // surviving checkpoints argument evaluation may hit that must not assume this call has been reached (e.g.
+    // short-circuiting 🤝/👐). Disarm the registrations once the initializer call is reached.
+    //
+    // createPendingPointerAlloca() initializes the tracking variable to null in the entry block itself: this
+    // construction may sit inside a short-circuiting operand that never runs, in which case a later checkpoint
+    // reads the variable without the store below, immediately after it, ever having executed.
+    llvm::Value *pendingObjVar = nullptr;
+    if (!stackInit) {
+        pendingObjVar = fg->createPendingPointerAlloca();
+        fg->builder().CreateStore(obj, pendingObjVar);
+        fg->addPendingReceiver(pendingObjVar);
+    }
+    llvm::Value *pendingGArgsVar = nullptr;
+    if (gArgsDescs != nullptr && !llvm::isa<llvm::Constant>(gArgsDescs)) {
+        pendingGArgsVar = fg->createPendingPointerAlloca();
+        fg->builder().CreateStore(fg->builder().CreateExtractValue(gArgsDescs, { 0 }), pendingGArgsVar);
+        fg->addPendingRawAllocation(pendingGArgsVar);
+    }
+
     auto suppl = gArgsDescs != nullptr ? std::vector<llvm::Value*> { gArgsDescs } : std::vector<llvm::Value*>();
-    return CallCodeGenerator(fg, CallType::StaticDispatch).generate(obj, type, args, function, errorPointer, suppl);
+    auto result = CallCodeGenerator(fg, CallType::StaticDispatch).generate(obj, type, args, function, errorPointer,
+                                                                           suppl);
+
+    if (pendingObjVar != nullptr) {
+        fg->builder().CreateStore(llvm::ConstantPointerNull::get(fg->typeHelper().pointer()), pendingObjVar);
+    }
+    if (pendingGArgsVar != nullptr) {
+        fg->builder().CreateStore(llvm::ConstantPointerNull::get(fg->typeHelper().pointer()), pendingGArgsVar);
+    }
+    return result;
 }
 
 Value* ASTInitialization::generateMemoryAllocation(FunctionCodeGenerator *fg) const {

@@ -1,0 +1,4 @@
+# 🙋 of 🐟: the receiver of 📦, ejcAlloc'd before either argument to its initializer is evaluated, is released
+# without deinitialization if evaluating an argument reraises, since the initializer never took ownership of it.
+@ ^_\.class_1f41f\.type\.1f64b-
++ call void @ejcReleaseWithoutDeinit\(ptr %alloc\)

@@ -26,23 +26,49 @@ struct SourcePosition;
 class TemporaryObjectsManager {
 public:
     void addTemporaryObject(llvm::Value *value, const Type &type) {
-        temporaryObjects_.emplace_back(value, type, false);
+        temporaryObjects_.emplace_back(value, type, Kind::Managed, false);
     }
     /// Registers a variable that holds the heap object storing a remote value in a temporary box, or null if no object
     /// was allocated. The object is released without deinitialization, as the value in it is a temporary of its own.
     void addTemporaryRemoteObject(llvm::Value *objectVariable) {
-        temporaryObjects_.emplace_back(objectVariable, Type::noReturn(), true);
+        temporaryObjects_.emplace_back(objectVariable, Type::noReturn(), Kind::RemoteObject, false);
+    }
+    /// Registers a variable that holds a pointer to a plain heap allocation that has no object semantics (e.g. a
+    /// malloc’d block), or null if it should not be freed, for example because ownership of it was already
+    /// transferred elsewhere. The allocation is released with free() rather than with deinitialization.
+    void addTemporaryRawAllocation(llvm::Value *pointerVariable) {
+        temporaryObjects_.emplace_back(pointerVariable, Type::noReturn(), Kind::RawAllocation, false);
+    }
+    /// Same as addTemporaryRemoteObject(), but marks the entry protected (see releaseTemporaryObjects()).
+    void addProtectedRemoteObject(llvm::Value *objectVariable) {
+        temporaryObjects_.emplace_back(objectVariable, Type::noReturn(), Kind::RemoteObject, true);
+    }
+    /// Same as addTemporaryRawAllocation(), but marks the entry protected (see releaseTemporaryObjects()).
+    void addProtectedRawAllocation(llvm::Value *pointerVariable) {
+        temporaryObjects_.emplace_back(pointerVariable, Type::noReturn(), Kind::RawAllocation, true);
     }
 
-    void releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast);
+    /// Releases the registered temporary values in the order they were added.
+    /// @param clearQueue Whether entries that are visited (see @p includeProtected) are removed from the queue.
+    /// Regardless of this, an entry is only ever removed once it has been visited, so a protected entry skipped
+    /// because @p includeProtected is false always survives the call, however @p clearQueue is set.
+    /// @param skipLast Whether the last entry is left unvisited, e.g. because it does not hold a valid value on the
+    /// path being generated.
+    /// @param includeProtected Whether protected entries, registered to survive checkpoints that are not certain to
+    /// be reached after the call that owns them, are visited too. A protected entry must only be included once that
+    /// call is known to be unreachable on the path being generated (e.g. because it reraised) or has been reached.
+    void releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast,
+                                 bool includeProtected = true);
 
 private:
+    enum class Kind { Managed, RemoteObject, RawAllocation };
     struct Temporary {
-        Temporary(llvm::Value *value, Type type, bool remoteObject)
-            : value(value), type(std::move(type)), remoteObject(remoteObject) {}
+        Temporary(llvm::Value *value, Type type, Kind kind, bool protectedEntry)
+            : value(value), type(std::move(type)), kind(kind), protectedEntry(protectedEntry) {}
         llvm::Value *value;
         Type type;
-        bool remoteObject;
+        Kind kind;
+        bool protectedEntry;
     };
 
     std::vector<Temporary> temporaryObjects_;
@@ -239,6 +265,12 @@ public:
     bool isManagedByReference(const Type &type) const;
 
     llvm::Value* createEntryAlloca(llvm::Type *type, const llvm::Twine &name = "");
+    /// Creates a pointer-typed entry alloca that is initialized to null in the entry block itself, unlike a plain
+    /// createEntryAlloca(), whose value on a path that never assigns to it is undefined. Use this for a pointer
+    /// variable that a protected temporary (see addPendingReceiver(), addPendingRawAllocation()) tracks and that a
+    /// later checkpoint reads with a null check, since such a variable may be read on a path, e.g. one that skips a
+    /// short-circuiting 🤝/👐 operand, on which the code that would store into it never runs.
+    llvm::Value* createPendingPointerAlloca();
 
     /// Creates an if-else branch condition. If the condition evaluates to true, the code produces by the @c then
     /// function is executed, otherwise the code produced by @c otherwise.
@@ -274,11 +306,29 @@ public:
     void addTemporaryRemoteObject(llvm::Value *objectVariable) {
         tom_.addTemporaryRemoteObject(objectVariable);
     }
+    void addTemporaryRawAllocation(llvm::Value *pointerVariable) {
+        tom_.addTemporaryRawAllocation(pointerVariable);
+    }
+    /// Registers a variable holding a receiver that was allocated before its initializer’s arguments are evaluated,
+    /// but whose ownership is only transferred to the initializer call once it is reached. Unlike
+    /// addTemporaryRemoteObject(), this entry is protected: releaseTemporaryObjects() skips it unless told
+    /// otherwise, so it survives checkpoints hit while evaluating those arguments (e.g. short-circuiting 🤝/👐)
+    /// that must not assume the initializer, which alone would take ownership of it, has been reached. It is still
+    /// released, by ASTReraise on its error path, if one of the arguments reraises. Disarm by storing null once the
+    /// initializer call is reached.
+    void addPendingReceiver(llvm::Value *objectVariable) {
+        tom_.addProtectedRemoteObject(objectVariable);
+    }
+    /// Same as addPendingReceiver(), but for a plain heap allocation, e.g. a dynamically built generic argument
+    /// description, freed with free() instead of released as an object.
+    void addPendingRawAllocation(llvm::Value *pointerVariable) {
+        tom_.addProtectedRawAllocation(pointerVariable);
+    }
     /// Releases all temporary values that were previously registered with addTemporaryObject() in the order
     /// they were added.
     /// @see addTemporaryObject
-    void releaseTemporaryObjects(bool clearQueue = true, bool skipLast = false) {
-        tom_.releaseTemporaryObjects(this, clearQueue, skipLast);
+    void releaseTemporaryObjects(bool clearQueue = true, bool skipLast = false, bool includeProtected = true) {
+        tom_.releaseTemporaryObjects(this, clearQueue, skipLast, includeProtected);
     }
 
     /// Returns the the TemporaryObjectsManager and resets the FunctionCodeGenerator’s internal one.

@@ -106,7 +106,10 @@ Value* ASTBinaryOperator::generate(FunctionCodeGenerator *fg) const {
 Value* ASTBinaryOperator::generateLogical(FunctionCodeGenerator *fg) const {
     auto isAnd = builtIn_ == BuiltInType::BooleanAnd;
     auto left = left_->generate(fg);
-    fg->releaseTemporaryObjects();
+    // A pending receiver of an enclosing, not yet reached call (see FunctionCodeGenerator::addPendingReceiver())
+    // must survive this checkpoint: the whole logical expression, including the right operand below, may itself be
+    // one of that call's arguments.
+    fg->releaseTemporaryObjects(true, false, false);
 
     auto insertBlock = fg->builder().GetInsertBlock();
     auto function = insertBlock->getParent();
@@ -118,7 +121,7 @@ Value* ASTBinaryOperator::generateLogical(FunctionCodeGenerator *fg) const {
     fg->builder().CreateCondBr(left, isAnd ? rightBlock : cont, isAnd ? cont : rightBlock);
     fg->builder().SetInsertPoint(rightBlock);
     auto right = right_->generate(fg);
-    fg->releaseTemporaryObjects();
+    fg->releaseTemporaryObjects(true, false, false);
     auto rightPhiBlock = fg->builder().GetInsertBlock();  // releaseTemporaryObjects() might insert blocks
     fg->builder().CreateBr(cont);
 

@@ -1,0 +1,15 @@
+# 🙋 of 🐟: a plain logical argument to 📦's initializer must not release its receiver at the ordinary temporary
+# checkpoint ASTBinaryOperator::generateLogical() hits after the left operand, since the initializer has not been
+# reached yet.
+@ ^_\.class_1f41f\.type\.1f64b-
+- call void @ejcRelease\(
+
+# 🐝 and 🦋 of 🐟: if evaluating a later operand of 🤝 reraises, the receiver(s) allocated before the logical
+# argument was evaluated, which the initializer never took ownership of, are released without deinitialization.
+@ ^_\.class_1f41f\.type\.(1f41d|1f98b)-
++ call void @ejcReleaseWithoutDeinit\(ptr %alloc\)
+
+# 🦋 of 🐟: the nested construction's own receiver (%alloc1) must be released independently of the outer one
+# (%alloc), since both are pending when the reraise occurs.
+@ ^_\.class_1f41f\.type\.1f98b-
++ call void @ejcReleaseWithoutDeinit\(ptr %alloc1\)
