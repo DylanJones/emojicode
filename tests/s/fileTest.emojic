@@ -39,6 +39,18 @@
 
     🚪file❗️
 
+    🍺🔡 🍺📇🐇📄 🔤fileTest_testFile.txt🔤❗️❗️ ➡️ originalContents
+    🍺🆕📄▶️📜 🔤fileTest_testFile.txt🔤❗️ ➡️ readOnlyFile
+    🆗 ✏️ readOnlyFile 📇🔤x🔤❗️❗️ 🍇
+      ⛔️👇 👎 🔤Write to read-only file is error🔤❗
+    🍉
+    🙅‍♂️ error 🍇
+      ⛔️👇 👍 🔤Write to read-only file is error🔤❗
+    🍉
+    🚪readOnlyFile❗️
+
+    ⛔️👇 🍺🔡 🍺📇🐇📄 🔤fileTest_testFile.txt🔤❗️❗️ 🙌 originalContents 🔤Failed write left file unchanged🔤❗️
+
     🆗 🆕📄▶️📜 🔤does_not_exist.abc🔤❗ 🍇
       ⛔️👇 👎 🔤Non existant file is error🔤❗
     🍉
