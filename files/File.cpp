@@ -10,6 +10,7 @@
 #include <ios>
 #include <iostream>
 #include <cerrno>
+#include <limits>
 
 using s::String;
 using s::Data;
@@ -24,7 +25,7 @@ public:
 };
 
 extern "C" File* filesFileNewWriting(String *path, runtime::Raiser *raiser) {
-    auto stream = std::fstream(path->stdString().c_str(), std::ios_base::out);
+    auto stream = std::fstream(path->stdString().c_str(), std::ios_base::out | std::ios_base::binary);
     EJC_COND_RAISE_IO(!stream.fail(), raiser);
     auto file = File::init();
     file->file_ = std::move(stream);
@@ -32,7 +33,7 @@ extern "C" File* filesFileNewWriting(String *path, runtime::Raiser *raiser) {
 }
 
 extern "C" File* filesFileNewReading(String *path, runtime::Raiser *raiser) {
-    auto stream = std::fstream(path->stdString().c_str(), std::ios_base::in);
+    auto stream = std::fstream(path->stdString().c_str(), std::ios_base::in | std::ios_base::binary);
     EJC_COND_RAISE_IO(!stream.fail(), raiser);
     auto file = File::init();
     file->file_ = std::move(stream);
@@ -79,8 +80,17 @@ extern "C" void filesFileSeekTo(File *file, runtime::Integer pos) {
     file->file_.seekp(pos, std::ios_base::beg);
 }
 
+extern "C" runtime::Integer filesFileTell(File *file, runtime::Raiser *raiser) {
+    // Queries the file buffer directly: tellg() would set failbit on a stream at EOF, and the buffer has a single
+    // position shared by reading and writing. The stream's state is left as it is.
+    EJC_COND_RAISE_IO(!file->file_.fail(), raiser);
+    std::streamoff pos = file->file_.rdbuf()->pubseekoff(0, std::ios_base::cur);
+    EJC_COND_RAISE_IO(pos >= 0 && pos <= std::numeric_limits<runtime::Integer>::max(), raiser);
+    return static_cast<runtime::Integer>(pos);
+}
+
 extern "C" Data* filesFileReadFile(runtime::ClassInfo*, String *path, runtime::Raiser *raiser) {
-    auto file = std::ifstream(path->stdString().c_str(), std::ios_base::ate);
+    auto file = std::ifstream(path->stdString().c_str(), std::ios_base::ate | std::ios_base::binary);
     std::streamsize size = file.tellg();
     EJC_COND_RAISE_IO(!file.fail(), raiser);
     file.seekg(0, std::ios::beg);
@@ -100,7 +110,7 @@ extern "C" Data* filesFileReadFile(runtime::ClassInfo*, String *path, runtime::R
 }
 
 extern "C" void filesFileWriteToFile(runtime::ClassInfo*, String *path, Data *data, runtime::Raiser *raiser) {
-    auto file = std::ofstream(path->stdString().c_str(), std::ios_base::out);
+    auto file = std::ofstream(path->stdString().c_str(), std::ios_base::out | std::ios_base::binary);
     file.write(reinterpret_cast<char *>(data->data.get()), data->count);
     EJC_COND_RAISE_IO_VOID(!file.fail(), raiser);
 }
