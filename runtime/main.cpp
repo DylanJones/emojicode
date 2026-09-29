@@ -8,6 +8,7 @@
 
 #include "Runtime.h"
 #include "Internal.hpp"
+#include <atomic>
 #include <map>
 #include <mutex>
 #include <vector>
@@ -22,6 +23,22 @@
 
 runtime::internal::ControlBlock ejcIgnoreBlock;
 
+namespace {
+// Set by ejcInit if EMOJICODE_CHECK_DESCRIPTION_LEAKS is present in the environment. Gates both the balance
+// tracking below and its check at exit, so that this instrumentation is entirely inert (no atomic operations, no
+// atexit handler) unless a test opts into it.
+bool checkDescriptionLeaks = false;
+std::atomic<long> descriptionAllocationBalance{0};
+
+void reportDescriptionLeaksAtExit() {
+    if (descriptionAllocationBalance.load(std::memory_order_relaxed) != 0) {
+        std::cerr << "🚨 " << descriptionAllocationBalance.load(std::memory_order_relaxed)
+                  << " generic type description(s) leaked." << std::endl;
+        abort();
+    }
+}
+}  // namespace
+
 int runtime::internal::argc;
 char **runtime::internal::argv;
 int runtime::internal::seed;
@@ -34,6 +51,16 @@ extern "C" int8_t* ejcAlloc(runtime::Integer size) {
     auto ptr = malloc(size);
     *static_cast<runtime::internal::ControlBlock**>(ptr) = new runtime::internal::ControlBlock;
     return static_cast<int8_t*>(ptr);
+}
+
+extern "C" int8_t* ejcAllocDescription(runtime::Integer size) {
+    if (checkDescriptionLeaks) descriptionAllocationBalance.fetch_add(1, std::memory_order_relaxed);
+    return static_cast<int8_t*>(malloc(size));
+}
+
+extern "C" void ejcFreeDescription(int8_t *ptr) {
+    if (checkDescriptionLeaks) descriptionAllocationBalance.fetch_sub(1, std::memory_order_relaxed);
+    free(ptr);
 }
 
 extern "C" void ejcRetain(runtime::Object<void> *object) {
@@ -332,4 +359,8 @@ extern "C" void ejcInit(int argc, char **argv) {
     runtime::internal::argc = argc;
     runtime::internal::argv = argv;
     runtime::internal::seed = std::random_device()();
+    if (std::getenv("EMOJICODE_CHECK_DESCRIPTION_LEAKS") != nullptr) {
+        checkDescriptionLeaks = true;
+        std::atexit(reportDescriptionLeaksAtExit);
+    }
 }

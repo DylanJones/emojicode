@@ -28,12 +28,18 @@ valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
 # - "panic": its program prints what NAME.txt says and then panics, which aborts it.
 # - "stress": it takes seconds to run, so it is excluded from quick and valgrind runs and starts first, along with
 #   the other slow tests, so that it does not end up running alone at the end.
+# - "leak_check": also run, at both optimized and unoptimized settings, with EMOJICODE_CHECK_DESCRIPTION_LEAKS set.
+#   The runtime then counts calls to ejcAllocDescription/ejcFreeDescription (the malloc/free pair generated
+#   exclusively for dynamic class generic-argument type descriptions, see TypeDescriptionGenerator) and aborts at
+#   exit if they are unbalanced. Unlike an IR check, which inspects unoptimized IR text and so cannot see calls an
+#   optimizer's tail-merging collapses together, this observes actual executed allocation/deallocation counts and
+#   so still catches an ownership bug (a missing or duplicated free) at -O.
 # A library test's tokens may be "slow": like "stress", it takes seconds to run and so starts first, but unlike
 # "stress" it is not excluded from quick runs (valgrind runs do not include library tests at all).
 #
 # A file that looks like a test but is missing a file its category requires (e.g. NAME.txt), or that carries an
 # unrecognized directive token, fails the suite instead of being silently skipped.
-COMPILATION_DIRECTIVES = {"unoptimized", "panic", "stress"}
+COMPILATION_DIRECTIVES = {"unoptimized", "panic", "stress", "leak_check"}
 LIBRARY_DIRECTIVES = {"slow"}
 
 DIRECTIVE_RE = re.compile(r'^💭\s*test:\s*(.*)$')
@@ -70,8 +76,8 @@ def names_with_extension(directory, extension):
 
 def discover_compilation_tests(directory, include_fragments, quick, valgrind):
     """Finds the compilation tests in directory and returns a dict of the lists tests.py schedules from them:
-    compilation_tests, stress_tests, unoptimized_tests, panic_tests, specialization_tests and ir_tests (see the
-    module docstring above for directive semantics).
+    compilation_tests, stress_tests, unoptimized_tests, panic_tests, leak_check_tests, specialization_tests and
+    ir_tests (see the module docstring above for directive semantics).
 
     quick and valgrind runs exclude the "stress" tests, which take seconds to run; that exclusion is applied to
     compilation_tests before unoptimized_tests, specialization_tests and ir_tests are derived from it, so a stress
@@ -96,6 +102,8 @@ def discover_compilation_tests(directory, include_fragments, quick, valgrind):
     unoptimized_tests = [name for name in compilation_tests if "unoptimized" in compilation_test_directives[name]]
     # Compilation tests whose programs print what NAME.txt says and then panic, which aborts them.
     panic_tests = [name for name in compilation_tests if "panic" in compilation_test_directives[name]]
+    # Compilation tests also run with EMOJICODE_CHECK_DESCRIPTION_LEAKS set (see the "leak_check" directive above).
+    leak_check_tests = [name for name in compilation_tests if "leak_check" in compilation_test_directives[name]]
     # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
     # NAME.specializations. A function that is not specialized, but called generically, does not change what a
     # program prints.
@@ -113,6 +121,7 @@ def discover_compilation_tests(directory, include_fragments, quick, valgrind):
         "stress_tests": stress_tests,
         "unoptimized_tests": unoptimized_tests,
         "panic_tests": panic_tests,
+        "leak_check_tests": leak_check_tests,
         "specialization_tests": specialization_tests,
         "ir_tests": ir_tests,
     }
@@ -160,6 +169,7 @@ compilation_tests = discovered_compilation_tests["compilation_tests"]
 stress_tests = discovered_compilation_tests["stress_tests"]
 unoptimized_tests = discovered_compilation_tests["unoptimized_tests"]
 panic_tests = discovered_compilation_tests["panic_tests"]
+leak_check_tests = discovered_compilation_tests["leak_check_tests"]
 specialization_tests = discovered_compilation_tests["specialization_tests"]
 ir_tests = discovered_compilation_tests["ir_tests"]
 
@@ -246,9 +256,9 @@ def library_test(name):
         log(completed.stdout.decode('utf-8'))
 
 
-def check_output(name, binary_path):
+def check_output(name, binary_path, env=None):
     """Runs the program of the compilation test name and checks its output."""
-    completed = run([binary_path], stdout=PIPE)
+    completed = run([binary_path], stdout=PIPE, env=env)
     exp_path = os.path.join(dist.source, "tests", "compilation", name + ".txt")
     output = completed.stdout.decode('utf-8')
     expected_returncode = -signal.SIGABRT if name in panic_tests else 0
@@ -265,6 +275,18 @@ def compilation_test(name, optimize=True):
         with source_lock(source_path):
             run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
         check_output(name, binary_path)
+
+
+def leak_check_test(name, optimize=True):
+    """Like compilation_test, but with EMOJICODE_CHECK_DESCRIPTION_LEAKS set (see leak_check_tests), so that the
+    program aborts (and so fails check_output's return code comparison) if it leaked or double-freed a dynamic
+    generic type description, regardless of optimization."""
+    source_path = test_paths(name, 'compilation')[0]
+    with tempfile.TemporaryDirectory() as directory:
+        binary_path = os.path.join(directory, name)
+        with source_lock(source_path):
+            run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
+        check_output(name, binary_path, env=dict(os.environ, EMOJICODE_CHECK_DESCRIPTION_LEAKS='1'))
 
 
 def specialization_test(name):
@@ -316,6 +338,15 @@ def check_ir(name, ir, check_path):
             if not bodies:
                 log("No function matches " + pattern)
                 failed = True
+            continue
+        if kind == '=':
+            count_text, pattern = pattern.split(' ', 1)
+            count = int(count_text)
+            for function_name, body in bodies:
+                actual = len(re.findall(pattern, body))
+                if actual != count:
+                    log("{0}: expected {1} matches of {2}, found {3}".format(function_name, count, pattern, actual))
+                    failed = True
             continue
         for function_name, body in bodies:
             if (re.search(pattern, body) is not None) != (kind == '+'):
@@ -465,6 +496,8 @@ def test():
         tasks += [(test + " (formatted)", prettyprint_test, test) for test in compilation_tests]
         tasks += [("includer (included formatted)", formatted_test, 'includer', ['included'])]
     tasks += [(test + " (unoptimized)", compilation_test, test, False) for test in unoptimized_tests]
+    tasks += [(test + " (leak check)", leak_check_test, test) for test in leak_check_tests]
+    tasks += [(test + " (leak check, unoptimized)", leak_check_test, test, False) for test in leak_check_tests]
     tasks += [(test, library_test, test) for test in library_tests]
     tasks += [(test, host_test, test) for test in host_tests]
     tasks += [(test, importing_test, test) for test in importing_tests]

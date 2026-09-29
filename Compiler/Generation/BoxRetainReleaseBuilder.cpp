@@ -85,7 +85,7 @@ void buildDestructor(CodeGenerator *cg, TypeDefinition *typeDef) {
         }
         else {
             fg.createIf(fg.builder().CreateIsNull(fg.builder().CreateExtractValue(val, { 1 })), [&] {
-                fg.builder().CreateCall(fg.generator()->runTime().free(), { fg.builder().CreateExtractValue(val, { 0 }) });
+                fg.builder().CreateCall(fg.generator()->runTime().freeDescription(), { fg.builder().CreateExtractValue(val, { 0 }) });
             });
         }
     }

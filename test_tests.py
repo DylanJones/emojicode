@@ -30,6 +30,17 @@ class DiscoverCompilationTestsTests(unittest.TestCase):
             self.assertEqual(discovered["specialization_tests"], ["heavy"])
             self.assertEqual(discovered["ir_tests"], ["heavy"])
 
+    def test_leak_check_directive_is_parsed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "checked", ".emojic", "💭 test: leak_check\n")
+            write(directory, "checked", ".txt")
+            write(directory, "plain", ".emojic")
+            write(directory, "plain", ".txt")
+
+            discovered = tests_py.discover_compilation_tests(directory, set(), quick=False, valgrind=False)
+
+            self.assertEqual(discovered["leak_check_tests"], ["checked"])
+
     def test_quick_and_valgrind_runs_exclude_a_stress_test_from_every_derived_task_list(self):
         # Regression test for the bug fixed alongside this test: unoptimized_tests, specialization_tests and
         # ir_tests used to be derived from compilation_tests before the "stress" filter was applied, so a

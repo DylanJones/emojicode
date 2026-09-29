@@ -1,0 +1,48 @@
+error
+error
+error
+error
+error
+error
+error
+error
+error
+💰 deinit
+error
+💰 deinit
+error
+💰 deinit
+error
+🦑 deinit
+💰 deinit
+🦑 deinit
+💰 deinit
+🦑 deinit
+💰 deinit
+static error
+2
+error
+4
+error
+💰 deinit
+error
+7
+🦑 deinit
+💰 deinit
+whale success
+🐳 deinit
+🦑 deinit
+💰 deinit
+💰 deinit
+💰 deinit
+whale fail before
+error
+💰 deinit
+whale fail during
+💰 deinit
+💰 deinit
+error
+whale fail after
+💰 deinit
+error
+done

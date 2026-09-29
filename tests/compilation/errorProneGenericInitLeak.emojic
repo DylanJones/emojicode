@@ -1,0 +1,164 @@
+💭 test: unoptimized leak_check
+💭 A same-class error-prone generic initializer that directly raises must not leak the dynamically allocated generic
+💭 type description it stored on the receiver before failing (#133). A purely inherited initializer, reached by
+💭 directly instantiating a subclass that declares neither fields nor an initializer of its own, must not leak it
+💭 either: the receiver's runtime class info then never matches the initializer's own owner, so the caller that
+💭 requested the object, not the initializer itself, owns the description. A statically known description (no
+💭 dynamic generic argument) must never be passed to free(), and an initializer that fails after a successful
+💭 explicit superinitializer call must free the description exactly once, from the frame that owns it.
+
+🐇 🐠🐚T⚪🍆 🍇
+  🖍🆕 value T
+
+  🆕 v T fail 👌 🚧🚧 🍇
+    ↪️ fail 🍇 🚨🆕🚧 🔤failed🔤❗️ 🍉
+    v ➡️ 🖍value
+  🍉
+
+  ❗️ 🥇 ➡️ T 🍇
+    ↩️ value
+  🍉
+🍉
+
+💭 🐟 declares neither fields nor an initializer, and directly inherits 🐠's error-prone initializer.
+🐇 🐟🐚T⚪🍆 🐠🐚T🍆 🍇🍉
+
+💭 🦐 does the same from 🐟, one level further, without declaring an initializer of its own either.
+🐇 🦐🐚T⚪🍆 🐟🐚T🍆 🍇🍉
+
+💭 💰's deinitializer is a sentinel: it must fire exactly once whenever a 💰 instance is actually released (either
+💭 as a field of a failed initializer being cleaned up, or as part of a successfully constructed object's own
+💭 destruction), and never as a side effect of freeing a type description.
+🐇 💰 🍇
+  🖍🆕 n 🔢
+
+  🆕 🍇
+    0 ➡️ 🖍n
+  🍉
+
+  ♻️ 🍇
+    😀 🔤💰 deinit🔤❗️
+  🍉
+🍉
+
+💭 🦑 declares its own field and explicitly calls 🐠's initializer, so the description it received from its caller
+💭 must be freed exactly once, by 🦑's own frame, if 🦑 raises after a successful super call. Its own deinitializer
+💭 sentinel must never fire when 🦑 (or a subclass of it) fails to initialize, only on normal destruction.
+🐇 🦑🐚T⚪🍆 🐠🐚T🍆 🍇
+  🖍🆕 resource 💰
+
+  🆕 v T raise 👌 🚧🚧 🍇
+    🆕💰❗️ ➡️ 🖍resource
+    ⤴️🆕 v 👎❗️
+    ↪️ raise 🍇 🚨🆕🚧 🔤failed🔤❗️ 🍉
+  🍉
+
+  ♻️ 🍇
+    😀 🔤🦑 deinit🔤❗️
+  🍉
+🍉
+
+💭 🐳 extends 🦑 one level further, forming a multi-level explicit-super chain (🐳 ➡️ 🦑 ➡️ 🐠), and can fail before,
+💭 during, or after its own explicit superinitializer call. Its own field (🖍extra) and deinitializer sentinel let
+💭 execution confirm 🐳's own field is released on every failure path and that 🐳's own deinitializer never runs for
+💭 a partially initialized object. Description ownership itself (freed exactly once regardless of which frame in the
+💭 chain observes the failure, at both optimized and unoptimized settings) is verified independently by the
+💭 EMOJICODE_CHECK_DESCRIPTION_LEAKS execution check (see leak_check_tests in tests.py), not by this output: after a
+💭 successful super call (the "after" case), the already-initialized inherited fields (🦑's resource, 🐠's value) are
+💭 not yet released here, a separate, tracked gap (#126) in inherited-field cleanup that this test does not claim to
+💭 cover or depend on.
+🐇 🐳🐚T⚪🍆 🦑🐚T🍆 🍇
+  🖍🆕 extra 💰
+
+  🆕 v T before 👌 duringFail 👌 after 👌 🚧🚧 🍇
+    ↪️ before 🍇 🚨🆕🚧 🔤failed before super🔤❗️ 🍉
+    🆕💰❗️ ➡️ 🖍extra
+    ⤴️🆕 v duringFail❗️
+    ↪️ after 🍇 🚨🆕🚧 🔤failed after super🔤❗️ 🍉
+  🍉
+
+  ♻️ 🍇
+    😀 🔤🐳 deinit🔤❗️
+  🍉
+🍉
+
+🌍 🐇 🎁🐚T⚪🍆 🍇
+  🆕 🍇🍉
+
+  💭 Exercises 🐠, a same-class error-prone generic initializer, with a description dynamically built from this
+  💭 method's own unresolved T, matching the original leak (malloc'd here, must be freed by 🐠's own frame).
+  ❗️ 🧪 v T fail 👌 🍇
+    🆗 f 🆕🐠🐚T🍆 v fail❗️ 🍇🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
+
+  💭 Exercises 🐟, which directly inherits 🐠's initializer without declaring one of its own: there is no owning
+  💭 frame inside the inherited initializer, so this call site must free the dynamic description itself.
+  ❗️ 🔬 v T fail 👌 🍇
+    🆗 f 🆕🐟🐚T🍆 v fail❗️ 🍇🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
+
+  💭 Same as 🔬, one level further removed from the declaring class.
+  ❗️ 🧫 v T fail 👌 🍇
+    🆗 f 🆕🦐🐚T🍆 v fail❗️ 🍇🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
+
+  💭 Exercises 🦑, which owns a frame (it declares its own field and calls 🐠's initializer explicitly), so this
+  💭 call site must not free the description itself: 🦑's own frame must free it exactly once instead.
+  ❗️ 🧬 v T raise 👌 🍇
+    🆗 f 🆕🦑🐚T🍆 v raise❗️ 🍇🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
+
+  💭 Exercises 🐳, a two-level explicit-super chain (🐳 ➡️ 🦑 ➡️ 🐠) with a managed generic field: v is a class
+  💭 instance, so releasing 🐠's field on failure is a real release that must happen before the shared description
+  💭 is freed. Covers failure before, during, and after 🐳's own explicit superinitializer call.
+  ❗️ 🦈 v T before 👌 duringFail 👌 after 👌 🍇
+    🆗 f 🆕🐳🐚T🍆 v before duringFail after❗️ 🍇🍉
+    🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🍉
+🍉
+
+🏁 🍇
+  🆕🎁🐚🔢🍆❗️ ➡️ factory
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🧪factory i 👍❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🧪factory i 👎❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🔬factory i 👍❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🔬factory i 👎❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🧫factory i 👍❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🧫factory i 👎❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🧬factory i 👍❗️ 🍉
+  🔂 i 🆕⏩ 0 3❗️ 🍇 🧬factory i 👎❗️ 🍉
+
+  🆗 f 🆕🐠🐚🔢🍆 1 👍❗️ 🍇🍉
+  🙅 e 🍇 😀 🔤static error🔤❗️ 🍉
+  🆗 f 🆕🐠🐚🔢🍆 2 👎❗️ 🍇 😀 🔡🥇f❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+
+  🆗 f 🆕🐟🐚🔢🍆 3 👍❗️ 🍇🍉
+  🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🆗 f 🆕🐟🐚🔢🍆 4 👎❗️ 🍇 😀 🔡🥇f❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+
+  🆗 f 🆕🦐🐚🔢🍆 5 👍❗️ 🍇🍉
+  🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+
+  🆗 f 🆕🦑🐚🔢🍆 6 👍❗️ 🍇🍉
+  🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+  🆗 f 🆕🦑🐚🔢🍆 7 👎❗️ 🍇 😀 🔡🥇f❗️❗️❗️ 🍉
+  🙅 e 🍇 😀 🔤error🔤❗️ 🍉
+
+  🆕🎁🐚💰🍆❗️ ➡️ resourceFactory
+  😀 🔤whale success🔤❗️
+  🦈resourceFactory 🆕💰❗️ 👎 👎 👎❗️
+  😀 🔤whale fail before🔤❗️
+  🦈resourceFactory 🆕💰❗️ 👍 👎 👎❗️
+  😀 🔤whale fail during🔤❗️
+  🦈resourceFactory 🆕💰❗️ 👎 👍 👎❗️
+  😀 🔤whale fail after🔤❗️
+  🦈resourceFactory 🆕💰❗️ 👎 👎 👍❗️
+
+  😀 🔤done🔤❗️
+🍉
