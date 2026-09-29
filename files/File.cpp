@@ -40,8 +40,9 @@ extern "C" File* filesFileNewReading(String *path, runtime::Raiser *raiser) {
     return file;
 }
 
-extern "C" void filesFileWrite(File *file, Data *data) {
+extern "C" void filesFileWrite(File *file, Data *data, runtime::Raiser *raiser) {
     file->file_.write(reinterpret_cast<char *>(data->data.get()), data->count);
+    EJC_COND_RAISE_IO_VOID(!file->file_.fail(), raiser);
 }
 
 extern "C" void filesFileClose(File *file) {

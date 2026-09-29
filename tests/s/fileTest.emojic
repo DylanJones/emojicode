@@ -62,6 +62,18 @@
 
     🚪file❗️
 
+    🍺🔡 🍺📇🐇📄 🔤fileTest_testFile.txt🔤❗️❗️ ➡️ originalContents
+    🍺🆕📄▶️📜 🔤fileTest_testFile.txt🔤❗️ ➡️ readOnlyFile
+    🆗 ✏️ readOnlyFile 📇🔤x🔤❗️❗️ 🍇
+      ⛔️👇 👎 🔤Write to read-only file is error🔤❗
+    🍉
+    🙅‍♂️ error 🍇
+      ⛔️👇 👍 🔤Write to read-only file is error🔤❗
+    🍉
+    🚪readOnlyFile❗️
+
+    ⛔️👇 🍺🔡 🍺📇🐇📄 🔤fileTest_testFile.txt🔤❗️❗️ 🙌 originalContents 🔤Failed write left file unchanged🔤❗️
+
     🍺🆕📄▶️📜 🔤fileTest_writeTest.txt🔤❗️ ➡️ endFile
     🔚 endFile❗️
     ⛔️👇 🍺⏱️endFile❗️ 🙌 16 🔤Position after seek to end while reading🔤❗️
