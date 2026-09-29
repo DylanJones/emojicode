@@ -5,39 +5,79 @@
 🐇🦔 🧪 🍇
   ✒️ ❗️ 🏁 🍇
     🍺🆕📄▶️📜 🔤fileTest_testFile.txt🔤❗️ ➡️ readFile
+    ⛔️👇 🍺⏱️readFile❗️ 🙌 0 🔤Position after opening for reading🔤❗️
 
     ⛔️👇 🍺🔡 🍺📓readFile 5❗️❗️ 🙌 🔤Lorem🔤 🔤Read test🔤❗️
+    ⛔️👇 🍺⏱️readFile❗️ 🙌 5 🔤Position after read🔤❗️
 
     🔛 readFile 12❗️
+    ⛔️👇 🍺⏱️readFile❗️ 🙌 12 🔤Position after seek while reading🔤❗️
 
     ⛔️👇 🍺🔡 🍺📓readFile 5❗️❗️ 🙌 🔤dolor🔤 🔤Read after seek🔤❗️
+    ⛔️👇 🍺⏱️readFile❗️ 🙌 17 🔤Position after read after seek🔤❗️
 
     💭🔫🐇📑 🔤fileTest_writeTest.txt🔤❗️
 
     🚪readFile❗️
 
+    📇🔤a❌r❌nb❌nä🦁🔤❗️ ➡️ bytes
+    🍺🆕📄▶️📝 🔤fileTest_writeTest.txt🔤❗️ ➡️ bytesFile
+    🍺✏️ bytesFile bytes❗️
+    ⛔️👇 🍺⏱️bytesFile❗️ 🙌 11 🔤Position counts bytes written🔤❗️
+    🚪bytesFile❗️
+    ⛔️👇 🍺📇🐇📄 🔤fileTest_writeTest.txt🔤❗️ 🙌 bytes 🔤Line endings and UTF-8 are preserved🔤❗️
+
+    🍺🆕📄▶️📜 🔤fileTest_writeTest.txt🔤❗️ ➡️ bytesReadFile
+    ⛔️👇 🍺📓bytesReadFile 3❗️ 🙌 📇🔤a❌r❌n🔤❗️ 🔤Read preserves CRLF🔤❗️
+    ⛔️👇 🍺⏱️bytesReadFile❗️ 🙌 3 🔤Position counts bytes read🔤❗️
+    🚪bytesReadFile❗️
+
     🍺🆕📄▶️📝 🔤fileTest_writeTest.txt🔤❗️ ➡️ file
+    ⛔️👇 🍺⏱️file❗️ 🙌 0 🔤Position after opening for writing🔤❗️
 
     🍺✏️ file 📇🔤Hello Theo.🔤❗️❗️
+    ⛔️👇 🍺⏱️file❗️ 🙌 11 🔤Position after buffered write🔤❗️
     💧 file❗️
+    ⛔️👇 🍺⏱️file❗️ 🙌 11 🔤Position after flush🔤❗️
 
     ⛔️👇 🍺🔡 🍺📇🐇📄 🔤fileTest_writeTest.txt🔤❗️❗️ 🙌 🔤Hello Theo.🔤 🔤Write succeeded🔤❗️
 
     🔛 file 6❗️
+    ⛔️👇 🍺⏱️file❗️ 🙌 6 🔤Position after seek while writing🔤❗️
 
     🍺✏️ file 📇🔤Hubertus.🔤❗️❗️
+    ⛔️👇 🍺⏱️file❗️ 🙌 15 🔤Position after write after seek🔤❗️
     💧 file❗️
 
     ⛔️👇 🍺🔡 🍺📇🐇📄 🔤fileTest_writeTest.txt🔤❗️❗️ 🙌 🔤Hello Hubertus.🔤 🔤Seek and write succeeded🔤❗️
 
     🔚 file❗️
+    ⛔️👇 🍺⏱️file❗️ 🙌 15 🔤Position after seek to end while writing🔤❗️
 
     🍺✏️ file 📇🔤!🔤❗️❗️
+    ⛔️👇 🍺⏱️file❗️ 🙌 16 🔤Position after write at end🔤❗️
     💧 file❗️
 
     ⛔️👇 🍺🔡 🍺📇🐇📄 🔤fileTest_writeTest.txt🔤❗️❗️ 🙌 🔤Hello Hubertus.!🔤 🔤Seek to end and write succeeded🔤❗️
 
     🚪file❗️
+
+    🍺🆕📄▶️📜 🔤fileTest_writeTest.txt🔤❗️ ➡️ endFile
+    🔚 endFile❗️
+    ⛔️👇 🍺⏱️endFile❗️ 🙌 16 🔤Position after seek to end while reading🔤❗️
+    🆗 📓 endFile 1❗️ 🍇
+      ⛔️👇 👎 🔤Read past end is error🔤❗️
+    🍉
+    🙅‍♂️ error 🍇
+      ⛔️👇 👍 🔤Read past end is error🔤❗️
+    🍉
+    🆗 ⏱️ endFile❗️ 🍇
+      ⛔️👇 👎 🔤Position of failed stream is error🔤❗️
+    🍉
+    🙅‍♂️ error 🍇
+      ⛔️👇 👍 🔤Position of failed stream is error🔤❗️
+    🍉
+    🚪endFile❗️
 
     🆗 🆕📄▶️📜 🔤does_not_exist.abc🔤❗ 🍇
       ⛔️👇 👎 🔤Non existant file is error🔤❗
