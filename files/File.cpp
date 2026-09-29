@@ -71,7 +71,7 @@ extern "C" Data* filesFileReadBytes(File *file, runtime::Integer count, runtime:
 }
 
 extern "C" void filesFileSeekToEnd(File *file) {
-    file->file_.seekp(std::ios_base::end);
+    file->file_.seekp(0, std::ios_base::end);
 }
 
 extern "C" void filesFileSeekTo(File *file, runtime::Integer pos) {
