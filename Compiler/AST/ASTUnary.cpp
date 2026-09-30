@@ -39,6 +39,9 @@ Type ASTUnwrap::analyse(ExpressionAnalyser *analyser) {
     Type t = analyser->expect(TypeExpectation(false, false), &expr_);
 
     if (t.unboxedType() == TypeType::Optional) {
+        if (call != nullptr && call->isErrorProne()) {
+            throw CompilerError(position(), "🍺 is ambiguous for an error-prone call returning an optional.");
+        }
         return t.optionalType();
     }
     if (call != nullptr && call->isErrorProne()) {
