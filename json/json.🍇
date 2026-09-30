@@ -324,6 +324,26 @@
   🍉
 
   📗
+    Reads the digits of an exponent. The value saturates at a magnitude
+    that already overflows or underflows every real, so arbitrarily long
+    exponents neither wrap around nor overflow. All digits are consumed.
+  📗
+  ☣️🖍🔒❗️🔭 ➡️🔢 🍇
+    0 ➡️ 🖍🆕exponent
+    🔁 index ◀️ count 🍇
+      🐽🐚💧🍆string index❗️ ➡️ v
+      ↪️ v ◀️ 0x30 👐 v ▶️ 0x39 🍇
+        ↩️ exponent
+      🍉
+      ↪️ exponent ◀️ 100000 🍇
+        exponent ✖️ 10 ➕ 🔢v❗️ ➖0x30 ➡️🖍exponent
+      🍉
+      index ⬅️➕ 1
+    🍉
+    ↩️ exponent
+  🍉
+
+  📗
     Parses the exponent after `e` or `E`, which must have been consumed.
   📗
   ☣️🖍🔒❗️🏂 reali 💯 ➡️ 💯 🍇
@@ -339,12 +359,15 @@
       index ⬅️➕ 1
     🍉
 
-    💯🔢👇0❗️❗️➡️ 🖍🆕exponent
+    🔭❗️ ➡️ 🖍🆕exponent
     ↪️ negexp 🍇
       exponent⬅️✖️-1
     🍉
 
-    real⬅️✖️🏂10.0 exponent❗️
+    💭 Zero stays zero; 0 × ∞ would be NaN.
+    ↪️ ❎real 🙌 0.0❗️ 🍇
+      real⬅️✖️🏂10.0 💯exponent❗️❗️
+    🍉
     ↩️ real
   🍉
 

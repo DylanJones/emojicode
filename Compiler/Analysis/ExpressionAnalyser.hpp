@@ -65,6 +65,8 @@ public:
     void expectType(const Type &type, std::shared_ptr<ASTExpr>*);
     /// Parses an expression node and boxes it according to the given expectation. Calls @c box internally.
     Type expect(const TypeExpectation &expectation, std::shared_ptr<ASTExpr>*);
+    /// Unboxes the analysed expression @c node if it is a box.
+    void unboxIfBoxed(std::shared_ptr<ASTExpr> *node) const;
     /// Makes the node comply with the expectation by dereferencing, temporarily storing or boxing it.
     /// @param node A pointer to the node pointer. The pointer to which this pointer points might be changed.
     /// @note Only use this if there is a good reason why expect() cannot be used.

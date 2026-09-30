@@ -1,0 +1,38 @@
+💭 🐼 on an empty list returns no value and leaves the list untouched.
+🏁 🍇
+  🆕🍨🐚🔢🍆❗️ ➡️ 🖍🆕 ints
+  ↪️ 🐼ints❗️ ➡️ v 🍇
+    😀 🔤bogus 🧲v🧲🔤❗️
+  🍉
+  ↪️ 🐼ints❗️ ➡️ v 🍇
+    😀 🔤bogus 🧲v🧲🔤❗️
+  🍉
+  😀 🔤ints 🧲📏ints❓🧲🔤❗️
+  🐻ints 7❗️
+  😀 🔤ints 🧲📏ints❓🧲 🧲🐽ints 0❗️🧲🔤❗️
+
+  🆕🍨🐚🔡🍆❗️ ➡️ 🖍🆕 strings
+  ↪️ 🐼strings❗️ ➡️ v 🍇
+    😀 🔤bogus 🧲v🧲🔤❗️
+  🍉
+  😀 🔤strings 🧲📏strings❓🧲🔤❗️
+  🐻strings 🔤a🔤❗️
+  🐻strings 🔤b🔤❗️
+  ↪️ 🐼strings❗️ ➡️ v 🍇
+    😀 🔤popped 🧲v🧲🔤❗️
+  🍉
+  ↪️ 🐼strings❗️ ➡️ v 🍇
+    😀 🔤popped 🧲v🧲🔤❗️
+  🍉
+  ↪️ 🐼strings❗️ ➡️ v 🍇
+    😀 🔤bogus 🧲v🧲🔤❗️
+  🍉
+  strings ➡️ 🖍🆕 copy
+  🐻copy 🔤c🔤❗️
+  😀 🔤strings 🧲📏strings❓🧲 copy 🧲📏copy❓🧲🔤❗️
+  ↪️ 🐼strings❗️ ➡️ v 🍇
+    😀 🔤bogus 🧲v🧲🔤❗️
+  🍉
+  🐻strings 🔤d🔤❗️
+  😀 🔤🧲📏strings❓🧲 🧲🐽strings 0❗️🧲 🧲📏copy❓🧲 🧲🐽copy 0❗️🧲🔤❗️
+🍉

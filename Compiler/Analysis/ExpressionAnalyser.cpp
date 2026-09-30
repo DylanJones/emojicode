@@ -175,6 +175,13 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
 
     TypeContext typeContext = TypeContext(type, function, &genericArgs);
 
+    // The error is always stored as a pointer to an object, never as a box, whether or not the function is specialized.
+    // Inside generic code this can resolve to the caller's own generic variable; handling such an error in codegen
+    // is handled in codegen as a plain pointer (#350).
+    if (function->errorProne()) {
+        node->setErrorType(function->errorType()->type().resolveOn(typeContext).unboxed());
+    }
+
     for (size_t i = 0; i < function->parameters().size(); i++) {
         auto &paramType = function->parameters()[i].type->type();
         Type exprType = comply(TypeExpectation(paramType.resolveOn(typeContext)), &node->args()[i]);
@@ -191,9 +198,6 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
         }
     }
     node->setGenericArgumentTypes(genericArgs);
-    if (function->errorType() != nullptr) {
-        node->setResolvedErrorType(function->errorType()->type().resolveOn(typeContext));
-    }
     auto rtType = function->returnType()->type().resolveOn(typeContext);
     if (rtType.isReference()) {
         rtType.setMutable(type.isMutable());
@@ -317,6 +321,11 @@ void ExpressionAnalyser::makeIntoSimpleOptional(Type &exprType, std::shared_ptr<
             insertNode<ASTSimpleToSimpleOptional>(node, exprType);
             break;
     }
+}
+
+void ExpressionAnalyser::unboxIfBoxed(std::shared_ptr<ASTExpr> *node) const {
+    auto type = (*node)->expressionType();
+    makeIntoSimple(type, node);
 }
 
 void ExpressionAnalyser::makeIntoSimple(Type &exprType, std::shared_ptr<ASTExpr> *node) const {

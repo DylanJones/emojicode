@@ -16,6 +16,9 @@
 #include "Types/Protocol.hpp"
 #include "Types/TypeContext.hpp"
 #include "Generation/Mangler.hpp"
+#include "CompilerError.hpp"
+#include <cerrno>
+#include <cstring>
 #include <iostream>
 
 namespace EmojicodeCompiler {
@@ -23,7 +26,11 @@ namespace EmojicodeCompiler {
 namespace CLI {
 
 PackageReporter::PackageReporter(Package *package, const std::string &string)
-    : file_(string, std::ios_base::out), wrapper_(file_), writer_(wrapper_), package_(package) {}
+    : file_(string, std::ios_base::out), wrapper_(file_), writer_(wrapper_), package_(package), path_(string) {
+    if (!file_.good()) {
+        throw CompilerError(SourcePosition(), "Could not write ", path_, ": ", std::strerror(errno));
+    }
+}
 
 void PackageReporter::report() {
     writer_.StartObject();
@@ -38,6 +45,13 @@ void PackageReporter::report() {
     writer_.EndArray();
 
     writer_.EndObject();
+
+    errno = 0;
+    file_.flush();
+    if (!file_.good()) {
+        throw CompilerError(SourcePosition(), "Could not write ", path_, ": ",
+                            errno != 0 ? std::strerror(errno) : "I/O error");
+    }
 
     std::cout << std::endl;
 }
