@@ -22,7 +22,7 @@ void CommonTypeFinder::addType(const Type &type, const TypeContext &typeContext)
         firstTypeFound_ = true;
         if (aType.canHaveProtocol()) {
             std::transform(aType.typeDefinition()->protocols().begin(), aType.typeDefinition()->protocols().end(),
-                           std::back_inserter(commonProtocols_), [](auto &conf) { return conf.type->type(); });
+                           std::back_inserter(commonProtocols_), [&aType](auto &conf) { return conf.type->type().resolveOn(TypeContext(aType)); });
         }
         return;
     }
@@ -57,14 +57,16 @@ void CommonTypeFinder::updateCommonProtocols(const Type &type, const TypeContext
             return;
         }
 
-        auto &protocols = type.typeDefinition()->protocols();
+        // The conformances are resolved on the concrete type, as a generic type like 🍨🐚🔢🍆 conforms to protocols
+        // whose arguments are its generic variables.
         std::vector<Type> newCommonProtocols;
-        for (auto &protocol : protocols) {
-            auto b = std::any_of(commonProtocols_.begin(), commonProtocols_.end(), [&protocol, &typeContext](auto &p) {
-                return protocol.type->type().identicalTo(p, typeContext, nullptr);
+        for (auto &protocol : type.typeDefinition()->protocols()) {
+            auto resolved = protocol.type->type().resolveOn(TypeContext(type));
+            auto b = std::any_of(commonProtocols_.begin(), commonProtocols_.end(), [&resolved, &typeContext](auto &p) {
+                return resolved.identicalTo(p, typeContext, nullptr);
             });
             if (b) {
-                newCommonProtocols.emplace_back(protocol.type->type());
+                newCommonProtocols.emplace_back(std::move(resolved));
             }
         }
         commonProtocols_ = newCommonProtocols;
