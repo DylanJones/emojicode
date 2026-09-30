@@ -6,8 +6,9 @@ The [Emojicode project](https://github.com/users/DylanJones/projects/1) tracks w
 
 Agent sandboxes mount only their own worktree, so every sibling worktree looks missing to git. Commands that prune or remove worktree metadata then delete the admin directories under the shared `.git/worktrees/` for all of them, breaking other runs (see #366).
 
-- Never run `git worktree prune`, `git gc`, `git prune` or `git worktree remove` on anything but your own temporary worktree.
-- If you need a temporary worktree, create it with `git worktree add --detach` inside your own worktree directory, and remove it by path with `git worktree remove <path>`.
+- Never run `git worktree prune`, `git gc` or `git prune`. They act on the whole shared repository, not just your worktree, even when you run them from inside it.
+- Only run `git worktree remove <path>` on a temporary worktree you created yourself.
+- If you need a temporary worktree, create it with `git worktree add --detach build/tmp-wt` (`build/` is git-ignored, so `git add -A` won't stage it as an embedded repository), and remove it by path with `git worktree remove build/tmp-wt`.
 
 ## Moving work
 
