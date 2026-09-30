@@ -1,0 +1,34 @@
+🐇 🐟 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ♻️ 🍇
+    😀 🔤released 🧲name🧲🔤❗️
+  🍉
+🍉
+
+💭 Too large for a box, managed contents: values of this type are stored in a heap object inside boxes.
+🕊 🐘 🍇
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 d 🔢
+  🖍🆕 fish 🐟
+  🆕 🍼 fish 🐟 🍇
+    0 ➡️ 🖍a
+    0 ➡️ 🖍b
+    0 ➡️ 🖍c
+    0 ➡️ 🖍d
+  🍉
+🍉
+
+🐇 🧪 🍇
+  💭 Class methods are not specialized, so this builds the list literal from erased values.
+  🐇❗️ 🍎🐚T ⚪🍆 a T b T ➡️ 🍨🐚T🍆 🍇
+    ↩️ 🍿 a b 🍆
+  🍉
+🍉
+
+🏁 🍇
+  🍎🐇🧪 🆕🐘 🆕🐟 🔤one🔤❗️❗️ 🆕🐘 🆕🐟 🔤two🔤❗️❗️❗️ ➡️ l
+  😀 🔡📏l❓❗️❗️
+🍉

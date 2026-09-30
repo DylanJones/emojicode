@@ -115,11 +115,11 @@ Value* ASTCollectionLiteral::storeElements(FunctionCodeGenerator *fg, const std:
     auto structure = fg->builder().CreateAlloca(llvm::Type::getInt8Ty(fg->ctx()), bytes, name);
     fg->builder().CreateStore(fg->generator()->runTime().ignoreBlockPtr(), structure);
     llvm::Value *current = fg->builder().CreateGEP(header, structure, fg->int64(1));
-    auto box = fg->createEntryAlloca(fg->typeHelper().box());
     for (auto value : values) {
-        fg->builder().CreateStore(value, box);
         fg->buildStoreErased(current, entry, value, elementType_);
-        fg->release(box, elementType_);  // The memory holds the value instead, like a value stored directly.
+        // The memory holds the value instead, like a value stored directly. Release the contents the store retained,
+        // not the box: releasing a box also drops the remote object, which the caller still owns.
+        fg->buildReleaseErased(current, entry);
         current = fg->builder().CreateGEP(llvm::Type::getInt8Ty(fg->ctx()), current, size);
     }
     return structure;
