@@ -28,8 +28,10 @@ Type ASTCast::analyse(ExpressionAnalyser *analyser) {
     if (originalType.compatibleTo(type, analyser->typeContext())) {
         throw CompilerError(position(), "Unnecessary cast.");
     }
+    auto fromProtocol = originalType.unboxedType() == TypeType::Protocol ||
+                        originalType.unboxedType() == TypeType::MultiProtocol;
     if (!type.compatibleTo(originalType, analyser->typeContext())
-             && !(originalType.unboxedType() == TypeType::Protocol && type.unboxedType() == TypeType::Protocol)) {
+        && !(fromProtocol && type.unboxedType() == TypeType::Protocol)) {
         auto typeString = type.toString(analyser->typeContext());
         throw CompilerError(position(), "Cast to unrelated type ", typeString, " will always fail.");
     }
