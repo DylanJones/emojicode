@@ -1,0 +1,9 @@
+💭 Nested lists with different element types have the common type ⚪️, not a protocol with unresolved arguments.
+🏁 🍇
+  🍿 🍿 1 🍆 🍿 🔤a🔤 🍆 🍆 ➡️ x
+  😀 🔡 📏 x ❓ 10❗️❗️
+  🍿 🍿 🔤a🔤 🍆 🍿 1 🍆 🍿 2 🍆 🍆 ➡️ y
+  😀 🔡 📏 y ❓ 10❗️❗️
+  🍿 🍿 1 🍆 🍿 2 🍆 🍆 ➡️ z
+  😀 🔡 📏 z ❓ 10❗️❗️
+🍉
