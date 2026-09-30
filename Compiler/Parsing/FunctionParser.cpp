@@ -254,13 +254,12 @@ std::shared_ptr<ASTExpr> FunctionParser::parseExprTokens(const Token &token, int
 
 std::shared_ptr<ASTExpr> FunctionParser::parseRight(std::shared_ptr<ASTExpr> left, int precendence) {
     int peakedPre;
-    int chainLength = 0;
+    NestingGuard chainGuard;
     while (precendence < (peakedPre = peakOperatorPrecedence())) {
         auto token = stream_.consumeToken();
-        // The AST of a chain is as deep as the chain is long, and the analysis recurses through it.
-        if (++chainLength > NestingGuard::kMaxNesting) {
-            throw CompilerError(token.position(), "Nesting too deep.");
-        }
+        // The AST of a chain is as deep as the chain is long, and the analysis recurses through it. Charging the links
+        // to the shared budget bounds the depth of chains inside of nested groups as well.
+        chainGuard.deepen(token.position());
         auto right = parseExpr(peakedPre);
         left = std::make_shared<ASTBinaryOperator>(operatorType(token.value()), left, right, token.position());
     }
