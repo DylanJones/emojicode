@@ -11,6 +11,9 @@
 #include <map>
 #include <memory>
 #include <set>
+#include "Types/Type.hpp"
+#include "AST/ASTType.hpp"
+#include "AST/ASTExpr.hpp"
 
 namespace EmojicodeCompiler {
 
@@ -68,6 +71,7 @@ public:
     void checkCFunctionDeclaration(Function *function) const;
 
     void declareInstanceVariables(const Type &type);
+    void analyseInstanceVariableDefaults();
     /// Whether @p container stores a @p target directly, or inside another value type it stores.
     static bool storesInline(TypeDefinition *container, ValueType *target, std::set<ValueType *> &visited);
 
@@ -108,6 +112,12 @@ private:
     std::vector<std::unique_ptr<Function>> unusedSpecializations_;
     /// Whether all declarations were analysed, before which no specialization can be analysed.
     bool declarationsAnalysed_ = false;
+    struct PendingDefault {
+        Type owner;
+        std::shared_ptr<ASTType> type;
+        std::shared_ptr<ASTExpr> expr;
+    };
+    std::vector<PendingDefault> pendingDefaults_;
     bool imported_;
     bool specialize_;
 
