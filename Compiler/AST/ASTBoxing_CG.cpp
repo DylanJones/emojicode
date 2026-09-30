@@ -41,6 +41,11 @@ Value* ASTRebox::generate(FunctionCodeGenerator *fg) const {
 
 Value* ASTRebox::rebox(Value *box, FunctionCodeGenerator *fg) const {
     auto &from = expr_->expressionType();
+    if (expressionType().boxedFor().type() == TypeType::Class) {
+        // A box for a class (e.g. a generic variable constrained to a class) carries the value box info itself; the
+        // analyser has already established that the value is of a subclass.
+        return box;
+    }
     auto boxInfo = fg->builder().CreateExtractValue(box, 0);
     if (expressionType().boxedFor().type() == TypeType::Something) {
         return fg->builder().CreateInsertValue(box, fg->buildGetValueBoxInfo(boxInfo, from), 0);
