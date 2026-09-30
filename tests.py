@@ -38,6 +38,10 @@ valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
 # A library test's tokens may be "slow": like "stress", it takes seconds to run and so starts first, but unlike
 # "stress" it is not excluded from quick runs (valgrind runs do not include library tests at all).
 #
+# NAME.warnings, optional next to a compilation or reject test, lists the warnings the compiler must print, in order
+# and with multiplicity, one per line as "LINE:COLUMN: MESSAGE" (only "MESSAGE" for one without a position). An empty
+# file asserts that there are none; without one, warnings are not checked.
+#
 # A file that looks like a test but is missing a file its category requires (e.g. NAME.txt), a companion file
 # (NAME.txt, NAME.ir, ...) without its source, or an unrecognized directive token, fails the suite instead of being
 # silently skipped.
@@ -90,7 +94,7 @@ def discover_compilation_tests(directory, include_fragments, quick, valgrind):
     quick and valgrind runs exclude the "stress" tests, which take seconds to run; that exclusion is applied to
     compilation_tests before unoptimized_tests, specialization_tests and ir_tests are derived from it, so a stress
     test's other tasks are excluded consistently with its own compilation task."""
-    reject_orphans(directory, [".txt", ".ir", ".specializations"], ".emojic", "its compilation test")
+    reject_orphans(directory, [".txt", ".ir", ".specializations", ".warnings"], ".emojic", "its compilation test")
     compilation_test_directives = {}
     for name in names_with_extension(directory, ".emojic"):
         if name in include_fragments:
@@ -313,13 +317,43 @@ def check_output(name, binary_path, env=None):
         fail_test(name)
 
 
+WARNING_RE = re.compile(r'^(?:.*?:(\d+):(\d+): )?⚠️  warning: (.*)$')
+ANSI_RE = re.compile(r'\x1b\[[0-9;]*m')
+
+
+def parse_warnings(stderr):
+    """Returns the warnings in the compiler's standard error, in order and with multiplicity, each as "LINE:COLUMN:
+    MESSAGE", or just the message if it has no position. File paths and colors are left out."""
+    warnings = []
+    for line in ANSI_RE.sub('', stderr).splitlines():
+        match = WARNING_RE.match(line)
+        if match:
+            line_number, column, message = match.groups()
+            warnings.append(message if line_number is None else "{0}:{1}: {2}".format(line_number, column, message))
+    return warnings
+
+
+def check_warnings(name, stderr, warnings_path):
+    """Checks that the warnings in stderr are exactly those listed, one per line, in the file at warnings_path (see
+    parse_warnings for their format), if there is one. An empty file asserts that there are none."""
+    if not os.path.exists(warnings_path):
+        return
+    expected = open(warnings_path, "r", encoding='utf-8').read().splitlines()
+    actual = parse_warnings(stderr)
+    if actual != expected:
+        log("Expected warnings:\n" + "\n".join(expected) + "\nActual warnings:\n" + "\n".join(actual))
+        fail_test(name + " (warnings)")
+
+
 def compilation_test(name, optimize=True):
     source_path = test_paths(name, 'compilation')[0]
     # Each compilation has its own directory, as a test can be compiled several times at once.
     with tempfile.TemporaryDirectory() as directory:
         binary_path = os.path.join(directory, name)
         with source_lock(source_path):
-            run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
+            compiled = run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
+        check_warnings(name, compiled.stderr.decode('utf-8', 'replace'),
+                       os.path.join(dist.source, "tests", "compilation", name + ".warnings"))
         check_output(name, binary_path)
 
 
@@ -485,6 +519,7 @@ def reject_test(filename):
     if completed.returncode != 1 or len(re.findall(r"🚨 error:", output)) != 1 or expected not in output:
         log(output)
         fail_test(filename)
+    check_warnings(filename, output, os.path.splitext(filename)[0] + ".warnings")
 
 
 def parse_test(filename):

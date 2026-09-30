@@ -249,6 +249,34 @@ class RunTests(unittest.TestCase):
         self.assertEqual(tests_py.shlex.split("cc -O0 -w"), ["cc", "-O0", "-w"])
 
 
+class WarningTests(unittest.TestCase):
+    STDERR = ("f.emojic:13:13: ⚠️  warning: Literal 300 does not fit.\n    code\n        ⬆️\n\n"
+              "\x1b[1mg.emojic:2:3: \x1b[33m⚠️  warning: \x1b[0m\x1b[1mTwice.\n\x1b[0m"
+              "⚠️  warning: No position.\n🚨 error: Not a warning.\n")
+
+    def check(self, expected):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "t", ".warnings", expected)
+            tests_py.report.lines = []
+            tests_py.report.stderr = []
+            tests_py.report.failed = False
+            tests_py.check_warnings("t", self.STDERR, os.path.join(directory, "t.warnings"))
+            return tests_py.report.failed
+
+    def test_warnings_are_parsed_in_order(self):
+        self.assertEqual(tests_py.parse_warnings(self.STDERR),
+                         ["13:13: Literal 300 does not fit.", "2:3: Twice.", "No position."])
+
+    def test_exact_list_passes(self):
+        self.assertFalse(self.check("13:13: Literal 300 does not fit.\n2:3: Twice.\nNo position.\n"))
+
+    def test_missing_extra_or_reordered_warnings_fail(self):
+        self.assertTrue(self.check("13:13: Literal 300 does not fit.\n2:3: Twice.\n"))
+        self.assertTrue(self.check("13:13: Literal 300 does not fit.\n2:3: Twice.\nNo position.\nNo position.\n"))
+        self.assertTrue(self.check("2:3: Twice.\n13:13: Literal 300 does not fit.\nNo position.\n"))
+        self.assertTrue(self.check(""))
+
+
 class LibraryFixtureTests(unittest.TestCase):
     def test_fixtures_are_copied_but_sources_are_not(self):
         with tempfile.TemporaryDirectory() as source, tempfile.TemporaryDirectory() as destination:

@@ -50,7 +50,12 @@ A compilation test whose specializations or LLVM IR must be checked also gets a 
 file (see the comments above `specialization_tests`/`ir_tests` in `tests.py` for their format); this is picked up
 automatically too.
 
-A compilation or library test can start with a directive comment, on its own line among its leading `💭` comments:
+A compilation or reject test can also have a `NAME.warnings` file listing the warnings the compiler must print, in
+order and with multiplicity, one per line as `LINE:COLUMN: MESSAGE` (just `MESSAGE` for a warning without a position).
+An empty file asserts that there are none; without the file, warnings are not checked. A companion file
+(`NAME.txt`, `NAME.ir`, `NAME.warnings`, ...) without its `NAME.emojic` fails the suite.
+
+A compilation or library test can have a directive comment, on a line of its own anywhere in the file:
 
     💭 test: unoptimized panic
 

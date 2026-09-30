@@ -7,6 +7,7 @@
 !*.c
 !*.specializations
 !*.ir
+!*.warnings
 
 !*/
 
