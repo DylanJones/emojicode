@@ -1,6 +1,7 @@
 """Regression tests for the test discovery and scheduling in tests.py, run against isolated fixture directories so
 they do not depend on, or affect, the real tests/ tree. Run with `python3 test_tests.py`."""
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -192,6 +193,28 @@ class OrphanTests(unittest.TestCase):
             write(directory, "typoPackage", ".🍇")
             with self.assertRaises(SystemExit):
                 tests_py.discover_importing_tests(directory)
+
+
+class BuildConfigurationTests(unittest.TestCase):
+    """The build and CI configuration must keep building what tests.py runs and running every kind of test."""
+    ROOT = os.path.dirname(os.path.abspath(__file__))
+
+    def read(self, *path):
+        with open(os.path.join(self.ROOT, *path), encoding="utf-8") as f:
+            return f.read()
+
+    def test_tests_target_builds_what_it_runs(self):
+        match = re.search(r"add_dependencies\(tests ([^)]*)\)", self.read("CMakeLists.txt"))
+        self.assertIsNotNone(match, "the tests target has no dependencies")
+        for target in ["emojicodec", "runtime", "s", "c"]:
+            self.assertIn(target, match.group(1).split())
+
+    def test_ci_runs_every_test_suite_and_a_release_build(self):
+        ci = self.read(".github", "workflows", "ci.yml")
+        for command in ["ninja -C build tests", "testspy", "lsptests", "treesittertests", "grammar", "npm test"]:
+            self.assertIn(command, ci)
+        self.assertIn("Release", ci)
+        self.assertIn("CMAKE_BUILD_TYPE", ci)
 
 
 class RejectTests(unittest.TestCase):

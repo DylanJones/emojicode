@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.cc }} / LLVM ${{ matrix.llvm }}
+    name: ${{ matrix.cc }} / LLVM ${{ matrix.llvm }} / ${{ matrix.build_type }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -15,9 +15,17 @@ jobs:
           - cc: clang-23
             cxx: clang++-23
             llvm: 23
+            build_type: Debug
           - cc: gcc
             cxx: g++
             llvm: 21
+            build_type: Debug
+          # Release is built with -Ofast, which tests such as the one for the fast-math fix of s/Integer.cpp and
+          # s/String.cpp are meant to fail on if the fix is reverted.
+          - cc: clang-23
+            cxx: clang++-23
+            llvm: 23
+            build_type: Release
     env:
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
@@ -35,8 +43,11 @@ jobs:
             cmake ninja-build python3 rsync zlib1g-dev libzstd-dev llvm-${{ matrix.llvm }}-dev
           if [[ "$CC" == clang-* ]]; then sudo apt-get install -y --no-install-recommends ${{ matrix.cc }}; fi
 
+      - name: Install tree-sitter CLI
+        run: sudo npm install -g tree-sitter-cli
+
       - name: Configure
-        run: cmake -S . -B build -GNinja -DLLVM_DIR=/usr/lib/llvm-${{ matrix.llvm }}/lib/cmake/llvm
+        run: cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DLLVM_DIR=/usr/lib/llvm-${{ matrix.llvm }}/lib/cmake/llvm
 
       - name: Build
         run: ninja -C build
@@ -44,16 +55,29 @@ jobs:
       - name: Test
         run: ninja -C build tests
 
+      - name: Test the test runner
+        run: ninja -C build testspy
+
       - name: Check grammar
         run: ninja -C build grammar
 
+      - name: Test the tree-sitter grammar
+        run: ninja -C build treesittertests
+
+      - name: Test the language server
+        run: ninja -C build lsptests
+
+      - name: Test the VS Code extension
+        working-directory: editors/vscode
+        run: npm ci && npm test
+
       - name: Package
-        if: startsWith(github.ref, 'refs/tags/') && matrix.llvm == 23
+        if: startsWith(github.ref, 'refs/tags/') && matrix.llvm == 23 && matrix.build_type == 'Debug'
         working-directory: build
         run: echo "EMOJICODE_DIST_ARCHIVE=$(python3 ../dist.py archive)" >> "$GITHUB_ENV"
 
       - name: Upload distribution archive
-        if: startsWith(github.ref, 'refs/tags/') && matrix.llvm == 23
+        if: startsWith(github.ref, 'refs/tags/') && matrix.llvm == 23 && matrix.build_type == 'Debug'
         uses: actions/upload-artifact@v4
         with:
           name: emojicode-dist

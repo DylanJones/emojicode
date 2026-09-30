@@ -32,6 +32,8 @@ add_subdirectory(c)
 
 add_custom_target(dist python3 ${PROJECT_SOURCE_DIR}/dist.py)
 add_custom_target(tests python3 ${PROJECT_SOURCE_DIR}/tests.py)
+# tests.py runs the compiler and the packages in the build directory, so they must be up to date.
+add_dependencies(tests emojicodec runtime s files sockets testtube json c)
 # Regression tests for tests.py's own test discovery and scheduling, run against isolated fixtures.
 add_custom_target(testspy python3 ${PROJECT_SOURCE_DIR}/test_tests.py -v)
 add_custom_target(magicinstall python3 ${PROJECT_SOURCE_DIR}/dist.py install)
@@ -46,3 +48,8 @@ add_dependencies(grammar emojicodec s files sockets testtube json c)
 add_custom_target(lsptests python3 ${PROJECT_SOURCE_DIR}/LanguageServer/tests/lsp_test.py
                   ${CMAKE_BINARY_DIR}/LanguageServer/emojicode-lsp)
 add_dependencies(lsptests emojicode-lsp s files sockets testtube json c)
+# The corpus of the tree-sitter grammar. (grammar_check.py only checks that it parses what the compiler accepts.)
+if(TREE_SITTER)
+  add_custom_target(treesittertests COMMAND ${TREE_SITTER} generate COMMAND ${TREE_SITTER} test
+                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/editors/tree-sitter-emojicode)
+endif()
