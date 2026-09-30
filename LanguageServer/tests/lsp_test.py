@@ -904,6 +904,19 @@ class RobustnessTests(ServerTestCase):
         self.assertIn("🍊", hover["contents"]["value"])
         self.assertEqual(client.shutdown(), 0)
 
+    def test_invalid_collection_literals(self):
+        # Formatting the pseudo-type of a literal with a type error used to assert (#164).
+        for declaration, literal in (("🍨🐚🔢🍆", "🍿 🔤wrong🔤 🍆"),
+                                     ("🍨🐚🔢🍆", "🍿 🍿 1 🍆 🍆"),
+                                     ("🍯🐚🔡 🔢🍆", "🍯 🔤a🔤 🔤b🔤 🍆")):
+            text = "🏁 🍇\n  🖍🆕 a " + declaration + "\n  " + literal + " ➡️ 🖍 a\n🍉\n"
+            path = self.write("literal.emojic", text)
+            client = self.start()
+            client.open(path, text)
+            self.assertGreaterEqual(len(client.diagnostics(path)), 1)
+            self.use_every_feature(path, text)
+            self.assertEqual(client.shutdown(), 0)
+
     def test_cyclic_inheritance(self):
         for text in ("🐇 🐟 🐟 🍇\n  ❗️ 🐽 🍇\n    \n  🍉\n🍉\n",
                      "🐇 🐟 🐠 🍇\n  🖍🆕 a 🔢 ⬅️ 1\n  ❗️ 🐽 🍇\n    a\n  🍉\n🍉\n🐇 🐠 🐟 🍇🍉\n"):

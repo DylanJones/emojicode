@@ -904,7 +904,9 @@ void Type::typeName(Type type, const TypeContext &typeContext, std::string &stri
             break;
     }
 
-    if (type.canHaveGenericArguments()) {
+    // The literal pseudo-types have generic arguments but no type definition.
+    if (type.canHaveGenericArguments() && type.type() != TypeType::ListLiteral
+        && type.type() != TypeType::DictionaryLiteral) {
         for (size_t i = type.typeDefinition()->superGenericArguments().size(); i < type.genericArguments().size(); i++) {
             string.append("🐚");
             typeName(type.genericArguments()[i], typeContext, string, package);
