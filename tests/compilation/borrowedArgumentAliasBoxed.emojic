@@ -1,0 +1,35 @@
+💭 test: unoptimized
+🐊 🔄 🍇
+  🖍❗️ 🔃 other ⚪️
+🍉
+🕊 🧺 🍇
+  🐊 🔄
+  🖍🆕 items 🍨🐚🔢🍆
+  🆕 🍼items 🍨🐚🔢🍆 🍇🍉
+  🖍❗️ 🔀 other 🍬🧺 🍇
+    9 ➡️ 🐽items 0❗️
+    ↪️ other ➡️ o 🍇
+      😀 🔤opt argument=🧲🐽📦o❗️ 0❗️🧲🔤❗️
+    🍉
+  🍉
+  🖍❗️ 🔃 other ⚪️ 🍇
+    9 ➡️ 🐽items 0❗️
+    ↪️ 🔲other 🧺 ➡️ o 🍇
+      😀 🔤box argument=🧲🐽📦o❗️ 0❗️🧲🔤❗️
+    🍉
+  🍉
+  ❗️ 📦 ➡️ 🍨🐚🔢🍆 🍇 ↩️ items 🍉
+🍉
+🏁 🍇
+  🆕🧺 🍿 1 🍆❗️ ➡️ 🖍🆕 x
+  🔀x x❗️
+  🆕🧺 🍿 1 🍆❗️ ➡️ 🖍🆕 y
+  🔃y y❗️
+  🖍🆕 p 🔄
+  🆕🧺 🍿 1 🍆❗️ ➡️ 🖍p
+  🔃p p❗️
+  💭 A generic argument that refers into the receiver.
+  🍿 🍿 1 2 🍆 🍿 3 🍆 🍆 ➡️ 🖍🆕 ll
+  🐻 ll 🐽ll 0❗️❗️
+  😀 🔤count=🧲📏ll❓🧲 last=🧲📏🐽ll 2❗️❓🧲🔤❗️
+🍉

@@ -282,8 +282,16 @@ Value* ASTDereference::generate(FunctionCodeGenerator *fg) const {
     }
     auto ptr = expr_->generate(fg);
     auto val = fg->builder().CreateLoad(fg->typeHelper().llvmTypeFor(expressionType()), ptr);
+    if (expressionType().isManaged() && fg->isManagedByReference(expressionType())) {
+        // The temporary owns a copy: ptr can point into storage that is moved while the copy is alive, e.g. when
+        // it is appended to the list it was read from.
+        auto copy = fg->createEntryAlloca(val->getType());
+        fg->builder().CreateStore(val, copy);
+        fg->retain(copy, expressionType());
+        return handleResult(fg, val, copy);
+    }
     if (expressionType().isManaged()) {
-        fg->retain(fg->isManagedByReference(expressionType()) ? ptr : val, expressionType());
+        fg->retain(val, expressionType());
     }
     return handleResult(fg, val, ptr);
 }
@@ -307,8 +315,15 @@ Value* ASTBoxReferenceToSimple::generate(FunctionCodeGenerator *fg) const {
     }, [&] { return box; });
 
     auto val = fg->builder().CreateLoad(fg->typeHelper().llvmTypeFor(containedType), valuePtr);
+    if (expressionType().isManaged() && fg->isManagedByReference(expressionType())) {
+        // The temporary owns a copy, as valuePtr can point into storage that is changed while the copy is alive.
+        auto copy = fg->createEntryAlloca(val->getType());
+        fg->builder().CreateStore(val, copy);
+        fg->retain(copy, expressionType());
+        return handleResult(fg, val, copy);
+    }
     if (expressionType().isManaged()) {
-        fg->retain(fg->isManagedByReference(expressionType()) ? valuePtr : val, expressionType());
+        fg->retain(val, expressionType());
     }
     return handleResult(fg, val, valuePtr);
 }

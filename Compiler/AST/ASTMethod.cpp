@@ -6,6 +6,7 @@
 //  Copyright © 2017 Theo Weidmann. All rights reserved.
 //
 
+#include "Package/Package.hpp"
 #include "ASTMethod.hpp"
 #include <algorithm>
 #include "ASTTypeAsValue.hpp"
@@ -121,6 +122,21 @@ void ASTMethodable::checkMutation(ExpressionAnalyser *analyser, const std::share
 }
 
 void ASTMethod::mutateReference(ExpressionAnalyser *analyser) {
+    // A value type's copies can share the storage the returned reference points into. 📝 makes it unique. Only the
+    // standard package's value types (🍨) are known to provide 📝 for this; a user's method of that name is ordinary.
+    if (prepare_ == nullptr && method_ != nullptr && callType_ == CallType::StaticDispatch &&
+        calleeType_.type() == TypeType::ValueType && calleeType_.typeDefinition()->package()->name() == "s" &&
+        method_->returnType() != nullptr &&
+        method_->returnType()->type().isReference()) {
+        auto &methods = calleeType_.typeDefinition()->methods().list();
+        auto it = std::find_if(methods.begin(), methods.end(), [](Function *method) {
+            return method->name() == U"\U0001F4DD" && method->mutating() && method->parameters().empty();
+        });
+        if (it != methods.end()) {
+            prepare_ = *it;
+            analyser->analyseFunctionCall(&prepareArgs_, calleeType_, prepare_, &prepare_);
+        }
+    }
     callee_->mutateReference(analyser);
 }
 

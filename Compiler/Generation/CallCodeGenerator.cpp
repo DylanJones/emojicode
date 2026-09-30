@@ -13,6 +13,7 @@
 #include "Functions/Initializer.hpp"
 #include "Types/Protocol.hpp"
 #include "Types/TypeDefinition.hpp"
+#include "Types/ValueType.hpp"
 #include "Generation/LLVMTypeHelper.hpp"
 #include "Generation/TypeDescriptionGenerator.hpp"
 #include <llvm/Support/raw_ostream.h>
@@ -41,19 +42,76 @@ llvm::Value* CallCodeGenerator::markNeverReturning(llvm::Value *value, Function 
     return value;
 }
 
+/// Whether a value of this type can hold copy-on-write storage that a mutation of the receiver would detach from.
+static bool mayAliasReceiver(const Type &type) {
+    switch (type.type()) {
+        case TypeType::ValueType:
+            return type.valueType()->isManaged();
+        case TypeType::Optional:
+            return mayAliasReceiver(type.optionalType());
+        case TypeType::Box:
+            return true;
+        default:
+            return false;
+    }
+}
+
 llvm::Value *CallCodeGenerator::generate(llvm::Value *callee, const Type &type, const ASTArguments &astArgs,
                                          Function *function, llvm::Value *errorPointer,
-                                         const std::vector<llvm::Value *> &supplArgs) {
-    if (callee != nullptr && callee->getType() == fg_->typeHelper().erasedReference()) {
-        // The method is called on a box with the value, which is written back if the method mutates it.
-        auto box = fg_->buildErasedReferenceBox(callee, type);
-        auto value = generate(box, type, astArgs, function, errorPointer, supplArgs);
-        fg_->buildErasedReferenceWriteBack(callee, box, type, function->mutating());
-        return value;
+                                         const std::vector<llvm::Value *> &supplArgs,
+                                         const std::function<void()> &beforeDispatch) {
+    evaluateArguments(callee != nullptr, type, astArgs, function, errorPointer, supplArgs);
+    return dispatchEvaluated(callee, beforeDispatch);
+}
+
+void CallCodeGenerator::evaluateArguments(bool hasCallee, const Type &type, const ASTArguments &astArgs,
+                                          Function *function, llvm::Value *errorPointer,
+                                          const std::vector<llvm::Value *> &supplArgs) {
+    type_ = type;
+    astArgs_ = &astArgs;
+    function_ = function;
+    snapshots_.clear();
+    args_ = createArgsVector(nullptr, astArgs, errorPointer, supplArgs);
+    // A by-value argument of a value type is borrowed: it can alias the receiver's storage, which the 🖍 method may
+    // mutate and so modify the argument. The call gets an owned snapshot of it instead.
+    bool receiverOwnsStorage = (type.type() == TypeType::ValueType && callType_ == CallType::StaticDispatch) ||
+                               (type.type() == TypeType::Box && callType_ == CallType::DynamicProtocolDispatch);
+    if (function->mutating() && hasCallee && receiverOwnsStorage && dynamic_cast<Initializer *>(function) == nullptr) {
+        for (size_t i = 0; i < astArgs.args().size(); i++) {
+            auto &argType = astArgs.args()[i]->expressionType();
+            if (!mayAliasReceiver(argType) || !fg_->isManagedByReference(argType)) continue;
+            auto &arg = args_[i + 1];
+            auto llvmType = fg_->typeHelper().llvmTypeFor(argType);
+            auto slot = fg_->createEntryAlloca(llvmType);
+            fg_->builder().CreateStore(arg->getType()->isPointerTy() ? fg_->builder().CreateLoad(llvmType, arg) : arg,
+                                       slot);
+            if (arg->getType()->isPointerTy()) {
+                arg = slot;
+            }
+            fg_->retain(slot, argType);
+            snapshots_.emplace_back(slot, argType);
+        }
     }
-    auto args = createArgsVector(callee, astArgs, errorPointer, supplArgs);
-    auto value = dispatch(function, type, astArgs, args);
-    restoreStack(function);
+}
+
+llvm::Value *CallCodeGenerator::dispatchEvaluated(llvm::Value *callee, const std::function<void()> &beforeDispatch) {
+    bool erasedReference = callee != nullptr && callee->getType() == fg_->typeHelper().erasedReference();
+    if (callType_ != CallType::StaticContextfreeDispatch) {
+        // The method is called on a box with the value, which is written back if the method mutates it.
+        args_.front() = erasedReference ? fg_->buildErasedReferenceBox(callee, type_) : callee;
+    }
+    if (beforeDispatch) {
+        beforeDispatch();
+    }
+    auto value = dispatch(function_, type_, *astArgs_, args_);
+    for (auto &snapshot : snapshots_) {
+        fg_->release(snapshot.first, snapshot.second);
+    }
+    snapshots_.clear();
+    if (erasedReference) {
+        fg_->buildErasedReferenceWriteBack(callee, args_.front(), type_, function_->mutating());
+    }
+    restoreStack(function_);
     return value;
 }
 

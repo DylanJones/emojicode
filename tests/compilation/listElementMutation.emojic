@@ -1,0 +1,39 @@
+💭 test: unoptimized
+🐊 🔼 🍇
+  🖍❗️ ⬆️
+  ❗️ 📏 ➡️ 🔢
+🍉
+
+🕊 🐭 🍇
+  🐊 🔼
+  🖍🆕 a 🔢
+  🆕 🍼 a 🔢 🍇🍉
+  🖍❗️ ⬆️ 🍇
+    a ⬅️➕ 1
+  🍉
+  ❗️ 📏 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+🍉
+
+🏁 🍇
+  💭 A mutating call on an element must not be visible through a copy of the list.
+  🍿 🆕🐭 1❗️ 🆕🐭 2❗️ 🍆 ➡️ 🖍🆕 a
+  a ➡️ 🖍🆕 b
+  ⬆️🐽a 0❗️❗️
+  😀 🔤concrete: a=🧲📏🐽a 0❗️❗️🧲 b=🧲📏🐽b 0❗️❗️🧲🔤❗️
+
+  💭 Elements that are protocol boxes.
+  🖍🆕 pl 🍨🐚🔼🍆
+  🆕🍨🐚🔼🍆❗️ ➡️ 🖍pl
+  🐻pl 🆕🐭 1❗️❗️
+  pl ➡️ 🖍🆕 pl2
+  ⬆️🐽pl 0❗️❗️
+  😀 🔤protocol: pl=🧲📏🐽pl 0❗️❗️🧲 pl2=🧲📏🐽pl2 0❗️❗️🧲🔤❗️
+
+  💭 Nested lists.
+  🍿 🍿 🔤a🔤 🍆 🍆 ➡️ 🖍🆕 outer
+  outer ➡️ 🖍🆕 copy
+  🐻 🐽outer 0❗️ 🔤b🔤❗️
+  😀 🔤nested: outer=🧲📏🐽outer 0❗️❓🧲 copy=🧲📏🐽copy 0❗️❓🧲🔤❗️
+🍉

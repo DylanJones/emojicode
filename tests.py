@@ -318,14 +318,14 @@ def library_test(name):
         completed = run([binary_path], stdout=PIPE, cwd=working_directory)
     if completed.returncode != 0:
         fail_test(name)
-        log(completed.stdout.decode('utf-8'))
+        log(completed.stdout.decode('utf-8', 'backslashreplace'))
 
 
 def check_output(name, binary_path, env=None):
     """Runs the program of the compilation test name and checks its output."""
     completed = run([binary_path], stdout=PIPE, env=env)
     exp_path = os.path.join(dist.source, "tests", "compilation", name + ".txt")
-    output = completed.stdout.decode('utf-8')
+    output = completed.stdout.decode('utf-8', 'backslashreplace')
     expected_returncode = -signal.SIGABRT if name in panic_tests else 0
     if output != open(exp_path, "r", encoding='utf-8').read() or completed.returncode != expected_returncode:
         log(output)
@@ -489,7 +489,7 @@ def host_test(name):
         run(shlex.split(os.environ.get("CXX", "c++")) + [host_object_path, object_path] + libraries +
             ['-lm', '-lpthread', '-o', binary_path], check=True)
         completed = run([binary_path], stdout=PIPE)
-    output = completed.stdout.decode('utf-8')
+    output = completed.stdout.decode('utf-8', 'backslashreplace')
     if output != open(os.path.join(directory, name + ".txt"), "r", encoding='utf-8').read() or \
             completed.returncode != 0:
         log(output)
@@ -518,7 +518,7 @@ def importing_test(name):
         if os.path.exists(check_path):
             check_ir(name, ir, check_path)
     completed = run([os.path.join(directory, name)], stdout=PIPE)
-    output = completed.stdout.decode('utf-8')
+    output = completed.stdout.decode('utf-8', 'backslashreplace')
     if output != open(os.path.join(directory, name + ".txt"), "r", encoding='utf-8').read() or \
             completed.returncode != 0:
         log(output)
@@ -527,7 +527,7 @@ def importing_test(name):
 
 def reject_test(filename):
     completed = run([emojicodec, '-S', test_packages, filename], stderr=PIPE)
-    output = completed.stderr.decode('utf-8')
+    output = completed.stderr.decode('utf-8', 'backslashreplace')
     # NAME.txt holds text that the error must contain (see discover_reject_tests).
     expected = open(os.path.splitext(filename)[0] + ".txt", encoding='utf-8').read().strip()
     if completed.returncode != 1 or len(re.findall(r"🚨 error:", output)) != 1 or not expected or \
@@ -565,7 +565,7 @@ def parse_test(filename):
     completed = run([emojicodec, '--parse-only', '-S', test_packages, filename],
                     stderr=PIPE)
     if completed.returncode != 0:
-        log(completed.stderr.decode('utf-8'))
+        log(completed.stderr.decode('utf-8', 'backslashreplace'))
         fail_test(filename)
 
 
@@ -640,6 +640,12 @@ def prettyprint_test(name):
     formatted_test(name, [name] + formatted_includes.get(name, []))
 
 
+def fail_unreported(name):
+    """Fails a test that raised, unless it already reported its failure before raising."""
+    if not report.failed:
+        fail_test(name)
+
+
 def perform(name, function, *args):
     """Runs a test and returns its report. A command that fails, or any other error, fails the test."""
     report.lines = []
@@ -649,14 +655,14 @@ def perform(name, function, *args):
         function(*args)
     except CalledProcessError as error:
         log("Command failed with exit code {0}: {1}".format(error.returncode, " ".join(map(str, error.cmd))))
-        fail_test(name)
+        fail_unreported(name)
     except TimeoutExpired as error:
         log("Command timed out after {0} s: {1}".format(error.timeout, " ".join(map(str, error.cmd))))
-        fail_test(name)
+        fail_unreported(name)
     except Exception:
-        # E.g. a missing expected output or output that is not UTF-8, which must not abort the other tests.
+        # E.g. a missing expected output file, which must not abort the other tests.
         log(traceback.format_exc())
-        fail_test(name)
+        fail_unreported(name)
     return report.lines, report.stderr, report.failed
 
 
@@ -722,8 +728,8 @@ def valgrind_test(name):
         completed = run(['valgrind', '--error-exitcode=22', '--leak-check=full', binary_path], stdout=PIPE,
                         stderr=PIPE)
     if completed.returncode == 22:
-        log(completed.stdout.decode('utf-8'))
-        log(completed.stderr.decode('utf-8'))
+        log(completed.stdout.decode('utf-8', 'backslashreplace'))
+        log(completed.stderr.decode('utf-8', 'backslashreplace'))
         fail_test(name)
 
 
