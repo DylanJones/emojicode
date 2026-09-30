@@ -43,6 +43,15 @@
     🔡👇 🔧🔤    Affe     🔤❗️ 🔤Affe🔤🔤Trim both🔤❗️
     🔡👇 🔧🔤Affe     🔤❗️ 🔤Affe🔤🔤Trim right🔤❗️
     🔡👇 🔧🔤     🔤❗️ 🔤🔤🔤Trim empty🔤❗️
+    🔡👇 🔧🔤café🔤❗️ 🔤café🔤 🔤Trim 2 byte final🔤❗️
+    🔡👇 🔧🔤  café  🔤❗️ 🔤café🔤 🔤Trim 2 byte final spaces🔤❗️
+    🔡👇 🔧🔤 한 🔤❗️ 🔤한🔤 🔤Trim 3 byte final🔤❗️
+    🔡👇 🔧🔤 a😀 🔤❗️ 🔤a😀🔤 🔤Trim 4 byte final🔤❗️
+    🔡👇 🔧🔤😀🔤❗️ 🔤😀🔤 🔤Trim only 4 byte🔤❗️
+    🔡👇 🔧🔤  é  🔤❗️ 🔤é🔤 🔤Trim combining char🔤❗️
+    🔡👇 🔧🔤 xé 🔤❗️ 🔤xé🔤 🔤Trim combining sequence🔤❗️
+    🔡👇 🔧🔤🔤❗️ 🔤🔤 🔤Trim empty string🔤❗️
+    ⛔👇 📏📇🔧🔤 café 🔤❗️❗️❓ 🙌 5 🔤Trim byte length🔤❗️
 
     🔢👇 📏🔫🔤Gans;Ente;Schwein🔤 🔤;🔤❗️❓ 3 🔤Split ;🔤❗️
     🔫🔤Gans;d!Ente;d!Schwein🔤 🔤;d!🔤❗️ ➡️ split
@@ -71,6 +80,15 @@
     🔡👇 📪🔤ABcDjOWlD🔤❗️ 🔤abcdjowld🔤🔤ABcDjOWlD to lowercase🔤❗️
     🔡👇 📪🔤LO-2:dDG🔤❗️ 🔤lo-2:ddg🔤🔤LO-2:dDG to lowercase🔤❗️
     🔡👇 📫🔤äö*3øœ🔤❗️ 🔤ÄÖ*3ØŒ🔤🔤äö*3øœ to uppercase🔤❗️
+    🔡👇 📪🔤İ🔤❗️ 🔤i🔤 🔤İ to lowercase shrinks🔤❗️
+    🔡👇 📫🔤ſ🔤❗️ 🔤S🔤 🔤ſ to uppercase shrinks🔤❗️
+    🔡👇 📪🔤Ⱥ🔤❗️ 🔤ⱥ🔤 🔤Ⱥ to lowercase grows🔤❗️
+    🔡👇 📫🔤ɐ🔤❗️ 🔤Ɐ🔤 🔤ɐ to uppercase grows🔤❗️
+    🔡👇 📪🔤aȺİb🔤❗️ 🔤aⱥib🔤 🔤mixed lowercase🔤❗️
+    🔡👇 📫🔤aɐſb🔤❗️ 🔤AⱯSB🔤 🔤mixed uppercase🔤❗️
+    🔡👇 📪🔤🔤❗️ 🔤🔤 🔤empty lowercase🔤❗️
+    ⛔👇 📏📇📪🔤Ⱥ🔤❗️❗️❓ 🙌 3 🔤grown byte length🔤❗️
+    ⛔👇 📏📇📫🔤ſ🔤❗️❗️❓ 🙌 1 🔤shrunk byte length🔤❗️
     🔡👇 📪🔤ÄÖ*3ØŒ🔤❗️ 🔤äö*3øœ🔤 🔤AÖ*3ØŒ to lowercase🔤❗️
     🔡👇 🆕🔡 🍿 🔤123🔤 🔤dang🔤 🔤oh_man🔤 🍆🔤--🔤❗️ 🔤123--dang--oh_man🔤🔤Join 2 symbols🔤❗️
     🔡👇 🆕🔡 🍿 🔤123🔤 🔤dang🔤 🔤oh_man🔤 🍆🔤🔤❗️ 🔤123dangoh_man🔤🔤Join empty seperator🔤❗️
