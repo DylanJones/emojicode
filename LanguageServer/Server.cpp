@@ -331,7 +331,7 @@ void Server::dropRoot(const std::string &root) {
 }
 
 Checker Server::checker() const {
-    return Checker(searchPaths_, overlays_);
+    return Checker(searchPaths_, overlays_, &diskIncludes_);
 }
 
 void Server::schedule(const std::string &root, std::chrono::milliseconds delay) {

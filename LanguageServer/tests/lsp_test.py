@@ -292,6 +292,20 @@ class DiagnosticsTests(ServerTestCase):
             client.open(path)
             self.assertEqual([d["message"] for d in client.diagnostics(path)], diagnostics, name)
 
+    def test_many_open_documents_with_many_candidates(self):
+        # Finding the roots of the open documents must not scan the directories again for each document.
+        for directory in range(20):
+            for index in range(20):
+                self.write("tree/d%d/f%d.🍇" % (directory, index), "📜 🔤x.🍇🔤\n" * 1 + "🐇 🐠 🍇\n🍉\n" * 100)
+        client = self.start()
+        paths = [self.write("tree/d0/p%d.🍇" % i, HELLO) for i in range(8)]
+        start = time.time()
+        for path in paths:
+            client.open(path)
+            with self.assertRaises(RuntimeError):
+                client.request("unsupported/request", {})
+        self.assertLess(time.time() - start, 0.5)
+
     def test_file_included_by_two_programs(self):
         util = self.write("util.🍇", "🐇 🐠 🍇\n  🆕 🍇\n    😀 🔤a🔤 ➕ 1❗️\n  🍉\n🍉\n")
         a = self.write("a.🍇", "📜 🔤util.🍇🔤\n🏁 🍇🍉\n")
