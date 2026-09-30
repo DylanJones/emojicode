@@ -60,7 +60,7 @@ jobs:
       - name: Test under valgrind
         if: matrix.cc == 'gcc'
         run: |
-          sudo apt-get install -y --no-install-recommends valgrind
+          sudo apt-get install -y --no-install-recommends valgrind libc6-dbg
           ninja -C build valgrindtests
 
       - name: Test the test runner

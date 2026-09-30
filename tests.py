@@ -760,9 +760,11 @@ def valgrind_test(name):
     with tempfile.TemporaryDirectory() as directory:
         binary_path = os.path.join(directory, name)
         run([emojicodec, source_path, '-O', '-o', binary_path], check=True)
-        # Only definite leaks are errors: what a panic abandons is reachable, not a bug in the program.
-        completed = run(['valgrind', '--error-exitcode=22', '--leak-check=full', '--errors-for-leak-kinds=definite',
-                         binary_path], stdout=PIPE, stderr=PIPE)
+        # Only definite leaks are errors, and not in panic tests: a panic ends the process with whatever its aborted
+        # frames allocated still unreferenced, which memcheck reports as definitely lost.
+        leak_kinds = 'none' if name in panic_tests else 'definite'
+        completed = run(['valgrind', '--error-exitcode=22', '--leak-check=full',
+                         '--errors-for-leak-kinds=' + leak_kinds, binary_path], stdout=PIPE, stderr=PIPE)
     stderr = completed.stderr.decode('utf-8', 'backslashreplace')
     reason = valgrind_failure(completed.returncode, stderr, name in panic_tests)
     if reason:
