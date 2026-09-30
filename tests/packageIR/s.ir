@@ -1,0 +1,8 @@
+# Optimized IR of the standard package s (#183). Sizing an allocation of 🍧 must not build or intern a type value
+# (ejcTypeValue): the erased initializer, reserve and growth are called for every list that is created.
+@ ^s\.class_1f367\.init\.1f195-s\.vt_1f522-s\.vt_1f522$
+- ejcTypeValue
+@ ^s\.class_1f367\.1f434-s\.vt_1f522$
+- ejcTypeValue
+@ ^s\.class_1f367\.2195$
+- ejcTypeValue
