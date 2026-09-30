@@ -44,6 +44,15 @@ extern "C" s::String* sIntToString(runtime::Integer *nptr, runtime::Integer base
 }
 
 extern "C" s::String* sRealToString(runtime::Real *real, runtime::Integer precision) {
+    // Non-finite values cannot be converted to integers below. They have a fixed spelling regardless of precision,
+    // and every NaN, whatever its sign or payload, is spelled NaN.
+    if (std::isnan(*real)) {
+        return String::init("NaN");
+    }
+    if (std::isinf(*real)) {
+        return String::init(*real < 0 ? "-∞" : "∞");
+    }
+
     double integral;
     double fractional = std::modf(*real, &integral);
 

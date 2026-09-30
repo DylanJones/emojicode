@@ -141,6 +141,9 @@
   📗
     Creates a 🔡 representation of this 💯 and the given precision – the number
     of digits after the decimal separator “.”.
+
+    Infinities are represented as `∞` and `-∞`, and every NaN, regardless of
+    its sign, as `NaN`. The precision is ignored for these values.
   📗
   ❗️ 🔡 precision 🔢 ➡️ 🔡 📻 🔤sRealToString🔤
 
