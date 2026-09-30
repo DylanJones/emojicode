@@ -173,19 +173,25 @@ void Class::checkOverride(Function *function, SemanticAnalyser *analyser) {
         return;
     }
     auto superFunction = findSuperFunction(function, analyser);
-    if (function->overriding()) {
+    // Required-initializer thunks override implicitly; enforce promises so a specializing thunk gets a boxing adapter.
+    if (function->overriding() || (function->isThunk() && superFunction != nullptr)) {
         if (superFunction == nullptr) {
             throw CompilerError(function->position(), utf8(function->name()),
                                 " was declared ✒️ but does not override anything.");
         }
         auto thunk = analyser->enforcePromises(function, superFunction, Type(superclass()),
-                                               TypeContext(Type(this)), TypeContext());
+                                               TypeContext(Type(this)), TypeContext(superType()->type()));
         if (function->accessLevel() == AccessLevel::Default) {
             function->setAccessLevel(superFunction->accessLevel());
         }
         if (thunk != nullptr) {
             function->setVirtualTableThunk(thunk.get());
-            methods().add(std::move(thunk));
+            if (thunk->functionType() == FunctionType::ClassMethod) {
+                typeMethods().add(std::move(thunk));
+            }
+            else {
+                methods().add(std::move(thunk));
+            }
         }
     }
     else if (superFunction != nullptr && !function->isThunk()) {
