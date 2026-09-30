@@ -12,7 +12,7 @@ namespace s {
 
 extern "C" runtime::SimpleOptional<runtime::Integer> sDataFindFromIndex(Data *data, Data *search,
                                                                         runtime::Integer offset) {
-    if (offset >= data->count) {
+    if (offset < 0 || offset >= data->count) {
         return runtime::NoValue;
     }
     auto end = data->data.get() + data->count;

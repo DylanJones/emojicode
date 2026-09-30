@@ -33,6 +33,8 @@
     ⛔👇 🍺🕵️‍♀️🔤abab🔤 🔤ab🔤 1❗️ 🙌 2 🔤Search from AB 2🔤❗️
     ⛔👇 🍺🕵️‍♀️🔤abab🔤 🔤ab🔤 2❗️ 🙌 2 🔤Search from AB 2🔤❗️
     ⛔👇 🍺🕵️‍♀️🔤ababaab🔤 🔤ab🔤 3❗️ 🙌 5 🔤Search from AB 2🔤❗️
+    ⛔👇 🕵️‍♀️🔤abab🔤 🔤ab🔤 -1❗️ 🙌 🤷‍♀️ 🔤Search negative offset🔤❗️
+    ⛔👇 🕵️‍♀️🔤abab🔤 🔤ab🔤 -100000000❗️ 🙌 🤷‍♀️ 🔤Search huge negative offset🔤❗️
 
     ❎👇 🎼🔤Das ist ein Affe.🔤 🔤Affe🔤❗️🔤Begins false🔤❗️
     ⛔👇 🎼🔤Das ist ein Affe.🔤 🔤Das🔤❗️🔤Begins true🔤❗️

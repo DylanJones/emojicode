@@ -111,7 +111,7 @@ extern "C" runtime::SimpleOptional<runtime::Integer> sStringFind(String *string,
 
 extern "C" runtime::SimpleOptional<runtime::Integer> sStringFindFromIndex(String *string, String* search,
                                                                           runtime::Integer offset) {
-    if (offset >= string->count) {
+    if (offset < 0 || offset >= string->count) {
         return runtime::NoValue;
     }
     auto end = string->characters.get() + string->count;
