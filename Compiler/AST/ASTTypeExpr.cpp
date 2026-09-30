@@ -37,7 +37,8 @@ Type ASTTypeFromExpr::analyse(ExpressionAnalyser *analyser, const TypeExpectatio
 
 Type ASTStaticType::analyse(ExpressionAnalyser *analyser, const TypeExpectation &expectation, bool allowGenericInference) {
     type_->analyseType(analyser->typeContext(), false, allowGenericInference).setExact(true);
-    if (type_->type().type() == TypeType::GenericVariable || type_->type().type() == TypeType::LocalGenericVariable) {
+    if (type_->type().unboxedType() == TypeType::GenericVariable ||
+        type_->type().unboxedType() == TypeType::LocalGenericVariable) {
         throw CompilerError(position(), "Generic Arguments are not available dynamically.");
     }
     analyser->usesGenericArgumentsOf(type_->type());  // generate() describes the type at run time.
