@@ -358,6 +358,11 @@ void SemanticAnalyser::analyseFunctionDeclaration(Function *function) const {
 
     auto context = function->typeContext();
 
+    std::vector<std::function<void()>> constraintChecks;
+    function->analyseConstraints(TypeContext(context, &constraintChecks));
+    for (auto &check : constraintChecks) {
+        check();
+    }
     if (function->errorType() == nullptr) {
         function->setErrorType(std::make_unique<ASTLiteralType>(Type::noReturn()));
     }
@@ -366,11 +371,6 @@ void SemanticAnalyser::analyseFunctionDeclaration(Function *function) const {
         throw CompilerError(function->errorType()->position(), "Error type must be a subclass of 🚧.");
     }
 
-    std::vector<std::function<void()>> constraintChecks;
-    function->analyseConstraints(TypeContext(context, &constraintChecks));
-    for (auto &check : constraintChecks) {
-        check();
-    }
     for (auto &param : function->parameters()) {
         param.type->analyseType(context);
         if (!function->externalName().empty() && !function->isC() &&
