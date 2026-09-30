@@ -1,0 +1,35 @@
+💭 test: unoptimized
+🐇 🗃 🍇
+  🖍🆕 saved 🍨🐚🍨🐚🔢🍆🍆
+  🆕 🍇 🍿🍆 ➡️ 🖍saved 🍉
+  ❗️ 💾 l 🍨🐚🍨🐚🔢🍆🍆 ➡️ 🔢 🍇
+    l ➡️ 🖍saved
+    ↩️ 0
+  🍉
+  ❗️ 📦 ➡️ 🍨🐚🍨🐚🔢🍆🍆 🍇 ↩️ saved 🍉
+🍉
+🐇 🗄 🍇
+  🖍🆕 saved 🍨🐚🍨🐚🍨🐚🔢🍆🍆🍆
+  🆕 🍇 🍿🍆 ➡️ 🖍saved 🍉
+  ❗️ 💾 l 🍨🐚🍨🐚🍨🐚🔢🍆🍆🍆 ➡️ 🔢 🍇
+    l ➡️ 🖍saved
+    ↩️ 0
+  🍉
+  ❗️ 📦 ➡️ 🍨🐚🍨🐚🍨🐚🔢🍆🍆🍆 🍇 ↩️ saved 🍉
+🍉
+🏁 🍇
+  💭 An argument that copies the list must not see the element mutation.
+  🆕🗃❗️ ➡️ o
+  🍿 🍿 1 🍆 🍆 ➡️ 🖍🆕 ll
+  🐻 🐽ll 🤜💾o ll❗️🤛❗️ 5❗️
+  😀 🔤ll=🧲📏🐽ll 0❗️❓🧲 saved=🧲📏🐽📦o❗️ 0❗️❓🧲🔤❗️
+  💭 The copy in an argument of the outer mutating call must not see the mutation either.
+  🆕🗃❗️ ➡️ o2
+  🍿 🍿 1 🍆 🍆 ➡️ 🖍🆕 l2
+  🐻 🐽l2 0❗️ 💾o2 l2❗️❗️
+  😀 🔤outer ll=🧲📏🐽l2 0❗️❓🧲 saved=🧲📏🐽📦o2❗️ 0❗️❓🧲🔤❗️
+  🆕🗄❗️ ➡️ o3
+  🍿 🍿 🍿 1 🍆 🍆 🍆 ➡️ 🖍🆕 l3
+  🐻 🐽🐽l3 0❗️ 0❗️ 💾o3 l3❗️❗️
+  😀 🔤nested ll=🧲📏🐽🐽l3 0❗️ 0❗️❓🧲 saved=🧲📏🐽🐽📦o3❗️ 0❗️ 0❗️❓🧲🔤❗️
+🍉

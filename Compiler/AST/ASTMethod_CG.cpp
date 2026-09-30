@@ -182,25 +182,49 @@ Value* ASTMethod::generate(FunctionCodeGenerator *fg) const {
         }
     }
 
+    return generateDeferred(fg)();
+}
+
+std::function<Value*()> ASTMethod::generateDeferred(FunctionCodeGenerator *fg) const {
     // A type method of a class reads the generic arguments from the type value (see readsTypeGenericArgsFromThis()).
     std::vector<llvm::Value *> supplArgs;
-    auto tdg = TypeDescriptionGenerator(fg, TypeDescriptionGenerator::User::Function);
+    auto tdg = std::make_shared<TypeDescriptionGenerator>(fg, TypeDescriptionGenerator::User::Function);
     if (takesTypeGenericArgs(method_)) {
-        supplArgs.emplace_back(tdg.generate(callee_->expressionType().typeOfTypeValue().selfResolvedGenericArgs()));
+        supplArgs.emplace_back(tdg->generate(callee_->expressionType().typeOfTypeValue().selfResolvedGenericArgs()));
     }
 
-    auto ret = CallCodeGenerator(fg, callType_).generate(callee_->generate(fg), calleeType_,
-                                                         args_, method_, errorPointer(), supplArgs);
-
-    // An erased reference that the method returns may point into the generic arguments (see entryFor()).
-    if (!supplArgs.empty() && !LLVMTypeHelper::isErasedReference(method_->returnType()->type())) {
-        tdg.restoreStack();
+    // The owner's storage is prepared and the reference into it computed after all operands of the call chain are
+    // evaluated, as an operand might share the storage again.
+    auto calleeMethod = dynamic_cast<ASTMethod *>(callee_.get());
+    std::function<Value*()> finishCallee;
+    llvm::Value *calleeValue = nullptr;
+    if (calleeMethod != nullptr && calleeMethod->prepare_ != nullptr && calleeMethod->builtIn_ == BuiltInType::None) {
+        finishCallee = calleeMethod->generateDeferred(fg);
     }
-
-    if (!castTo_.is<TypeType::NoReturn>()) {
-        ret = fg->builder().CreateBitCast(ret, fg->typeHelper().llvmTypeFor(castTo_));
+    else {
+        calleeValue = callee_->generate(fg);
     }
-    return handleResult(fg, ret);
+    auto ccg = std::make_shared<CallCodeGenerator>(fg, callType_);
+    ccg->evaluateArguments(true, calleeType_, args_, method_, errorPointer(), supplArgs);
+    return [=]() -> Value* {
+        auto callee = finishCallee ? finishCallee() : calleeValue;
+        auto ret = ccg->dispatchEvaluated(callee, [&] {
+            if (prepare_ != nullptr) {
+                CallCodeGenerator(fg, CallType::StaticDispatch).generate(callee, calleeType_, prepareArgs_,
+                                                                         prepare_, nullptr, {});
+            }
+        });
+
+        // An erased reference that the method returns may point into the generic arguments (see entryFor()).
+        if (!supplArgs.empty() && !LLVMTypeHelper::isErasedReference(method_->returnType()->type())) {
+            tdg->restoreStack();
+        }
+
+        if (!castTo_.is<TypeType::NoReturn>()) {
+            ret = fg->builder().CreateBitCast(ret, fg->typeHelper().llvmTypeFor(castTo_));
+        }
+        return handleResult(fg, ret);
+    };
 }
 
 Value* ASTMethod::buildAddOffsetAddress(FunctionCodeGenerator *fg, llvm::Value *memory, llvm::Value *offset) const {

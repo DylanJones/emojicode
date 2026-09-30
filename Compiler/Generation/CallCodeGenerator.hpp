@@ -9,9 +9,11 @@
 #ifndef CallCodeGenerator_hpp
 #define CallCodeGenerator_hpp
 
+#include <functional>
 #include "Functions/CallType.h"
 #include <string>
 #include <vector>
+#include "Types/Type.hpp"
 #include <llvm/IR/Instructions.h>
 
 namespace llvm {
@@ -49,9 +51,19 @@ public:
     ///                     if no error pointer is required.
     /// @param supplArgs Any values provided are passed to the function after the values from `astArgs` but before
     ///                  `errorPointer`.
+    /// @param beforeDispatch Called after the arguments have been generated and immediately before the call.
     llvm::Value* generate(llvm::Value *callee, const Type &type, const ASTArguments &astArgs,
                           Function *function, llvm::Value *errorPointer,
-                          const std::vector<llvm::Value *> &supplArgs = {});
+                          const std::vector<llvm::Value *> &supplArgs = {},
+                          const std::function<void()> &beforeDispatch = nullptr);
+
+    /// Generates the arguments of a call, which dispatchEvaluated() performs later. This allows work that must happen
+    /// after all operands are evaluated, such as generating the callee itself. The parameters are those of generate().
+    void evaluateArguments(bool hasCallee, const Type &type, const ASTArguments &astArgs, Function *function,
+                           llvm::Value *errorPointer, const std::vector<llvm::Value *> &supplArgs = {});
+    /// Dispatches the call whose arguments evaluateArguments() generated.
+    /// @param callee The callee, generated after the arguments. `nullptr` if the function has no context.
+    llvm::Value* dispatchEvaluated(llvm::Value *callee, const std::function<void()> &beforeDispatch = nullptr);
 
     ~CallCodeGenerator();
 
@@ -87,6 +99,11 @@ private:
     FunctionCodeGenerator *fg_;
     CallType callType_;
     std::unique_ptr<TypeDescriptionGenerator> tdg_;
+    std::vector<llvm::Value *> args_;
+    std::vector<std::pair<llvm::Value *, Type>> snapshots_;
+    Type type_ = Type::noReturn();
+    const ASTArguments *astArgs_ = nullptr;
+    Function *function_ = nullptr;
 
     llvm::Value *getProtocolCallee(std::vector<llvm::Value *> &args, llvm::Value *conformance, bool uniqueBox) const;
 };
