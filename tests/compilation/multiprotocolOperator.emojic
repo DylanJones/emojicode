@@ -1,0 +1,39 @@
+💭 test: unoptimized
+💭 A binary operator called on a multiprotocol value is dispatched through its conformance; the callee is evaluated once.
+🐊 🔽 🍇
+  ❗️ 📏 ➡️ 🔢
+🍉
+🐊 🔼 🍇
+  ➕ other 🔢 ➡️ 🔢
+🍉
+🕊 🐭 🍇
+  🐊 🔽
+  🐊 🔼
+  🆕 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇 ↩️ 7 🍉
+  ➕ other 🔢 ➡️ 🔢 🍇 ↩️ other ➕ 1 🍉
+🍉
+🐇 🐱 🍇
+  🐊 🔽
+  🐊 🔼
+  🆕 🍇🍉
+  ❗️ 📏 ➡️ 🔢 🍇 ↩️ 7 🍉
+  ➕ other 🔢 ➡️ 🔢 🍇 ↩️ other ➕ 1000 🍉
+🍉
+🐇 🧰 🍇
+  🐇❗️ 🎲 v 🍱🔽🔼🍱 ➡️ 🍱🔽🔼🍱 🍇
+    😀 🔤receiver🔤❗️
+    ↩️ v
+  🍉
+  🐇❗️ 🎯 x 🔢 ➡️ 🔢 🍇
+    😀 🔤argument🔤❗️
+    ↩️ x
+  🍉
+  🐇❗️ 🅰️ v 🍱🔽🔼🍱 ➡️ 🔢 🍇
+    ↩️ 🎲🐇🧰 v❗️ ➕ 🎯🐇🧰 2❗️
+  🍉
+🍉
+🏁 🍇
+  😀 🔡 🅰️🐇🧰 🆕🐭❗️❗️❗️❗️
+  😀 🔡 🅰️🐇🧰 🆕🐱❗️❗️❗️❗️
+🍉

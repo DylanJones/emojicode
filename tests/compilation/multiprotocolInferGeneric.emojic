@@ -1,0 +1,29 @@
+💭 test: unoptimized
+💭 Generic arguments are inferred through a multiprotocol parameter.
+🐊 🦀🐚T⚪🍆 🍇
+  ❗️ 🎈 ➡️ T
+🍉
+🐊 🔽 🍇
+  ❗️ 🔡 ➡️ 🔡
+🍉
+🕊 🐭 🍇
+  🐊 🦀🐚🔢🍆
+  🐊 🔽
+  🆕 🍇🍉
+  ❗️ 🎈 ➡️ 🔢 🍇 ↩️ 4 🍉
+  ❗️ 🔡 ➡️ 🔡 🍇 ↩️ 🔤mouse🔤 🍉
+🍉
+🐇 🧰 🍇
+  🐇❗️ 🅰️🐚T⚪🍆 v 🦀🐚T🍆 ➡️ T 🍇
+    ↩️ 🎈v❗️
+  🍉
+  🐇❗️ 🅱️🐚T⚪🍆 v 🍱🦀🐚T🍆 🔽🍱 ➡️ T 🍇
+    ↩️ 🎈v❗️
+  🍉
+🍉
+🏁 🍇
+  🆕🐭❗️ ➡️ m
+  😀 🔡 🅰️🐇🧰 m❗️❗️❗️
+  😀 🔡 🅱️🐇🧰 m❗️❗️❗️
+  😀 🔤end🔤❗️
+🍉

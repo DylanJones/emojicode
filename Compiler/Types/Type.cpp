@@ -545,7 +545,7 @@ bool Type::isCompatibleToMultiProtocol(const Type &to, const TypeContext &ct, Ge
     }
 
     return std::all_of(to.protocols().begin(), to.protocols().end(), [&](const Type &p) {
-        return compatibleTo(p, ct);
+        return compatibleTo(p, ct, inf);
     });
 }
 
