@@ -6,6 +6,7 @@ import dist
 import subprocess
 import sys
 import re
+import shutil
 import signal
 import tempfile
 import threading
@@ -246,13 +247,24 @@ def test_paths(name, kind):
             os.path.join(dist.source, "tests", kind, name))
 
 
+def copy_library_fixtures(source_directory, destination):
+    """Copies the files a library test reads or writes, relative to its working directory, to destination."""
+    for path in glob.glob(os.path.join(source_directory, "*")):
+        if os.path.isfile(path) and not path.endswith(".emojic"):
+            shutil.copy(path, destination)
+
+
 def library_test(name):
     source_path = test_paths(name, 's')[0]
     with tempfile.TemporaryDirectory() as directory:
         binary_path = os.path.join(directory, name)
         run([emojicodec, source_path, '-O', '-o', binary_path], check=True)
-        # The tests read files relative to their directory.
-        completed = run([binary_path], stdout=PIPE, cwd=os.path.join(dist.source, "tests", "s"))
+        # The tests read files relative to their directory and may write there, so they run in a copy of it instead
+        # of modifying the source tree.
+        working_directory = os.path.join(directory, "cwd")
+        os.mkdir(working_directory)
+        copy_library_fixtures(os.path.join(dist.source, "tests", "s"), working_directory)
+        completed = run([binary_path], stdout=PIPE, cwd=working_directory)
     if completed.returncode != 0:
         fail_test(name)
         log(completed.stdout.decode('utf-8'))

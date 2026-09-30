@@ -1,6 +1,7 @@
 """Regression tests for the test discovery and scheduling in tests.py, run against isolated fixture directories so
 they do not depend on, or affect, the real tests/ tree. Run with `python3 test_tests.py`."""
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -150,6 +151,27 @@ class DiscoverImportingTestsTests(unittest.TestCase):
             write(directory, "importer", ".txt")
 
             self.assertEqual(tests_py.discover_importing_tests(directory), ["importer"])
+
+
+class LibraryFixtureTests(unittest.TestCase):
+    def test_fixtures_are_copied_but_sources_are_not(self):
+        with tempfile.TemporaryDirectory() as source, tempfile.TemporaryDirectory() as destination:
+            write(source, "t", ".emojic")
+            write(source, "t_data", ".txt", "x")
+
+            tests_py.copy_library_fixtures(source, destination)
+
+            self.assertEqual(os.listdir(destination), ["t_data.txt"])
+
+    def test_generated_files_are_ignored_by_git(self):
+        root = os.path.dirname(os.path.abspath(__file__))
+        for path in ["tests/compilation/ffiStructByValue_trampolines.c", "tests/s/fileTest_writeTest.txt"]:
+            with self.subTest(path=path):
+                try:
+                    result = subprocess.run(["git", "-c", "safe.directory=*", "check-ignore", "-q", path], cwd=root)
+                except FileNotFoundError:
+                    self.skipTest("git is not installed")
+                self.assertEqual(result.returncode, 0, path + " must be ignored, not tracked")
 
 
 if __name__ == "__main__":

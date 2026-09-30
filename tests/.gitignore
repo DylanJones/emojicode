@@ -9,3 +9,7 @@
 !*.ir
 
 !*/
+
+# Generated files: the compiler writes NAME_trampolines.c next to its output, and fileTest writes its write target
+*_trampolines.c
+fileTest_writeTest.txt
