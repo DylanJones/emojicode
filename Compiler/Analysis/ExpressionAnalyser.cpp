@@ -176,8 +176,8 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
     TypeContext typeContext = TypeContext(type, function, &genericArgs);
 
     // The error is always stored as a pointer to an object, never as a box, whether or not the function is specialized.
-    // Inside generic code this can resolve to the caller's own generic variable; handling such an error in codegen
-    // is not supported yet (#350), only reraising it is.
+    // Inside generic code this can resolve to the caller's own generic variable; the error slot is then still a plain
+    // object pointer (see ErrorHandling::prepareErrorDestination).
     if (function->errorProne()) {
         node->setErrorType(function->errorType()->type().resolveOn(typeContext).unboxed());
     }

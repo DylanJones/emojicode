@@ -283,6 +283,9 @@
     🍉
     ↪️ v 🙌 0x2E 🍇
       index ⬅️➕ 1
+      ↪️ index 🙌 count 🍇
+        🚨🆕🚧🔸🌸 🔤Expected digit after decimal point🔤❗️
+      🍉
       🐽🐚💧🍆string index❗️ ➡️nx
       ↪️ nx ◀️ 0x30 👐 nx ▶️ 0x39 🍇
         🚨🆕🚧🔸🌸 🔤Expected digit after decimal point🔤❗️
@@ -323,13 +326,13 @@
       🐽🐚💧🍆string index❗️ ➡️ nv
       ↪️ nv 🙌 0x65 👐 nv 🙌 0x45 🍇
         index ⬅️➕ 1
-        ↩️🏂👇real❗️
+        ↩️🔺🏂👇real❗️
       🍉
       ↩️real
     🍉
     🙅‍♂️↪️ v 🙌 0x65 👐 v 🙌 0x45 🍇
       index ⬅️➕ 1
-      ↩️🏂👇real❗️
+      ↩️🔺🏂👇real❗️
     🍉
 
     ↩️ integer
@@ -358,17 +361,27 @@
   📗
     Parses the exponent after `e` or `E`, which must have been consumed.
   📗
-  ☣️🖍🔒❗️🏂 reali 💯 ➡️ 💯 🍇
+  ☣️🖍🔒❗️🏂 reali 💯 ➡️ 💯 🚧🚧🔸🌸 🍇
     reali ➡️ 🖍🆕real
     👎➡️ 🖍🆕negexp
 
-    🐽🐚💧🍆string index❗️ ➡️ nv
-    ↪️ nv 🙌 0x2D 🍇
-      👍➡️ 🖍negexp
-      index ⬅️➕ 1
+    ↪️ index ◀️ count 🍇
+      🐽🐚💧🍆string index❗️ ➡️ nv
+      ↪️ nv 🙌 0x2D 🍇
+        👍➡️ 🖍negexp
+        index ⬅️➕ 1
+      🍉
+      🙅↪️ nv 🙌 0x2B 🍇
+        index ⬅️➕ 1
+      🍉
     🍉
-    🙅↪️ nv 🙌 0x2B 🍇
-      index ⬅️➕ 1
+
+    ↪️ index 🙌 count 🍇
+      🚨🆕🚧🔸🌸 🔤Expected digit in exponent🔤❗️
+    🍉
+    🐽🐚💧🍆string index❗️ ➡️ ev
+    ↪️ ev ◀️ 0x30 👐 ev ▶️ 0x39 🍇
+      🚨🆕🚧🔸🌸 🔤Expected digit in exponent🔤❗️
     🍉
 
     🔭❗️ ➡️ 🖍🆕exponent

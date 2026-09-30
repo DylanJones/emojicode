@@ -104,8 +104,10 @@ void ASTErrorHandler::analyse(FunctionAnalyser *analyser) {
 
     analyser->pathAnalyser().beginBranch();
     analyser->scoper().pushScope();
-    errorType_ = call->errorType();
-    auto &errVar = analyser->scoper().currentScope().declareVariable(errorVarName_, call->errorType(), true, position());
+    // A generic error type is resolved on its constraint: errors are plain object pointers, which a variable of a
+    // generic type (stored in a box) cannot hold.
+    errorType_ = call->errorType().resolveOnSuperArgumentsAndConstraints(analyser->typeContext());
+    auto &errVar = analyser->scoper().currentScope().declareVariable(errorVarName_, errorType_, true, position());
     analyser->pathAnalyser().record(PathAnalyserIncident(false, errVar.id()));
     errorVar_ = errVar.id();
     errorBlock_.analyse(analyser);
