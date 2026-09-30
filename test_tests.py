@@ -409,8 +409,10 @@ class FailureReportTests(unittest.TestCase):
         _, _, failed = tests_py.perform("command line", tests_py.command_line_test, None)
 
         self.assertTrue(failed)
-        self.assertEqual(len(tests_py.failed_tests), 8)
-        self.assertEqual(len(set(tests_py.failed_tests)), 8)
+        # Every case of command_line_test fails; the locked-source case only exists when not running as root.
+        expected = 10 + (1 if hasattr(os, "geteuid") and os.geteuid() != 0 else 0)
+        self.assertEqual(len(tests_py.failed_tests), expected)
+        self.assertEqual(len(set(tests_py.failed_tests)), expected)
 
 
 if __name__ == "__main__":
