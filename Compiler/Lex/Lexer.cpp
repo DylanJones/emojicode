@@ -15,6 +15,8 @@ namespace EmojicodeCompiler {
 
 Lexer::Lexer(SourceFile *source, bool minimalMode, bool recordLines)
         : sourcePosition_(1, 1, source), source_(source), minimalMode_(minimalMode), recordLines_(recordLines) {
+    skipByteOrderMark();
+    continue_ = i_ < source->file().size();
     skipWhitespace();
 
     loadOperatorSingleTokens();
@@ -68,12 +70,22 @@ void Lexer::loadOperatorSingleTokens() {
     singleTokens_.emplace(E_RED_EXCLAMATION_MARK_AND_QUESTION_MARK, TokenType::Call);
 }
 
+void Lexer::skipByteOrderMark() {
+    // A leading byte order mark is a signature, not part of the program. It is skipped rather than removed from the
+    // source so that recorded offsets (and i_) stay physical. Columns are logical: on line 1 of a file with a BOM,
+    // column - 1 differs from the offset into the line by one (see #227 for source-to-LSP positions).
+    if (i_ == 0 && !source_->file().empty() && source_->file()[0] == 0xFEFF) {
+        i_ = 1;
+    }
+}
+
 void Lexer::seekLine(unsigned int line) {
     auto &lines = source_->lines();  // The index at which each line begins.
     if (line < 1 || line - 1 >= lines.size()) {
         return;
     }
     i_ = lines[line - 1];
+    skipByteOrderMark();
     sourcePosition_.line = line;
     sourcePosition_.character = 1;
     continue_ = i_ < source_->file().size();

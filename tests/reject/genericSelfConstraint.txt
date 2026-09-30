@@ -1,0 +1,1 @@
+A generic parameter cannot be constrained by itself.

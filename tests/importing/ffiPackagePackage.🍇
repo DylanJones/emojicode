@@ -1,0 +1,60 @@
+📦 c 🌊
+
+🔗 🔤ffiPackage.c🔤 🔗
+
+💭 A package with C structs, C callables and native C sources, imported by a program that does not import c.
+🌍 🎍🌊 🕊 📌 🍇
+  🖍🆕 x 🔶🌊🔢
+  🖍🆕 y 🔶🌊🔢
+
+  🆕 🍼 x 🔶🌊🔢 🍼 y 🔶🌊🔢 🍇🍉
+
+  ❗️ 🍭 ➡️ 🔢 🍇
+    ↩️ 🔢 x❗️ ✖️ 100 ➕ 🔢 y❗️
+  🍉
+🍉
+
+🌍 🕊 🧪 🍇
+  🎍🌊 🐇☣️❗️ 🧷 a 📌 b 📌 ➡️ 📌 📻 🔤ffiPackageAdd🔤
+  🎍🌊 🐇☣️❗️ 📏 value 💯 factor 🔶🌊🎈 ➡️ 💯 📻 🔤ffiPackageScale🔤
+  🎍🌊 🐇☣️❗️ 🦕 value 🔶🌊🦕🔸🔼 ➡️ 🔶🌊🦕🔸🔼 📻 🔤ffiPackageIncrement🔤
+🍉
+
+💭 Short enough to be inlined into importers, where it calls the trampolined 🧷.
+🌍 🐇 🧮 🍇
+  🆕 🍇🍉
+
+  ❗️ 🧷 a 🔢 b 🔢 ➡️ 🔢 🍇
+    ☣️ 🍇
+      🧷🕊🧪 🆕📌 🆕🔶🌊🔢▶️🔢 a❗️ 🆕🔶🌊🔢▶️🔢 a❗️❗️ 🆕📌 🆕🔶🌊🔢▶️🔢 b❗️ 🆕🔶🌊🔢▶️🔢 b❗️❗️❗️ ➡️ sum
+      ↩️ 🍭 sum❗️
+    🍉
+  🍉
+
+  💭 Applies a C callable, also part of the interface as the parameter of 🎪.
+  ❗️ 🎪 function 🍇🎍🌊🔶🌊🔢➡️🔶🌊🔢🍉 value 🔶🌊🔢 ➡️ 🔶🌊🔢 🍇
+    ☣️ 🍇
+      ↩️ ⁉️ function value❗️
+    🍉
+  🍉
+
+  ❗️ 🎯 value 🔢 ➡️ 🔢 🍇
+    🎪 👇 🍇🎍🌊 n 🔶🌊🔢 ➡️ 🔶🌊🔢
+      ↩️ n ✖️ 2
+    🍉 🆕🔶🌊🔢▶️🔢 value❗️❗️ ➡️ result
+    ↩️ 🔢 result❗️
+  🍉
+
+  💭 A double and a float argument, and the top of the unsigned 64-bit range.
+  ❗️ 📏 value 💯 ➡️ 💯 🍇
+    ☣️ 🍇
+      ↩️ 📏🕊🧪 value 🆕🔶🌊🎈▶️🔢 3❗️❗️
+    🍉
+  🍉
+
+  ❗️ 🦕 ➡️ 🔡 🍇
+    ☣️ 🍇
+      ↩️ 🔡 🦕🕊🧪 🆕🔶🌊🦕🔸🔼▶️🔢 -2❗️❗️❗️
+    🍉
+  🍉
+🍉

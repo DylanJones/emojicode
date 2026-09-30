@@ -22,7 +22,14 @@ class CompilerDelegate;
 namespace CLI {
 
 /// Thrown by Options if the cancellation should not begin.
-class CompilationCancellation : public std::exception {};
+class CompilationCancellation : public std::exception {
+public:
+    explicit CompilationCancellation(bool success) : success_(success) {}
+    /// Whether the cancellation is not an error (e.g. --help was requested).
+    bool success() const { return success_; }
+private:
+    bool success_;
+};
 
 /// An instance of this class represents the command-line options with which the compiler was started.
 class Options {

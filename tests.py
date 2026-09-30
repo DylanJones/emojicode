@@ -432,6 +432,30 @@ def reject_test(filename):
         fail_test(filename)
 
 
+def command_line_test(_):
+    """Usage errors and unwritable outputs make the compiler fail with a diagnostic, not succeed or abort in LLVM."""
+    source = os.path.join(dist.source, "tests", "compilation", "class.emojic")
+    with tempfile.TemporaryDirectory() as directory:
+        missing = os.path.join(directory, "missing", "out")
+        writable = os.path.join(directory, "out")
+        cases = [
+            (['--help'], 0, None),
+            (['--bogus', source], 1, None),
+            ([], 1, None),
+            ([source, '-o'], 1, None),
+            ([source, '--emit-llvm', '-o', writable, '-S', test_packages], 0, None),
+            ([source, '--emit-llvm', '-o', missing, '-S', test_packages], 1, "Could not write"),
+            ([source, '-c', '-o', missing, '-S', test_packages], 1, "Could not write"),
+            ([source, '-c', '-o', directory, '-S', test_packages], 1, "Could not write"),
+        ]
+        for arguments, status, message in cases:
+            completed = run([emojicodec] + arguments, stdout=PIPE, stderr=PIPE)
+            output = (completed.stdout + completed.stderr).decode('utf-8', 'replace')
+            if completed.returncode != status or "LLVM ERROR" in output or (message and message not in output):
+                log("{0}: exit status {1}\n{2}".format(arguments, completed.returncode, output))
+                fail_test("command line " + " ".join(arguments))
+
+
 def parse_test(filename):
     completed = run([emojicodec, '--parse-only', '-S', test_packages, filename],
                     stderr=PIPE)
@@ -572,6 +596,7 @@ def test():
     tasks += [(test, reject_test, test) for test in reject_tests]
     tasks += [(test, parse_test, test) for test in parse_tests]
     tasks += [(test, format_test, test) for test in format_tests]
+    tasks += [("command line", command_line_test, None)]
     tasks.sort(key=lambda task: task[2] not in slow_tests)  # A stable sort, which keeps the order otherwise.
     run_all(tasks)
 
