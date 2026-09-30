@@ -123,6 +123,8 @@ private:
 
     bool checkArgumentPromise(const Function *sub, const Function *super, const TypeContext &subContext,
                                   const TypeContext &superContext) const;
+    bool checkErrorPromise(const Function *sub, const TypeContext &subContext, const Function *super,
+                           const TypeContext &superContext, const Type &superSource) const;
     bool checkReturnPromise(const Function *sub, const TypeContext &subContext, const Function *super,
                             const TypeContext &superContext, const Type &superSource) const;
 };

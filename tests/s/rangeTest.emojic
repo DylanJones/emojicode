@@ -56,6 +56,8 @@
     🔢👇 📏🆕⏩ 5 5❗️❓ 0 🔤A range from a number to itself is empty🔤❗️
     🔢👇 📏🆕⏩ 5 0 1❗️❓ 0 🔤A range whose step goes away from stop is empty🔤❗️
     🔢👇 📏🆕⏩ 0 5 -1❗️❓ 0 🔤A range whose step goes away from stop is empty🔤❗️
+    🔢👇 📏🆕⏩ 9223372036854775800 9223372036854775807 4❗️❓ 2 🔤A range ending at the maximum integer has correct length🔤❗️
+    🔢👇 🐽🆕⏩ 9223372036854775800 9223372036854775807 4❗️ 1❗️ 9223372036854775804 🔤Index near the maximum integer🔤❗️
   🍉
 🍉
 

@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from subprocess import PIPE, CalledProcessError, TimeoutExpired
+import filecmp
 import glob
 import shutil
 import os
@@ -532,6 +533,8 @@ def command_line_test(_):
     with tempfile.TemporaryDirectory() as directory:
         missing = os.path.join(directory, "missing", "out")
         writable = os.path.join(directory, "out")
+        blocked = os.path.join(directory, "blocked")
+        os.makedirs(os.path.join(blocked, "documentation.json"))
         cases = [
             (['--help'], 0, None),
             (['--bogus', source], 1, None),
@@ -541,13 +544,28 @@ def command_line_test(_):
             ([source, '--emit-llvm', '-o', missing, '-S', test_packages], 1, "Could not write"),
             ([source, '-c', '-o', missing, '-S', test_packages], 1, "Could not write"),
             ([source, '-c', '-o', directory, '-S', test_packages], 1, "Could not write"),
+            ([source, '-i', missing, '-c', '-o', writable, '-S', test_packages], 1, "Could not write"),
+            ([source, '-r', '-c', '-o', os.path.join(blocked, "out"), '-S', test_packages], 1, "Could not write"),
         ]
+        if hasattr(os, 'geteuid') and os.geteuid() != 0:
+            # In a directory that cannot be modified the source can neither be moved aside nor rewritten.
+            locked = os.path.join(directory, "locked")
+            os.mkdir(locked)
+            locked_source = os.path.join(locked, "class.emojic")
+            shutil.copyfile(source, locked_source)
+            os.chmod(locked_source, 0o444)
+            os.chmod(locked, 0o555)
+            cases.append(([locked_source, '--format', '-S', test_packages], 1, "Could not write"))
+        else:
+            locked_source = None
         for arguments, status, message in cases:
             completed = run([emojicodec] + arguments, stdout=PIPE, stderr=PIPE)
             output = (completed.stdout + completed.stderr).decode('utf-8', 'replace')
             if completed.returncode != status or "LLVM ERROR" in output or (message and message not in output):
                 log("{0}: exit status {1}\n{2}".format(arguments, completed.returncode, output))
                 fail_test("command line " + " ".join(arguments))
+        if locked_source and not filecmp.cmp(source, locked_source, shallow=False):
+            fail_test("command line: failed --format altered the source")
 
 
 def parse_test(filename):
@@ -707,24 +725,50 @@ def test():
         sys.exit(1)
 
 
+def valgrind_failure(returncode, stderr, panics):
+    """Returns why a program's run under valgrind (see valgrind_test) failed, or None if it found nothing wrong.
+    This decides from valgrind's own report, as the program's exit status is lost when valgrind itself cannot start
+    and when the program dies from a signal, which valgrind re-raises."""
+    if "Fatal error at startup" in stderr:
+        return "valgrind could not start"
+    match = re.search(r"ERROR SUMMARY: (\d+) errors", stderr)
+    if match is None:
+        return "valgrind printed no error summary (exit status {0})".format(returncode)
+    if int(match.group(1)) != 0 or returncode == 22:
+        return "valgrind found {0} errors".format(match.group(1))
+    expected_returncode = -signal.SIGABRT if panics else 0
+    if returncode != expected_returncode:
+        return "exit status {0} instead of {1}".format(returncode, expected_returncode)
+    return None
+
+
 def valgrind_test(name):
     source_path = test_paths(name, 'compilation')[0]
     with tempfile.TemporaryDirectory() as directory:
         binary_path = os.path.join(directory, name)
         run([emojicodec, source_path, '-O', '-o', binary_path], check=True)
+        # Only definite leaks are errors, and not in panic tests: a panic ends the process with whatever its aborted
+        # frames allocated still unreferenced, which memcheck reports as definitely lost.
         # EMOJICODE_CHECK_LEAKS makes a deliberately leaking test (leakDetected) abort instead of failing memcheck.
-        completed = run(['valgrind', '--error-exitcode=22', '--leak-check=full', binary_path], stdout=PIPE,
-                        stderr=PIPE, env=dict(os.environ, EMOJICODE_CHECK_LEAKS='1'))
-    if completed.returncode == 22:
+        leak_kinds = 'none' if name in panic_tests else 'definite'
+        completed = run(['valgrind', '--error-exitcode=22', '--leak-check=full',
+                         '--errors-for-leak-kinds=' + leak_kinds, binary_path], stdout=PIPE, stderr=PIPE,
+                        env=dict(os.environ, EMOJICODE_CHECK_LEAKS='1'))
+    stderr = completed.stderr.decode('utf-8', 'backslashreplace')
+    reason = valgrind_failure(completed.returncode, stderr, name in panic_tests)
+    if reason:
         log(completed.stdout.decode('utf-8', 'backslashreplace'))
-        log(completed.stderr.decode('utf-8', 'backslashreplace'))
+        log(stderr)
+        log(reason)
         fail_test(name)
 
 
 def run_valgrind():
     run_all([(test, valgrind_test, test) for test in compilation_tests])
     if failed_tests:
+        print("🛑 🛑  {0} tests failed under valgrind: {1}".format(len(failed_tests), ", ".join(failed_tests)))
         sys.exit(1)
+    print("✅ ✅  {0} tests passed under valgrind.".format(len(compilation_tests)))
 
 if __name__ == "__main__":
     if valgrind:

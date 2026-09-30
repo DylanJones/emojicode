@@ -77,7 +77,7 @@ void ASTSuper::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCategory ty
 }
 
 const Type& ASTSuper::errorType() const {
-    return function_->errorType()->type();
+    return args_.errorType();
 }
 
 bool ASTSuper::isErrorProne() const {

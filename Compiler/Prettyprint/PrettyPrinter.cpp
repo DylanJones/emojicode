@@ -20,6 +20,8 @@
 #include "Lex/SourceManager.hpp"
 #include "Scoping/Scope.hpp"
 #include <algorithm>
+#include <cerrno>
+#include <cstring>
 #include <iostream>
 
 namespace EmojicodeCompiler {
@@ -33,12 +35,24 @@ void PrettyPrinter::printRecordings(const std::vector<std::unique_ptr<RecordingP
 void PrettyPrinter::print() {
     for (auto &file : package_->files()) {
         auto sourceFile = package_->compiler()->sourceManager().read(file.path_);
-        prettyStream_.setOutPath(filePath(file.path_));
-        prettyStream_.startFile();
+        // The source is moved aside before it is rewritten; a failed rewrite must not leave the user without it.
+        auto backup = file.path_ + "_original";
+        if (std::rename(file.path_.c_str(), backup.c_str()) != 0) {
+            throw CompilerError(SourcePosition(), "Could not write ", file.path_, ": ", std::strerror(errno));
+        }
+        try {
+            prettyStream_.setOutPath(file.path_);
+            prettyStream_.startFile();
 
-        printRecordings(file.recordings_);
-        prettyStream_.printRemainingComments(sourceFile);
-        prettyStream_.finishLine();
+            printRecordings(file.recordings_);
+            prettyStream_.printRemainingComments(sourceFile);
+            prettyStream_.finishLine();
+            prettyStream_.finish();
+        }
+        catch (...) {
+            std::rename(backup.c_str(), file.path_.c_str());
+            throw;
+        }
     }
 }
 
@@ -54,6 +68,7 @@ void PrettyPrinter::printInterface(const std::string &out) {
 
     printRecordings(package_->files().front().recordings_);
     printLinkHints();
+    prettyStream_.finish();
 }
 
 void PrettyPrinter::printLinkHints() {
@@ -126,11 +141,6 @@ void PrettyPrinter::print(RecordingPackage::Recording *recording) {
         prettyStream_.setLastCommentQueryPlace(package_->startFlagFunction()->position());
         package_->startFlagFunction()->ast()->toCode(prettyStream_);
     }
-}
-
-std::string PrettyPrinter::filePath(const std::string &path) {
-    std::rename(path.c_str(), (path + "_original").c_str());
-    return path;
 }
 
 std::string PrettyPrinter::declaration(Function *function) {

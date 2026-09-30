@@ -1,0 +1,30 @@
+💭 A required initializer specializing a generic superclass initializer with a large value type or a managed type
+💭 received a corrupted argument through a superclass type value: no boxing adapter was made for it.
+🕊 🧱 🍇
+  🖍🆕 a 🔢
+  🖍🆕 b 🔢
+  🖍🆕 c 🔢
+  🖍🆕 d 🔢
+  🖍🆕 e 🔢
+  🆕 🍇 1 ➡️ 🖍a 2 ➡️ 🖍b 3 ➡️ 🖍c 4 ➡️ 🖍d 5 ➡️ 🖍e 🍉
+  ❗️ 🔡 ➡️ 🔡 🍇 ↩️ 🔤🧲a🧲 🧲b🧲 🧲c🧲 🧲d🧲 🧲e🧲🔤 🍉
+🍉
+🐇 🌲🐚V ⚪️🍆 🍇
+  🔑 🆕 value V 🍇 🍉
+🍉
+🐇 🌵 🌲🐚🧱🍆 🍇
+  🔑 🆕 value 🧱 🍇 😀 🔡value❗️❗️ ⤴️🆕 value❗️ 🍉
+🍉
+🐇 🐔 🌲🐚🔡🍆 🍇
+  🔑 🆕 value 🔡 🍇 😀 🔤hen🧲value🧲🔤❗️ ⤴️🆕 value❗️ 🍉
+🍉
+🐇 🐣 🌵 🍇🍉
+🐇 🐥 🐔 🍇🍉
+🏁 🍇
+  🔂 class 🍿🐇🌲🐚🧱🍆 🐇🌵 🐇🐣🍆 🍇
+    🆕⬛️class 🆕🧱❗️❗️
+  🍉
+  🔂 class 🍿🐇🌲🐚🔡🍆 🐇🐔 🐇🐥🍆 🍇
+    🆕⬛️class 🔤x🔤❗️
+  🍉
+🍉
