@@ -86,7 +86,7 @@ Type ASTInitialization::comply(ExpressionAnalyser *analyser, const TypeExpectati
 }
 
 const Type& ASTInitialization::errorType() const {
-    return initializer_->errorType()->type();
+    return args_.errorType();
 }
 
 bool ASTInitialization::isErrorProne() const {
