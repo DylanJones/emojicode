@@ -355,7 +355,7 @@ void SemanticAnalyser::analyseFunctionDeclaration(Function *function) const {
     if (function->errorType() == nullptr) {
         function->setErrorType(std::make_unique<ASTLiteralType>(Type::noReturn()));
     }
-    auto errType = function->errorType()->analyseType(context);
+    auto errType = function->errorType()->analyseType(context, false, false, true);
     if (errType.type() != TypeType::NoReturn && !errType.compatibleTo(Type(compiler()->sError), context)) {
         throw CompilerError(function->errorType()->position(), "Error type must be a subclass of 🚧.");
     }
@@ -372,7 +372,7 @@ void SemanticAnalyser::analyseFunctionDeclaration(Function *function) const {
             param.type->type().setReference();
         }
     }
-    function->returnType()->analyseType(context, true);
+    function->returnType()->analyseType(context, true, false, true);
 
     if (function->isC()) {
         checkCFunctionDeclaration(function);
