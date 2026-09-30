@@ -68,16 +68,20 @@ void Lexer::loadOperatorSingleTokens() {
     singleTokens_.emplace(E_RED_EXCLAMATION_MARK_AND_QUESTION_MARK, TokenType::Call);
 }
 
-void Lexer::seekLine(unsigned int line) {
+void Lexer::seekPosition(unsigned int line, unsigned int character) {
     auto &lines = source_->lines();  // The index at which each line begins.
-    if (line < 1 || line - 1 >= lines.size()) {
+    if (line < 1 || line - 1 >= lines.size() || character < 1) {
         return;
     }
-    i_ = lines[line - 1];
+    // Characters are counted in code points, like the source file is stored.
+    auto index = lines[line - 1] + (character - 1);
+    if (index >= source_->file().size()) {
+        return;
+    }
+    i_ = index;
     sourcePosition_.line = line;
-    sourcePosition_.character = 1;
-    continue_ = i_ < source_->file().size();
-    skipWhitespace();
+    sourcePosition_.character = character;
+    continue_ = true;
 }
 
 void Lexer::skipWhitespace() {
