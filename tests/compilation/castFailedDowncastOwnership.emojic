@@ -1,0 +1,55 @@
+🐇 🦆 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ❗️ 🔦 🍇
+    😀 🔤hello 🧲name🧲🔤❗️
+  🍉
+
+  ♻️ 🍇
+    😀 🔤free 🧲name🧲🔤❗️
+  🍉
+🍉
+
+🐇 🐸 🦆 🍇
+  🆕 🍇
+    ⤴️🆕 🔤frog🔤❗️
+  🍉
+🍉
+
+🐇 🏭 🍇
+  🖍🆕 value 🦆
+  🆕 🍼 value 🦆 🍇🍉
+  ❗️ 🔎 🍇
+    ↪️ 🔲 value 🐸 🙌 🤷‍♀️ 🍇
+      😀 🔤field not a frog🔤❗️
+    🍉
+    🔦value❗️
+  🍉
+  🐇❗️ 🐸 ➡️ 🦆 🍇 ↩️ 🆕🐸❗️ 🍉
+  🐇❗️ 🅱️ ➡️ 🦆 🍇
+    ↩️ 🆕🦆🔤call🔤❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆕🦆🔤base🔤❗️ ➡️ a
+  ↪️ 🔲 a 🐸 🙌 🤷‍♀️ 🍇
+    😀 🔤not a frog🔤❗️
+  🍉
+  😀 🔤still alive🔤❗️
+  🔦a❗️
+  ↪️ 🔲 🅱️🐇🏭❗️ 🐸 🙌 🤷‍♀️ 🍇
+    😀 🔤call not a frog🔤❗️
+  🍉
+  🔲 🅱️🐇🏭❗️ 🐸
+  🔲 a 🐸 ➡️ failedLocal
+  🔲 🅱️🐇🏭❗️ 🐸 ➡️ failedCall
+  🆕🏭 a❗️ ➡️ holder
+  🔎holder❗️
+  🐸🐇🏭❗️ ➡️ base
+  🔦 🍺 🔲 base 🐸❗️
+  ↪️ 🔲 base 🐸 ➡️ taken 🍇 🔦taken❗️ 🍉
+  😀 🔤end🔤❗️
+🍉
