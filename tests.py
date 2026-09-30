@@ -156,6 +156,8 @@ def discover_importing_tests(directory):
     return importing_tests
 
 
+package_ir_tests = names_with_extension(os.path.join(dist.source, "tests", "packageIR"), ".ir")
+
 compilation_directory = os.path.join(dist.source, "tests", "compilation")
 # Formatting a file also formats the files it includes, which only it includes, so they are covered by its lock.
 # A file listed here is an include-only fragment, not a test of its own, so it needs no NAME.txt.
@@ -356,6 +358,18 @@ def check_ir(name, ir, check_path):
         fail_test(name + " (IR)")
 
 
+def package_ir_test(name):
+    """Checks the optimized IR of the standard package NAME (see tests/packageIR/NAME.ir, in the format of ir_tests),
+    whose functions are only generated in the package and so cannot be checked through a program."""
+    directory = os.path.join(dist.source, "tests", "packageIR")
+    main_file = os.path.join(dist.source, name, name + ".🍇")
+    with tempfile.TemporaryDirectory() as ir_directory:
+        run([emojicodec, '-p', name, '-O', '--emit-llvm', '-i', os.path.join(ir_directory, name + ".emojii"),
+             '-o', os.path.join(ir_directory, name), main_file], check=True)
+        ir = open(os.path.join(ir_directory, name + ".ll"), "r", encoding='utf-8').read()
+    check_ir(name, ir, os.path.join(directory, name + ".ir"))
+
+
 def host_test(name):
     directory = os.path.join(dist.source, "tests", "host")
     source_path = os.path.join(directory, name + ".emojic")
@@ -503,6 +517,7 @@ def test():
     tasks += [(test, importing_test, test) for test in importing_tests]
     tasks += [(test + " (specializations)", specialization_test, test) for test in specialization_tests]
     tasks += [(test + " (IR)", ir_test, test) for test in ir_tests]
+    tasks += [(test + " (package IR)", package_ir_test, test) for test in package_ir_tests]
     tasks += [(test, reject_test, test) for test in reject_tests]
     tasks += [(test, parse_test, test) for test in parse_tests]
     tasks.sort(key=lambda task: task[2] not in slow_tests)  # A stable sort, which keeps the order otherwise.
