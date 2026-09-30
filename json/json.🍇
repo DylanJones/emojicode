@@ -225,6 +225,15 @@
   📗
   ☣️🖍🔒❗️💜 initial 🔢 neg 👌 ➡️⚪️ 🚧🚧🔸🌸 🍇
     index ➖ 1 ➡️ tokenStart
+    ↪️ neg 🍇
+      ↪️ index 🙌 count 🍇
+        🚨🆕🚧🔸🌸 🔤Expected digit after minus sign🔤❗️
+      🍉
+      🐽🐚💧🍆string index❗️ ➡️ dv
+      ↪️ dv ◀️ 0x30 👐 dv ▶️ 0x39 🍇
+        🚨🆕🚧🔸🌸 🔤Expected digit after minus sign🔤❗️
+      🍉
+    🍉
     0 ➡️ 🖍🆕integer
     ↪️ neg 🍇
       🔢👇initial❗️➡️ 🖍integer
