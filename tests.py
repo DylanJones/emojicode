@@ -28,10 +28,11 @@ valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
 # - "panic": its program prints what NAME.txt says and then panics, which aborts it.
 # - "stress": it takes seconds to run, so it is excluded from quick and valgrind runs and starts first, along with
 #   the other slow tests, so that it does not end up running alone at the end.
-# - "leak_check": also run, at both optimized and unoptimized settings, with EMOJICODE_CHECK_DESCRIPTION_LEAKS set.
+# - "leak_check": also run unoptimized. Every program of a compilation test runs with EMOJICODE_CHECK_LEAKS set,
+#   optimized and (with "unoptimized" or this token) unoptimized.
 #   The runtime then counts calls to ejcAllocDescription/ejcFreeDescription (the malloc/free pair generated
-#   exclusively for dynamic class generic-argument type descriptions, see TypeDescriptionGenerator) and aborts at
-#   exit if they are unbalanced. Unlike an IR check, which inspects unoptimized IR text and so cannot see calls an
+#   exclusively for dynamic class generic-argument type descriptions, see TypeDescriptionGenerator) and the blocks
+#   ejcAlloc allocates and the release functions free, and aborts at exit if they are unbalanced. Unlike an IR check, which inspects unoptimized IR text and so cannot see calls an
 #   optimizer's tail-merging collapses together, this observes actual executed allocation/deallocation counts and
 #   so still catches an ownership bug (a missing or duplicated free) at -O.
 # A library test's tokens may be "slow": like "stress", it takes seconds to run and so starts first, but unlike
@@ -258,9 +259,10 @@ def library_test(name):
         log(completed.stdout.decode('utf-8'))
 
 
-def check_output(name, binary_path, env=None):
-    """Runs the program of the compilation test name and checks its output."""
-    completed = run([binary_path], stdout=PIPE, env=env)
+def check_output(name, binary_path):
+    """Runs the program of the compilation test name, with the leak check of the runtime (see the "leak_check"
+    directive above), and checks its output."""
+    completed = run([binary_path], stdout=PIPE, env=dict(os.environ, EMOJICODE_CHECK_LEAKS='1'))
     exp_path = os.path.join(dist.source, "tests", "compilation", name + ".txt")
     output = completed.stdout.decode('utf-8')
     expected_returncode = -signal.SIGABRT if name in panic_tests else 0
@@ -277,18 +279,6 @@ def compilation_test(name, optimize=True):
         with source_lock(source_path):
             run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
         check_output(name, binary_path)
-
-
-def leak_check_test(name, optimize=True):
-    """Like compilation_test, but with EMOJICODE_CHECK_DESCRIPTION_LEAKS set (see leak_check_tests), so that the
-    program aborts (and so fails check_output's return code comparison) if it leaked or double-freed a dynamic
-    generic type description, regardless of optimization."""
-    source_path = test_paths(name, 'compilation')[0]
-    with tempfile.TemporaryDirectory() as directory:
-        binary_path = os.path.join(directory, name)
-        with source_lock(source_path):
-            run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
-        check_output(name, binary_path, env=dict(os.environ, EMOJICODE_CHECK_DESCRIPTION_LEAKS='1'))
 
 
 def specialization_test(name):
@@ -510,8 +500,7 @@ def test():
         tasks += [(test + " (formatted)", prettyprint_test, test) for test in compilation_tests]
         tasks += [("includer (included formatted)", formatted_test, 'includer', ['included'])]
     tasks += [(test + " (unoptimized)", compilation_test, test, False) for test in unoptimized_tests]
-    tasks += [(test + " (leak check)", leak_check_test, test) for test in leak_check_tests]
-    tasks += [(test + " (leak check, unoptimized)", leak_check_test, test, False) for test in leak_check_tests]
+    tasks += [(test + " (leak check, unoptimized)", compilation_test, test, False) for test in leak_check_tests]
     tasks += [(test, library_test, test) for test in library_tests]
     tasks += [(test, host_test, test) for test in host_tests]
     tasks += [(test, importing_test, test) for test in importing_tests]

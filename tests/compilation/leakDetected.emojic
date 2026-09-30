@@ -1,0 +1,20 @@
+💭 test: panic
+💭 Two objects that reference each other are never released, so the leak check of the runtime (see tests.py) aborts
+💭 the program at exit. This keeps that check from going blind: it fails if the detector stops counting objects.
+🐇 🔗 🍇
+  🖍🆕 other 🍬🔗
+
+  🆕 🍇🍉
+
+  ❗️ 🔀 o 🔗 🍇
+    o ➡️ 🖍other
+  🍉
+🍉
+
+🏁 🍇
+  🆕🔗❗️ ➡️ first
+  🆕🔗❗️ ➡️ second
+  🔀first second❗️
+  🔀second first❗️
+  😀 🔤done🔤❗️
+🍉

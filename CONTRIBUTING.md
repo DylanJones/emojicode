@@ -56,9 +56,9 @@ A compilation or library test can start with a directive comment, on its own lin
 
 A compilation test's tokens: `unoptimized` also compiles and runs it without optimizations; `panic` means its
 program panics (aborts with SIGABRT) after printing what `NAME.txt` says; `stress` excludes it from quick and
-valgrind runs because it takes seconds to run; `leak_check` also runs it, at both optimized and unoptimized settings,
-with `EMOJICODE_CHECK_DESCRIPTION_LEAKS` set, so that an unbalanced dynamic generic type description
-alloc/free aborts it regardless of optimization. A library test's only token is `slow`: like `stress`, it takes
+valgrind runs because it takes seconds to run; `leak_check` also runs it unoptimized, like `unoptimized`.
+Every compilation test runs with `EMOJICODE_CHECK_LEAKS` set, so that the runtime aborts the program at exit if the
+blocks allocated for objects or dynamic generic type descriptions are not all freed, regardless of optimization. A library test's only token is `slow`: like `stress`, it takes
 seconds to run and so is scheduled first, but it is not excluded from quick runs (valgrind runs do not include
 library tests at all). See the top of `tests.py` for the full, current list.
 
