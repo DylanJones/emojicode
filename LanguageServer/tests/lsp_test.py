@@ -21,6 +21,8 @@ SERVER = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT
 
 
 def uri(path):
+    if not os.path.isabs(path):
+        return path  # already a URI, e.g. untitled:Untitled-1
     return "file://" + urllib.parse.quote(os.path.realpath(path))
 
 
@@ -239,6 +241,92 @@ class DiagnosticsTests(ServerTestCase):
         client.open(path)
         diagnostic = client.diagnostics(path)[0]
         self.assertEqual(diagnostic["range"]["start"], {"line": 2, "character": position(text, "➕")["character"]})
+
+    def check_line_endings(self, endings, encodings=("utf-16",)):
+        lines = ["🏁 🍇", "  😀 🔤a🔤 ➕ 1❗️", "", "🍉", ""]
+        text = "".join(line + ending for line, ending in zip(lines, endings))
+        path = self.write("main.emojic", text)
+        client = self.start(encodings=encodings)
+        client.open(path, text)
+        diagnostic = client.diagnostics(path)[0]
+        column = lines[1][:lines[1].index("➕")]
+        character = {"utf-16": utf16_length(column), "utf-32": len(column),
+                     "utf-8": len(column.encode("utf-8"))}[client.capabilities["positionEncoding"]]
+        self.assertEqual(diagnostic["range"]["start"], {"line": 1, "character": character}, diagnostic)
+        self.assertEqual(diagnostic["range"]["end"]["line"], 1, diagnostic)
+
+    def test_lone_cr_line_endings(self):
+        self.check_line_endings(["\r"] * 5)
+
+    def test_crlf_line_endings(self):
+        self.check_line_endings(["\r\n"] * 5)
+
+    def test_mixed_line_endings(self):
+        self.check_line_endings(["\r", "\r\n", "\n", "\r\r", "\r"])
+
+    def test_lone_cr_line_endings_utf8_and_utf32(self):
+        self.check_line_endings(["\r"] * 5, ("utf-8",))
+        self.check_line_endings(["\r"] * 5, ("utf-32",))
+
+    def test_lone_cr_tokens_and_hover(self):
+        text = "🏁 🍇\r  🔤a\rb🔤 ➡️ greeting\r  😀 greeting❗️\r🍉\r"
+        path = self.write("main.emojic", text)
+        client = self.start()
+        client.open(path, text)
+        self.assertEqual(client.diagnostics(path), [])
+        hover = client.request("textDocument/hover", {"textDocument": {"uri": uri(path)},
+                                                      "position": {"line": 3, "character": 5}})
+        self.assertIn("greeting", hover["contents"]["value"])
+        tokens = client.request("textDocument/semanticTokens/full", {"textDocument": {"uri": uri(path)}})["data"]
+        lines, line = [], 0
+        for i in range(0, len(tokens), 5):
+            line += tokens[i]
+            lines.append(line)
+        self.assertEqual(sorted(set(lines)), [0, 1, 2, 3], lines)
+        self.assertEqual(client.shutdown(), 0)
+
+    def test_untitled_documents(self):
+        valid = "🏁 🍇\n  🔤hello🔤 ➡️ greeting\n  😀 greeting❗️\n🍉\n"
+        one, two = "untitled:Untitled-1", "untitled:Untitled-2"
+        client = self.start()
+        client.open(one, TYPE_ERROR)
+        client.open(two, valid)
+        diagnostics = client.diagnostics(one)
+        self.assertEqual(len(diagnostics), 1, diagnostics)
+        self.assertEqual(diagnostics[0]["range"]["start"], position(TYPE_ERROR, "➕"))
+        self.assertEqual(client.diagnostics(two), [])
+        # Hover, tokens and completion work, and the documents do not share state.
+        hover = client.request("textDocument/hover", {"textDocument": {"uri": two},
+                                                      "position": position(valid, "greeting❗️")})
+        self.assertIn("greeting", hover["contents"]["value"])
+        tokens = client.request("textDocument/semanticTokens/full", {"textDocument": {"uri": two}})["data"]
+        self.assertGreater(len(tokens), 0)
+        items = client.request("textDocument/completion", {"textDocument": {"uri": two},
+                                                           "position": position(valid, "greeting❗️")})
+        items = items["items"] if isinstance(items, dict) else items
+        self.assertIn("greeting", [item["label"] for item in items])
+
+        client.change(one, valid)
+        self.assertEqual(client.diagnostics(one), [])
+        client.change(one, TYPE_ERROR)
+        self.assertEqual(len(client.diagnostics(one)), 1)
+        client.close(one)
+        self.assertEqual(client.diagnostics(one), [])
+        self.assertEqual(client.shutdown(), 0)
+
+    def test_git_snapshots_are_not_checked(self):
+        client = self.start()
+        snapshot = 'git:/home/me/app/dog.emojic?{"path":"/home/me/app/dog.emojic","ref":"HEAD"}'
+        client.open(snapshot, "🐇 🐕 🍇\n🍉\n")
+        client.open("untitled:Sentinel", TYPE_ERROR)
+        self.assertEqual(len(client.diagnostics("untitled:Sentinel")), 1)
+        published = [m["params"]["uri"] for m in client.notifications
+                     if m.get("method") == "textDocument/publishDiagnostics"]
+        self.assertEqual(published, [])
+        hover = client.request("textDocument/hover", {"textDocument": {"uri": snapshot},
+                                                      "position": {"line": 0, "character": 0}})
+        self.assertIsNone(hover)
+        self.assertEqual(client.shutdown(), 0)
 
     def test_include_in_comment_is_ignored(self):
         self.write("app/old.🍇", "💭 📜 🔤b.🍇🔤\n🏁 🍇🍉\n")
