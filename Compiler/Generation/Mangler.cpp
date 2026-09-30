@@ -117,8 +117,11 @@ void mangleTypeName(std::stringstream &stream, const Type &typeb, bool withGener
     }
     mangleIdentifier(stream, type.typeDefinition()->name());
     if (withGenericArguments) {
-        for (auto &argument : type.genericArguments()) {
-            mangleComponent(argument);
+        // The arguments inherited by a class follow from its own and may contain the class itself (e.g. 🐇 🅱️ 🅰️🐚🅱️🍆),
+        // which would make the name infinite. So only the own arguments are mangled.
+        auto &arguments = type.completeGenericArguments();
+        for (size_t i = type.is<TypeType::Class>() ? type.klass()->offset() : 0; i < arguments.size(); i++) {
+            mangleComponent(arguments[i]);
         }
     }
 }

@@ -6,6 +6,7 @@
 //
 
 #include "TypeDescriptionGenerator.hpp"
+#include <algorithm>
 #include "Generation/LLVMTypeHelper.hpp"
 #include "Generation/FunctionCodeGenerator.hpp"
 #include "Types/Class.hpp"
@@ -101,6 +102,14 @@ void TypeDescriptionGenerator::addType(const Type &type) {
             throw std::logic_error("Cannot create type description for compile-time type.");
     }
 
+    // A class that is named in its own superclass arguments would have an infinite description. Where it recurs within
+    // those arguments it is described as something, which has no arguments.
+    auto recurs = notype.type() == TypeType::Class &&
+        std::find(expandingSuper_.begin(), expandingSuper_.end(), notype.klass()) != expandingSuper_.end();
+    if (recurs) {
+        genericInfo = fg_->generator()->runTime().somethingRtti();
+    }
+
     auto strct = llvm::ConstantStruct::get(fg_->typeHelper().typeDescription(), {
         genericInfo,
         type.type() == TypeType::Optional ? llvm::ConstantInt::getTrue(fg_->ctx()) : llvm::ConstantInt::getFalse(fg_->ctx()),
@@ -108,12 +117,15 @@ void TypeDescriptionGenerator::addType(const Type &type) {
     });
     types_.emplace_back(strct);
 
-    if (!notype.canHaveGenericArguments()) return;
-    auto &args = notype.genericArguments();
-    auto superCount = notype.type() == TypeType::Class ? notype.klass()->superGenericArguments().size() : 0;
+    if (recurs || !notype.canHaveGenericArguments()) return;
+    auto &args = notype.completeGenericArguments();
+    auto superCount = notype.type() == TypeType::Class ? notype.klass()->offset() : 0;
+    if (superCount > 0) expandingSuper_.emplace_back(notype.klass());
     for (size_t i = 0; i < args.size(); i++) {
+        if (i == superCount && superCount > 0) expandingSuper_.pop_back();
         addType(i < superCount ? resolveSuperArgument(args[i], args, i, superCount, notype.klass()) : args[i]);
     }
+    if (args.size() <= superCount && superCount > 0) expandingSuper_.pop_back();
 }
 
 llvm::Value* TypeDescriptionGenerator::extractTypeDescriptionPtr() {

@@ -20,6 +20,7 @@ namespace EmojicodeCompiler {
 
 class FunctionCodeGenerator;
 class Type;
+class Class;
 class ASTType;
 
 enum class TypeDescriptionUser {
@@ -63,6 +64,8 @@ public:
 
 private:
     void addType(const Type &type);
+    /// The classes whose inherited arguments are being described.
+    std::vector<Class *> expandingSuper_;
     llvm::Value* finish();
     llvm::Value* finishStatic();
     void addDynamic(llvm::Value *gargs, size_t index);

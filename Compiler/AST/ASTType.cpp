@@ -81,8 +81,9 @@ Type ASTTypeId::getType(const TypeContext &typeContext, bool allowGenericInferen
     // superclass yet, which would contain this very type. The type then holds only the own arguments and Type adds
     // the inherited ones once the superclass is analysed.
     auto klass = dynamic_cast<Class *>(typeDef);
-    bool superPending = klass != nullptr && klass->superType() != nullptr && !klass->superType()->wasAnalysed();
-    auto args = superPending ? std::vector<Type>() : typeDef->superGenericArguments();
+    auto inherited = typeDef->superGenericArguments();
+    bool superPending = klass != nullptr && inherited.size() != klass->offset();
+    auto args = superPending ? std::vector<Type>() : std::move(inherited);
     args.insert(args.end(), ownArgs.begin(), ownArgs.end());
     type.setGenericArguments(std::move(args));
     if (allowGenericInference && ownArgs.empty() && !typeDef->genericParameters().empty()) {
