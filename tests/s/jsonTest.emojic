@@ -158,6 +158,14 @@
     🚧👇 🔤open string errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤"sdkfie🔤❗️ 🍉❗️
     🚧👇 🔤trailing comma errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤{"value": 43,}🔤❗️ 🍉❗️
     🚧👇 🔤no digit after decimal point🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤43.🔤❗️ 🍉❗️
+    🚧👇 🔤minus only errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤-🔤❗️ 🍉❗️
+    🚧👇 🔤minus point errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤-.5🔤❗️ 🍉❗️
+    🚧👇 🔤minus exponent errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤-e5🔤❗️ 🍉❗️
+    🚧👇 🔤minus in array errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤[-]🔤❗️ 🍉❗️
+    🚧👇 🔤minus leading zero errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤-0123🔤❗️ 🍉❗️
+    🚧👇 🔤minus double zero errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤-00🔤❗️ 🍉❗️
+    🚧👇 🔤minus letter errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤-a🔤❗️ 🍉❗️
+    🚧👇 🔤minus in dictionary errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤{"a":-}🔤❗️ 🍉❗️
   🍉
 🍉
 

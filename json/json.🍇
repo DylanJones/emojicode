@@ -242,14 +242,26 @@
     Reads a number.
   📗
   ☣️🖍🔒❗️💜 initial 🔢 neg 👌 ➡️⚪️ 🚧🚧🔸🌸 🍇
-    index ➡️ digitsStart
-    0 ➡️ 🖍🆕integer
+    initial ➡️ 🖍🆕first
     ↪️ neg 🍇
-      🔢👇initial❗️➡️ 🖍integer
-      integer⬅️✖️-1
+      💭 A minus sign must be followed by a digit, which is handled like the first digit of a non-negative number.
+      ↪️ index 🙌 count 🍇
+        🚨🆕🚧🔸🌸 🔤Expected digit after minus sign🔤❗️
+      🍉
+      🐽🐚💧🍆string index❗️ ➡️ nd
+      ↪️ nd ◀️ 0x30 👐 nd ▶️ 0x39 🍇
+        🚨🆕🚧🔸🌸 🔤Expected digit after minus sign🔤❗️
+      🍉
+      index ⬅️➕ 1
+      🔢nd❗️ ➖ 0x30 ➡️ 🖍first
     🍉
-    🙅‍♀️↪️ initial ▶️ 0 🍇  💭 "with no superfluous leading zero"
-      🔢👇initial❗️➡️ 🖍integer
+    index ➡️ digitsStart
+    first ➡️ 🖍🆕integer
+    ↪️ first ▶️ 0 🍇  💭 "with no superfluous leading zero"
+      🔢👇first❗️➡️ 🖍integer
+    🍉
+    ↪️ neg 🍇
+      integer⬅️✖️-1
     🍉
 
     ↪️ index 🙌 count 🍇
@@ -261,9 +273,9 @@
     💯integer❗️➡️ 🖍🆕real
     ↪️ v 🙌 0x2E 👐 v 🙌 0x65 👐 v 🙌 0x45 🍇
       💭 A real: the integer part may exceed 🔢, so read it again into a real.
-      ↪️ neg 👐 initial ▶️ 0 🍇
+      ↪️ first ▶️ 0 🍇
         digitsStart ➡️ 🖍index
-        🧮👇initial❗️ ➡️ 🖍real
+        🧮👇first❗️ ➡️ 🖍real
         ↪️ neg 🍇
           real ⬅️✖️-1.0
         🍉
