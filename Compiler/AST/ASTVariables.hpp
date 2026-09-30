@@ -125,6 +125,8 @@ protected:
     Value *variablePointer(FunctionCodeGenerator *fg) const;
 
     virtual void generateAssignment(FunctionCodeGenerator *) const = 0;
+    /// Whether the variable may hold a managed value that must be released before it is overwritten.
+    virtual bool overwritesManagedValue() const { return false; }
 private:
     void generate(FunctionCodeGenerator *) const final;
     const bool declare_;
@@ -141,6 +143,7 @@ public:
     void analyseMemoryFlow(MFFunctionAnalyser *analyser) override;
 
 protected:
+    bool overwritesManagedValue() const override { return wasInitialized_ && variableType().isManaged(); }
     ASTVariableAssignment(std::u32string name, const std::shared_ptr<ASTExpr> &e,
                           const SourcePosition &p, bool declare) : ASTVariableInit(e, p, std::move(name), declare) {}
 

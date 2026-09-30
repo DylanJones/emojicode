@@ -86,7 +86,7 @@ Value* ASTGetVariable::generate(FunctionCodeGenerator *fg) const {
 
 void ASTVariableInit::generate(FunctionCodeGenerator *fg) const {
     if (auto init = std::dynamic_pointer_cast<ASTInitialization>(expr_)) {
-        if (init->initType() == ASTInitialization::InitType::ValueType) {
+        if (init->initType() == ASTInitialization::InitType::ValueType && !overwritesManagedValue()) {
             init->setDestination(variablePointer(fg));
             expr_->generate(fg);
             return;
