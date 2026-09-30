@@ -258,6 +258,13 @@ string, but those themselves are then immutable again.
   📗
   ❗️ 💯 ➡️ 🍬💯 📻 🔤sStringToReal🔤
 
+  📗
+    Converts a string that matches the grammar of a JSON number to the nearest
+    💯, independent of the locale. The caller must have validated the syntax.
+    Out-of-range values result in infinity or zero.
+  📗
+  ☣️❗️🔬 ➡️ 💯 📻 🔤sStringToRealExact🔤
+
   📗 Converts the string to data encoded as UTF8. 📗
   ❗️ 📇 ➡️ 📇 🍇
     ☣️ 🍇
