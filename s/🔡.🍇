@@ -259,9 +259,13 @@ string, but those themselves are then immutable again.
   ❗️ 💯 ➡️ 🍬💯 📻 🔤sStringToReal🔤
 
   📗
-    Converts a string that matches the grammar of a JSON number to the nearest
-    💯, independent of the locale. The caller must have validated the syntax.
-    Out-of-range values result in infinity or zero.
+    Converts the string to the nearest 💯, independent of the locale. The
+    caller must have validated the syntax: an optional `-`, one or more digits,
+    an optional `.` followed by one or more digits, and an optional `e` or `E`
+    with an optional sign and one or more digits. Out-of-range values result in
+    infinity or zero. For other input the result is unspecified: the longest
+    valid prefix is converted, which includes hexadecimal, `inf` and `nan`
+    forms, and 0.0 is returned if nothing can be converted.
   📗
   ☣️❗️🔬 ➡️ 💯 📻 🔤sStringToRealExact🔤
 

@@ -59,6 +59,8 @@
     💯👇 🍺🔲🍺⚪️🕊🌸🔤-1e18446744073709551617🔤❗️💯 0.0 ➖ inf 🔤Exponent saturates🔤❗️
     💯👇 🍺🔲🍺⚪️🕊🌸🔤1e-18446744073709551617🔤❗️💯 0.0 🔤Exponent saturates🔤❗️
     💯👇 🍺🔲🍺⚪️🕊🌸🔤0e99999999999999999999🔤❗️💯 0.0 🔤Exponent saturates🔤❗️
+    💯👇 🍺🔲🍺⚪️🕊🌸🔤1e309🔤❗️💯 inf 🔤Overflow is infinity🔤❗️
+    💯👇 1.0 ➗ 🍺🔲🍺⚪️🕊🌸🔤-0.0🔤❗️💯 0.0 ➖ inf 🔤Negative zero keeps its sign🔤❗️
     💯👇 🍺🔲🍺⚪️🕊🌸🔤2.2250738585072011e-308🔤❗️💯 2.2250738585072011✖️🏂10.0 -308❗️ 🔤Correct real🔤❗️
     💯👇 🍺🔲🍺⚪️🕊🌸🔤-2.22507e-308🔤❗️💯 -2.22507✖️🏂10.0 -308❗️ 🔤Correct real🔤❗️
     💯👇 🍺🔲🍺⚪️🕊🌸🔤18446744073709551616.0🔤❗️💯 18446744073709551616.0 🔤Real above 🔢 range🔤❗️
@@ -163,6 +165,15 @@
     🚧👇 🔤open string errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤"sdkfie🔤❗️ 🍉❗️
     🚧👇 🔤trailing comma errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤{"value": 43,}🔤❗️ 🍉❗️
     🚧👇 🔤no digit after decimal point🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤43.🔤❗️ 🍉❗️
+    🚧👇 🔤empty exponent errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤1e🔤❗️ 🍉❗️
+    🚧👇 🔤empty exponent errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤1E🔤❗️ 🍉❗️
+    🚧👇 🔤signed empty exponent errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤1e+🔤❗️ 🍉❗️
+    🚧👇 🔤signed empty exponent errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤1e-🔤❗️ 🍉❗️
+    🚧👇 🔤non-digit exponent errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤1ex🔤❗️ 🍉❗️
+    🚧👇 🔤signed empty exponent errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤1.5E+🔤❗️ 🍉❗️
+    🚧👇 🔤exponent after point errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤1.e5🔤❗️ 🍉❗️
+    🚧👇 🔤empty exponent in array errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤[1e]🔤❗️ 🍉❗️
+    🚧👇 🔤no digit after point in array errors🔤 🍇🚧🚧🔸🌸 🔺⚪️🕊🌸🔤[1.]🔤❗️ 🍉❗️
   🍉
 🍉
 
