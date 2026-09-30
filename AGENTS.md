@@ -2,6 +2,13 @@
 
 The [Emojicode project](https://github.com/users/DylanJones/projects/1) tracks work by issue. Use its `Status` field as the handoff between implementation, review, and Dylan's merge decision. The GitHub CLI is the supported way to update the board; it needs the `project` OAuth scope (`gh auth refresh -s project` if missing).
 
+## Sandbox safety
+
+Agent sandboxes mount only their own worktree, so every sibling worktree looks missing to git. Commands that prune or remove worktree metadata then delete the admin directories under the shared `.git/worktrees/` for all of them, breaking other runs (see #366).
+
+- Never run `git worktree prune`, `git gc`, `git prune` or `git worktree remove` on anything but your own temporary worktree.
+- If you need a temporary worktree, create it with `git worktree add --detach` inside your own worktree directory, and remove it by path with `git worktree remove <path>`.
+
 ## Moving work
 
 1. When starting an issue, move it to **In progress**. Open a PR that links the issue (for example, `Fixes #123` when merging the PR should close it).
