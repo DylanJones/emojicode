@@ -33,7 +33,7 @@ private:
 
     void parseMainArguments(ASTArguments *arguments, const SourcePosition &position);
     std::shared_ptr<ASTExpr> parseExprLeft(const Token &token, int precedence);
-    std::shared_ptr<ASTExpr> parseRight(std::shared_ptr<ASTExpr> left, int precendence);
+    std::shared_ptr<ASTExpr> parseRight(std::shared_ptr<ASTExpr> left, int precendence, int &height);
     std::shared_ptr<ASTExpr> parseClosure(const Token &token);
 
     std::unique_ptr<ASTStatement> parseIf(const SourcePosition &position);
