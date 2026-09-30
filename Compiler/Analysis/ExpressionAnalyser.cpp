@@ -191,6 +191,9 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
         }
     }
     node->setGenericArgumentTypes(genericArgs);
+    if (function->errorType() != nullptr) {
+        node->setResolvedErrorType(function->errorType()->type().resolveOn(typeContext));
+    }
     auto rtType = function->returnType()->type().resolveOn(typeContext);
     if (rtType.isReference()) {
         rtType.setMutable(type.isMutable());

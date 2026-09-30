@@ -66,7 +66,9 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
 }
 
 const Type& ASTMethodable::errorType() const {
-    return method_->errorType()->type();
+    // Before the call is analysed, e.g. when reporting an unhandled error, only the declared type is known.
+    return args_.resolvedErrorType().type() != TypeType::NoReturn ? args_.resolvedErrorType()
+                                                                   : method_->errorType()->type();
 }
 
 bool ASTMethodable::isErrorProne() const {

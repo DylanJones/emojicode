@@ -86,7 +86,9 @@ Type ASTInitialization::comply(ExpressionAnalyser *analyser, const TypeExpectati
 }
 
 const Type& ASTInitialization::errorType() const {
-    return initializer_->errorType()->type();
+    // Before the call is analysed, e.g. when reporting an unhandled error, only the declared type is known.
+    return args_.resolvedErrorType().type() != TypeType::NoReturn ? args_.resolvedErrorType()
+                                                                   : initializer_->errorType()->type();
 }
 
 bool ASTInitialization::isErrorProne() const {
