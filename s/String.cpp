@@ -250,7 +250,10 @@ runtime::SimpleOptional<runtime::Integer> sStringToIntLength(const char *charact
     if (length == 0) {
         return runtime::NoValue;
     }
-    runtime::Integer x = 0;
+    bool negative = characters[0] == '-';
+    // Accumulate unsigned so the magnitude of INT64_MIN fits and overflow is detectable.
+    auto limit = static_cast<uint64_t>(INT64_MAX) + (negative ? 1 : 0);
+    uint64_t x = 0;
     for (decltype(length) i = 0; i < length; i++) {
         if (i == 0 && (characters[i] == '-' || characters[i] == '+')) {
             if (length < 2) {
@@ -274,14 +277,13 @@ runtime::SimpleOptional<runtime::Integer> sStringToIntLength(const char *charact
             return runtime::NoValue;
         }
 
-        x *= base;
-        x += b;
+        if (x > (limit - static_cast<uint64_t>(b)) / static_cast<uint64_t>(base)) {
+            return runtime::NoValue;
+        }
+        x = x * static_cast<uint64_t>(base) + static_cast<uint64_t>(b);
     }
 
-    if (characters[0] == '-') {
-        x *= -1;
-    }
-    return x;
+    return negative ? static_cast<runtime::Integer>(0 - x) : static_cast<runtime::Integer>(x);
 }
 
 extern "C" runtime::SimpleOptional<runtime::Integer> sStringToInt(String *string, runtime::Integer base) {
