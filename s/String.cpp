@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstring>
 #include <iostream>
+#include <string>
 
 using s::String;
 
@@ -291,51 +292,30 @@ extern "C" runtime::SimpleOptional<runtime::Integer> sStringToInt(String *string
 }
 
 extern "C" runtime::SimpleOptional<runtime::Real> sStringToReal(String *string) {
-    if (string->count == 0) {
-        return runtime::NoValue;
+    // Validate the syntax [+-] digits [. digits] [(e|E) [+-] digits], then let strtod do the
+    // correctly rounded conversion (including subnormals and the extremes of the range).
+    const char *chars = string->characters.get();
+    size_t count = string->count;
+    size_t i = 0;
+
+    if (i < count && (chars[i] == '-' || chars[i] == '+')) {
+        i++;
     }
 
-    runtime::Real d = 0.0;
-    bool sign = true;
     bool foundSeparator = false;
     bool foundDigit = false;
-    size_t decimalPlace = 0;
-    decltype(string->count) i = 0;
-
-    if (string->characters[0] == '-') {
-        sign = false;
-        i++;
-    }
-    else if (string->characters[0] == '+') {
-        i++;
-    }
-
-    for (; i < string->count; i++) {
-        if (string->characters[i] == '.') {
+    for (; i < count; i++) {
+        if (chars[i] == '.') {
             if (foundSeparator) {
                 return runtime::NoValue;
             }
             foundSeparator = true;
-            continue;
         }
-        if (string->characters[i] == 'e' || string->characters[i] == 'E') {
-            auto exponent = sStringToIntLength(string->characters.get() + i + 1, string->count - i - 1, 10);
-            if (exponent == runtime::NoValue) {
-                return runtime::NoValue;
-            }
-            d *= std::pow(10, *exponent);
-            break;
-        }
-        if ('0' <= string->characters[i] && string->characters[i] <= '9') {
-            d *= 10;
-            d += string->characters[i] - '0';
-            if (foundSeparator) {
-                decimalPlace++;
-            }
+        else if ('0' <= chars[i] && chars[i] <= '9') {
             foundDigit = true;
         }
         else {
-            return runtime::NoValue;
+            break;
         }
     }
 
@@ -343,12 +323,26 @@ extern "C" runtime::SimpleOptional<runtime::Real> sStringToReal(String *string) 
         return runtime::NoValue;
     }
 
-    d /= std::pow(10, decimalPlace);
-
-    if (!sign) {
-        d *= -1;
+    if (i < count) {
+        if (chars[i] != 'e' && chars[i] != 'E') {
+            return runtime::NoValue;
+        }
+        i++;
+        if (i < count && (chars[i] == '-' || chars[i] == '+')) {
+            i++;
+        }
+        if (i == count) {
+            return runtime::NoValue;
+        }
+        for (; i < count; i++) {
+            if (chars[i] < '0' || chars[i] > '9') {
+                return runtime::NoValue;
+            }
+        }
     }
-    return d;
+
+    std::string copy(chars, count);
+    return std::strtod(copy.c_str(), nullptr);
 }
 
 extern "C" runtime::Integer sStringHash(String *string) {

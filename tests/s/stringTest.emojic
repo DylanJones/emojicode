@@ -139,6 +139,13 @@
     ⛔👇 💯🔤+🔤❗️🙌 🤷‍♀️🔤Nothingness + String double🔤❗️
     ⛔👇 💯🔤-🔤❗️🙌 🤷‍♀️🔤Nothingness - String double🔤❗️
     ⛔👇 💯🔤.🔤❗️🙌 🤷‍♀️🔤Nothingness - String double🔤❗️
+    ⛔👇 🍺💯🔤1.7976931348623157e308🔤❗️ ➗ 🍺💯🔤1e308🔤❗️ ▶ 1.79 🔤DBL_MAX is finite and parses as 1.79..e308🔤❗️
+    ⛔👇 🍺💯🔤4.9e-324🔤❗️ ▶ 0.0 🔤Smallest subnormal is not zero🔤❗️
+    ⛔👇 🍺💯🔤2.2250738585072014e-308🔤❗️ ➗ 🍺💯🔤2.2250738585072014e-308🔤❗️ 🙌 1.0 🔤Smallest normal is not zero🔤❗️
+    💯👇 🍺💯🔤123456789.123456789🔤❗️ 123456789.12345679 🔤Correctly rounded from string🔤❗️
+    ⛔👇 💯🔤1e🔤❗️🙌 🤷‍♀️🔤Nothingness empty exponent🔤❗️
+    ⛔👇 💯🔤1e+🔤❗️🙌 🤷‍♀️🔤Nothingness sign-only exponent🔤❗️
+    ⛔👇 💯🔤1.5.2🔤❗️🙌 🤷‍♀️🔤Nothingness two separators🔤❗️
     ⛔👇 💯🔤..🔤❗️🙌 🤷‍♀️🔤Nothingness - String double🔤❗️
     ⛔👇 💯🔤e10🔤❗️🙌 🤷‍♀️🔤Nothingness - String double🔤❗️
     ⛔👇 💯🔤.e10🔤❗️🙌 🤷‍♀️🔤Nothingness - String double🔤❗️
