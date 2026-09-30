@@ -31,9 +31,18 @@ void PrettyPrinter::printRecordings(const std::vector<std::unique_ptr<RecordingP
 
 void PrettyPrinter::print() {
     for (auto &file : package_->files()) {
-        prettyStream_.setOutPath(filePath(file.path_));
-
-        printRecordings(file.recordings_);
+        // The source is moved aside before it is rewritten; a failed rewrite must not leave the user without it.
+        auto backup = file.path_ + "_original";
+        std::rename(file.path_.c_str(), backup.c_str());
+        try {
+            prettyStream_.setOutPath(file.path_);
+            printRecordings(file.recordings_);
+            prettyStream_.finish();
+        }
+        catch (...) {
+            std::rename(backup.c_str(), file.path_.c_str());
+            throw;
+        }
     }
 }
 
@@ -49,6 +58,7 @@ void PrettyPrinter::printInterface(const std::string &out) {
 
     printRecordings(package_->files().front().recordings_);
     printLinkHints();
+    prettyStream_.finish();
 }
 
 void PrettyPrinter::printLinkHints() {
@@ -99,11 +109,6 @@ void PrettyPrinter::print(RecordingPackage::Recording *recording) {
         prettyStream_.setLastCommentQueryPlace(package_->startFlagFunction()->position());
         package_->startFlagFunction()->ast()->toCode(prettyStream_);
     }
-}
-
-std::string PrettyPrinter::filePath(const std::string &path) {
-    std::rename(path.c_str(), (path + "_original").c_str());
-    return path;
 }
 
 std::string PrettyPrinter::declaration(Function *function) {

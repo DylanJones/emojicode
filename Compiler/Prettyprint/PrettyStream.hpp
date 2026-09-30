@@ -30,7 +30,12 @@ class PrettyStream {
 public:
     PrettyStream(PrettyPrinter *prettyPrinter) : prettyPrinter_(prettyPrinter) {}
 
+    /// Makes the stream write to the file at path.
+    /// @throws CompilerError if the file cannot be opened.
     void setOutPath(const std::string &path);
+    /// Flushes the file stream opened by setOutPath().
+    /// @throws CompilerError if writing failed.
+    void finish();
     /// Makes the stream write to a string, which takeString() returns.
     void setOutString();
     /// Returns what was written since setOutString() and clears it.
@@ -80,6 +85,7 @@ public:
     
 private:
     std::unique_ptr<std::ostream> stream_;
+    std::string path_;
 
     PrettyPrinter *prettyPrinter_;
     TypeContext typeContext_;

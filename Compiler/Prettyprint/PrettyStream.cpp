@@ -7,10 +7,13 @@
 
 #include "PrettyStream.hpp"
 #include "AST/ASTType.hpp"
+#include "CompilerError.hpp"
 #include "Lex/SourceManager.hpp"
 #include "PrettyPrinter.hpp"
 #include "Types/Type.hpp"
 #include "Utils/StringUtils.hpp"
+#include <cerrno>
+#include <cstring>
 
 namespace EmojicodeCompiler {
 
@@ -38,7 +41,22 @@ void PrettyStream::printComments(const SourcePosition &p) {
 }
 
 void PrettyStream::setOutPath(const std::string &path) {
+    path_ = path;
     stream_ = std::make_unique<std::fstream>(path, std::ios_base::out);
+    if (!stream_->good()) {
+        auto message = std::strerror(errno);
+        stream_ = std::make_unique<std::ostringstream>();
+        throw CompilerError(SourcePosition(), "Could not write ", path, ": ", message);
+    }
+}
+
+void PrettyStream::finish() {
+    errno = 0;
+    stream_->flush();
+    if (!stream_->good()) {
+        throw CompilerError(SourcePosition(), "Could not write ", path_, ": ",
+                            errno != 0 ? std::strerror(errno) : "I/O error");
+    }
 }
 
 void PrettyStream::setOutString() {
