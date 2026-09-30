@@ -10,6 +10,7 @@
 #include "Emojis.h"
 #include "Functions/Function.hpp"
 #include "Functions/Initializer.hpp"
+#include "Compiler.hpp"
 #include "Package/Package.hpp"
 #include "Parsing/OperatorHelper.hpp"
 #include "Types/Class.hpp"
@@ -31,9 +32,12 @@ void PrettyPrinter::printRecordings(const std::vector<std::unique_ptr<RecordingP
 
 void PrettyPrinter::print() {
     for (auto &file : package_->files()) {
+        auto sourceFile = package_->compiler()->sourceManager().read(file.path_);
         prettyStream_.setOutPath(filePath(file.path_));
+        prettyStream_.startFile();
 
         printRecordings(file.recordings_);
+        prettyStream_.printRemainingComments(sourceFile);
     }
 }
 
@@ -69,6 +73,11 @@ void PrettyPrinter::printLinkHints() {
 }
 
 void PrettyPrinter::print(RecordingPackage::Recording *recording) {
+    if (dynamic_cast<RecordingPackage::DocumentationRecording *>(recording) && !interface_) {
+        // Interfaces print the documentation at their beginning, see printInterface().
+        prettyStream_.refuseOffer() << "📘" << package_->documentation() << "📘\n";
+        prettyStream_.offerNewLine();
+    }
     if (auto import = dynamic_cast<RecordingPackage::Import *>(recording)) {
         prettyStream_.refuseOffer() << "📦 " << import->package << " " << import->destNamespace << "\n";
         prettyStream_.offerNewLine();
@@ -91,6 +100,7 @@ void PrettyPrinter::print(RecordingPackage::Recording *recording) {
         prettyStream_.offerNewLine();
     }
     if (dynamic_cast<RecordingPackage::StartFlagFunctionRecording *>(recording)) {
+        prettyStream_.printComments(package_->startFlagFunction()->position());
         prettyStream_ << "🏁 ";
         if (package_->startFlagFunction()->returnType() != nullptr) {
             printReturnType(package_->startFlagFunction());
@@ -169,6 +179,10 @@ void PrettyPrinter::printDocumentation(const std::u32string &doc) {
 void PrettyPrinter::printTypeDef(const Type &type) {
     auto typeDef = type.typeDefinition();
 
+    if (!interface_) {
+        prettyStream_.printComments(typeDef->position());
+    }
+
     printDocumentation(typeDef->documentation());
 
     if (typeDef->exported()) {
@@ -203,8 +217,12 @@ void PrettyPrinter::printTypeDef(const Type &type) {
     prettyStream_ << "🍇\n";
 
     if (auto protocol = type.protocol()) {
+        std::vector<Member> methods;
         for (auto method : protocol->methods().list()) {
-            print(moodEmoji(method->mood()), method, false, false);
+            methods.push_back({moodEmoji(method->mood()), method, false});
+        }
+        for (auto &member : sortedMembers(std::move(methods))) {
+            print(member.key, member.function, false, member.noMutate);
         }
         prettyStream_ << "🍉\n\n";
         prettyStream_.decreaseIndent();
@@ -262,15 +280,33 @@ void PrettyPrinter::printTypeDefName(const Type &type) {
 }
 
 void PrettyPrinter::printMethodsAndInitializers(TypeDefinition *typeDef) {
+    std::vector<Member> members;
     for (auto init : typeDef->inits().list()) {
-        print("🆕", init, true, true);
+        members.push_back({"🆕", init, true});
     }
     for (auto method : typeDef->methods().list()) {
-        print(moodEmoji(method->mood()), method, true, false);
+        members.push_back({moodEmoji(method->mood()), method, false});
     }
-    for (auto typeMethod : typeDef->typeMethods().list()) {
-        print(moodEmoji(typeMethod->mood()), typeMethod, true, true);
+    for (auto method : typeDef->typeMethods().list()) {
+        members.push_back({moodEmoji(method->mood()), method, true});
     }
+    for (auto &member : sortedMembers(std::move(members))) {
+        print(member.key, member.function, true, member.noMutate);
+    }
+}
+
+std::vector<PrettyPrinter::Member> PrettyPrinter::sortedMembers(std::vector<Member> members) {
+    if (!interface_) {
+        // Keep the declarations in the order of the source so that comments stay with what they belong to.
+        std::stable_sort(members.begin(), members.end(), [](const Member &a, const Member &b) {
+            auto key = [](const Member &m) {
+                auto &p = m.function->position();
+                return std::make_tuple(p.file == nullptr, p.line, p.character);
+            };
+            return key(a) < key(b);
+        });
+    }
+    return members;
 }
 
 void PrettyPrinter::printProtocolConformances(TypeDefinition *typeDef, const TypeContext &typeContext) {
@@ -307,7 +343,8 @@ void PrettyPrinter::printEnumValues(Enum *enumeration) {
 }
 
 void PrettyPrinter::printFunctionAttributes(Function *function, bool noMutate) {
-    if (function->isInline()) {
+    // A source file only keeps the attribute if it was written, small functions are inlined automatically.
+    if (interface_ ? function->isInline() : function->isExplicitlyInline()) {
         prettyStream_ << "🥯 ";
     }
     if (function->deprecated()) {
@@ -373,6 +410,9 @@ void PrettyPrinter::print(const char *key, Function *function, bool body, bool n
         return;
     }
     if (documentation) {
+        if (!interface_) {
+            prettyStream_.printComments(function->position());
+        }
         printDocumentation(function->documentation());
     }
 
@@ -412,7 +452,8 @@ void PrettyPrinter::print(const char *key, Function *function, bool body, bool n
 
 void PrettyPrinter::printBody(Function *function) {
     if (!function->externalName().empty()) {
-        prettyStream_ << " 📻 🔤" << function->externalName() << "🔤";
+        prettyStream_.ensureSpace();
+        prettyStream_ << "📻 🔤" << function->externalName() << "🔤";
     }
     // Importers call a function exported to C like any other C function, so interfaces only need its name.
     if (function->externalName().empty() || (function->isExported() && !interface_)) {
@@ -428,7 +469,7 @@ void PrettyPrinter::printBody(Function *function) {
             }
         }
         else {
-            prettyStream_.setLastCommentQueryPlace(function->position());
+            prettyStream_.ensureSpace();
             function->ast()->toCode(prettyStream_);
         }
     }

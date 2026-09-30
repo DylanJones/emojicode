@@ -40,6 +40,14 @@ private:
 
     void printClosure(Function *function, bool esacping);
 
+    struct Member {
+        const char *key;
+        Function *function;
+        bool noMutate;
+    };
+    /// Returns @p members in the order in which they are printed.
+    std::vector<Member> sortedMembers(std::vector<Member> members);
+
     void printRecordings(const std::vector<std::unique_ptr<RecordingPackage::Recording>> &recordings);
     void print(const char *key, Function *function, bool body, bool noMutate, bool documentation = true);
     void print(RecordingPackage::Recording *recording);

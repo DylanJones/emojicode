@@ -83,7 +83,7 @@ public:
     const std::string& path() const { return path_; }
 
     const std::u32string& documentation() const { return documentation_; }
-    void setDocumentation(const std::u32string &doc) { documentation_ = doc; }
+    virtual void setDocumentation(const std::u32string &doc) { documentation_ = doc; }
 
     virtual void setStartFlagFunction(Function *function) { startFlag_ = function; }
     Function* startFlagFunction() const { return startFlag_; }

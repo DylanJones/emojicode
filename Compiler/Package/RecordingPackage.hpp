@@ -48,6 +48,8 @@ public:
 
     class LinkHintsRecording : public Recording {};
 
+    class DocumentationRecording : public Recording {};
+
     struct File {
         explicit File(std::string path) : path_(std::move(path)) {}
         std::string path_;
@@ -60,6 +62,7 @@ public:
     void offerType(Type t, const std::u32string &name, const std::u32string &ns, bool exportFromPkg,
                            const SourcePosition &p) override;
     void includeDocument(const std::string &path, const std::string &relativePath) override;
+    void setDocumentation(const std::u32string &doc) override;
     void setStartFlagFunction(Function *function) override;
     void setLinkHints(std::vector<std::string> hints) override;
 private:

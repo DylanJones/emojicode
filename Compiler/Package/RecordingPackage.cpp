@@ -37,6 +37,11 @@ void RecordingPackage::includeDocument(const std::string &path, const std::strin
     currentFile_ = temp;
 }
 
+void RecordingPackage::setDocumentation(const std::u32string &doc) {
+    files_[currentFile_].recordings_.emplace_back(std::make_unique<DocumentationRecording>());
+    Package::setDocumentation(doc);
+}
+
 void RecordingPackage::setStartFlagFunction(Function *function) {
     files_[currentFile_].recordings_.emplace_back(std::make_unique<StartFlagFunctionRecording>());
     Package::setStartFlagFunction(function);
