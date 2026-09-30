@@ -30,7 +30,7 @@ void VTCreator::assign(Function *function) {
         functions_[designatedVti] = layer->unspecificReification().function;
 
         functions_.emplace_back(function->unspecificReification().function);
-        function->unspecificReification().setVti(designatedVti);
+        function->unspecificReification().setVti(vti_);
         vti_++;
     }
     else {
