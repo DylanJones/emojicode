@@ -9,6 +9,7 @@
 #include "../runtime/Runtime.h"
 #include "../runtime/Internal.hpp"
 #include "Data.h"
+#include "ByteSearch.h"
 #include "String.h"
 #include "utf8proc.h"
 #include <algorithm>
@@ -106,16 +107,8 @@ extern "C" runtime::SimpleOptional<runtime::Integer> sStringFind(String *string,
 
 extern "C" runtime::SimpleOptional<runtime::Integer> sStringFindFromIndex(String *string, String* search,
                                                                           runtime::Integer offset) {
-    if (offset >= string->count) {
-        return runtime::NoValue;
-    }
-    auto end = string->characters.get() + string->count;
-    auto pos = std::search(string->characters.get() + offset, end, search->characters.get(),
-                           search->characters.get() + search->count);
-    if (pos != end) {
-        return pos - string->characters.get();
-    }
-    return runtime::NoValue;
+    return s::findBytesFromOffset(string->characters.get(), string->count, search->characters.get(), search->count,
+                               offset);
 }
 
 extern "C" void sStringCodepoints(String *string, runtime::Callable<void, runtime::Integer, runtime::Integer> cb) {
@@ -203,25 +196,25 @@ extern "C" void sStringGraphemes(String *string, runtime::Callable<void, s::Stri
     newString->release();
 }
 
+static String *emptyString() {
+    auto newString = String::init();
+    newString->count = 0;
+    newString->characters = runtime::allocate<char>(0);
+    return newString;
+}
+
 extern "C" s::String* sStringGraphemeSubstring(String *string, runtime::Integer from, runtime::Integer length) {
     auto bytes = reinterpret_cast<utf8proc_uint8_t *>(string->characters.get());
     utf8proc_int32_t state = 0;
     utf8proc_int32_t prev, cp;
     size_t beginCut = 0, off = 0;
 
-    if (length == 0 || string->count == 0) {
-        auto newString = String::init();
-        newString->count = 0;
-        newString->characters = runtime::allocate<char>(0);
-        return newString;
+    if (string->count == 0 || length <= 0 || from < 0) {
+        return emptyString();
     }
-
     auto first = utf8proc_iterate(bytes, string->count, &prev);
     if (first < 0) {
-        auto newString = String::init();
-        newString->count = 0;
-        newString->characters = runtime::allocate<char>(0);
-        return newString;
+        return emptyString();
     }
     off = first;
 
@@ -237,6 +230,9 @@ extern "C" s::String* sStringGraphemeSubstring(String *string, runtime::Integer 
         }
         prev = cp;
         off += c;
+    }
+    if (from > 0) {
+        return emptyString();
     }
     while (off < string->count) {
         auto c = utf8proc_iterate(bytes + off, string->count - off, &cp);

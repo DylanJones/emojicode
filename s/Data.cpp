@@ -3,6 +3,7 @@
 //
 
 #include "../runtime/Runtime.h"
+#include "ByteSearch.h"
 #include "Data.h"
 #include "String.h"
 #include "utf8proc.h"
@@ -12,15 +13,7 @@ namespace s {
 
 extern "C" runtime::SimpleOptional<runtime::Integer> sDataFindFromIndex(Data *data, Data *search,
                                                                         runtime::Integer offset) {
-    if (offset >= data->count) {
-        return runtime::NoValue;
-    }
-    auto end = data->data.get() + data->count;
-    auto pos = std::search(data->data.get() + offset, end, search->data.get(), search->data.get() + search->count);
-    if (pos != end) {
-        return pos - data->data.get();
-    }
-    return runtime::NoValue;
+    return findBytesFromOffset(data->data.get(), data->count, search->data.get(), search->count, offset);
 }
 
 extern "C" runtime::SimpleOptional<String *> sDataAsString(Data *data) {

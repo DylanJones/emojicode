@@ -29,6 +29,13 @@
     🔢👇 📏🔪📇🔤34This🔤❗️ 6 20❗️❓ 0 🔤Copy Test After Content🔤❗️
     🔢👇 📏🔪📇🔤34This🔤❗️ 0 20❗️❓ 6 🔤Copy Test Too Long🔤❗️
     🔢👇 📏🔪📇🔤🔤❗️ 3 20❗️❓ 0 🔤Copy Test Empty🔤❗️
+    🔢👇 📏🔪📇🔤abc🔤❗️ -100000000 2❗️❓ 0 🔤Slice negative from🔤❗️
+    🔢👇 📏🔪📇🔤abc🔤❗️ 1 -1❗️❓ 0 🔤Slice negative length🔤❗️
+    🔢👇 📏🔪📇🔤abc🔤❗️ 1 9223372036854775807❗️❓ 2 🔤Slice huge length🔤❗️
+    🔢👇 📏🔪📇🔤abc🔤❗️ 3 1❗️❓ 0 🔤Slice at end🔤❗️
+
+    ⛔👇 🔍data1 📇🔤is🔤❗️ -1❗️ 🙌 🤷‍♀️ 🔤Search negative offset🔤❗️
+    ⛔👇 🔍data1 📇🔤is🔤❗️ -100000000❗️ 🙌 🤷‍♀️ 🔤Search huge negative offset🔤❗️
   🍉
 🍉
 

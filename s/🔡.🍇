@@ -149,11 +149,14 @@ string, but those themselves are then immutable again.
   ❗️ 🔪 from 🔢 length 🔢 ➡️ 🔡 📻 🔤sStringGraphemeSubstring🔤
 
   🔒 ❗️ 🗡 from 🔢 length 🔢 ➡️ 🔡 🍇
+    ↪️ from ◀️ 0 👐 length ◀️ 0 🍇
+      ↩️ 🔤🔤
+    🍉
     ↪️ from ▶️️🙌 count 🍇
       ↩️ 🔤🔤
     🍉
     length ➡️ 🖍🆕normal_length
-    ↪️ from ➕ length ▶️️🙌 count 🍇
+    ↪️ length ▶️ count ➖ from 🍇
       count ➖ from ➡️ 🖍normal_length
     🍉
 
