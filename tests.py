@@ -220,6 +220,9 @@ def log(text):
 
 
 def fail_test(name):
+    if report.failed:
+        # A test is reported once, even if it fails and then raises.
+        return
     log("🛑 {0} failed".format(name))
     report.failed = True
     with failed_tests_lock:
@@ -255,14 +258,14 @@ def library_test(name):
         completed = run([binary_path], stdout=PIPE, cwd=os.path.join(dist.source, "tests", "s"))
     if completed.returncode != 0:
         fail_test(name)
-        log(completed.stdout.decode('utf-8'))
+        log(completed.stdout.decode('utf-8', 'backslashreplace'))
 
 
 def check_output(name, binary_path, env=None):
     """Runs the program of the compilation test name and checks its output."""
     completed = run([binary_path], stdout=PIPE, env=env)
     exp_path = os.path.join(dist.source, "tests", "compilation", name + ".txt")
-    output = completed.stdout.decode('utf-8')
+    output = completed.stdout.decode('utf-8', 'backslashreplace')
     expected_returncode = -signal.SIGABRT if name in panic_tests else 0
     if output != open(exp_path, "r", encoding='utf-8').read() or completed.returncode != expected_returncode:
         log(output)
@@ -383,7 +386,7 @@ def host_test(name):
     run([os.environ.get("CXX", "c++"), host_object_path, object_path] + libraries +
         ['-lm', '-lpthread', '-o', binary_path], check=True)
     completed = run([binary_path], stdout=PIPE)
-    output = completed.stdout.decode('utf-8')
+    output = completed.stdout.decode('utf-8', 'backslashreplace')
     if output != open(os.path.join(directory, name + ".txt"), "r", encoding='utf-8').read() or \
             completed.returncode != 0:
         log(output)
@@ -412,7 +415,7 @@ def importing_test(name):
         if os.path.exists(check_path):
             check_ir(name, ir, check_path)
     completed = run([os.path.join(directory, name)], stdout=PIPE)
-    output = completed.stdout.decode('utf-8')
+    output = completed.stdout.decode('utf-8', 'backslashreplace')
     if output != open(os.path.join(directory, name + ".txt"), "r", encoding='utf-8').read() or \
             completed.returncode != 0:
         log(output)
@@ -421,7 +424,7 @@ def importing_test(name):
 
 def reject_test(filename):
     completed = run([emojicodec, '-S', test_packages, filename], stderr=PIPE)
-    output = completed.stderr.decode('utf-8')
+    output = completed.stderr.decode('utf-8', 'backslashreplace')
     # NAME.txt, if there is one, holds text that the error must contain, e.g. to tell apart errors of the same check.
     expected_path = os.path.splitext(filename)[0] + ".txt"
     expected = open(expected_path, encoding='utf-8').read().strip() if os.path.exists(expected_path) else ""
@@ -458,7 +461,7 @@ def parse_test(filename):
     completed = run([emojicodec, '--parse-only', '-S', test_packages, filename],
                     stderr=PIPE)
     if completed.returncode != 0:
-        log(completed.stderr.decode('utf-8'))
+        log(completed.stderr.decode('utf-8', 'backslashreplace'))
         fail_test(filename)
 
 
@@ -565,8 +568,8 @@ def valgrind_test(name):
         completed = run(['valgrind', '--error-exitcode=22', '--leak-check=full', binary_path], stdout=PIPE,
                         stderr=PIPE)
     if completed.returncode == 22:
-        log(completed.stdout.decode('utf-8'))
-        log(completed.stderr.decode('utf-8'))
+        log(completed.stdout.decode('utf-8', 'backslashreplace'))
+        log(completed.stderr.decode('utf-8', 'backslashreplace'))
         fail_test(name)
 
 

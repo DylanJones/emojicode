@@ -1,6 +1,7 @@
 """Regression tests for the test discovery and scheduling in tests.py, run against isolated fixture directories so
 they do not depend on, or affect, the real tests/ tree. Run with `python3 test_tests.py`."""
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -150,6 +151,36 @@ class DiscoverImportingTestsTests(unittest.TestCase):
             write(directory, "importer", ".txt")
 
             self.assertEqual(tests_py.discover_importing_tests(directory), ["importer"])
+
+
+class FailureReportTests(unittest.TestCase):
+    def setUp(self):
+        self.original_run = tests_py.run
+        self.original_failed = list(tests_py.failed_tests)
+        tests_py.failed_tests.clear()
+
+    def tearDown(self):
+        tests_py.run = self.original_run
+        tests_py.failed_tests[:] = self.original_failed
+
+    def test_failing_library_test_with_invalid_utf8_output_is_logged_and_counted_once(self):
+        def fake_run(args, check=False, **kwargs):
+            return subprocess.CompletedProcess(args, 1, stdout=b"caf\xc3")
+        tests_py.run = fake_run
+
+        lines, _, failed = tests_py.perform("broken", tests_py.library_test, "broken")
+
+        self.assertTrue(failed)
+        self.assertEqual(tests_py.failed_tests, ["broken"])
+        self.assertIn("caf\\xc3", "".join(lines))
+        self.assertNotIn("Traceback", "".join(lines))
+
+    def test_fail_test_reports_a_test_once(self):
+        tests_py.report.lines = []
+        tests_py.report.failed = False
+        tests_py.fail_test("twice")
+        tests_py.fail_test("twice")
+        self.assertEqual(tests_py.failed_tests, ["twice"])
 
 
 if __name__ == "__main__":
