@@ -45,11 +45,7 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
     method_ = calleeType_.typeDefinition()->methods().get(name, args_.mood(), &args_,
                                                           &calleeType_, analyser, position());
 
-    // A private or 🔏 method cannot be overridden, and an exact type has no subclass that could override it.
-    if (calleeType_.type() == TypeType::Class &&
-        (method_->accessLevel() == AccessLevel::Private || method_->final() || calleeType_.isExact())) {
-        callType_ = CallType::StaticDispatch;
-    }
+    selectStaticDispatch(false);
 
     checkMutation(analyser, callee);
     ensureErrorIsHandled(analyser);
@@ -128,6 +124,16 @@ void ASTMethod::mutateReference(ExpressionAnalyser *analyser) {
     callee_->mutateReference(analyser);
 }
 
+void ASTMethodable::selectStaticDispatch(bool namedClass) {
+    // A private or 🔏 method cannot be overridden, and neither an exact type nor a class named in the call, as in
+    // 🤯🐇💻, can be a subclass that overrides it. (A class named elsewhere, e.g. in a list of type values, can
+    // become a subclass, so its type is not exact.)
+    if (calleeType_.type() == TypeType::Class && (method_->accessLevel() == AccessLevel::Private ||
+                                                  method_->final() || calleeType_.isExact() || namedClass)) {
+        callType_ = CallType::StaticDispatch;
+    }
+}
+
 Type ASTMethodable::analyseTypeMethodCall(ExpressionAnalyser *analyser, const std::u32string &name,
                                           std::shared_ptr<ASTExpr> &callee) {
     calleeType_ = calleeType_.typeOfTypeValue();
@@ -145,14 +151,7 @@ Type ASTMethodable::analyseTypeMethodCall(ExpressionAnalyser *analyser, const st
     method_ = calleeType_.typeDefinition()->typeMethods().get(name, args_.mood(), &args_,
                                                               &calleeType_, analyser, position());
 
-    // A private or 🔏 method cannot be overridden, and neither an exact type nor a class named in the call, as in
-    // 🤯🐇💻, can be a subclass that overrides it. (A class named elsewhere, e.g. in a list of type values, can
-    // become a subclass, so its type is not exact.)
-    auto namedClass = std::dynamic_pointer_cast<ASTTypeAsValue>(callee) != nullptr;
-    if (calleeType_.type() == TypeType::Class && (method_->accessLevel() == AccessLevel::Private ||
-                                                  method_->final() || calleeType_.isExact() || namedClass)) {
-        callType_ = CallType::StaticDispatch;
-    }
+    selectStaticDispatch(std::dynamic_pointer_cast<ASTTypeAsValue>(callee) != nullptr);
     ensureErrorIsHandled(analyser);
     return analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
 }
@@ -161,6 +160,8 @@ Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const
                                              const std::shared_ptr<ASTExpr> &callee) {
     auto argTypes = analyseArgs(analyser, &args_);
     auto genericArgs = transformTypeAstVector(args_.genericArguments(), analyser->typeContext());
+    auto error = CompilerError(position(), "No type in ", calleeType_.toString(analyser->typeContext()),
+                               " provides a method ", utf8(name), ".");
     // The generic parameters of a method, e.g. Element in 🍡🐚🔢🍆, are resolved on the protocol that declares it.
     for (multiprotocolN_ = 0; multiprotocolN_ < calleeType_.protocols().size(); multiprotocolN_++) {
         auto protocol = calleeType_.protocols()[multiprotocolN_];
@@ -174,9 +175,9 @@ Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const
             checkMutation(analyser, callee);
             return analyser->analyseFunctionCall(&args_, protocol, method_);
         }
+        resolution.explain(&error);
     }
-    throw CompilerError(position(), "No type in ", calleeType_.toString(analyser->typeContext()),
-                        " provides a method ", utf8(name), ".");
+    throw std::move(error);
 }
 
 std::map<std::pair<TypeDefinition*, char32_t>, ASTMethodable::BuiltInType> ASTMethodable::kBuiltIns = {};
