@@ -25,7 +25,12 @@ if len(sys.argv) > 1:
 else:
     data = urllib.request.urlopen(URL).read().decode("utf-8")
 
-version = re.search(r"^# Used with Emoji Version (\d+\.\d+)", data, re.M).group(1)
+# Current files say "# Version: 18.0.0"; files up to Emoji 15 said "# Used with Emoji Version 15.0".
+version_match = (re.search(r"^# Version: (\d+\.\d+)(?:\.\d+)?\s*$", data, re.M)
+                 or re.search(r"^# Used with Emoji Version (\d+\.\d+)", data, re.M))
+if version_match is None:
+    sys.exit("No '# Version: x.y.z' or '# Used with Emoji Version x.y' header found in the emoji data.")
+version = version_match.group(1)
 
 properties = {}
 for line in data.splitlines():
