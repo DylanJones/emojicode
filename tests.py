@@ -158,6 +158,20 @@ def discover_host_tests(directory):
     return host_tests
 
 
+def discover_reject_tests(directory):
+    """Finds the reject tests in directory and returns the paths of their sources. Requires each to have a NAME.txt
+    with the text its one error must contain, so that it is the error the test is meant to provoke and not an
+    unrelated one, e.g. from syntax that no longer exists."""
+    reject_orphans(directory, [".txt", ".warnings"], ".emojic", "its reject test")
+    tests = names_with_extension(directory, ".emojic")
+    for name in tests:
+        path = os.path.join(directory, name + ".txt")
+        require(path, "tests/reject/{0}.txt, the text of the error of {0}.emojic".format(name))
+        if not open(path, encoding='utf-8').read().strip():
+            sys.exit("🛑 tests/reject/{0}.txt is empty, so it would match any error.".format(name))
+    return [os.path.join(directory, name + ".emojic") for name in tests]
+
+
 def discover_importing_tests(directory):
     """Finds the importing tests in directory: programs that import a package of the same name with "Package"
     appended, which is compiled first. They test code that is only generated in importers, like the bodies of
@@ -202,8 +216,7 @@ host_tests = discover_host_tests(host_directory)
 importing_directory = os.path.join(dist.source, "tests", "importing")
 importing_tests = discover_importing_tests(importing_directory)
 
-reject_tests = glob.glob(os.path.join(dist.source, "tests", "reject",
-                                      "*.emojic"))
+reject_tests = discover_reject_tests(os.path.join(dist.source, "tests", "reject"))
 parse_tests = glob.glob(os.path.join(dist.source, "tests", "parse",
                                      "*.emojic"))
 test_packages = os.path.join(dist.source, "tests", "packages")
@@ -513,10 +526,10 @@ def importing_test(name):
 def reject_test(filename):
     completed = run([emojicodec, '-S', test_packages, filename], stderr=PIPE)
     output = completed.stderr.decode('utf-8')
-    # NAME.txt, if there is one, holds text that the error must contain, e.g. to tell apart errors of the same check.
-    expected_path = os.path.splitext(filename)[0] + ".txt"
-    expected = open(expected_path, encoding='utf-8').read().strip() if os.path.exists(expected_path) else ""
-    if completed.returncode != 1 or len(re.findall(r"🚨 error:", output)) != 1 or expected not in output:
+    # NAME.txt holds text that the error must contain (see discover_reject_tests).
+    expected = open(os.path.splitext(filename)[0] + ".txt", encoding='utf-8').read().strip()
+    if completed.returncode != 1 or len(re.findall(r"🚨 error:", output)) != 1 or not expected or \
+            expected not in output:
         log(output)
         fail_test(filename)
     check_warnings(filename, output, os.path.splitext(filename)[0] + ".warnings")

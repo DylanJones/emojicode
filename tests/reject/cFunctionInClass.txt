@@ -1,0 +1,1 @@
+Functions with 🎍🌊 must be declared in a value type or an enumeration.

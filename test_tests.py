@@ -194,6 +194,45 @@ class OrphanTests(unittest.TestCase):
                 tests_py.discover_importing_tests(directory)
 
 
+class RejectTests(unittest.TestCase):
+    def test_missing_or_empty_expected_message_fails_the_suite(self):
+        for content in [None, "", " \n"]:
+            with self.subTest(content=content), tempfile.TemporaryDirectory() as directory:
+                write(directory, "r", ".emojic")
+                if content is not None:
+                    write(directory, "r", ".txt", content)
+                with self.assertRaises(SystemExit):
+                    tests_py.discover_reject_tests(directory)
+
+    def test_orphan_companion_fails_the_suite(self):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "typo", ".txt", "message")
+            with self.assertRaises(SystemExit):
+                tests_py.discover_reject_tests(directory)
+
+    def test_complete_fixture_is_discovered(self):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "r", ".emojic")
+            write(directory, "r", ".txt", "message\n")
+            self.assertEqual(tests_py.discover_reject_tests(directory), [os.path.join(directory, "r.emojic")])
+
+    def test_empty_expectation_never_matches(self):
+        """reject_test itself also refuses an empty expectation, which would be contained in any output."""
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "r", ".emojic")
+            write(directory, "r", ".txt", "\n")
+            original = tests_py.run
+            tests_py.run = lambda *a, **k: subprocess.CompletedProcess(a, 1, b"", b"\xf0\x9f\x9a\xa8 error: x\n")
+            try:
+                tests_py.report.lines, tests_py.report.stderr, tests_py.report.failed = [], [], False
+                tests_py.failed_tests.clear()
+                tests_py.reject_test(os.path.join(directory, "r.emojic"))
+                self.assertTrue(tests_py.report.failed)
+            finally:
+                tests_py.run = original
+                tests_py.failed_tests.clear()
+
+
 class CheckIRTests(unittest.TestCase):
     IR = 'define void @"f"() {\nentry:\n  ret void\n}\n'
 
