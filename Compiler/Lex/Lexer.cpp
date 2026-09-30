@@ -15,6 +15,12 @@ namespace EmojicodeCompiler {
 
 Lexer::Lexer(SourceFile *source, bool minimalMode, bool recordLines)
         : sourcePosition_(1, 1, source), source_(source), minimalMode_(minimalMode), recordLines_(recordLines) {
+    // A leading byte order mark is a signature, not part of the program. It is skipped rather than removed from the
+    // source so that recorded offsets keep matching the file.
+    if (!source->file().empty() && source->file()[0] == 0xFEFF) {
+        i_ = 1;
+    }
+    continue_ = i_ < source->file().size();
     skipWhitespace();
 
     loadOperatorSingleTokens();
