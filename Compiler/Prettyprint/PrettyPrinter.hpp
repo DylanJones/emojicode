@@ -40,6 +40,14 @@ private:
 
     void printClosure(Function *function, bool esacping);
 
+    struct Member {
+        const char *key;
+        Function *function;
+        bool noMutate;
+    };
+    /// Returns @p members in the order in which they are printed.
+    std::vector<Member> sortedMembers(std::vector<Member> members);
+
     void printRecordings(const std::vector<std::unique_ptr<RecordingPackage::Recording>> &recordings);
     void print(const char *key, Function *function, bool body, bool noMutate, bool documentation = true);
     void print(RecordingPackage::Recording *recording);
@@ -68,6 +76,10 @@ private:
     void printFunctionAttributes(Function *function, bool noMutate);
     void printFunctionAccessLevel(Function *function);
     void printTypeDef(const Type &type);
+    /// Prints the comments in front of @p p unless printing an interface.
+    void printComments(const SourcePosition &p);
+    /// Prints the comments that end the type, which ends after this function.
+    void printTypeEnd(TypeDefinition *typeDef);
     void printDocumentation(const std::u32string &doc);
     void printLinkHints();
     void printErrorType(Function *function);

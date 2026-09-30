@@ -40,7 +40,10 @@ Token AbstractParser::parseTypeEmoji() const {
     return stream_.consumeToken(TokenType::Identifier);
 }
 
+thread_local int NestingGuard::depth_ = 0;
+
 std::unique_ptr<ASTType> AbstractParser::parseType() {
+    NestingGuard guard(stream_.nextToken().position());
     if (stream_.nextTokenIs(TokenType::Class) || stream_.nextTokenIs(TokenType::Enumeration) ||
             stream_.nextTokenIs(TokenType::ValueType) || stream_.nextTokenIs(TokenType::Protocol)) {
         return parseTypeAsValueType();

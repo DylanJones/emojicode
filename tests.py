@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from subprocess import PIPE, CalledProcessError, TimeoutExpired
 import glob
+import shutil
 import os
 import dist
 import subprocess
@@ -187,6 +188,7 @@ importing_tests = discover_importing_tests(importing_directory)
 
 reject_tests = glob.glob(os.path.join(dist.source, "tests", "reject",
                                       "*.emojic"))
+format_tests = glob.glob(os.path.join(dist.source, "tests", "format", "*.emojic"))
 parse_tests = glob.glob(os.path.join(dist.source, "tests", "parse",
                                      "*.emojic"))
 test_packages = os.path.join(dist.source, "tests", "packages")
@@ -476,22 +478,71 @@ def parse_test(filename):
         fail_test(filename)
 
 
+TEXT_TOKENS = ('MultilineComment\t', 'SinglelineComment\t', 'DocumentationComment\t',
+               'Package Documentation Token\t', 'String\t', 'BeginInterpolation\t', 'MiddleInterpolation\t',
+               'EndInterpolation\t')
+
+
+def source_text_tokens(path):
+    """Returns the comments, documentation and string tokens of the source at path, sorted and without their
+    positions. Formatting normalises the code around them (e.g. it writes attributes that are implied and moves
+    instance variables and destructors), but it must keep every one of them."""
+    completed = run([emojicodec, '--dump-tokens', path], stdout=PIPE, check=True)
+    tokens = [line.split('\t', 1)[1] for line in completed.stdout.decode('utf-8').splitlines()]
+    return sorted(token for token in tokens if token.startswith(TEXT_TOKENS))
+
+
 def formatted_test(name, formatted):
     """Formats the sources of the compilation tests in formatted, compiles the test name from them and checks its
-    output. The sources are restored before the program runs."""
+    output. Formatting must keep all tokens (including comments and documentation) and formatting the result again
+    must not change it. The sources are restored before the program runs."""
     source_path = test_paths(name, 'compilation')[0]
     paths = [test_paths(file, 'compilation')[0] for file in formatted]
     with tempfile.TemporaryDirectory() as directory:
         binary_path = os.path.join(directory, name)
         with source_lock(source_path):
+            pristine = {path: open(path, 'rb').read() for path in paths}
             try:
+                tokens = {path: source_text_tokens(path) for path in paths}
                 run([emojicodec, '--format', paths[0]], check=True)
+                once = {path: open(path, 'rb').read() for path in paths}
+                for path in paths:
+                    if source_text_tokens(path) != tokens[path]:
+                        log("Formatting changed the comments, documentation or strings of " + path)
+                        fail_test(name + " (formatted)")
                 run([emojicodec, source_path, '-O', '-o', binary_path], check=True)
+                run([emojicodec, '--format', paths[0]], check=True)
+                for path in paths:
+                    if open(path, 'rb').read() != once[path]:
+                        log("Formatting " + path + " a second time changed it")
+                        fail_test(name + " (formatted)")
             finally:
                 for path in paths:
+                    open(path, 'wb').write(pristine[path])
                     if os.path.exists(path + '_original'):
-                        os.replace(path + '_original', path)
+                        os.remove(path + '_original')
         check_output(name, binary_path)
+
+
+def format_test(filename):
+    """Formats a copy of filename and compares the result with the .formatted file next to it. The comments,
+    documentation and strings must survive and formatting the result again must not change it."""
+    expected = open(os.path.splitext(filename)[0] + ".formatted", encoding='utf-8').read()
+    with tempfile.TemporaryDirectory() as directory:
+        path = os.path.join(directory, os.path.basename(filename))
+        shutil.copyfile(filename, path)
+        run([emojicodec, '-S', test_packages, '--format', path], check=True)
+        formatted = open(path, encoding='utf-8').read()
+        if formatted != expected:
+            log("Formatted source differs from the expected one:\n" + formatted)
+            fail_test(filename)
+        if source_text_tokens(path) != source_text_tokens(filename):
+            log("Formatting changed the comments, documentation or strings of " + filename)
+            fail_test(filename)
+        run([emojicodec, '-S', test_packages, '--format', path], check=True)
+        if open(path, encoding='utf-8').read() != formatted:
+            log("Formatting the formatted source changed it")
+            fail_test(filename)
 
 
 def prettyprint_test(name):
@@ -558,6 +609,7 @@ def test():
     tasks += [(test + " (package IR)", package_ir_test, test) for test in package_ir_tests]
     tasks += [(test, reject_test, test) for test in reject_tests]
     tasks += [(test, parse_test, test) for test in parse_tests]
+    tasks += [(test, format_test, test) for test in format_tests]
     tasks += [("command line", command_line_test, None)]
     tasks.sort(key=lambda task: task[2] not in slow_tests)  # A stable sort, which keeps the order otherwise.
     run_all(tasks)

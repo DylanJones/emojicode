@@ -79,17 +79,23 @@ void Lexer::skipByteOrderMark() {
     }
 }
 
-void Lexer::seekLine(unsigned int line) {
+void Lexer::seekPosition(unsigned int line, unsigned int character) {
     auto &lines = source_->lines();  // The index at which each line begins.
-    if (line < 1 || line - 1 >= lines.size()) {
+    if (line < 1 || line - 1 >= lines.size() || character < 1) {
         return;
     }
+    // Characters are counted in code points, like the source file is stored.
+    auto start = i_;
     i_ = lines[line - 1];
     skipByteOrderMark();
+    i_ += character - 1;
+    if (i_ >= source_->file().size()) {
+        i_ = start;
+        return;
+    }
     sourcePosition_.line = line;
-    sourcePosition_.character = 1;
-    continue_ = i_ < source_->file().size();
-    skipWhitespace();
+    sourcePosition_.character = character;
+    continue_ = true;
 }
 
 void Lexer::skipWhitespace() {

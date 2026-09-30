@@ -65,6 +65,9 @@ SourceFile* SourceManager::read(std::string file) {
 
 void SourceFile::findComments(const SourcePosition &a, const SourcePosition &b,
                               const std::function<void (const Token &)> &comment) const {
+    if (std::make_pair(b.line, b.character) < std::make_pair(a.line, a.character)) {
+        return;
+    }
     auto end = comments_.upper_bound(std::make_pair(b.line, b.character));
     auto it = comments_.lower_bound(std::make_pair(a.line, a.character));
     if (it != comments_.end()) {

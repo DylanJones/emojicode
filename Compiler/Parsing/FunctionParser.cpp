@@ -7,6 +7,7 @@
 //
 
 #include "FunctionParser.hpp"
+#include <algorithm>
 #include "AST/ASTBinaryOperator.hpp"
 #include "AST/ASTCast.hpp"
 #include "AST/ASTClosure.hpp"
@@ -40,6 +41,7 @@ ASTBlock FunctionParser::parseBlock() {
 }
 
 ASTBlock FunctionParser::parseBlockToEnd(const SourcePosition &pos) {
+    NestingGuard guard(pos);
     auto block = ASTBlock(pos);
     block.setBeginIndex(stream_.index());
     while (stream_.nextTokenIsEverythingBut(TokenType::BlockEnd)) {
@@ -247,15 +249,38 @@ int FunctionParser::peakOperatorPrecedence() {
     return 0;
 }
 
+namespace {
+
+/// The height of the tallest expression parsed directly below the expression currently being parsed. The AST of a chain
+/// of binary operators is as high as the chain is long, and the analysis recurses through it, so the height of the AST,
+/// which nesting groups multiply with chain length, is bounded as well as the depth of the parser.
+thread_local int childHeight = 0;
+
+}  // namespace
+
 std::shared_ptr<ASTExpr> FunctionParser::parseExprTokens(const Token &token, int precendence) {
-    return parseRight(parseExprLeft(token, precendence), precendence);
+    NestingGuard guard(token.position());
+    struct HeightScope {
+        int saved = childHeight;
+        int height = 0;
+        HeightScope() { childHeight = 0; }
+        ~HeightScope() { childHeight = std::max(saved, height); }
+    } scope;
+    auto left = parseExprLeft(token, precendence);
+    scope.height = childHeight + 1;
+    return parseRight(std::move(left), precendence, scope.height);
 }
 
-std::shared_ptr<ASTExpr> FunctionParser::parseRight(std::shared_ptr<ASTExpr> left, int precendence) {
+std::shared_ptr<ASTExpr> FunctionParser::parseRight(std::shared_ptr<ASTExpr> left, int precendence, int &height) {
     int peakedPre;
     while (precendence < (peakedPre = peakOperatorPrecedence())) {
         auto token = stream_.consumeToken();
+        childHeight = 0;
         auto right = parseExpr(peakedPre);
+        height = std::max(height, childHeight) + 1;
+        if (height > NestingGuard::kMaxNesting) {
+            throw CompilerError(token.position(), "Nesting too deep.");
+        }
         left = std::make_shared<ASTBinaryOperator>(operatorType(token.value()), left, right, token.position());
     }
     return left;

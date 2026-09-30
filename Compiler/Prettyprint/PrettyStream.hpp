@@ -15,10 +15,14 @@
 #include <sstream>
 #include <functional>
 #include <memory>
+#include <set>
+#include <tuple>
 
 namespace EmojicodeCompiler {
 
 class ASTNode;
+class SourceFile;
+class Token;
 class PrettyPrinter;
 
 /// PrettyStream manages the stream to which code is appended. PrettyStream can be appended to with <<.
@@ -62,12 +66,24 @@ public:
     void printClosure(Function *function, bool escaping);
 
     void setLastCommentQueryPlace(const SourcePosition &p);
+    /// Prints the comments of the source file that are in front of @p p and were not printed yet.
     void printComments(const SourcePosition &p);
+    /// Prints all comments of @p file that were not printed yet.
+    void printRemainingComments(SourceFile *file);
+    /// Returns true iff there is a comment that was not printed yet in front of @p p.
+    bool hasCommentsBefore(const SourcePosition &p) const;
+    /// Ends the current line if it is not empty, instead of offering a new line.
+    void finishLine();
+    /// Must be called when starting to print another source file.
+    void startFile();
+    /// Offers a space unless the output already ends with whitespace.
+    void ensureSpace();
 
     void withTypeContext(const TypeContext &context, std::function<void ()> fn);
 
-    /// Appends the requested amount of indentation characters to the stream and returns it.
-    PrettyStream& indent() { return *this << std::string(indentation_ * 2, ' '); }
+    /// Makes the next thing appended to the stream be preceded by the requested amount of indentation characters.
+    /// The indentation is not written until then, so that comments can go in front of the line.
+    PrettyStream& indent() { indentPending_ = true; return *this; }
 
     void increaseIndent() { indentation_++; }
     void decreaseIndent() { indentation_--; }
@@ -77,6 +93,8 @@ public:
     PrettyStream& refuseOffer() { whitespaceOffer_ = 0; return *this; }
     /// Offers a space character
     void offerSpace() { whitespaceOffer_ = ' '; }
+    /// Offers a new line character unless the output already ends with one, which blocks do.
+    void endLine() { if (lastChar_ != '\n') { offerNewLine(); } }
     /// Offers a new line character
     void offerNewLine() { whitespaceOffer_ = '\n'; }
     /// Calls offerSpace() unless collection returns true for empty()
@@ -90,6 +108,12 @@ private:
     PrettyPrinter *prettyPrinter_;
     TypeContext typeContext_;
     char whitespaceOffer_ = 0;
+    char lastChar_ = 0;
+    bool indentPending_ = false;
+    std::set<std::tuple<const SourceFile *, unsigned int, unsigned int>> printedComments_;
+
+    void write(const std::string &string);
+    void printComment(const Token &comment);
     unsigned int indentation_ = 0;
     SourcePosition lastCommentQuery_ = SourcePosition();
 };
