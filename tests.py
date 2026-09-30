@@ -220,9 +220,6 @@ def log(text):
 
 
 def fail_test(name):
-    if report.failed:
-        # A test is reported once, even if it fails and then raises.
-        return
     log("🛑 {0} failed".format(name))
     report.failed = True
     with failed_tests_lock:
@@ -487,6 +484,12 @@ def prettyprint_test(name):
     formatted_test(name, [name] + formatted_includes.get(name, []))
 
 
+def fail_unreported(name):
+    """Fails a test that raised, unless it already reported its failure before raising."""
+    if not report.failed:
+        fail_test(name)
+
+
 def perform(name, function, *args):
     """Runs a test and returns its report. A command that fails, or any other error, fails the test."""
     report.lines = []
@@ -496,14 +499,14 @@ def perform(name, function, *args):
         function(*args)
     except CalledProcessError as error:
         log("Command failed with exit code {0}: {1}".format(error.returncode, " ".join(map(str, error.cmd))))
-        fail_test(name)
+        fail_unreported(name)
     except TimeoutExpired as error:
         log("Command timed out after {0} s: {1}".format(error.timeout, " ".join(map(str, error.cmd))))
-        fail_test(name)
+        fail_unreported(name)
     except Exception:
-        # E.g. a missing expected output or output that is not UTF-8, which must not abort the other tests.
+        # E.g. a missing expected output file, which must not abort the other tests.
         log(traceback.format_exc())
-        fail_test(name)
+        fail_unreported(name)
     return report.lines, report.stderr, report.failed
 
 

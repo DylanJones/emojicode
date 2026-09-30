@@ -160,6 +160,9 @@ class FailureReportTests(unittest.TestCase):
         tests_py.failed_tests.clear()
 
     def tearDown(self):
+        for attribute in ("lines", "stderr", "failed"):
+            if hasattr(tests_py.report, attribute):
+                delattr(tests_py.report, attribute)
         tests_py.run = self.original_run
         tests_py.failed_tests[:] = self.original_failed
 
@@ -175,12 +178,32 @@ class FailureReportTests(unittest.TestCase):
         self.assertIn("caf\\xc3", "".join(lines))
         self.assertNotIn("Traceback", "".join(lines))
 
-    def test_fail_test_reports_a_test_once(self):
-        tests_py.report.lines = []
-        tests_py.report.failed = False
-        tests_py.fail_test("twice")
-        tests_py.fail_test("twice")
-        self.assertEqual(tests_py.failed_tests, ["twice"])
+    def test_test_that_fails_and_then_raises_is_reported_once(self):
+        def fails_then_raises():
+            tests_py.fail_test("both")
+            raise ValueError("after the failure")
+
+        _, _, failed = tests_py.perform("both", fails_then_raises)
+        self.assertTrue(failed)
+        self.assertEqual(tests_py.failed_tests, ["both"])
+
+    def test_test_that_raises_is_reported(self):
+        def raises():
+            raise ValueError("boom")
+
+        tests_py.perform("raises", raises)
+        self.assertEqual(tests_py.failed_tests, ["raises"])
+
+    def test_distinct_failures_in_one_task_are_all_reported(self):
+        def fake_run(args, check=False, **kwargs):
+            return subprocess.CompletedProcess(args, 99, stdout=b"", stderr=b"")
+        tests_py.run = fake_run
+
+        _, _, failed = tests_py.perform("command line", tests_py.command_line_test, None)
+
+        self.assertTrue(failed)
+        self.assertEqual(len(tests_py.failed_tests), 8)
+        self.assertEqual(len(set(tests_py.failed_tests)), 8)
 
 
 if __name__ == "__main__":
