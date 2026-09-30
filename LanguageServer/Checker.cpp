@@ -263,14 +263,18 @@ Analysis Checker::check(const std::string &rootPath) const {
 
     auto root = fs::path(rootPath);
     std::string packageName = "_";
+    bool standalone = true;
     if (isInterfaceFile(root)) {
         // The interface of an installed package, e.g. s/🏛, which go-to-definition opens.
         packageName = root.parent_path().filename().string();
+        standalone = false;
     }
     else if (isLibrary(rootPath)) {
-        packageName = root.stem().string();
+        // The file's name must not be the package name: the compiler treats s and c specially, and _ as a program. A
+        // name with a path separator cannot collide with any package.
+        packageName = "ad-hoc/library";
+        standalone = false;
     }
-    bool standalone = packageName == "_";
 
     auto searchPaths = searchPaths_;
     searchPaths.push_back((root.parent_path() / "packages").string());

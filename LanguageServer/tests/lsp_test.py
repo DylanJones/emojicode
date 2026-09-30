@@ -292,6 +292,14 @@ class DiagnosticsTests(ServerTestCase):
             client.open(path)
             self.assertEqual([d["message"] for d in client.diagnostics(path)], diagnostics, name)
 
+    def test_library_named_like_a_standard_package(self):
+        # The file name is not the package name: s and c are special to the compiler, and _ is a program.
+        client = self.start()
+        for name in ("s", "c", "_", "files"):
+            path = self.write("lib%s/%s.🍇" % (name, name), "🌍 🐇 🐠 🍇\n  🆕 🍇🍉\n🍉\n")
+            client.open(path)
+            self.assertEqual(client.diagnostics(path), [], name)
+
     def test_many_open_documents_with_many_candidates(self):
         # Finding the roots of the open documents must not scan the directories again for each document.
         for directory in range(20):
