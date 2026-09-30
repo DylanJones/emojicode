@@ -274,7 +274,13 @@ std::shared_ptr<ASTExpr> FunctionParser::parseExprLeft(const EmojicodeCompiler::
         case TokenType::Integer: {
             int64_t value;
             try {
-                value = std::stoll(utf8(token.value()), nullptr, 0);
+                auto text = utf8(token.value());
+                bool isHex = text.size() > 1 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X');
+                size_t consumed = 0;
+                value = std::stoll(text, &consumed, isHex ? 16 : 10);
+                if (consumed != text.size()) {
+                    throw std::invalid_argument("trailing characters");
+                }
             }
             catch (std::logic_error &) {
                 throw CompilerError(token.position(), "Integer literal ", utf8(token.value()),
