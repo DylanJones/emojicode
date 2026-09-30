@@ -72,8 +72,9 @@ public:
     /// Links this resolver to another resolver which will be searched too during resolution.
     void setSuper(FunctionResolver *super) { super_ = super; }
 
-    /// Issues an error if an identical twin of this function was declared.
-    void duplicateDeclarationCheck(T *function);
+    /// Issues an error if two functions with identical signatures were declared.
+    /// @pre The declarations of all functions must have been analysed.
+    void duplicateDeclarationCheck() const;
 
 private:
     std::vector<T*> list_;
