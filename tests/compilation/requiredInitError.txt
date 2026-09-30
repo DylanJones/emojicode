@@ -2,6 +2,8 @@ success
 failure
 success
 failure
+success
+failure
 direct
 generic success
 generic error
