@@ -196,6 +196,13 @@ extern "C" void sStringGraphemes(String *string, runtime::Callable<void, s::Stri
     newString->release();
 }
 
+static String *emptyString() {
+    auto newString = String::init();
+    newString->count = 0;
+    newString->characters = runtime::allocate<char>(0);
+    return newString;
+}
+
 extern "C" s::String* sStringGraphemeSubstring(String *string, runtime::Integer from, runtime::Integer length) {
     auto bytes = reinterpret_cast<utf8proc_uint8_t *>(string->characters.get());
     utf8proc_int32_t state = 0;
@@ -203,17 +210,11 @@ extern "C" s::String* sStringGraphemeSubstring(String *string, runtime::Integer 
     size_t beginCut = 0, off = 0;
 
     if (string->count == 0 || length <= 0 || from < 0) {
-        auto newString = String::init();
-        newString->count = 0;
-        newString->characters = runtime::allocate<char>(0);
-        return newString;
+        return emptyString();
     }
     auto first = utf8proc_iterate(bytes, string->count, &prev);
     if (first < 0) {
-        auto newString = String::init();
-        newString->count = 0;
-        newString->characters = runtime::allocate<char>(0);
-        return newString;
+        return emptyString();
     }
     off = first;
 
@@ -231,10 +232,7 @@ extern "C" s::String* sStringGraphemeSubstring(String *string, runtime::Integer 
         off += c;
     }
     if (from > 0) {
-        auto newString = String::init();
-        newString->count = 0;
-        newString->characters = runtime::allocate<char>(0);
-        return newString;
+        return emptyString();
     }
     while (off < string->count) {
         auto c = utf8proc_iterate(bytes + off, string->count - off, &cp);
