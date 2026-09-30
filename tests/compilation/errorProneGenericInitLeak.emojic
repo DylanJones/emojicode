@@ -1,4 +1,4 @@
-💭 test: unoptimized leak_check
+💭 test: unoptimized
 💭 A same-class error-prone generic initializer that directly raises must not leak the dynamically allocated generic
 💭 type description it stored on the receiver before failing (#133). A purely inherited initializer, reached by
 💭 directly instantiating a subclass that declares neither fields nor an initializer of its own, must not leak it
@@ -65,7 +65,7 @@
 💭 execution confirm 🐳's own field is released on every failure path and that 🐳's own deinitializer never runs for
 💭 a partially initialized object. Description ownership itself (freed exactly once regardless of which frame in the
 💭 chain observes the failure, at both optimized and unoptimized settings) is verified independently by the
-💭 EMOJICODE_CHECK_DESCRIPTION_LEAKS execution check (see leak_check_tests in tests.py), not by this output. Each of
+💭 EMOJICODE_CHECK_LEAKS execution check (see tests.py), not by this output. Each of
 💭 🦈's cases creates exactly three 💰 instances when it gets that far (the caller's v, 🦑's resource and 🐳's extra),
 💭 and each must be released exactly once (#126): when 🦑 raises after its own successful super call (the "during"
 💭 case) or 🐳 raises after its successful super call (the "after" case), the already-initialized inherited fields

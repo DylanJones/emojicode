@@ -1,4 +1,4 @@
-💭 test: unoptimized leak_check
+💭 test: unoptimized
 💭 An escaping closure in a generic function that is not specialized, here because of 🍒's ⚖️🍬T, copies the generic
 💭 arguments it was passed, and its deinitializer must free that copy (the leak check fails otherwise, #248).
 🕊 🧰 🍇
