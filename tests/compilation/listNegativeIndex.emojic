@@ -1,0 +1,31 @@
+🐇 🔎 🍇
+  🐇❗️ 🔡 b 👌 ➡️ 🔡 🍇
+    ↪️ b 🍇
+      ↩️ 🔤👍🔤
+    🍉
+    ↩️ 🔤👎🔤
+  🍉
+🍉
+
+💭 🐨 and 🐵 reject negative indices and leave the list unchanged.
+🏁 🍇
+  🍿 1 2 3 🍆 ➡️ 🖍🆕 ints
+  😀 🔤🧲🔡🐇🔎 🐨ints -1❗️❗️🧲 🧲🔡🐇🔎 🐨ints -9223372036854775807❗️❗️🧲 🧲🔡🐇🔎 🐵ints -1 9❗️❗️🧲 🧲🔡🐇🔎 🐵ints -4611686018427387904 9❗️❗️🧲🔤❗️
+  😀 🔤🧲📏ints❓🧲 🧲🐽ints 0❗️🧲 🧲🐽ints 1❗️🧲 🧲🐽ints 2❗️🧲🔤❗️
+
+  🍿 🔤a🔤 🔤b🔤 🔤c🔤 🍆 ➡️ 🖍🆕 strings
+  strings ➡️ 🖍🆕 copy
+  😀 🔤🧲🔡🐇🔎 🐨strings -1❗️❗️🧲 🧲🔡🐇🔎 🐵strings -1 🔤z🔤❗️❗️🧲 🧲🔡🐇🔎 🐨copy -2❗️❗️🧲 🧲🔡🐇🔎 🐵copy -2 🔤z🔤❗️❗️🧲🔤❗️
+  😀 🔤🧲📏strings❓🧲 🧲🐽strings 0❗️🧲 🧲🐽strings 2❗️🧲 🧲📏copy❓🧲 🧲🐽copy 0❗️🧲🔤❗️
+
+  🆕🍨🐚🔡🍆❗️ ➡️ 🖍🆕 empty
+  😀 🔤🧲🔡🐇🔎 🐨empty -1❗️❗️🧲 🧲🔡🐇🔎 🐵empty -1 🔤z🔤❗️❗️🧲 🧲🔡🐇🔎 🐨empty 0❗️❗️🧲 🧲🔡🐇🔎 🐵empty 0 🔤z🔤❗️❗️🧲 🧲📏empty❓🧲🔤❗️
+
+  💭 Valid indices still work; the upper bound is still rejected.
+  🐵strings 0 🔤first🔤❗️
+  🐨strings 3❗️ ➡️ removedLast
+  😀 🔤🧲🔡🐇🔎 removedLast❗️🧲 🧲📏strings❓🧲 🧲🐽strings 0❗️🧲 🧲🐽strings 2❗️🧲🔤❗️
+  😀 🔤🧲🔡🐇🔎 🐨strings 4❗️❗️🧲 🧲🔡🐇🔎 🐵strings 3 🔤z🔤❗️❗️🧲 🧲🔡🐇🔎 🐵strings 4 🔤z🔤❗️❗️🧲🔤❗️
+  🐨strings 0❗️
+  😀 🔤🧲📏strings❓🧲 🧲🐽strings 0❗️🧲🔤❗️
+🍉

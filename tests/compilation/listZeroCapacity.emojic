@@ -1,0 +1,26 @@
+💭 A 🍨 created with a repeated value and count 0 has room to grow, also after a copy.
+🏁 🍇
+  🆕🍨🐚🔢🍆 7 0❗️ ➡️ 🖍🆕 ints
+  😀 🔤🧲📏ints❓🧲🔤❗️
+  🔂 i 🆕⏩ 0 100❗️ 🍇
+    🐻ints i❗️
+  🍉
+  😀 🔤🧲📏ints❓🧲 🧲🐽ints 0❗️🧲 🧲🐽ints 99❗️🧲🔤❗️
+
+  🆕🍨🐚🔡🍆 🔤x🔤 0❗️ ➡️ 🖍🆕 strings
+  🔂 i 🆕⏩ 0 1000❗️ 🍇
+    🐻strings 🔡i❗️❗️
+  🍉
+  😀 🔤🧲📏strings❓🧲 🧲🐽strings 0❗️🧲 🧲🐽strings 999❗️🧲🔤❗️
+
+  🆕🍨🐚🔡🍆 🔤x🔤 0❗️ ➡️ empty
+  empty ➡️ 🖍🆕 copy
+  🔂 i 🆕⏩ 0 30❗️ 🍇
+    🐻copy 🔡i❗️❗️
+  🍉
+  😀 🔤🧲📏empty❓🧲 🧲📏copy❓🧲 🧲🐽copy 29❗️🧲🔤❗️
+
+  🆕🍨🐚🔡🍆 🔤x🔤 3❗️ ➡️ 🖍🆕 three
+  🐻three 🔤y🔤❗️
+  😀 🔤🧲📏three❓🧲 🧲🐽three 2❗️🧲 🧲🐽three 3❗️🧲🔤❗️
+🍉
