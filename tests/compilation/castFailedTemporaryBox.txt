@@ -1,0 +1,9 @@
+start
+deinit one
+after failed bound cast
+deinit two
+compared failed cast
+after failed compared cast
+cast succeeded
+deinit three
+end

@@ -34,6 +34,13 @@ Value* ASTCast::generate(FunctionCodeGenerator *fg) const {
     }
     auto result = fg->builder().CreateCall(getCastFunction(fg->generator()),
                                            { typeExpr_->generate(fg), box, boxInfo(fg, box) });
+    if (!castsBorrowedValue_ && !isTemporary()) {
+        // The result is taken and owns the operand's value only if the cast succeeded; release it otherwise.
+        auto hasNoValue = fg->buildHasNoValueBox(result);
+        fg->createIfElse(hasNoValue, [&] {
+            fg->releaseByReference(box, expr_->expressionType());
+        }, [] {});
+    }
     if (castsBorrowedValue_ && !isTemporary()) {
         // The result is taken but its value is still owned by the storage it was borrowed from.
         auto resultPtr = fg->createEntryAlloca(fg->typeHelper().box());

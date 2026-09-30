@@ -1,0 +1,36 @@
+🐇 🦆 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ♻️ 🍇
+    😀 🔤deinit 🧲name🧲🔤❗️
+  🍉
+🍉
+
+🕊 🥛🐚A⚪🍆 🍇
+  🖍🆕 a A
+  🆕 🍼 a A 🍇🍉
+🍉
+
+🕊 🏭 🍇
+  🐇❗️ 📦 name 🔡 ➡️ ⚪ 🍇
+    ↩️ 🆕🦆 name❗️
+  🍉
+🍉
+
+🏁 🍇
+  🔤start🔤 ➡️ s
+  😀 s❗️
+  💭 Failed casts of a temporary box must release the object it holds.
+  🔲 📦🕊🏭 🔤one🔤 ❗️ 🥛🐚🔡🍆 ➡️ failed
+  😀 🔤after failed bound cast🔤❗️
+  ↪️ 🔲 📦🕊🏭 🔤two🔤 ❗️ 🥛🐚🔡🍆 🙌 🤷‍♀️ 🍇
+    😀 🔤compared failed cast🔤❗️
+  🍉
+  😀 🔤after failed compared cast🔤❗️
+  ↪️ 🔲 📦🕊🏭 🔤three🔤 ❗️ 🦆 ➡️ taken 🍇
+    😀 🔤cast succeeded🔤❗️
+  🍉
+  😀 🔤end🔤❗️
+🍉
