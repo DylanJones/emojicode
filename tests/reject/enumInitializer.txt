@@ -1,0 +1,1 @@
+The access level of an enum value cannot be specified.

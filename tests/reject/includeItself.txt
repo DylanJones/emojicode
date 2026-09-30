@@ -1,0 +1,1 @@
+Including includeItself.emojic is circular as it is already being included.

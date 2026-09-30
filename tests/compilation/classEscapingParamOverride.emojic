@@ -29,9 +29,8 @@
     🆕🦍 a❗️
   🍉
 
-  💭🔜✒️❗️ 🍚 a 🔡 🍇
-    🆕🐘 a❗️
-  🍉🔚💭
+  💭 Overriding 🍚 so that its 🔡 parameter escapes into a 🐘 is an error, see
+  💭 tests/reject/classEscapingParamOverride.emojic. This test prints nothing: it is only compiled.
 🍉
 
 🏁 🍇

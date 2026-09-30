@@ -1,0 +1,1 @@
+Expected a digit after integer literal prefix.

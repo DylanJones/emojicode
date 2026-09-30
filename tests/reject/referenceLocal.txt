@@ -1,0 +1,1 @@
+Only instance variables can be referenced.

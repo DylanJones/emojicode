@@ -1,9 +1,11 @@
 """Regression tests for the test discovery and scheduling in tests.py, run against isolated fixture directories so
 they do not depend on, or affect, the real tests/ tree. Run with `python3 test_tests.py`."""
 import os
+import re
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -151,6 +153,211 @@ class DiscoverImportingTestsTests(unittest.TestCase):
             write(directory, "importer", ".txt")
 
             self.assertEqual(tests_py.discover_importing_tests(directory), ["importer"])
+
+
+class DirectiveTests(unittest.TestCase):
+    def read(self, content, allowed=None):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "t", ".emojic", content)
+            return tests_py.read_directives(os.path.join(directory, "t.emojic"),
+                                            allowed or tests_py.COMPILATION_DIRECTIVES)
+
+    def test_directive_after_code_is_not_ignored(self):
+        self.assertEqual(self.read("📦 s\n\n💭 test: panic\n"), {"panic"})
+
+    def test_later_directive_with_unknown_token_fails(self):
+        with self.assertRaises(SystemExit):
+            self.read("💭 test: panic\n💭 test: typo\n")
+
+    def test_directives_are_merged(self):
+        self.assertEqual(self.read("💭 test: panic\n💭 test: stress\n"), {"panic", "stress"})
+
+
+class OrphanTests(unittest.TestCase):
+    def test_compilation_companions_without_source_fail(self):
+        for extension in [".txt", ".ir", ".specializations"]:
+            with self.subTest(extension=extension), tempfile.TemporaryDirectory() as directory:
+                write(directory, "typo", extension)
+                with self.assertRaises(SystemExit):
+                    tests_py.discover_compilation_tests(directory, set(), quick=False, valgrind=False)
+
+    def test_host_companions_without_source_fail(self):
+        for extension in [".c", ".txt"]:
+            with self.subTest(extension=extension), tempfile.TemporaryDirectory() as directory:
+                write(directory, "typo", extension)
+                with self.assertRaises(SystemExit):
+                    tests_py.discover_host_tests(directory)
+
+    def test_importing_package_without_importer_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "typoPackage", ".🍇")
+            with self.assertRaises(SystemExit):
+                tests_py.discover_importing_tests(directory)
+
+
+class BuildConfigurationTests(unittest.TestCase):
+    """The build and CI configuration must keep building what tests.py runs and running every kind of test."""
+    ROOT = os.path.dirname(os.path.abspath(__file__))
+
+    def read(self, *path):
+        with open(os.path.join(self.ROOT, *path), encoding="utf-8") as f:
+            return f.read()
+
+    def test_tests_target_builds_what_it_runs(self):
+        match = re.search(r"add_dependencies\(tests ([^)]*)\)", self.read("CMakeLists.txt"))
+        self.assertIsNotNone(match, "the tests target has no dependencies")
+        for target in ["emojicodec", "runtime", "s", "c"]:
+            self.assertIn(target, match.group(1).split())
+
+    def test_ci_runs_every_test_suite_and_a_release_build(self):
+        ci = self.read(".github", "workflows", "ci.yml")
+        for command in ["ninja -C build tests", "testspy", "lsptests", "treesittertests", "grammar", "npm test"]:
+            self.assertIn(command, ci)
+        self.assertIn("Release", ci)
+        self.assertIn("CMAKE_BUILD_TYPE", ci)
+
+
+class RejectTests(unittest.TestCase):
+    def test_missing_or_empty_expected_message_fails_the_suite(self):
+        for content in [None, "", " \n"]:
+            with self.subTest(content=content), tempfile.TemporaryDirectory() as directory:
+                write(directory, "r", ".emojic")
+                if content is not None:
+                    write(directory, "r", ".txt", content)
+                with self.assertRaises(SystemExit):
+                    tests_py.discover_reject_tests(directory)
+
+    def test_orphan_companion_fails_the_suite(self):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "typo", ".txt", "message")
+            with self.assertRaises(SystemExit):
+                tests_py.discover_reject_tests(directory)
+
+    def test_complete_fixture_is_discovered(self):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "r", ".emojic")
+            write(directory, "r", ".txt", "message\n")
+            self.assertEqual(tests_py.discover_reject_tests(directory), [os.path.join(directory, "r.emojic")])
+
+    def test_empty_expectation_never_matches(self):
+        """reject_test itself also refuses an empty expectation, which would be contained in any output."""
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "r", ".emojic")
+            write(directory, "r", ".txt", "\n")
+            original = tests_py.run
+            tests_py.run = lambda *a, **k: subprocess.CompletedProcess(a, 1, b"", b"\xf0\x9f\x9a\xa8 error: x\n")
+            try:
+                tests_py.report.lines, tests_py.report.stderr, tests_py.report.failed = [], [], False
+                tests_py.failed_tests.clear()
+                tests_py.reject_test(os.path.join(directory, "r.emojic"))
+                self.assertTrue(tests_py.report.failed)
+            finally:
+                tests_py.run = original
+                tests_py.failed_tests.clear()
+
+
+class CheckIRTests(unittest.TestCase):
+    IR = 'define void @"f"() {\nentry:\n  ret void\n}\n'
+
+    def check(self, checks):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "t", ".ir", checks)
+            tests_py.report.lines = []
+            tests_py.report.stderr = []
+            tests_py.report.failed = False
+            tests_py.check_ir("t", self.IR, os.path.join(directory, "t.ir"))
+            return tests_py.report.failed
+
+    def test_line_without_selected_function_fails(self):
+        self.assertTrue(self.check("+ impossible\n"))
+        self.assertTrue(self.check("- ret\n"))
+
+    def test_selected_function_is_checked(self):
+        self.assertFalse(self.check("@ ^f$\n+ ret void\n"))
+        self.assertTrue(self.check("@ ^f$\n+ impossible\n"))
+
+
+class RunTests(unittest.TestCase):
+    @staticmethod
+    def running(pid):
+        """Whether the process exists and is not a zombie that nothing has reaped yet."""
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        try:
+            with open("/proc/{0}/stat".format(pid)) as f:
+                return f.read().rsplit(")", 1)[1].split()[0] != "Z"
+        except OSError:
+            return True
+
+    def test_timeout_kills_child_processes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pid_file = os.path.join(directory, "pid")
+            script = "import subprocess,sys,time;" \
+                     "p=subprocess.Popen(['sleep','30']);open(sys.argv[1],'w').write(str(p.pid));time.sleep(30)"
+            tests_py.report.stderr = []
+            with self.assertRaises(subprocess.TimeoutExpired):
+                tests_py.run([sys.executable, "-c", script, pid_file], timeout=1)
+            child = int(open(pid_file).read())
+            for _ in range(50):
+                if not self.running(child):
+                    return
+                time.sleep(0.1)
+            os.kill(child, 9)
+            self.fail("the child of a timed-out command is still running")
+
+    def test_compiler_command_with_arguments_is_split(self):
+        self.assertEqual(tests_py.shlex.split("cc -O0 -w"), ["cc", "-O0", "-w"])
+
+
+class WarningTests(unittest.TestCase):
+    STDERR = ("f.emojic:13:13: ⚠️  warning: Literal 300 does not fit.\n    code\n        ⬆️\n\n"
+              "\x1b[1mg.emojic:2:3: \x1b[33m⚠️  warning: \x1b[0m\x1b[1mTwice.\n\x1b[0m"
+              "⚠️  warning: No position.\n🚨 error: Not a warning.\n")
+
+    def check(self, expected):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "t", ".warnings", expected)
+            tests_py.report.lines = []
+            tests_py.report.stderr = []
+            tests_py.report.failed = False
+            tests_py.check_warnings("t", self.STDERR, os.path.join(directory, "t.warnings"))
+            return tests_py.report.failed
+
+    def test_warnings_are_parsed_in_order(self):
+        self.assertEqual(tests_py.parse_warnings(self.STDERR),
+                         ["13:13: Literal 300 does not fit.", "2:3: Twice.", "No position."])
+
+    def test_exact_list_passes(self):
+        self.assertFalse(self.check("13:13: Literal 300 does not fit.\n2:3: Twice.\nNo position.\n"))
+
+    def test_missing_extra_or_reordered_warnings_fail(self):
+        self.assertTrue(self.check("13:13: Literal 300 does not fit.\n2:3: Twice.\n"))
+        self.assertTrue(self.check("13:13: Literal 300 does not fit.\n2:3: Twice.\nNo position.\nNo position.\n"))
+        self.assertTrue(self.check("2:3: Twice.\n13:13: Literal 300 does not fit.\nNo position.\n"))
+        self.assertTrue(self.check(""))
+
+
+class LibraryFixtureTests(unittest.TestCase):
+    def test_fixtures_are_copied_but_sources_are_not(self):
+        with tempfile.TemporaryDirectory() as source, tempfile.TemporaryDirectory() as destination:
+            write(source, "t", ".emojic")
+            write(source, "t_data", ".txt", "x")
+
+            tests_py.copy_library_fixtures(source, destination)
+
+            self.assertEqual(os.listdir(destination), ["t_data.txt"])
+
+    def test_generated_files_are_ignored_by_git(self):
+        root = os.path.dirname(os.path.abspath(__file__))
+        for path in ["tests/compilation/ffiStructByValue_trampolines.c", "tests/s/fileTest_writeTest.txt"]:
+            with self.subTest(path=path):
+                try:
+                    result = subprocess.run(["git", "-c", "safe.directory=*", "check-ignore", "-q", path], cwd=root)
+                except FileNotFoundError:
+                    self.skipTest("git is not installed")
+                self.assertEqual(result.returncode, 0, path + " must be ignored, not tracked")
 
 
 class FailureReportTests(unittest.TestCase):

@@ -1,0 +1,1 @@
+_🧶 contains itself through its instance variables, so it would be infinitely large.

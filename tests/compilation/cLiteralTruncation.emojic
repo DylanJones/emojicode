@@ -1,0 +1,15 @@
+📦 c 🌊
+
+💭 A literal that does not fit into a C type is truncated, like in C, but the compiler warns about it (see
+💭 cLiteralTruncation.warnings).
+🕊 🧮 🍇
+  🎍🌊 🐇☣️❗️ 🔼 value 🔶🌊🔠🔸🔼 ➡️ 🔶🌊🔢🔸🔼 📻 🔤ffiScalarsWiden🔤
+🍉
+
+🔗 🔤ffiScalars.c🔤 🔗
+
+🏁 🍇
+  ☣️ 🍇
+    😀 🔤🧲🔼🕊🧮 300❗️🧲🔤❗️
+  🍉
+🍉

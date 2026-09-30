@@ -1,0 +1,1 @@
+Generic argument 1 of type s🔢 is not compatible to constraint 🔵.
