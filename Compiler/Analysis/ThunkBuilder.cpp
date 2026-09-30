@@ -25,7 +25,8 @@
 
 namespace EmojicodeCompiler {
 
-void buildBoxingThunkAst(Function *thunk, const Function *destinationFunction, const Type &destCallable) {
+void buildBoxingThunkAst(Function *thunk, const Function *destinationFunction, const Type &destCallable,
+                         bool errorProne = false) {
     auto p = thunk->position();
     auto args = ASTArguments(p);
     for (auto &param : thunk->parameters()) {
@@ -39,6 +40,10 @@ void buildBoxingThunkAst(Function *thunk, const Function *destinationFunction, c
     }
     else {
         call = std::make_shared<ASTMethod>(destinationFunction->name(), std::make_shared<ASTThis>(p), args, p);
+    }
+
+    if (errorProne) {
+        call = std::make_shared<ASTReraise>(call, p);
     }
 
     auto block = std::make_unique<ASTBlock>(p);
@@ -78,7 +83,10 @@ std::unique_ptr<Function> buildBoxingThunk(const TypeContext &declarator, const 
                                     methodImplementation->position(), std::move(params),
                                     method->returnType()->type().resolveOn(declarator),
                                     methodImplementation->functionType(), methodImplementation->mutating());
-    buildBoxingThunkAst(function.get(), methodImplementation, Type::noReturn());
+    if (method->errorProne()) {
+        function->setErrorType(std::make_unique<ASTLiteralType>(method->errorType()->type().resolveOn(declarator)));
+    }
+    buildBoxingThunkAst(function.get(), methodImplementation, Type::noReturn(), methodImplementation->errorProne());
     return function;
 }
 

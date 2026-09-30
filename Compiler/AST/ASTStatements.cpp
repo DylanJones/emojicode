@@ -174,6 +174,8 @@ void ASTRaise::analyse(FunctionAnalyser *analyser) {
     }
 
     analyser->expectType(analyser->function()->errorType()->type(), &value_);
+    // The error is stored as a pointer to an object, which is also how a value of a generic error type is stored.
+    analyser->unboxIfBoxed(&value_);
 
     if (isReturnForbidden(analyser->function()->functionType())) {
         analyseInstanceVariables(analyser, position());

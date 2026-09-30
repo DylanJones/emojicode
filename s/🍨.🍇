@@ -65,7 +65,12 @@
   📗 Expand the storage area if it is full. 📗
   ❗️ ↕️ 🍇
     ↪️ size 🙌 count 🎍🐌🍇
-      size ⬅️✖️ 2
+      ↪️ size ◀️🙌 0 🍇
+        10 ➡️ 🖍size
+      🍉
+      🙅 🍇
+        size ⬅️✖️ 2
+      🍉
       ☣️ 🍇
         🏗 data 📐🕊🧠 size ⚖️Element❗️❗️
       🍉
@@ -143,7 +148,11 @@
 
   📗 Creates an containing the specified number of a single, repeated value. 📗
   🆕 repeatedValue Element count 🔢 🍇
-    🆕🍧🐚Element🍆 count count❗️ ➡️ 🖍data
+    count➡️🖍🆕theCapacity
+    ↪️ count 🙌 0 🍇
+      10 ➡️ 🖍theCapacity
+    🍉
+    🆕🍧🐚Element🍆 count theCapacity❗️ ➡️ 🖍data
     ☣️ 🍇
       🔂 i 🆕⏩ 0 count❗️ 🍇
         repeatedValue ➡️ 🐽🐚Element🍆🧠data❗️ i✖️⚖️Element❗️
@@ -197,7 +206,7 @@
  📗
  🥯🖍❗️ 🐨 index 🔢 ➡️ 👌 🍇
     📝❗️
-    ↪️ index ◀️ 📏data❓ 🍇
+    ↪️ index ▶️🙌 0 🤝 index ◀️ 📏data❓ 🍇
       ☣️ 🍇
         ♻️🐚Element🍆 🧠data❗️ index✖️⚖️Element❗️
         🚜 🧠data❗️ index✖️⚖️Element 🧠data❗️ 🤜index ➕ 1🤛✖️⚖️Element 🤜📏data❓ ➖ 🤜index ➕ 1🤛🤛✖️⚖️Element❗️
@@ -217,7 +226,7 @@
  🥯🖍❗️ 🐵 index 🔢 item Element ➡️ 👌 🍇
     📝❗️
     ↕️data❗️
-    ↪️ index ◀️ 📏data❓ 🍇
+    ↪️ index ▶️🙌 0 🤝 index ◀️ 📏data❓ 🍇
       ☣️ 🍇
         🚜 🧠data❗️ 🤜index ➕ 1🤛✖️⚖️Element 🧠data❗️ index✖️⚖️Element 🤜📏data❓ ➖ index 🤛✖️⚖️Element❗️
         item ➡️ 🐽🐚Element🍆🧠data❗️  index✖️⚖️Element❗️
@@ -253,6 +262,9 @@
     If the list is empty no value is returned.
   📗
   🥯🖍❗️ 🐼 ➡️ 🍬Element 🍇
+    ↪️ 📏data❓ 🙌 0 🍇
+      ↩️ 🤷‍♀️
+    🍉
     📝❗️
     📏data -1❗️
     ☣️ 🍇

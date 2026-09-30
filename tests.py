@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from subprocess import PIPE, CalledProcessError, TimeoutExpired
+import filecmp
 import glob
 import shutil
 import os
@@ -543,6 +544,8 @@ def command_line_test(_):
     with tempfile.TemporaryDirectory() as directory:
         missing = os.path.join(directory, "missing", "out")
         writable = os.path.join(directory, "out")
+        blocked = os.path.join(directory, "blocked")
+        os.makedirs(os.path.join(blocked, "documentation.json"))
         cases = [
             (['--help'], 0, None),
             (['--bogus', source], 1, None),
@@ -552,13 +555,28 @@ def command_line_test(_):
             ([source, '--emit-llvm', '-o', missing, '-S', test_packages], 1, "Could not write"),
             ([source, '-c', '-o', missing, '-S', test_packages], 1, "Could not write"),
             ([source, '-c', '-o', directory, '-S', test_packages], 1, "Could not write"),
+            ([source, '-i', missing, '-c', '-o', writable, '-S', test_packages], 1, "Could not write"),
+            ([source, '-r', '-c', '-o', os.path.join(blocked, "out"), '-S', test_packages], 1, "Could not write"),
         ]
+        if hasattr(os, 'geteuid') and os.geteuid() != 0:
+            # In a directory that cannot be modified the source can neither be moved aside nor rewritten.
+            locked = os.path.join(directory, "locked")
+            os.mkdir(locked)
+            locked_source = os.path.join(locked, "class.emojic")
+            shutil.copyfile(source, locked_source)
+            os.chmod(locked_source, 0o444)
+            os.chmod(locked, 0o555)
+            cases.append(([locked_source, '--format', '-S', test_packages], 1, "Could not write"))
+        else:
+            locked_source = None
         for arguments, status, message in cases:
             completed = run([emojicodec] + arguments, stdout=PIPE, stderr=PIPE)
             output = (completed.stdout + completed.stderr).decode('utf-8', 'replace')
             if completed.returncode != status or "LLVM ERROR" in output or (message and message not in output):
                 log("{0}: exit status {1}\n{2}".format(arguments, completed.returncode, output))
                 fail_test("command line " + " ".join(arguments))
+        if locked_source and not filecmp.cmp(source, locked_source, shallow=False):
+            fail_test("command line: failed --format altered the source")
 
 
 def parse_test(filename):

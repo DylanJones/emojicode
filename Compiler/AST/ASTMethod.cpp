@@ -49,8 +49,8 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
     selectStaticDispatch(false);
 
     checkMutation(analyser, callee);
-    ensureErrorIsHandled(analyser);
     auto rt = analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
+    ensureErrorIsHandled(analyser);
     if (builtIn_ == BuiltInType::Store || builtIn_ == BuiltInType::Load || builtIn_ == BuiltInType::Release ||
         builtIn_ == BuiltInType::MemoryCopy) {
         analyser->checkMemoryAccessOf(*args_.genericArguments().front(), position());
@@ -66,7 +66,7 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
 }
 
 const Type& ASTMethodable::errorType() const {
-    return method_->errorType()->type();
+    return args_.errorType();
 }
 
 bool ASTMethodable::isErrorProne() const {
@@ -168,8 +168,9 @@ Type ASTMethodable::analyseTypeMethodCall(ExpressionAnalyser *analyser, const st
                                                               &calleeType_, analyser, position());
 
     selectStaticDispatch(std::dynamic_pointer_cast<ASTTypeAsValue>(callee) != nullptr);
+    auto rt = analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
     ensureErrorIsHandled(analyser);
-    return analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
+    return rt;
 }
 
 Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const std::u32string &name,
