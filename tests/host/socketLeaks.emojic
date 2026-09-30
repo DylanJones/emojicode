@@ -1,0 +1,43 @@
+📦 c 🌊
+📦 sockets 🏠
+
+💭 Socket operations that fail, called by the C program socketLeaks.c, which checks that they release what they acquired.
+🕊 🧩 🍇
+  💭 Connects to 127.0.0.1:port and returns 1 on success, 0 if the connection failed.
+  🎍🌊 🐇☣️❗️ 🔌 port 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤ejcTestConnect🔤 🍇
+    🆗 socket 🆕📞 🔤127.0.0.1🔤 🔢 port❗️❗️ 🍇
+      🚪 socket❗️
+      ↩️ 🆕🔶🌊🔢▶️🔢 1❗️
+    🍉
+    🙅‍♀️ error 🍇
+      ↩️ 🆕🔶🌊🔢▶️🔢 0❗️
+    🍉
+  🍉
+
+  💭 Listens on port and returns 1 on success, 0 if that failed.
+  🎍🌊 🐇☣️❗️ 👂 port 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤ejcTestListen🔤 🍇
+    🆗 server 🆕🏄 🔢 port❗️❗️ 🍇
+      🚪 server❗️
+      ↩️ 🆕🔶🌊🔢▶️🔢 1❗️
+    🍉
+    🙅‍♀️ error 🍇
+      ↩️ 🆕🔶🌊🔢▶️🔢 0❗️
+    🍉
+  🍉
+
+  💭 Connects to port, closes the socket, and returns 1 if reading count bytes from it failed, 0 otherwise.
+  🎍🌊 🐇☣️❗️ 📖 port 🔶🌊🔢 count 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤ejcTestReadClosed🔤 🍇
+    🆗 socket 🆕📞 🔤127.0.0.1🔤 🔢 port❗️❗️ 🍇
+      🚪 socket❗️
+      🆗 data 👂 socket 🔢 count❗️❗️ 🍇
+        ↩️ 🆕🔶🌊🔢▶️🔢 0❗️
+      🍉
+      🙅‍♀️ error 🍇
+        ↩️ 🆕🔶🌊🔢▶️🔢 1❗️
+      🍉
+    🍉
+    🙅‍♀️ error 🍇
+      ↩️ 🆕🔶🌊🔢▶️🔢 0❗️
+    🍉
+  🍉
+🍉

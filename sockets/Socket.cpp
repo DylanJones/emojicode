@@ -66,7 +66,9 @@ extern "C" Data* socketsSocketRead(Socket *socket, runtime::Integer count, runti
 
     auto read = recv(socket->socket_, bytes.get(), count, 0);
     if (read == -1) {
-        EJC_RAISE(raiser, s::IOError::init());
+        auto error = s::IOError::init();
+        bytes.release();
+        EJC_RAISE(raiser, error);
     }
 
     auto data = Data::init();

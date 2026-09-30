@@ -379,7 +379,7 @@ def host_test(name):
     run([emojicodec, '-p', name, '-o', object_path, '-c', source_path, '-O'], check=True)
     run([os.environ.get("CC", "cc"), '-c', os.path.join(directory, name + ".c"), '-o', host_object_path],
         check=True)
-    libraries = [os.path.abspath(path) for path in ["c/libc.a", "s/libs.a", "runtime/libruntime.a"]]
+    libraries = [os.path.abspath(path) for path in ["c/libc.a", "sockets/libsockets.a", "s/libs.a", "runtime/libruntime.a"]]
     run([os.environ.get("CXX", "c++"), host_object_path, object_path] + libraries +
         ['-lm', '-lpthread', '-o', binary_path], check=True)
     completed = run([binary_path], stdout=PIPE)
