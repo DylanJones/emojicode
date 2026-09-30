@@ -119,7 +119,7 @@ bool ExpressionAnalyser::storesGenericValuesUnboxed(TypeDefinition *typeDef) con
 }
 
 static bool containsTypeGenericVariable(const Type &type) {
-    auto unboxed = type.unboxed().unoptionalized();
+    auto &unboxed = type.withoutBoxAndOptional();
     if (unboxed.type() == TypeType::GenericVariable) {
         return true;
     }

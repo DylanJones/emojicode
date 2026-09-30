@@ -61,7 +61,7 @@ Type resolveSuperArgument(const Type &type, const std::vector<Type> &args, size_
 
 void TypeDescriptionGenerator::addType(const Type &type) {
     llvm::Constant *genericInfo;
-    auto notype = type.unoptionalized().unboxed();
+    auto &notype = type.withoutBoxAndOptional();
     switch (notype.type()) {
         case TypeType::Class:
             genericInfo = buildConstant00Gep(fg_->typeHelper().classInfo(), notype.klass()->classInfo(), fg_->ctx());

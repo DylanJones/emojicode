@@ -36,7 +36,7 @@ void mangleIdentifier(std::stringstream &stream, const std::u32string &string) {
 /// and every type it is composed of is delimited, so that the name identifies the type. Otherwise the name is the one
 /// used for the type definition, e.g. in the names of its functions.
 void mangleTypeName(std::stringstream &stream, const Type &typeb, bool withGenericArguments = false) {
-    auto type = typeb.unboxed();
+    auto &type = typeb.withoutBox();
     auto mangleComponent = [&stream, withGenericArguments](const Type &component) {
         if (withGenericArguments) {
             stream << '<';
@@ -87,7 +87,7 @@ void mangleTypeName(std::stringstream &stream, const Type &typeb, bool withGener
             return;
         case TypeType::Optional:
             stream << "op_";
-            mangleComponent(type.unoptionalized());
+            mangleComponent(type.withoutBoxAndOptional());
             return;
         case TypeType::TypeAsValue:
             stream << "tv_";
