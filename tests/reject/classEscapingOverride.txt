@@ -1,0 +1,1 @@
+Function lets this context escape, which violates the overridden function’s promise.

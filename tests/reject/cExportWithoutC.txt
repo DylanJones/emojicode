@@ -1,0 +1,1 @@
+Only functions with 🎍🌊 can be exported to C.
