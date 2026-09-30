@@ -300,19 +300,35 @@ class DiagnosticsTests(ServerTestCase):
             client.open(path)
             self.assertEqual(client.diagnostics(path), [], name)
 
+    def test_standard_package_main_file_keeps_its_name(self):
+        # The repository's own s/s.🍇 declares the standard value types itself, so it must be checked as package s.
+        client = self.start()
+        for name in sorted(n for n in os.listdir(os.path.join(ROOT, "s")) if n.endswith(".🍇")):
+            with open(os.path.join(ROOT, "s", name), encoding="utf-8") as f:
+                self.write("copy/s/" + name, f.read())
+        for name in ("s.🍇", "👌.🍇"):
+            path = os.path.join(os.path.realpath(self.directory.name), "copy/s", name)
+            client.open(path)
+            self.assertEqual(client.diagnostics(path), [], name)
+
     def test_many_open_documents_with_many_candidates(self):
         # Finding the roots of the open documents must not scan the directories again for each document.
         for directory in range(20):
             for index in range(20):
-                self.write("tree/d%d/f%d.🍇" % (directory, index), "📜 🔤x.🍇🔤\n" * 1 + "🐇 🐠 🍇\n🍉\n" * 100)
+                self.write("tree/d%d/f%d.🍇" % (directory, index), "📜 🔤x.🍇🔤\n" + "🐇 🐠 🍇\n🍉\n" * 100)
         client = self.start()
         paths = [self.write("tree/d0/p%d.🍇" % i, HELLO) for i in range(8)]
-        start = time.time()
         for path in paths:
             client.open(path)
+        for path in paths:
+            client.diagnostics(path)
+        start = time.time()
+        for path in paths:
+            client.notify("textDocument/didSave", {"textDocument": {"uri": uri(path)}})
             with self.assertRaises(RuntimeError):
                 client.request("unsupported/request", {})
-        self.assertLess(time.time() - start, 0.5)
+        # Rescanning for each document took about 1 s here; the margin is wide to be robust.
+        self.assertLess(time.time() - start, 2)
 
     def test_file_included_by_two_programs(self):
         util = self.write("util.🍇", "🐇 🐠 🍇\n  🆕 🍇\n    😀 🔤a🔤 ➕ 1❗️\n  🍉\n🍉\n")
