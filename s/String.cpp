@@ -9,6 +9,7 @@
 #include "../runtime/Runtime.h"
 #include "../runtime/Internal.hpp"
 #include "Data.h"
+#include "ByteSearch.h"
 #include "String.h"
 #include "utf8proc.h"
 #include <algorithm>
@@ -111,16 +112,8 @@ extern "C" runtime::SimpleOptional<runtime::Integer> sStringFind(String *string,
 
 extern "C" runtime::SimpleOptional<runtime::Integer> sStringFindFromIndex(String *string, String* search,
                                                                           runtime::Integer offset) {
-    if (offset < 0 || offset >= string->count) {
-        return runtime::NoValue;
-    }
-    auto end = string->characters.get() + string->count;
-    auto pos = std::search(string->characters.get() + offset, end, search->characters.get(),
-                           search->characters.get() + search->count);
-    if (pos != end) {
-        return pos - string->characters.get();
-    }
-    return runtime::NoValue;
+    return s::findBytesFromOffset(string->characters.get(), string->count, search->characters.get(), search->count,
+                               offset);
 }
 
 extern "C" void sStringCodepoints(String *string, runtime::Callable<void, runtime::Integer, runtime::Integer> cb) {
