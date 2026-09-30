@@ -41,15 +41,15 @@ Value* ASTBinaryOperator::generate(FunctionCodeGenerator *fg) const {
             case BuiltInType::DoubleMultiply:
                 return fg->builder().CreateFMul(left, right);
             case BuiltInType::DoubleLessOrEqual:
-                return fg->builder().CreateFCmpULE(left, right);
+                return fg->builder().CreateFCmpOLE(left, right);
             case BuiltInType::DoubleLess:
-                return fg->builder().CreateFCmpULT(left, right);
+                return fg->builder().CreateFCmpOLT(left, right);
             case BuiltInType::DoubleGreaterOrEqual:
-                return fg->builder().CreateFCmpUGE(left, right);
+                return fg->builder().CreateFCmpOGE(left, right);
             case BuiltInType::DoubleGreater:
-                return fg->builder().CreateFCmpUGT(left, right);
+                return fg->builder().CreateFCmpOGT(left, right);
             case BuiltInType::DoubleEqual:
-                return fg->builder().CreateFCmpUEQ(left, right);
+                return fg->builder().CreateFCmpOEQ(left, right);
             case BuiltInType::IntegerAdd:
                 return fg->builder().CreateAdd(left, right);
             case BuiltInType::IntegerMultiply:
