@@ -888,6 +888,22 @@ class RobustnessTests(ServerTestCase):
                 for method in ("textDocument/hover", "textDocument/definition", "textDocument/completion"):
                     client.request(method, params)
 
+    def test_type_error_on_superclass_generic_parameter(self):
+        # Formatting the error used to look up an inherited generic parameter by a wrong index (#162).
+        text = ("🐇 🥛🐚 T ⚪🍆️ 🍇\n  🖍🆕 value T\n\n  🆕 🍼 value T 🍇 🍉\n🍉\n"
+                "🐇 🍊 🥛🐚🔡🍆 🍇\n  🆕 🍇\n    ⤴️🆕 🔤text🔤❗️\n  🍉\n\n  ❗️ 🐛 🍇\n    1 ➡️ 🖍value\n  🍉\n🍉\n"
+                "🏁 🍇\n🍉\n")
+        path = self.write("superclass.emojic", text)
+        client = self.start()
+        client.open(path, text)
+        diagnostics = client.diagnostics(path)
+        self.assertEqual(len(diagnostics), 1, diagnostics)
+        self.assertIn("is not compatible to T", diagnostics[0]["message"])
+        hover = client.request("textDocument/hover", {"textDocument": {"uri": uri(path)},
+                                                      "position": position(text, "🍊|")})
+        self.assertIn("🍊", hover["contents"]["value"])
+        self.assertEqual(client.shutdown(), 0)
+
     def test_cyclic_inheritance(self):
         for text in ("🐇 🐟 🐟 🍇\n  ❗️ 🐽 🍇\n    \n  🍉\n🍉\n",
                      "🐇 🐟 🐠 🍇\n  🖍🆕 a 🔢 ⬅️ 1\n  ❗️ 🐽 🍇\n    a\n  🍉\n🍉\n🐇 🐠 🐟 🍇🍉\n"):

@@ -858,25 +858,29 @@ void Type::typeName(Type type, const TypeContext &typeContext, std::string &stri
 
             string.append("🍉");
             return;
-        case TypeType::GenericVariable:
+        case TypeType::GenericVariable: {
+            const std::u32string *name = nullptr;
             if (typeContext.calleeType().canHaveGenericArguments()) {
-                auto str = typeContext.calleeType().typeDefinition()->findGenericName(type.genericVariableIndex());
-                string.append(utf8(str));
+                name = typeContext.calleeType().typeDefinition()->declaredGenericName(type.genericVariableIndex());
             }
             else if (typeContext.calleeType().type() == TypeType::TypeAsValue) {
                 auto callee = typeContext.calleeType().typeOfTypeValue();
-                auto str = callee.typeDefinition()->findGenericName(type.genericVariableIndex());
-                string.append(utf8(str));
+                if (callee.canHaveGenericArguments()) {
+                    name = callee.typeDefinition()->declaredGenericName(type.genericVariableIndex());
+                }
             }
-            else if (auto name = type.typeDefinition_ != nullptr ?
-                     type.typeDefinition_->declaredGenericName(type.genericVariableIndex()) : nullptr) {
-                // Without a context, e.g. in a declaration, the variable has the name its type gave it.
+            if (name == nullptr && type.typeDefinition_ != nullptr) {
+                // Without a usable context, e.g. in a declaration, the variable has the name its type gave it.
+                name = type.typeDefinition_->declaredGenericName(type.genericVariableIndex());
+            }
+            if (name != nullptr) {
                 string.append(utf8(*name));
             }
             else {
                 string.append("T" + std::to_string(type.genericVariableIndex()) + "?");
             }
             return;
+        }
         case TypeType::LocalGenericVariable:
             if (typeContext.function() == type.localResolutionConstraint_) {
                 string.append(utf8(typeContext.function()->findGenericName(type.genericVariableIndex())));
