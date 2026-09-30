@@ -11,6 +11,7 @@
 #include "Generation/FunctionCodeGenerator.hpp"
 #include "Scoping/SemanticScoper.hpp"
 #include "Types/Class.hpp"
+#include "Types/TypeExpectation.hpp"
 #include "AST/ASTExpr.hpp"
 #include "AST/ASTUnary.hpp"
 
@@ -64,6 +65,13 @@ ASTCall* ErrorHandling::handleCall(std::shared_ptr<ASTExpr> *expr) {
         *expr = std::move(node);
     }
     return handledCall_;
+}
+
+Type ErrorHandling::expectCall(ExpressionAnalyser *analyser, std::shared_ptr<ASTExpr> *expr) {
+    if (analyser->analyse(*expr).type() == TypeType::NoReturn) {
+        return Type::noReturn();
+    }
+    return analyser->comply(TypeExpectation(false, false), expr);
 }
 
 llvm::Value* ErrorHandling::prepareErrorDestination(FunctionCodeGenerator *fg) const {

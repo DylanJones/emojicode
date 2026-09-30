@@ -18,6 +18,7 @@ class Value;
 
 namespace EmojicodeCompiler {
 
+class ExpressionAnalyser;
 class FunctionAnalyser;
 class FunctionCodeGenerator;
 class ASTExpr;
@@ -49,6 +50,9 @@ protected:
     /// @returns The call or nullptr if `*expr` is not a call.
     /// @pre This function must be called before `*expr` is analysed, as the analysis may wrap it in boxing nodes.
     ASTCall* handleCall(std::shared_ptr<ASTExpr> *expr);
+    /// Analyses the call passed to handleCall(). Error-prone calls that return nothing are legitimate although they
+    /// have no value.
+    static Type expectCall(ExpressionAnalyser *analyser, std::shared_ptr<ASTExpr> *expr);
 
     /// @pre This function must be called before generateHandledCall().
     llvm::Value* prepareErrorDestination(FunctionCodeGenerator *fg) const;

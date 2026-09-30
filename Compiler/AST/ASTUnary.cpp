@@ -33,14 +33,6 @@ Type ASTHandledCall::comply(ExpressionAnalyser *analyser, const TypeExpectation 
     return type;
 }
 
-/// Error-prone calls that return nothing are legitimate operands of 🍺 and 🥑, although they have no value.
-static Type expectCall(ExpressionAnalyser *analyser, std::shared_ptr<ASTExpr> *expr) {
-    if (analyser->analyse(*expr).type() == TypeType::NoReturn) {
-        return Type::noReturn();
-    }
-    return analyser->comply(TypeExpectation(false, false), expr);
-}
-
 Type ASTUnwrap::analyse(ExpressionAnalyser *analyser) {
     auto call = handleCall(&expr_);
 
