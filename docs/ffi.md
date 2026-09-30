@@ -8,8 +8,8 @@ them are `tests/compilation/ffi*.emojic`, `tests/host/ffiHostLib.*`, `tests/impo
 
 `🎍🌊 🐇☣️❗️ name params ➡️ result 📻 🔤symbol🔤` binds a C function with a fixed prototype. Every call uses the
 C calling convention for exactly the parameters you declare, and must happen inside `☣️`. The types are those of the
-`c` package (`🔶🌊🔢` `int`, `🔶🌊🐘` `long`, `🔶🌊🦕🔸🔼` `unsigned long long`, `🎈` `float`, `💯` `double`,
-`👌` `_Bool`, `🔶🌊📏` `size_t`, …). Use the C type that the prototype has, not a wider one: a narrow type such as
+`c` package (`🔶🌊🔢` `int`, `🔶🌊🐘` `long`, `🔶🌊🦕🔸🔼` `unsigned long long`, `🔶🌊🎈` `float`, `💯` `double`,
+`👌` `_Bool`, `🔶🌊📏` `size_t`, …; `💯`, `👌`, `🔢` and `💧` come from `s` without the `🌊` prefix). Use the C type that the prototype has, not a wider one: a narrow type such as
 `short` or `unsigned char` is passed and returned with C's width and wraps as C does.
 
 `🔗 🔤file.c🔤 🔗` compiles a C source next to the Emojicode source and links it in. The path is relative to the
@@ -27,8 +27,9 @@ source again.
 
 ## Callables
 
-A `🍇🎍🌊 … 🍉` callable type is a C function pointer. Emojicode closures that capture variables cannot be
-converted to one, and a C callable can only be called inside `☣️`.
+A `🍇🎍🌊 … 🍉` callable type is a C function pointer. Only a `🍇🎍🌊 … 🍉` literal is a C callable: ordinary
+Emojicode closures cannot be converted to one, and the literal cannot capture variables. A C callable can only be
+called inside `☣️`.
 
 ## Strings and pointers
 

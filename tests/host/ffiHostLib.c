@@ -32,6 +32,6 @@ int main(int argc, char **argv) {
     printf("%llu\n", ejcTestIncrement(18446744073709551614ull));
     printf("%llu\n", ejcTestIncrement(9223372036854775807ull));
     fflush(stdout);
-    printf("%d\n", ejcTestMeasure("ab\0c\xc3\xa9", 5));
+    printf("%d\n", ejcTestMeasure("ab\0c\xc3\xa9", 6));
     return 0;
 }
