@@ -10,7 +10,7 @@
   🆕 📻 🔤sPrngNew🔤
   📗
     Generates an integer. Integers are uniformly distributed on the
-    closed interval `[a, b]`.
+    closed interval `[a, b]`. Panics if `a` is greater than `b`.
   📗
   ❗️ 🔢 a 🔢 b 🔢 ➡️ 🔢 📻 🔤sPrngGetInteger🔤
   📗
