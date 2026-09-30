@@ -1,0 +1,7 @@
+success
+failure
+success
+failure
+direct
+generic success
+generic error

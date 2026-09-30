@@ -38,7 +38,7 @@ class SourceFile;
 /// and the compiler refuses to import a package whose interface records another version or none.
 /// Increase it whenever any of these change, as a package compiled by another compiler would otherwise silently
 /// miscompile or crash its importers.
-constexpr int kABIVersion = 2;
+constexpr int kABIVersion = 3;
 constexpr const char *kABIVersionPrefix = "💭 Emojicode package ABI version ";
 
 /// Package is the class used to load, parse and analyse packages.

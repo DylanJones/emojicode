@@ -1,0 +1,33 @@
+💭 test: unoptimized
+🐇 🐟 🍇
+  🔑 🆕 value 🔡 fail 👌 🚧🚧 🍇
+    ↪️ fail 🍇 🚨🆕🚧 value❗️ 🍉
+    😀 value❗️
+  🍉
+🍉
+🐇 🐡 🐟 🍇
+  🔑 🆕 value 🔡 fail 👌 🚧🚧 🍇
+    ⤴️🆕 value fail❗️
+  🍉
+🍉
+🐇 🌲🐚V ⚪️🍆 🍇
+  🔑 🆕 value V fail 👌 🚧🚧 🍇
+    ↪️ fail 🍇 🚨🆕🚧 🔤generic error🔤❗️ 🍉
+    😀 🔤generic success🔤❗️
+  🍉
+🍉
+🏁 🍇
+  🔂 class 🍿🐇🐟 🐇🐡🍆 🍇
+    🆗 fish 🆕⬛️class 🔤success🔤 👎❗️ 🍇🍉
+    🙅 error 🍇 😀 💬error❗️❗️ 🍉
+    🆗 fish 🆕⬛️class 🔤failure🔤 👍❗️ 🍇🍉
+    🙅 error 🍇 😀 💬error❗️❗️ 🍉
+  🍉
+  🆗 fish 🆕🐟 🔤direct🔤 👎❗️ 🍇🍉
+  🙅 error 🍇 😀 💬error❗️❗️ 🍉
+  🐇🌲🐚🔡🍆 ➡️ treeType
+  🆗 tree 🆕⬛️treeType 🔤tree🔤 👎❗️ 🍇🍉
+  🙅 error 🍇 😀 💬error❗️❗️ 🍉
+  🆗 tree 🆕⬛️treeType 🔤tree🔤 👍❗️ 🍇🍉
+  🙅 error 🍇 😀 💬error❗️❗️ 🍉
+🍉
