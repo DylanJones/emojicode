@@ -43,6 +43,15 @@
     🔡👇 🔧🔤    Affe     🔤❗️ 🔤Affe🔤🔤Trim both🔤❗️
     🔡👇 🔧🔤Affe     🔤❗️ 🔤Affe🔤🔤Trim right🔤❗️
     🔡👇 🔧🔤     🔤❗️ 🔤🔤🔤Trim empty🔤❗️
+    🔡👇 🔧🔤café🔤❗️ 🔤café🔤 🔤Trim 2 byte final🔤❗️
+    🔡👇 🔧🔤  café  🔤❗️ 🔤café🔤 🔤Trim 2 byte final spaces🔤❗️
+    🔡👇 🔧🔤 한 🔤❗️ 🔤한🔤 🔤Trim 3 byte final🔤❗️
+    🔡👇 🔧🔤 a😀 🔤❗️ 🔤a😀🔤 🔤Trim 4 byte final🔤❗️
+    🔡👇 🔧🔤😀🔤❗️ 🔤😀🔤 🔤Trim only 4 byte🔤❗️
+    🔡👇 🔧🔤  é  🔤❗️ 🔤é🔤 🔤Trim combining char🔤❗️
+    🔡👇 🔧🔤 xé 🔤❗️ 🔤xé🔤 🔤Trim combining sequence🔤❗️
+    🔡👇 🔧🔤🔤❗️ 🔤🔤 🔤Trim empty string🔤❗️
+    ⛔👇 📏📇🔧🔤 café 🔤❗️❗️❓ 🙌 5 🔤Trim byte length🔤❗️
 
     🔢👇 📏🔫🔤Gans;Ente;Schwein🔤 🔤;🔤❗️❓ 3 🔤Split ;🔤❗️
     🔫🔤Gans;d!Ente;d!Schwein🔤 🔤;d!🔤❗️ ➡️ split

@@ -146,21 +146,21 @@ extern "C" s::String* sStringTrim(String *string) {
         begin += state;
     }
 
-    size_t end = begin - 1;
+    size_t end = begin;
     for (size_t i = begin; i < string->count;) {
         utf8proc_int32_t codepoint;
         auto state = utf8proc_iterate(reinterpret_cast<utf8proc_uint8_t *>(string->characters.get()) + i,
                                       string->count - i, &codepoint);
         if (state < 0) break;
         if (utf8proc_get_property(codepoint)->bidi_class != UTF8PROC_BIDI_CLASS_WS) {
-            end = i;
+            end = i + state;
         }
         i += state;
     }
 
     auto newString = String::init();
-    newString->count = end - begin + 1;
-    newString->characters = runtime::allocate<char>(string->count);
+    newString->count = end - begin;
+    newString->characters = runtime::allocate<char>(newString->count);
     std::memcpy(newString->characters.get(), string->characters.get() + begin, newString->count);
     return newString;
 }
