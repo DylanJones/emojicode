@@ -34,6 +34,10 @@ add_custom_target(dist python3 ${PROJECT_SOURCE_DIR}/dist.py)
 add_custom_target(tests python3 ${PROJECT_SOURCE_DIR}/tests.py)
 # tests.py runs the compiler and the packages in the build directory, so they must be up to date.
 add_dependencies(tests emojicodec runtime s files sockets testtube json c)
+# Runs the compiled compilation tests (not the library tests in tests/s) under valgrind, which finds over-releases that
+# the leak counter does not. Needs valgrind.
+add_custom_target(valgrindtests python3 ${PROJECT_SOURCE_DIR}/tests.py valgrind)
+add_dependencies(valgrindtests emojicodec runtime s files sockets testtube json c)
 # Regression tests for tests.py's own test discovery and scheduling, run against isolated fixtures.
 add_custom_target(testspy python3 ${PROJECT_SOURCE_DIR}/test_tests.py -v)
 add_custom_target(emojitablestest python3 ${PROJECT_SOURCE_DIR}/test_generate_emoji_tables.py -v)

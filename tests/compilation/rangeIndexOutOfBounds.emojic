@@ -1,0 +1,9 @@
+💭 test: unoptimized panic
+🏁 🍇
+  🆕⏩ 10 20 5❗️ ➡️ up
+  🆕⏩ 10 0 -5❗️ ➡️ down
+  😀 🔤🧲🐽up 0❗️🧲 🧲🐽up 1❗️🧲 🧲🐽down 0❗️🧲 🧲🐽down 1❗️🧲🔤❗️
+  💭 The upper bound is exclusive, for ranges counting up and down.
+  😀 🔤🧲🐽down 2❗️🧲🔤❗️
+  😀 🔤Indexed past the end of a descending range🔤❗️
+🍉

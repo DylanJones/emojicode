@@ -217,6 +217,29 @@ class BuildConfigurationTests(unittest.TestCase):
         self.assertIn("CMAKE_BUILD_TYPE", ci)
 
 
+class ValgrindFailureTests(unittest.TestCase):
+    """valgrind runs must fail closed: anything but a clean valgrind report is a failure."""
+    CLEAN = "==1== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)\n"
+
+    def test_clean_run_passes(self):
+        self.assertIsNone(tests_py.valgrind_failure(0, self.CLEAN, False))
+
+    def test_clean_panic_passes_only_when_it_aborts(self):
+        self.assertIsNone(tests_py.valgrind_failure(-6, self.CLEAN, True))
+        self.assertIsNotNone(tests_py.valgrind_failure(0, self.CLEAN, True))
+        self.assertIsNotNone(tests_py.valgrind_failure(-6, self.CLEAN, False))
+
+    def test_valgrind_that_cannot_start_fails(self):
+        self.assertIsNotNone(tests_py.valgrind_failure(1, "Fatal error at startup: a function redirection", False))
+        self.assertIsNotNone(tests_py.valgrind_failure(0, "", False))
+
+    def test_reported_errors_fail_even_when_the_program_aborts(self):
+        report = "==1== ERROR SUMMARY: 2 errors from 1 contexts (suppressed: 0 from 0)\n"
+        self.assertIsNotNone(tests_py.valgrind_failure(22, report, False))
+        self.assertIsNotNone(tests_py.valgrind_failure(-6, report, True))
+        self.assertIsNotNone(tests_py.valgrind_failure(-11, report, False))
+
+
 class RejectTests(unittest.TestCase):
     def test_missing_or_empty_expected_message_fails_the_suite(self):
         for content in [None, "", " \n"]:
