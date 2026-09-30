@@ -17,6 +17,21 @@
   would interfer with the automatic memory management Emojicode provides.
 📗
 🌍 📻 🕊 🧠 🍇
+  📗
+    Returns the number of bytes needed to store *capacity* elements of
+    *elementSize* bytes. Panics if *capacity* is negative or the result would
+    overflow.
+
+    This takes the element size instead of a type so that no type description
+    has to be built to check an allocation.
+  📗
+  🥯🐇❗️ 📐 capacity 🔢 elementSize 🔢 ➡️ 🔢 🍇
+    ↪️ capacity ◀️ 0 👐 🤜elementSize ▶️ 0 🤝 capacity ▶️ 9223372036854775807 ➗ elementSize🤛 🍇
+      🤯🐇💻 🔤Invalid 🍨 capacity🔤❗️
+    🍉
+    ↩️ capacity✖️elementSize
+  🍉
+
   📗 Creates an instance by allocating *size* bytes. 📗
   ☣️️ 🆕 size 🔢 🍇🍉
 
