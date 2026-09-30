@@ -141,6 +141,14 @@
   📗
     Creates a 🔡 representation of this 💯 and the given precision – the number
     of digits after the decimal separator “.”.
+
+    Digits beyond the precision are truncated, not rounded. Up to 18 digits,
+    the fractional part is scaled and truncated. For a precision above 18, the
+    fractional digits are those of the shortest representation that round-trips
+    to the same 💯, truncated or padded with zeros to the requested precision.
+    For example, `🔡 0.99 20❗️` returns `0.99000000000000000000` rather than the
+    exact binary expansion of 0.99, and digits of an exactly representable value
+    beyond its shortest representation are shown as zeros.
   📗
   ❗️ 🔡 precision 🔢 ➡️ 🔡 📻 🔤sRealToString🔤
 
