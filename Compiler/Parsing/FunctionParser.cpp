@@ -23,6 +23,7 @@
 #include "AST/ASTConditionalAssignment.hpp"
 #include "AST/ASTTypeAsValue.hpp"
 #include "Compiler.hpp"
+#include <stdexcept>
 #include "Lex/Token.hpp"
 #include "Package/Package.hpp"
 #include "Functions/Function.hpp"
@@ -271,11 +272,25 @@ std::shared_ptr<ASTExpr> FunctionParser::parseExprLeft(const EmojicodeCompiler::
         case TokenType::BooleanFalse:
             return std::make_shared<ASTBooleanFalse>(token.position());
         case TokenType::Integer: {
-            int64_t value = std::stoll(utf8(token.value()), nullptr, 0);
+            int64_t value;
+            try {
+                value = std::stoll(utf8(token.value()), nullptr, 0);
+            }
+            catch (std::logic_error &) {
+                throw CompilerError(token.position(), "Integer literal ", utf8(token.value()),
+                                    " is invalid or does not fit into a 🔢.");
+            }
             return std::make_shared<ASTNumberLiteral>(value, token.value(), token.position());
         }
         case TokenType::Double: {
-            double d = std::stod(utf8(token.value()));
+            double d;
+            try {
+                d = std::stod(utf8(token.value()));
+            }
+            catch (std::logic_error &) {
+                throw CompilerError(token.position(), "Real literal ", utf8(token.value()),
+                                    " is invalid or does not fit into a 🚂.");
+            }
             return std::make_shared<ASTNumberLiteral>(d, token.value(), token.position());
         }
         case TokenType::Symbol:
