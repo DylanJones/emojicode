@@ -61,7 +61,8 @@ Type resolveSuperArgument(const Type &type, const std::vector<Type> &args, size_
 
 void TypeDescriptionGenerator::addType(const Type &type) {
     llvm::Constant *genericInfo;
-    auto notype = type.unoptionalized().unboxed();
+    auto unboxedType = type.unboxed();
+    auto notype = unboxedType.unoptionalized().unboxed();
     switch (notype.type()) {
         case TypeType::Class:
             genericInfo = buildConstant00Gep(fg_->typeHelper().classInfo(), notype.klass()->classInfo(), fg_->ctx());
@@ -103,7 +104,7 @@ void TypeDescriptionGenerator::addType(const Type &type) {
 
     auto strct = llvm::ConstantStruct::get(fg_->typeHelper().typeDescription(), {
         genericInfo,
-        type.type() == TypeType::Optional ? llvm::ConstantInt::getTrue(fg_->ctx()) : llvm::ConstantInt::getFalse(fg_->ctx()),
+        unboxedType.type() == TypeType::Optional ? llvm::ConstantInt::getTrue(fg_->ctx()) : llvm::ConstantInt::getFalse(fg_->ctx()),
         fg_->generator()->valueWitnesses().witnessFor(type),
     });
     types_.emplace_back(strct);
