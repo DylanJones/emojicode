@@ -1,0 +1,6 @@
+# The importer, which does not import c, defines the inline 🧷, whose body calls the struct-by-value trampoline
+# which the package's archive provides.
+@ ^ffiPackagePackage\.class_1f9ee\.1f9f7
++ @__ejc_tramp_\S*ffiPackageAdd\(
+# The importer does not define its own copy of the trampoline: the archive provides it.
+! ^__ejc_tramp_
