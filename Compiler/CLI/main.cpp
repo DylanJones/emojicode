@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
     try {
         return EmojicodeCompiler::CLI::start(EmojicodeCompiler::CLI::Options(argc, argv)) ? 0 : 1;
     }
-    catch (EmojicodeCompiler::CLI::CompilationCancellation &e) { return 0; }
+    catch (EmojicodeCompiler::CLI::CompilationCancellation &e) { return e.success() ? 0 : 1; }
     catch (std::exception &ex) {
         std::cout << "💣 The compiler crashed due to an internal problem: " << ex.what() << std::endl;
         std::cout << "Please report this message and the code that you were trying to compile as an issue on GitHub.";

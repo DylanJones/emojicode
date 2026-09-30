@@ -1,0 +1,7 @@
+# The remote 🐘 release witness must release both its payload and its heap wrapper.
+# The output test checks that the failed cast invokes this witness exactly once.
+@ ^_\.vt_1f418\.boxRelease$
++ call void @_\.vt_1f418\.destructor\(ptr %[^)]+\)\n\s*call void @ejcReleaseWithoutDeinit\(ptr %[^)]+\)
+# 🧪 must release its source box on the no-value branch of dynamicCast.
+@ ^_\.vt_1f3ed\.type\.1f9ea$
++ call %box @dynamicCast\([^\n]*\n\s*%\w+ = extractvalue %box %\w+, 0\n\s*%\w+ = icmp eq ptr %\w+, null\n\s*br i1 %\w+, label %(then\w*), label %else\w*[\s\S]*?\n\1:[^\n]*\n\s*%\w+ = getelementptr inbounds %box, ptr %\w+, i32 0, i32 0\n\s*%\w+ = load ptr,[^\n]*\n\s*%\w+ = icmp ne ptr %\w+, null\n\s*br i1 %\w+, label %(then\w*), label %cont\w*[\s\S]*?\n\2:[^\n]*\n\s*%\w+ = getelementptr inbounds %boxInfo,[^\n]*i32 2\n\s*%release\w* = load ptr,[^\n]*\n\s*call void %release

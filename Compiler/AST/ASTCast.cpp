@@ -26,10 +26,12 @@ Type ASTCast::analyse(ExpressionAnalyser *analyser) {
     }
 
     if (originalType.compatibleTo(type, analyser->typeContext())) {
-        analyser->error(CompilerError(position(), "Unnecessary cast."));
+        throw CompilerError(position(), "Unnecessary cast.");
     }
-    else if (!type.compatibleTo(originalType, analyser->typeContext())
-             && !(originalType.unboxedType() == TypeType::Protocol && type.unboxedType() == TypeType::Protocol)) {
+    auto fromProtocol = originalType.unboxedType() == TypeType::Protocol ||
+                        originalType.unboxedType() == TypeType::MultiProtocol;
+    if (!type.compatibleTo(originalType, analyser->typeContext())
+        && !(fromProtocol && type.unboxedType() == TypeType::Protocol)) {
         auto typeString = type.toString(analyser->typeContext());
         throw CompilerError(position(), "Cast to unrelated type ", typeString, " will always fail.");
     }

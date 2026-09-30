@@ -6,6 +6,8 @@
   📦 c 🌊
   ```
 
+  See docs/ffi.md for the limits of the FFI.
+
   s already provides C's `double` (💯), `bool` (👌), `int64_t` (🔢) and
   `int8_t` (💧). This package adds the other C types, the pointer types
   📍 and 🕳, and helpers to convert between 🔡 and C strings.

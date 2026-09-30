@@ -43,9 +43,13 @@ extern "C" Socket* socketsSocketNewHost(String *host, runtime::Integer port, run
     address.sin_port = htons(port);
 
     int socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
-    if (socketDescriptor == -1 || connect(socketDescriptor, reinterpret_cast<struct sockaddr *>(&address),
-                                          sizeof(address)) == -1) {
+    if (socketDescriptor == -1) {
         EJC_RAISE(raiser, s::IOError::init());
+    }
+    if (connect(socketDescriptor, reinterpret_cast<struct sockaddr *>(&address), sizeof(address)) == -1) {
+        auto error = s::IOError::init();  // Captures errno before close can change it.
+        close(socketDescriptor);
+        EJC_RAISE(raiser, error);
     }
 
     auto socket = Socket::init();
@@ -66,7 +70,9 @@ extern "C" Data* socketsSocketRead(Socket *socket, runtime::Integer count, runti
 
     auto read = recv(socket->socket_, bytes.get(), count, 0);
     if (read == -1) {
-        EJC_RAISE(raiser, s::IOError::init());
+        auto error = s::IOError::init();
+        bytes.release();
+        EJC_RAISE(raiser, error);
     }
 
     auto data = Data::init();
@@ -94,7 +100,9 @@ extern "C" Server* socketsServerNewPort(runtime::Integer port, runtime::Raiser *
     if (setsockopt(listenerDescriptor, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char *>(&reuse), sizeof(int)) == -1 ||
         bind(listenerDescriptor, reinterpret_cast<struct sockaddr *>(&name), sizeof(name)) == -1 ||
         listen(listenerDescriptor, 10) == -1) {
-        EJC_RAISE(raiser, s::IOError::init());
+        auto error = s::IOError::init();
+        close(listenerDescriptor);
+        EJC_RAISE(raiser, error);
     }
 
     auto server = Server::init();

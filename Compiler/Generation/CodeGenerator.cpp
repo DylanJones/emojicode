@@ -95,7 +95,7 @@ uint64_t CodeGenerator::querySize(llvm::Type *type) const {
 }
 
 llvm::Constant *CodeGenerator::boxInfoFor(const Type &type) {
-    if (type.type() == TypeType::Class) {
+    if (type.type() == TypeType::Class || type.type() == TypeType::Someobject) {
         return runTime_->boxInfoForObjects();
     }
     if (type.isCCallable()) {
@@ -172,6 +172,10 @@ void CodeGenerator::emit(bool ir, const std::string &outPath) {
 
     std::error_code errorCode;
     llvm::raw_fd_ostream dest(outPath, errorCode, llvm::sys::fs::OF_None);
+    if (errorCode) {
+        dest.clear_error();
+        throw CompilerError(SourcePosition(), "Could not write ", outPath, ": ", errorCode.message());
+    }
 
     if (ir) {
         llvm::LoopAnalysisManager lam;
@@ -199,6 +203,11 @@ void CodeGenerator::emit(bool ir, const std::string &outPath) {
         pass.run(*module());
     }
     dest.flush();
+    if (dest.has_error()) {
+        auto message = dest.error().message();
+        dest.clear_error();
+        throw CompilerError(SourcePosition(), "Could not write ", outPath, ": ", message);
+    }
 }
 
 void CodeGenerator::generateFunctions(Package *package, bool imported) {

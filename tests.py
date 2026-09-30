@@ -379,7 +379,7 @@ def host_test(name):
     run([emojicodec, '-p', name, '-o', object_path, '-c', source_path, '-O'], check=True)
     run([os.environ.get("CC", "cc"), '-c', os.path.join(directory, name + ".c"), '-o', host_object_path],
         check=True)
-    libraries = [os.path.abspath(path) for path in ["c/libc.a", "s/libs.a", "runtime/libruntime.a"]]
+    libraries = [os.path.abspath(path) for path in ["c/libc.a", "sockets/libsockets.a", "s/libs.a", "runtime/libruntime.a"]]
     run([os.environ.get("CXX", "c++"), host_object_path, object_path] + libraries +
         ['-lm', '-lpthread', '-o', binary_path], check=True)
     completed = run([binary_path], stdout=PIPE)
@@ -428,6 +428,30 @@ def reject_test(filename):
     if completed.returncode != 1 or len(re.findall(r"🚨 error:", output)) != 1 or expected not in output:
         log(output)
         fail_test(filename)
+
+
+def command_line_test(_):
+    """Usage errors and unwritable outputs make the compiler fail with a diagnostic, not succeed or abort in LLVM."""
+    source = os.path.join(dist.source, "tests", "compilation", "class.emojic")
+    with tempfile.TemporaryDirectory() as directory:
+        missing = os.path.join(directory, "missing", "out")
+        writable = os.path.join(directory, "out")
+        cases = [
+            (['--help'], 0, None),
+            (['--bogus', source], 1, None),
+            ([], 1, None),
+            ([source, '-o'], 1, None),
+            ([source, '--emit-llvm', '-o', writable, '-S', test_packages], 0, None),
+            ([source, '--emit-llvm', '-o', missing, '-S', test_packages], 1, "Could not write"),
+            ([source, '-c', '-o', missing, '-S', test_packages], 1, "Could not write"),
+            ([source, '-c', '-o', directory, '-S', test_packages], 1, "Could not write"),
+        ]
+        for arguments, status, message in cases:
+            completed = run([emojicodec] + arguments, stdout=PIPE, stderr=PIPE)
+            output = (completed.stdout + completed.stderr).decode('utf-8', 'replace')
+            if completed.returncode != status or "LLVM ERROR" in output or (message and message not in output):
+                log("{0}: exit status {1}\n{2}".format(arguments, completed.returncode, output))
+                fail_test("command line " + " ".join(arguments))
 
 
 def parse_test(filename):
@@ -520,6 +544,7 @@ def test():
     tasks += [(test + " (package IR)", package_ir_test, test) for test in package_ir_tests]
     tasks += [(test, reject_test, test) for test in reject_tests]
     tasks += [(test, parse_test, test) for test in parse_tests]
+    tasks += [("command line", command_line_test, None)]
     tasks.sort(key=lambda task: task[2] not in slow_tests)  # A stable sort, which keeps the order otherwise.
     run_all(tasks)
 

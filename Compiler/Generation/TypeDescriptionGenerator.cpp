@@ -62,6 +62,12 @@ Type resolveSuperArgument(const Type &type, const std::vector<Type> &args, size_
 void TypeDescriptionGenerator::addType(const Type &type) {
     llvm::Constant *genericInfo;
     auto &notype = type.withoutBoxAndOptional();
+    auto isOptional = type.withoutBox().type() == TypeType::Optional;
+    if (isOptional && (notype.type() == TypeType::GenericVariable ||
+                       notype.type() == TypeType::LocalGenericVariable)) {
+        throw CompilerError(fg_->position(), "Optional generic variables as generic type arguments are not "
+                            "supported yet (see issue #186).");
+    }
     switch (notype.type()) {
         case TypeType::Class:
             genericInfo = buildConstant00Gep(fg_->typeHelper().classInfo(), notype.klass()->classInfo(), fg_->ctx());
@@ -103,7 +109,7 @@ void TypeDescriptionGenerator::addType(const Type &type) {
 
     auto strct = llvm::ConstantStruct::get(fg_->typeHelper().typeDescription(), {
         genericInfo,
-        type.type() == TypeType::Optional ? llvm::ConstantInt::getTrue(fg_->ctx()) : llvm::ConstantInt::getFalse(fg_->ctx()),
+        isOptional ? llvm::ConstantInt::getTrue(fg_->ctx()) : llvm::ConstantInt::getFalse(fg_->ctx()),
         fg_->generator()->valueWitnesses().witnessFor(type),
     });
     types_.emplace_back(strct);
