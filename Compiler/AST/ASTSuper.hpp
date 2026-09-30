@@ -10,10 +10,13 @@
 
 #include "ErrorSelfDestructing.hpp"
 #include "ASTExpr.hpp"
+#include "Releasing.hpp"
+#include "Scoping/SemanticScopeStats.hpp"
 
 namespace EmojicodeCompiler {
 
-class ASTSuper final : public ASTCall, private ErrorSelfDestructing, private ErrorHandling {
+class ASTSuper final : public ASTCall, public Releasing, private ErrorSelfDestructing,
+                        private ErrorHandling {
 public:
     ASTSuper(std::u32string name, ASTArguments args, const SourcePosition &p)
     : ASTCall(p), name_(std::move(name)), args_(std::move(args)) {}
@@ -37,6 +40,7 @@ private:
     ASTArguments args_;
     bool init_ = false;
     bool manageErrorProneness_ = false;
+    SemanticScopeStats stats_;
 
     void analyseSuperInitErrorProneness(ExpressionAnalyser *analyser, const Initializer *initializer);
 };

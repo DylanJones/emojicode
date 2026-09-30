@@ -71,6 +71,9 @@ void ASTSuper::analyseSuperInit(ExpressionAnalyser *analyser) {
 void ASTSuper::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlowCategory type) {
     analyser->analyseFunctionCall(&args_, nullptr, function_);
     analyser->recordThis(function_->memoryFlowTypeForThis());
+    if (manageErrorProneness_) {
+        analyser->releaseAllVariables(this, stats_, position());
+    }
 }
 
 const Type& ASTSuper::errorType() const {
@@ -98,6 +101,7 @@ void ASTSuper::analyseSuperInitErrorProneness(ExpressionAnalyser *eanalyser, con
         }
         manageErrorProneness_ = true;
         analyseInstanceVariables(analyser, position());
+        stats_ = analyser->scoper().createStats();
     }
 }
 
@@ -114,9 +118,12 @@ Value* ASTSuper::generate(FunctionCodeGenerator *fg) const {
                                                                         manageErrorProneness_ ? fg->errorPointer() :
                                                                         errorPointer(), suppl);
     if (manageErrorProneness_) {
-        fg->createIfElseBranchCond(isError(fg, fg->errorPointer()), [&]() {  // TODO: finish
+        fg->createIfElseBranchCond(isError(fg, fg->errorPointer()), [&]() {
+            // The call raised, so it produced no temporary object of its own to skip.
+            fg->releaseTemporaryObjects(false);
+            release(fg);
             buildDestruct(fg);
-            fg->builder().CreateRet(llvm::UndefValue::get(fg->llvmReturnType()));
+            fg->buildErrorReturn();
             return false;
         }, [] { return true; });
     }
