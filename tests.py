@@ -738,23 +738,46 @@ def test():
         sys.exit(1)
 
 
+def valgrind_failure(returncode, stderr, panics):
+    """Returns why a program's run under valgrind (see valgrind_test) failed, or None if it found nothing wrong.
+    This decides from valgrind's own report, as the program's exit status is lost when valgrind itself cannot start
+    and when the program dies from a signal, which valgrind re-raises."""
+    if "Fatal error at startup" in stderr:
+        return "valgrind could not start"
+    match = re.search(r"ERROR SUMMARY: (\d+) errors", stderr)
+    if match is None:
+        return "valgrind printed no error summary (exit status {0})".format(returncode)
+    if int(match.group(1)) != 0 or returncode == 22:
+        return "valgrind found {0} errors".format(match.group(1))
+    expected_returncode = -signal.SIGABRT if panics else 0
+    if returncode != expected_returncode:
+        return "exit status {0} instead of {1}".format(returncode, expected_returncode)
+    return None
+
+
 def valgrind_test(name):
     source_path = test_paths(name, 'compilation')[0]
     with tempfile.TemporaryDirectory() as directory:
         binary_path = os.path.join(directory, name)
         run([emojicodec, source_path, '-O', '-o', binary_path], check=True)
-        completed = run(['valgrind', '--error-exitcode=22', '--leak-check=full', binary_path], stdout=PIPE,
-                        stderr=PIPE)
-    if completed.returncode == 22:
+        # Only definite leaks are errors: what a panic abandons is reachable, not a bug in the program.
+        completed = run(['valgrind', '--error-exitcode=22', '--leak-check=full', '--errors-for-leak-kinds=definite',
+                         binary_path], stdout=PIPE, stderr=PIPE)
+    stderr = completed.stderr.decode('utf-8', 'backslashreplace')
+    reason = valgrind_failure(completed.returncode, stderr, name in panic_tests)
+    if reason:
         log(completed.stdout.decode('utf-8', 'backslashreplace'))
-        log(completed.stderr.decode('utf-8', 'backslashreplace'))
+        log(stderr)
+        log(reason)
         fail_test(name)
 
 
 def run_valgrind():
     run_all([(test, valgrind_test, test) for test in compilation_tests])
     if failed_tests:
+        print("🛑 🛑  {0} tests failed under valgrind: {1}".format(len(failed_tests), ", ".join(failed_tests)))
         sys.exit(1)
+    print("✅ ✅  {0} tests passed under valgrind.".format(len(compilation_tests)))
 
 if __name__ == "__main__":
     if valgrind:
