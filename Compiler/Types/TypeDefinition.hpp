@@ -44,9 +44,11 @@ struct InstanceVariableDeclaration {
 };
 
 struct ProtocolConformance {
-    explicit ProtocolConformance(std::shared_ptr<ASTType> &&type) : type(std::move(type)) {}
+    ProtocolConformance(std::shared_ptr<ASTType> &&type, SourcePosition position)
+    : type(std::move(type)), position(std::move(position)) {}
 
     std::shared_ptr<ASTType> type;
+    SourcePosition position;
     /// Contains the functions that will be placed in the dispatch table in same order as the method list of the protocol.
     std::vector<Function*> implementations;
 };
@@ -85,7 +87,12 @@ public:
     FunctionResolver<Initializer>& inits() { return inits_; }
 
     /// Declares conformance of the type to a protocol.
-    void addProtocol(std::shared_ptr<ASTType> type) { protocols_.emplace_back(std::move(type)); }
+    /// The position of the 🍉 that ends the type's body.
+    const SourcePosition& endPosition() const { return endPosition_; }
+    void setEndPosition(const SourcePosition &p) { endPosition_ = p; }
+    void addProtocol(std::shared_ptr<ASTType> type, const SourcePosition &p) {
+        protocols_.emplace_back(std::move(type), p);
+    }
     /** Returns a list of all protocols to which this class conforms. */
     std::vector<ProtocolConformance>& protocols() { return protocols_; }
 
@@ -152,6 +159,7 @@ private:
     std::pair<llvm::Function*, llvm::Function*> boxRetainRelease_;
     llvm::Function *boxMakeUnique_ = nullptr;
 
+    SourcePosition endPosition_;
     bool exported_;
     bool genericDynamismDisabled_ = false;
 

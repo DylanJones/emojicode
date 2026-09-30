@@ -1,0 +1,40 @@
+💭 header comment
+📦 c 🍎
+💭 about the docs
+📘 First doc 📘
+📘 Second doc 📘
+
+🔗 🔤z🔤 🔗
+
+🔘 🎨 🍇
+  💭 red
+  🆕▶️🔴
+  💭 blue
+  🆕▶️🔵
+  💭 end of enum
+🍉
+
+🐊 🎭 🍇
+  💭 end of protocol
+🍉
+
+🐇 🐟 🍇
+  💭 conforms
+  🐊 🎭
+  🆕 🍇🍉
+  💭 number of items
+  🖍🆕 count 🔢
+  ❗️ 🍤 🍇
+    💭 TODO
+  🍉
+  💭 end of class
+🍉
+
+🏁 🍇
+  ↪️ 👍 🍇
+    💭 TODO
+  🍉
+  😀 🔤hi🔤❗️ 💭 trailing
+  💭 last
+🍉
+💭 end of file

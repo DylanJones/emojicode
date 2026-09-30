@@ -1,0 +1,28 @@
+📘 Package documentation 📘
+
+💭 comment before type
+🕊 🧩 🍇
+  💭 comment before method
+  🐇 ❗️ 🧮 a 🔢 ➡️ 🔢 🍇
+    ↩️ a
+  🍉
+
+  💭 comment before inline method
+  🥯 ❗️ 🍤 ➡️ 🔢 🍇
+    ↩️ 1
+  🍉
+
+  💭 comment before small method
+  ❗️ 🦉 ➡️ 🔢 🍇
+    ↩️ 2
+  🍉
+
+🍉
+
+💭 comment before start
+🏁 🍇
+  💭 inside
+  😀🔤hi🔤❗️  💭 trailing
+  💭 last
+🍉
+💭 end of file

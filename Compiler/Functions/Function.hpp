@@ -134,6 +134,8 @@ public:
     void setMutating(bool v) { mutating_ = v; }
 
     bool isInline() const;
+    /// Whether the function was declared with 🥯, as opposed to being inlined because it is small.
+    bool isExplicitlyInline() const { return forceInline_; }
 
     void setThunk() { thunk_ = true; }
     bool isThunk() const { return thunk_; }

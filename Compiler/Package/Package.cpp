@@ -121,7 +121,7 @@ std::pair<SourceFile*, TokenStream> Package::lexFile(const std::string &path) {
     return std::make_pair(file, TokenStream(Lexer(file, isImported(), recordLines)));
 }
 
-void Package::includeDocument(const std::string &path, const std::string &relativePath) {
+void Package::includeDocument(const std::string &path, const std::string &relativePath, const SourcePosition &p) {
     auto pair = lexFile(path);
     including_.emplace_back(canonicalPath(path));
     try {
@@ -147,7 +147,7 @@ void Package::parse(const std::string &mainFilePath) {
         importPackage("s", kDefaultNamespace, SourcePosition());
     }
     
-    includeDocument(mainFilePath, "");
+    includeDocument(mainFilePath, "", SourcePosition());
 
     if (name() == "s") {
         compiler()->assignSTypes(this);
