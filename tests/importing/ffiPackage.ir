@@ -1,0 +1,6 @@
+# The importer, which does not import c, defines the inline 🧷, whose body calls the struct-by-value trampoline
+# which the package's archive provides.
+@ ^ffiPackagePackage\.class_1f9ee\.1f9f7
+# The package's C functions are not linked again into the importer: they are only declared.
+! ^ffiPackageAdd$
+! ^ffiPackageIncrement$
