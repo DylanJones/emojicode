@@ -88,6 +88,8 @@ private:
 
     void checkMutation(ExpressionAnalyser *analyser, const std::shared_ptr<ASTExpr> &callee) const;
     void determineCallType(const ExpressionAnalyser *analyser);
+    /// Calls a method that cannot be overridden by a subclass without dynamic dispatch.
+    void selectStaticDispatch(bool namedClass);
     void determineCalleeType(ExpressionAnalyser *analyser, const std::u32string &name,
                              std::shared_ptr<ASTExpr> &callee, const Type &otype);
     Type analyseTypeMethodCall(ExpressionAnalyser *analyser, const std::u32string &name,

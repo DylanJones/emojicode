@@ -399,7 +399,7 @@
     📏data❓ ➡️ count
 
     🔂 i 🆕⏩ 0 count❗️ 🍇
-      🔢 prng 0 count ➖ 1❗️ ➡️ x
+      🔢 prng i count ➖ 1❗️ ➡️ x
 
       ☣️ 🍇
         🔄👇 i x❗️

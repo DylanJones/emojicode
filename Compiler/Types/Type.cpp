@@ -181,6 +181,29 @@ bool Type::canHaveGenericArguments() const {
             || type() == TypeType::Enum || type() == TypeType::ListLiteral || type() == TypeType::DictionaryLiteral;
 }
 
+void Type::completeGenericArgumentsInPlace() const {
+    if (typeContent_ != TypeType::Class || typeDefinition_ == nullptr) {
+        return;
+    }
+    auto klass = static_cast<Class *>(typeDefinition_);
+    if (klass->offset() == 0 || genericArguments_.size() != klass->genericParameters().size()) {
+        return;
+    }
+    auto prefix = klass->superGenericArguments();
+    if (prefix.size() != klass->offset()) {
+        return;  // The superclass is not analysed yet.
+    }
+    prefix.insert(prefix.end(), genericArguments_.begin(), genericArguments_.end());
+    Type complete = *this;
+    complete.genericArguments_ = prefix;
+    // The prefix mentions the generic variables of this class, which are substituted as in selfResolvedGenericArgs().
+    TypeContext typeContext(complete);
+    for (size_t i = 0; i < klass->offset(); i++) {
+        prefix[i] = prefix[i].resolveOnWithoutCompletion(typeContext);
+    }
+    genericArguments_ = std::move(prefix);
+}
+
 void Type::setGenericArguments(std::vector<Type> &&args) {
     if (type() == TypeType::Box) {
         genericArguments_[0].setGenericArguments(std::move(args));
@@ -276,7 +299,7 @@ Type Type::resolveOnSuperArgumentsAndConstraints(const TypeContext &typeContext)
 
 std::vector<Type> Type::selfResolvedGenericArgs() const {
     TypeContext typeContext(*this);
-    auto args = genericArguments_;
+    auto args = completeGenericArguments();
     // Only the superclass-declaration prefix is resolved: those arguments belong to the superclass declaration and
     // may mention this type's own generic variables, which must be substituted with the arguments actually written
     // here. The type's own arguments, in contrast, are exactly what the code wrote (e.g. List<V> for a Tree<V> that
@@ -284,7 +307,7 @@ std::vector<Type> Type::selfResolvedGenericArgs() const {
     // something to substitute again, which would never end (see the comment in resolveOn()).
     auto superArgumentCount = typeDefinition()->superGenericArguments().size();
     for (size_t i = 0; i < superArgumentCount && i < args.size(); i++) {
-        args[i] = args[i].resolveOn(typeContext);
+        args[i] = args[i].resolveOnWithoutCompletion(typeContext);
     }
     return args;
 }
@@ -304,6 +327,14 @@ Type Type::rewrapped(Type wrapped) const {
 }
 
 Type Type::resolveOn(const TypeContext &typeContext) const {
+    auto resolved = resolveOnWithoutCompletion(typeContext);
+    if (resolved.type() == TypeType::Class) {
+        resolved.completeGenericArguments();
+    }
+    return resolved;
+}
+
+Type Type::resolveOnWithoutCompletion(const TypeContext &typeContext) const {
     if (type() == TypeType::Optional || type() == TypeType::Box) {
         return rewrapped(genericArguments_[0].resolveOn(typeContext));
     }
@@ -338,7 +369,7 @@ Type Type::resolveOn(const TypeContext &typeContext) const {
         while (t.unboxedType() == TypeType::GenericVariable  &&
                typeContext.calleeType().typeDefinition()->canResolve(t.resolutionConstraint())) {
             auto index = t.genericVariableIndex();
-            Type tn = typeContext.calleeType().genericArguments()[index];
+            Type tn = typeContext.calleeType().completeGenericArguments()[index];
             if (tn.unboxedType() == TypeType::GenericVariable
                 && tn.genericVariableIndex() == index
                 && tn.resolutionConstraint() == t.resolutionConstraint()) {
@@ -360,15 +391,15 @@ Type Type::resolveOn(const TypeContext &typeContext) const {
     // mentioning a variable of a yet further ancestor, which does need to be resolved on the same typeContext.
     if (!ownArgument && t.type() != TypeType::Box) {
         for (auto &arg : t.genericArguments_) {
-            arg = arg.resolveOn(typeContext);
+            arg = arg.resolveOnWithoutCompletion(typeContext);
         }
     }
     return keepStorage(std::move(t));
 }
 
-bool Type::identicalGenericArguments(Type to, const TypeContext &typeContext, GenericInferer *inf) const {
-    for (size_t i = to.typeDefinition()->superGenericArguments().size(); i < to.genericArguments_.size(); i++) {
-        if (!this->genericArguments_[i].identicalTo(to.genericArguments_[i], typeContext, inf)) {
+bool Type::identicalGenericArguments(const Type &to, const TypeContext &typeContext, GenericInferer *inf) const {
+    for (size_t i = to.typeDefinition()->superGenericArguments().size(); i < to.completeGenericArguments().size(); i++) {
+        if (!this->completeGenericArguments()[i].identicalTo(to.completeGenericArguments()[i], typeContext, inf)) {
             return false;
         }
     }
@@ -545,7 +576,7 @@ bool Type::isCompatibleToMultiProtocol(const Type &to, const TypeContext &ct, Ge
     }
 
     return std::all_of(to.protocols().begin(), to.protocols().end(), [&](const Type &p) {
-        return compatibleTo(p, ct);
+        return compatibleTo(p, ct, inf);
     });
 }
 
@@ -594,7 +625,7 @@ bool Type::isCompatibleToCallable(const Type &to, const TypeContext &ct, Generic
     return false;
 }
 
-bool Type::identicalTo(Type to, const TypeContext &tc, GenericInferer *inf) const {
+bool Type::identicalTo(const Type &to, const TypeContext &tc, GenericInferer *inf) const {
     if (inf != nullptr && inf->inferringLocal() && to.type() == TypeType::LocalGenericVariable) {
         inf->addLocal(to.genericVariableIndex(), *this, tc);
         return true;
@@ -726,16 +757,33 @@ bool Type::containsGenericVariables() const {
 }
 
 Type Type::withMinimalBoxing() const {
-    Type type = unboxed();
-    if (type.type() == TypeType::Optional || type.canHaveGenericArguments()) {
-        for (auto &argument : type.genericArguments_) {
-            argument = argument.withMinimalBoxing();
+    Type type = *this;
+    type.minimizeBoxing();
+    return type;
+}
+
+void Type::minimizeBoxing() {
+    // The nested types are changed in place, as copying the remaining nested type at every level would make this
+    // quadratic in the nesting depth.
+    if (type() == TypeType::Box) {
+        auto inner = std::move(genericArguments_[0]);
+        inner.setMutable(mutable_);
+        *this = std::move(inner);
+    }
+    if (type() == TypeType::Optional || canHaveGenericArguments()) {
+        for (auto &argument : genericArguments_) {
+            argument.minimizeBoxing();
         }
     }
-    if (type.type() == TypeType::Optional) {
-        return type.rewrapped(type.genericArguments_[0]);
+    if (type() == TypeType::Optional) {
+        if (genericArguments_[0].type() == TypeType::Box || genericArguments_[0].type() == TypeType::Optional) {
+            *this = rewrapped(genericArguments_[0]);
+        }
+        return;
     }
-    return type.applyMinimalBoxing();
+    if (type() == TypeType::Something || type() == TypeType::Protocol || type() == TypeType::MultiProtocol) {
+        *this = applyMinimalBoxing();
+    }
 }
 
 Type Type::withMinimallyBoxedGenericArguments() const {

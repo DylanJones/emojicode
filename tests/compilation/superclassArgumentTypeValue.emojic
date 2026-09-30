@@ -1,0 +1,52 @@
+🐇 🧺🐚E⚪️🍆 🍇
+  🖍🆕 items 🍨🐚E🍆 ⬅️ 🍿🍆
+  🆕 🍇 🍉
+  ❗️ 🐣 e E 🍇 🐻 items e❗️ 🍉
+  ❗️ 🥇 ➡️ E 🍇 ↩️ 🐽 items 0❗️ 🍉
+🍉
+🐇 🅰️🐚T⚪️🍆 🍇
+  🆕 🍇 🍉
+  🐇❗️ 🍓 ➡️ 🧺🐚T🍆 🍇 ↩️ 🆕🧺🐚T🍆❗️ 🍉
+🍉
+🐇 🅱️ 🅰️🐚🅱️🍆 🍇
+  🖍🆕 n 🔢 ⬅️ 42
+  🆕 🍇 ⤴️🆕❗️ 🍉
+  ❗️ 🥝 ➡️ 🔢 🍇 ↩️ n 🍉
+🍉
+🐇 🦊🐚U⚪️🍆 🅰️🐚🦊🐚U🍆🍆 🍇
+  🆕 🍇 ⤴️🆕❗️ 🍉
+🍉
+🏁 🍇
+  💭 A type method of the superclass reads T from the type value.
+  🍓🐇🅱️❗️ ➡️ b
+  🖍🆕 o ⚪️
+  b ➡️ 🖍o
+  ↪️ 🔲 o 🧺🐚⚪️🍆 ➡️ m 🍇
+    😀 🔤wrong: cast to 🧺⚪️🔤❗️
+  🍉
+  🙅 🍇 😀 🔤not a 🧺⚪️🔤❗️ 🍉
+  ↪️ 🔲 o 🧺🐚🅱️🍆 ➡️ m 🍇
+    🐣 m 🆕🅱️❗️❗️
+    😀 🔡 🥝 🥇 m❗️❗️ 10❗️❗️
+  🍉
+  🙅 🍇 😀 🔤wrong: no 🧺🅱️🔤❗️ 🍉
+
+  💭 Through a variable of the superclass type.
+  🐇🅰️🐚🅱️🍆 ➡️ t
+  🍓 t❗️ ➡️ c
+  🖍🆕 p ⚪️
+  c ➡️ 🖍p
+  ↪️ 🔲 p 🧺🐚🅱️🍆 ➡️ m 🍇
+    😀 🔤via variable🔤❗️
+  🍉
+  🙅 🍇 😀 🔤wrong: variable🔤❗️ 🍉
+
+  💭 A generic CRTP class.
+  🍓🐇🦊🐚🔢🍆❗️ ➡️ d
+  🖍🆕 q ⚪️
+  d ➡️ 🖍q
+  ↪️ 🔲 q 🧺🐚🦊🐚🔢🍆🍆 ➡️ m 🍇
+    😀 🔤generic ok🔤❗️
+  🍉
+  🙅 🍇 😀 🔤wrong: generic🔤❗️ 🍉
+🍉

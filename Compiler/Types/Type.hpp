@@ -166,6 +166,17 @@ public:
     /// @returns The type this optional contains. If this type is force boxed, so will be the returned type.
     Type optionalType() const;
     /// @returns The type itself if type() does not return TypeType::Optional or optionalType() if it does.
+    /// Returns the type inside all boxes and optionals without copying it, in contrast to unboxed() and
+    /// unoptionalized(). Nothing of the storage of the returned type, e.g. its mutability, is changed.
+    const Type& withoutBoxAndOptional() const {
+        auto *type = this;
+        while (type->type() == TypeType::Box || type->type() == TypeType::Optional) {
+            type = &type->genericArguments_[0];
+        }
+        return *type;
+    }
+    /// Returns the type inside a box without copying it, in contrast to unboxed().
+    const Type& withoutBox() const { return type() == TypeType::Box ? genericArguments_[0] : *this; }
     Type unoptionalized() const { return type() == TypeType::Optional ? optionalType() : *this; }
     /// @returns The type in an optional. If this is a Box, returns an equal Box that contains an optional with the
     /// type inside the box. If this is an optional already, the method returns this instance unchanged.
@@ -181,7 +192,7 @@ public:
     bool compatibleTo(const Type &to, const TypeContext &tc, GenericInferer *inf = nullptr) const;
     /// Whether this instance of Type is considered indentical to the other instance.
     /// Mainly used to determine compatibility of generics.
-    bool identicalTo(Type to, const TypeContext &tc, GenericInferer *inf) const;
+    bool identicalTo(const Type &to, const TypeContext &tc, GenericInferer *inf) const;
 
     /// Returns the generic variable index if the type is a Type::GenericVariable or TypeType::LocalGenericVariable.
     size_t genericVariableIndex() const;
@@ -214,9 +225,20 @@ public:
     /// Returns the generic arguments with which this type was specialized.
     const std::vector<Type>& genericArguments() const {
         if (type() == TypeType::Box) {
-            return genericArguments_[0].genericArguments_;
+            return genericArguments_[0].genericArguments();
         }
         assert(canHaveGenericArguments());
+        return genericArguments_;
+    }
+    /// Like genericArguments(), but adds the inherited arguments of a class that was named in its own superclass
+    /// arguments (e.g. 🐇 🍐 🍎🐚🍐🍆), which are stored without them as they would contain this very type. The
+    /// result is only one level complete, so that it must not be traversed recursively.
+    const std::vector<Type>& completeGenericArguments() const {
+        if (type() == TypeType::Box) {
+            return genericArguments_[0].completeGenericArguments();
+        }
+        assert(canHaveGenericArguments());
+        completeGenericArgumentsInPlace();
         return genericArguments_;
     }
     /// Allows to change a specific generic argument. @c index must be smaller than @c genericArguments().size()
@@ -362,6 +384,9 @@ protected:
     Type(bool isReference, bool isMutable)
         : typeContent_(TypeType::StorageExpectation), isReference_(isReference), mutable_(isMutable) {}
 private:
+    /// withMinimalBoxing() in place.
+    void minimizeBoxing();
+
     explicit Type(TypeType t) : typeContent_(t) {}
 
     /// Returns this optional or box with @p wrapped as the type it contains. A box stays outside of an optional.
@@ -396,7 +421,10 @@ private:
     size_t genericArgumentIndex_ = 0;
     TypeDefinition *typeDefinition_ = nullptr;
     Function *localResolutionConstraint_ = nullptr;
-    std::vector<Type> genericArguments_;
+    mutable std::vector<Type> genericArguments_;
+
+    void completeGenericArgumentsInPlace() const;
+    Type resolveOnWithoutCompletion(const TypeContext &typeContext) const;
 
     bool isReference_ = false;
     bool mutable_ = false;
@@ -404,7 +432,7 @@ private:
     bool cCallable_ = false;
 
     void typeName(Type type, const TypeContext &typeContext, std::string &string, Package *package) const;
-    bool identicalGenericArguments(Type to, const TypeContext &typeContext, GenericInferer *inf) const;
+    bool identicalGenericArguments(const Type &to, const TypeContext &typeContext, GenericInferer *inf) const;
     void sortMultiProtocolType();
 
     bool isCompatibleToMultiProtocol(const Type &to, const TypeContext &ct, GenericInferer *inf) const;

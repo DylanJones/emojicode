@@ -95,7 +95,7 @@ uint64_t CodeGenerator::querySize(llvm::Type *type) const {
 }
 
 llvm::Constant *CodeGenerator::boxInfoFor(const Type &type) {
-    if (type.type() == TypeType::Class) {
+    if (type.type() == TypeType::Class || type.type() == TypeType::Someobject) {
         return runTime_->boxInfoForObjects();
     }
     if (type.isCCallable()) {

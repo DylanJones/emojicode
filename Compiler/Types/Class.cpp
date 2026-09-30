@@ -9,6 +9,7 @@
 #include "Class.hpp"
 #include "AST/ASTType.hpp"
 #include "Analysis/SemanticAnalyser.hpp"
+#include "Analysis/ThunkBuilder.hpp"
 #include "Compiler.hpp"
 #include "CompilerError.hpp"
 #include "Functions/Initializer.hpp"
@@ -28,7 +29,7 @@ Class::Class(std::u32string name, Package *pkg, SourcePosition p, const std::u32
 std::vector<Type> Class::superGenericArguments() const {
     // The super type may be analysed but invalid, which analyseSuperType() reports.
     if (superType_ != nullptr && superType_->wasAnalysed() && superType_->type().type() == TypeType::Class) {
-        return superType_->type().genericArguments();
+        return superType_->type().completeGenericArguments();
     }
     return std::vector<Type>();
 }
@@ -61,7 +62,7 @@ void Class::analyseSuperType(std::vector<std::function<void()>> *constraintCheck
             analysingSuperType_ = true;
             rawType.klass()->analyseSuperType(constraintChecks);
             analysingSuperType_ = false;
-            offsetIndicesBy(rawType.klass()->superGenericArguments().size() + typeId->genericArgumentCount());
+            offsetIndicesBy(rawType.klass()->offset() + typeId->genericArgumentCount());
         }
     }
 
@@ -117,6 +118,17 @@ void Class::inherit(SemanticAnalyser *analyser) {
     typeMethods().setSuper(&superclass()->typeMethods());
     if (instanceVariables().empty() && inits().list().empty()) {
         inits().setSuper(&superclass()->inits());
+        // Inherited initializers still need a local allocation thunk: a type value must construct this class.
+        auto declarator = superclass();
+        while (declarator->inits().list().empty() && declarator->superclass() != nullptr) {
+            declarator = declarator->superclass();
+        }
+        for (auto init : declarator->inits().list()) {
+            if (init->required()) {
+                auto thunk = typeMethods().add(buildRequiredInitThunk(this, init, analyser));
+                analyser->enqueueFunction(thunk);
+            }
+        }
     }
 
     instanceScope() = superclass()->instanceScope();

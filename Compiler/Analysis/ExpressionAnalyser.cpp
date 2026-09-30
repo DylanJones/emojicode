@@ -119,7 +119,7 @@ bool ExpressionAnalyser::storesGenericValuesUnboxed(TypeDefinition *typeDef) con
 }
 
 static bool containsTypeGenericVariable(const Type &type) {
-    auto unboxed = type.unboxed().unoptionalized();
+    auto &unboxed = type.withoutBoxAndOptional();
     if (unboxed.type() == TypeType::GenericVariable) {
         return true;
     }
@@ -254,9 +254,12 @@ Type ExpressionAnalyser::upcast(Type exprType, const TypeExpectation &expectatio
     if ((exprType.type() == TypeType::Class && expectation.type() == TypeType::Class &&
          expectation.klass() != exprType.klass() && exprType.compatibleTo(expectation, typeContext_)) ||
         (exprType.unoptionalized().type() == TypeType::Class &&
-         expectation.unoptionalized().type() == TypeType::Someobject)) {
-        insertNode<ASTUpcast>(node, exprType, expectation.unoptionalized());
-        exprType = expectation.unoptionalized();
+         expectation.unoptionalized().type() == TypeType::Someobject &&
+         (expectation.type() == TypeType::Optional || exprType.type() != TypeType::Optional))) {
+        // An optional is only upcast to an optional, so that the optionality is not lost.
+        auto target = expectation.unoptionalized().optionalized(exprType.type() == TypeType::Optional);
+        insertNode<ASTUpcast>(node, exprType, target);
+        exprType = target;
     }
     return exprType;
 }

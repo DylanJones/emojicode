@@ -228,7 +228,13 @@ static Type collectionExpectation(const TypeExpectation &expectation) {
     return target;
 }
 
-Type ASTCollectionLiteral::complyPairs(ExpressionAnalyser *analyser, const TypeExpectation &expectation) {
+void ASTCollectionLiteral::lookupInitializer(ExpressionAnalyser *analyser, const std::vector<Type> &arguments) {
+    initializer_ = type_.typeDefinition()->inits().lookup(U"🍪", Mood::Imperative, arguments, type_,
+                                                          analyser->typeContext(), analyser->semanticAnalyser());
+    initializer_->createUnspecificReification();
+}
+
+void ASTCollectionLiteral::adoptType(ExpressionAnalyser *analyser, const TypeExpectation &expectation) {
     auto target = collectionExpectation(expectation);
     if (target.type() == TypeType::ValueType && target.typeDefinition()->canInitFrom(expressionType())) {
         type_ = target;
@@ -239,7 +245,10 @@ Type ASTCollectionLiteral::complyPairs(ExpressionAnalyser *analyser, const TypeE
     }
     finder_ = nullptr;
     type_.setExact(true);
+}
 
+Type ASTCollectionLiteral::complyPairs(ExpressionAnalyser *analyser, const TypeExpectation &expectation) {
+    adoptType(analyser, expectation);
     setElementType(analyser->compiler()->sDictionary->typeForVariable(0), analyser);
     for (auto it = values_.begin(); it != values_.end(); it++) {
         complyElement(analyser, analyser->compiler()->sString->type(), &(*it));
@@ -248,10 +257,8 @@ Type ASTCollectionLiteral::complyPairs(ExpressionAnalyser *analyser, const TypeE
         }
         complyElement(analyser, elementType_, &(*it));
     }
-    initializer_ = type_.typeDefinition()->inits().lookup(U"🍪", Mood::Imperative,
-                                                          { analyser->compiler()->sMemory->type(), analyser->compiler()->sMemory->type(), analyser->integer() }, type_, analyser->typeContext(),
-                                                          analyser->semanticAnalyser());
-    initializer_->createUnspecificReification();
+    lookupInitializer(analyser, { analyser->compiler()->sMemory->type(), analyser->compiler()->sMemory->type(),
+                                  analyser->integer() });
     return type_;
 }
 
@@ -285,25 +292,12 @@ void ASTCollectionLiteral::analyseMemoryFlow(MFFunctionAnalyser *analyser, MFFlo
 
 Type ASTCollectionLiteral::comply(ExpressionAnalyser *analyser, const TypeExpectation &expectation) {
     if (pairs_) return complyPairs(analyser, expectation);
-    auto target = collectionExpectation(expectation);
-    if (target.type() == TypeType::ValueType && target.typeDefinition()->canInitFrom(expressionType())) {
-        type_ = target;
-    }
-    else {
-        finder_->issueWarning(position(), analyser->compiler());
-        type_ = analyser->semanticAnalyser()->defaultLiteralType(expressionType());
-    }
-    finder_ = nullptr;
-    type_.setExact(true);
-
+    adoptType(analyser, expectation);
     setElementType(analyser->compiler()->sList->typeForVariable(0), analyser);
     for (auto &valueNode : values_) {
         complyElement(analyser, elementType_, &valueNode);
     }
-    initializer_ = type_.typeDefinition()->inits().lookup(U"🍪", Mood::Imperative,
-            { analyser->compiler()->sMemory->type(), analyser->integer() }, type_, analyser->typeContext(),
-            analyser->semanticAnalyser());
-    initializer_->createUnspecificReification();
+    lookupInitializer(analyser, { analyser->compiler()->sMemory->type(), analyser->integer() });
     return type_;
 }
 

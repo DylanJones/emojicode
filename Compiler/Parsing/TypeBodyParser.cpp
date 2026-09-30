@@ -81,7 +81,7 @@ AccessLevel TypeBodyParser<TypeDef>::readAccessLevel() {
 
 template <typename TypeDef>
 void TypeBodyParser<TypeDef>::parseProtocolConformance(const SourcePosition &p) {
-    typeDef_->addProtocol(parseType());
+    typeDef_->addProtocol(parseType(), p);
 }
 
 template <typename TypeDef>
@@ -236,7 +236,7 @@ void TypeBodyParser<TypeDef>::parse() {
                 throw CompilerError(token.position(), "Unexpected token ", token.stringName());
         }
     }
-    stream_.consumeToken(TokenType::BlockEnd);
+    typeDef_->setEndPosition(stream_.consumeToken(TokenType::BlockEnd).position());
 }
 
 template<>

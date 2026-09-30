@@ -53,7 +53,7 @@ void ASTArguments::toCode(PrettyStream &pretty) const {
 
 void ASTBlock::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    if (stmts_.empty()) {
+    if (stmts_.empty() && !pretty.hasCommentsBefore(endPosition_)) {
         pretty << "🍇🍉\n";
         return;
     }
@@ -67,11 +67,12 @@ void ASTBlock::innerToCode(PrettyStream &pretty) const {
     pretty.increaseIndent();
     for (auto &stmt : stmts_) {
         pretty << stmt;
-        pretty.offerNewLine();
+        pretty.endLine();
         if (stmt->paragraph()) {
             pretty << "\n";
         }
     }
+    pretty.printComments(endPosition_);
     pretty.decreaseIndent();
 }
 
@@ -249,7 +250,8 @@ void ASTHandledCall::toCode(PrettyStream &pretty) const {
 
 void ASTUnwrap::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty << " 🍺" << expr_;
+    pretty.ensureSpace();
+    pretty << "🍺" << expr_;
 }
 
 void ASTReraise::toCode(PrettyStream &pretty) const {

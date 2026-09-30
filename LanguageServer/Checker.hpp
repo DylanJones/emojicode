@@ -7,6 +7,8 @@
 #define Checker_hpp
 
 #include "Compiler.hpp"
+#include <filesystem>
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
@@ -59,13 +61,26 @@ struct Analysis {
     bool analysed = false;
 };
 
+/// The includes of files as they are on disk, which are kept while the files are not modified. Lets the checkers that
+/// the server makes for every notification skip reading and lexing the many files that they look at.
+struct DiskIncludesCache {
+    struct Entry {
+        std::filesystem::file_time_type modified;
+        std::uintmax_t size;
+        std::vector<std::string> includes;
+    };
+    std::map<std::string, Entry> entries;
+};
+
 /// Checks packages with the compiler.
 class Checker {
 public:
     /// @param searchPaths Where to search for packages, before the defaults. See Compiler::searchPackage.
     /// @param overlays The content of files that are open in the editor, by canonical path.
-    Checker(std::vector<std::string> searchPaths, const std::map<std::string, std::u32string> &overlays)
-        : searchPaths_(std::move(searchPaths)), overlays_(overlays) {}
+    /// @param diskCache Optional cache of the includes of files that are not open, which outlives the checker.
+    Checker(std::vector<std::string> searchPaths, const std::map<std::string, std::u32string> &overlays,
+            DiskIncludesCache *diskCache = nullptr)
+        : searchPaths_(std::move(searchPaths)), overlays_(overlays), diskCache_(diskCache) {}
 
     /// Returns the file that the compiler must be given to check the file at @p path: the file that includes it
     /// with 📜, or the file that includes that one, and so on.
@@ -90,8 +105,15 @@ private:
     /// Whether the file at @p rootPath is the main file of a package that is not a program.
     bool isLibrary(const std::string &rootPath) const;
 
+    /// The source files below @p ancestor, at most @p level directories deep.
+    const std::vector<std::filesystem::path>& sourceFiles(const std::filesystem::path &ancestor, int level) const;
+
     std::vector<std::string> searchPaths_;
+    /// Results of reading files and directories. A Checker is made for one round of work, so they are not invalidated.
+    mutable std::map<std::string, std::vector<std::string>> includesCache_;
+    mutable std::map<std::pair<std::string, int>, std::vector<std::filesystem::path>> sourceFilesCache_;
     const std::map<std::string, std::u32string> &overlays_;
+    DiskIncludesCache *diskCache_;
 };
 
 }  // namespace EmojicodeLanguageServer

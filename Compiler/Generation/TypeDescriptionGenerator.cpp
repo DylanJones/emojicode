@@ -6,6 +6,7 @@
 //
 
 #include "TypeDescriptionGenerator.hpp"
+#include <algorithm>
 #include "Generation/LLVMTypeHelper.hpp"
 #include "Generation/FunctionCodeGenerator.hpp"
 #include "Types/Class.hpp"
@@ -59,9 +60,15 @@ Type resolveSuperArgument(const Type &type, const std::vector<Type> &args, size_
 
 }  // namespace
 
-void TypeDescriptionGenerator::addType(const Type &type) {
+void TypeDescriptionGenerator::addType(const Type &type, bool exactInherited) {
     llvm::Constant *genericInfo;
-    auto notype = type.unoptionalized().unboxed();
+    auto &notype = type.withoutBoxAndOptional();
+    auto isOptional = type.withoutBox().type() == TypeType::Optional;
+    if (isOptional && (notype.type() == TypeType::GenericVariable ||
+                       notype.type() == TypeType::LocalGenericVariable)) {
+        throw CompilerError(fg_->position(), "Optional generic variables as generic type arguments are not "
+                            "supported yet (see issue #186).");
+    }
     switch (notype.type()) {
         case TypeType::Class:
             genericInfo = buildConstant00Gep(fg_->typeHelper().classInfo(), notype.klass()->classInfo(), fg_->ctx());
@@ -101,19 +108,30 @@ void TypeDescriptionGenerator::addType(const Type &type) {
             throw std::logic_error("Cannot create type description for compile-time type.");
     }
 
+    // A class that is named in its own superclass arguments would have an infinite description. Where it recurs within
+    // those arguments it is described as something, which has no arguments.
+    auto recurs = notype.type() == TypeType::Class &&
+        std::find(expandingSuper_.begin(), expandingSuper_.end(), notype.klass()) != expandingSuper_.end();
+    if (recurs) {
+        genericInfo = fg_->generator()->runTime().somethingRtti();
+    }
+
     auto strct = llvm::ConstantStruct::get(fg_->typeHelper().typeDescription(), {
         genericInfo,
-        type.type() == TypeType::Optional ? llvm::ConstantInt::getTrue(fg_->ctx()) : llvm::ConstantInt::getFalse(fg_->ctx()),
+        isOptional ? llvm::ConstantInt::getTrue(fg_->ctx()) : llvm::ConstantInt::getFalse(fg_->ctx()),
         fg_->generator()->valueWitnesses().witnessFor(type),
     });
     types_.emplace_back(strct);
 
-    if (!notype.canHaveGenericArguments()) return;
-    auto &args = notype.genericArguments();
-    auto superCount = notype.type() == TypeType::Class ? notype.klass()->superGenericArguments().size() : 0;
+    if (recurs || !notype.canHaveGenericArguments()) return;
+    auto &args = notype.completeGenericArguments();
+    auto superCount = notype.type() == TypeType::Class ? notype.klass()->offset() : 0;
+    if (superCount > 0 && !exactInherited) expandingSuper_.emplace_back(notype.klass());
     for (size_t i = 0; i < args.size(); i++) {
+        if (i == superCount && superCount > 0 && !exactInherited) expandingSuper_.pop_back();
         addType(i < superCount ? resolveSuperArgument(args[i], args, i, superCount, notype.klass()) : args[i]);
     }
+    if (args.size() <= superCount && superCount > 0 && !exactInherited) expandingSuper_.pop_back();
 }
 
 llvm::Value* TypeDescriptionGenerator::extractTypeDescriptionPtr() {
@@ -175,7 +193,7 @@ llvm::Value* TypeDescriptionGenerator::generate(const std::vector<std::shared_pt
 
 llvm::Value* TypeDescriptionGenerator::generate(const Type &type) {
     assert(types_.empty());
-    addType(type);
+    addType(type, user_ == User::TypeValue);
     return finish();
 }
 

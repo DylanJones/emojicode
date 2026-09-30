@@ -63,13 +63,18 @@
     various techniques to make this as efficient as possible.
   📗
   ❗️ 🔪 from 🔢 length 🔢 ➡️ 📇 🍇
+    ↪️ from ◀️ 0 👐 length ◀️ 0 🍇
+      ☣️ 🍇
+        ↩️ 🆕📇 🆕🧠 0❗️ 0❗️
+      🍉
+    🍉
     ↪️ from ▶️️🙌 count 🍇
       ☣️ 🍇
         ↩️ 🆕📇 🆕🧠 0❗️ 0❗️
       🍉
     🍉
     length ➡️ 🖍🆕normal_length
-    ↪️ from ➕ length ▶️️🙌 count 🍇
+    ↪️ length ▶️ count ➖ from 🍇
       count ➖ from ➡️ 🖍normal_length
     🍉
 

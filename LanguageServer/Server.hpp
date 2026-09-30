@@ -129,6 +129,7 @@ private:
     Transport *transport_;
     std::vector<std::string> searchPaths_;
     PositionEncoding encoding_ = PositionEncoding::UTF16;
+    bool initialized_ = false;
     bool shutdown_ = false;
     bool snippetSupport_ = false;
 
@@ -136,6 +137,7 @@ private:
     std::map<std::string, Document> documents_;
     /// The content of the open documents by canonical path.
     std::map<std::string, std::u32string> overlays_;
+    mutable DiskIncludesCache diskIncludes_;
     /// The root file of each open document.
     std::map<std::string, std::string> roots_;
     /// The last analysis of each root file.

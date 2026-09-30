@@ -1,0 +1,71 @@
+💭 test: unoptimized
+🐇 🦆 🍇
+  🖍🆕 name 🔡
+
+  🆕 🍼 name 🔡 🍇🍉
+
+  ♻️ 🍇
+    😀 🔤deinit 🧲name🧲🔤❗️
+  🍉
+🍉
+
+🕊 🥛🐚A⚪🍆 🍇
+  🖍🆕 a A
+  🆕 🍼 a A 🍇🍉
+🍉
+
+🐊 🔼 🍇🍉
+🐊 🔽 🍇🍉
+🕊 🐘 🍇
+  🐊 🔼
+  🖍🆕 a 🔢 ⬅️ 0
+  🖍🆕 b 🔢 ⬅️ 0
+  🖍🆕 c 🔢 ⬅️ 0
+  🖍🆕 d 🔢 ⬅️ 0
+  🖍🆕 value 🦆
+  🆕 🍼 value 🦆 🍇🍉
+🍉
+🕊 🐭 🍇
+  🐊 🔼
+  🖍🆕 value 🦆
+  🆕 🍼 value 🦆 🍇🍉
+🍉
+🕊 🏭 🍇
+  🐇❗️ 🧪 🍇
+    🔲 🐘🕊🏭 🔤remote bound🔤❗️ 🐭 ➡️ failed
+  🍉
+  🐇❗️ 🐘 name 🔡 ➡️ ⚪ 🍇 ↩️ 🆕🐘 🆕🦆 name❗️❗️ 🍉
+  🐇❗️ 🐭 name 🔡 ➡️ 🔼 🍇 ↩️ 🆕🐭 🆕🦆 name❗️❗️ 🍉
+  🐇❗️ 🐟 name 🔡 ➡️ 🔼 🍇 ↩️ 🆕🐘 🆕🦆 name❗️❗️ 🍉
+  🐇❗️ 🥛 name 🔡 ➡️ ⚪ 🍇 ↩️ 🆕🥛🐚🦆🍆 🆕🦆 name❗️❗️ 🍉
+  🐇❗️ 📦 name 🔡 ➡️ ⚪ 🍇
+    ↩️ 🆕🦆 name❗️
+  🍉
+🍉
+
+🏁 🍇
+  🔤start🔤 ➡️ s
+  😀 s❗️
+  💭 Failed casts of a temporary box must release the object it holds.
+  🔲 📦🕊🏭 🔤one🔤 ❗️ 🥛🐚🔡🍆 ➡️ failed
+  😀 🔤after failed bound cast🔤❗️
+  ↪️ 🔲 📦🕊🏭 🔤two🔤 ❗️ 🥛🐚🔡🍆 🙌 🤷‍♀️ 🍇
+    😀 🔤compared failed cast🔤❗️
+  🍉
+  😀 🔤after failed compared cast🔤❗️
+  ↪️ 🔲 📦🕊🏭 🔤three🔤 ❗️ 🦆 ➡️ taken 🍇
+    😀 🔤cast succeeded🔤❗️
+  🍉
+  🧪🕊🏭❗️
+  🔲 🐘🕊🏭 🔤remote discarded🔤❗️ 🐭
+  ↪️ 🔲 🐘🕊🏭 🔤remote success🔤❗️ 🐘 ➡️ remote 🍇
+    😀 🔤remote succeeded🔤❗️
+  🍉
+  🔲 🐭🕊🏭 🔤small protocol🔤❗️ 🔽 ➡️ smallFailed
+  🔲 🐟🕊🏭 🔤remote protocol🔤❗️ 🔽 ➡️ protocolFailed
+  🔲 🥛🕊🏭 🔤generic mismatch🔤❗️ 🥛🐚🔡🍆 ➡️ genericFailed
+  📦🕊🏭 🔤borrowed🔤❗️ ➡️ borrowed
+  🔲 borrowed 🥛🐚🔡🍆 ➡️ borrowedFailed
+  ↪️ 🔲 borrowed 🦆 ➡️ borrowedSuccess 🍇 😀 🔤borrowed succeeded🔤❗️ 🍉
+  😀 🔤end🔤❗️
+🍉
