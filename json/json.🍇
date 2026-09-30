@@ -246,8 +246,9 @@
       ↪️ nx ◀️ 0x30 👐 nx ▶️ 0x39 🍇
         🚨🆕🚧🔸🌸 🔤Expected digit after decimal point🔤❗️
       🍉
+      index ➡️ fractionStart
       💯🔢👇0❗️❗️➡️ place
-      place➗🏂10.0 🚵🥏place❗️❗️➕1❗️ ➡️ fraction
+      place➗🏂10.0 💯index➖fractionStart❗️❗️ ➡️ fraction
       ↪️ neg 🍇
         real ⬅️➖ fraction
       🍉

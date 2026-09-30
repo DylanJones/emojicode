@@ -17,7 +17,15 @@ extern "C" runtime::SimpleOptional<runtime::Integer> sDataFindFromIndex(Data *da
 }
 
 extern "C" runtime::SimpleOptional<String *> sDataAsString(Data *data) {
-    // TODO: validate
+    auto bytes = reinterpret_cast<const utf8proc_uint8_t *>(data->data.get());
+    for (size_t off = 0; off < static_cast<size_t>(data->count);) {
+        utf8proc_int32_t codepoint;
+        auto state = utf8proc_iterate(bytes + off, data->count - off, &codepoint);
+        if (state < 0) {
+            return runtime::NoValue;
+        }
+        off += state;
+    }
 
     auto *string = String::init();
     string->count = data->count;

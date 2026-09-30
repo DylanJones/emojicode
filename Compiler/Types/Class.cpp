@@ -9,6 +9,7 @@
 #include "Class.hpp"
 #include "AST/ASTType.hpp"
 #include "Analysis/SemanticAnalyser.hpp"
+#include "Analysis/ThunkBuilder.hpp"
 #include "Compiler.hpp"
 #include "CompilerError.hpp"
 #include "Functions/Initializer.hpp"
@@ -117,6 +118,17 @@ void Class::inherit(SemanticAnalyser *analyser) {
     typeMethods().setSuper(&superclass()->typeMethods());
     if (instanceVariables().empty() && inits().list().empty()) {
         inits().setSuper(&superclass()->inits());
+        // Inherited initializers still need a local allocation thunk: a type value must construct this class.
+        auto declarator = superclass();
+        while (declarator->inits().list().empty() && declarator->superclass() != nullptr) {
+            declarator = declarator->superclass();
+        }
+        for (auto init : declarator->inits().list()) {
+            if (init->required()) {
+                auto thunk = typeMethods().add(buildRequiredInitThunk(this, init, analyser));
+                analyser->enqueueFunction(thunk);
+            }
+        }
     }
 
     instanceScope() = superclass()->instanceScope();

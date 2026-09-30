@@ -17,4 +17,34 @@
   🎍🌊 🐇☣️❗️ 🎯 function 🍇🎍🌊🔶🌊🔢➡️🔶🌊🔢🍉 value 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤ejcTestApply🔤 🍇
     ↩️ ⁉️ function value❗️ ➕ 1
   🍉
+
+  🎍🌊 🐇☣️❗️ 📏 value 💯 factor 💯 ➡️ 💯 📻 🔤ejcTestScale🔤 🍇
+    ↩️ value ✖️ factor
+  🍉
+
+  🎍🌊 🐇☣️❗️ 🎈 value 🔶🌊🎈 ➡️ 🔶🌊🎈 📻 🔤ejcTestHalve🔤 🍇
+    ↩️ value ➗ 🆕🔶🌊🎈▶️🔢 2❗️
+  🍉
+
+  🎍🌊 🐇☣️❗️ 🔛 value 🔶🌊🔢 ➡️ 👌 📻 🔤ejcTestIsPositive🔤 🍇
+    ↩️ value ▶️ 0
+  🍉
+
+  💭 Narrow unsigned types wrap in C, not in Emojicode.
+  🎍🌊 🐇☣️❗️ 🔼 a 🔶🌊🔠🔸🔼 b 🔶🌊🔠🔸🔼 ➡️ 🔶🌊🔠🔸🔼 📻 🔤ejcTestAddByte🔤 🍇
+    ↩️ a ➕ b
+  🍉
+
+  💭 The upper half of the unsigned 64-bit range, which 🔢 cannot hold.
+  🎍🌊 🐇☣️❗️ 🦕 value 🔶🌊🦕🔸🔼 ➡️ 🔶🌊🦕🔸🔼 📻 🔤ejcTestIncrement🔤 🍇
+    ↩️ value ➕ 🆕🔶🌊🦕🔸🔼▶️🔢 1❗️
+  🍉
+
+  💭 A string with an embedded 0 byte: strlen-based and byte-count-based conversion.
+  🎍🌊 🐇☣️❗️ 🧵 string 🔶🌊📍🐚🔶🌊🔠🍆 length 🔶🌊🔢 ➡️ 🔶🌊🔢 📻 🔤ejcTestMeasure🔤 🍇
+    😀 🔤until NUL: 🧲📐🔡🕊🔶🌊🧶 string❗️❗️🧲🔤❗️
+    🔡🕊🔶🌊🧶 string 🔢 length❗️❗️ ➡️ whole
+    😀 🔤with count: 🧲📐whole❗️🧲🔤❗️
+    ↩️ 🆕🔶🌊🔢▶️🔢 📐whole❗️❗️
+  🍉
 🍉

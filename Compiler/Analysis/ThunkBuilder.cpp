@@ -14,6 +14,7 @@
 #include "AST/ASTStatements.hpp"
 #include "AST/ASTTypeExpr.hpp"
 #include "AST/ASTVariables.hpp"
+#include "AST/ASTUnary.hpp"
 #include "Emojis.h"
 #include "Functions/Initializer.hpp"
 #include "Types/Class.hpp"
@@ -99,24 +100,32 @@ std::unique_ptr<Function> buildCallableThunk(const TypeExpectation &expectation,
 
 std::unique_ptr<Function> buildRequiredInitThunk(Class *klass, const Initializer *init, SemanticAnalyser *analyser) {
     auto name = std::u32string({ E_KEY }) + init->name();
-    auto overriding = klass->superclass() != nullptr &&
-                      klass->superclass()->typeMethods().lookup(init, TypeContext(klass->type()), analyser) != nullptr;
-    auto function = std::make_unique<Function>(name, AccessLevel::Public, false, init->owner(),
-                                               init->package(), init->position(),
-                                               overriding, std::u32string(), false, false, Mood::Imperative,
+    auto function = std::make_unique<Function>(name, AccessLevel::Public, false, klass,
+                                               klass->package(), init->position(),
+                                               false, std::u32string(), false, false, Mood::Imperative,
                                                init->unsafe(), FunctionType::ClassMethod, false);
     function->setThunk();
 
-    function->setReturnType(std::make_unique<ASTLiteralType>(init->constructedType(init->owner()->type())));
-    function->setParameters(init->parameters());
+    function->setReturnType(std::make_unique<ASTLiteralType>(init->constructedType(klass->type())));
+    auto context = TypeContext(klass->type());
+    std::vector<Parameter> parameters;
+    for (auto &param : init->parameters()) {
+        parameters.emplace_back(param.name, std::make_unique<ASTLiteralType>(param.type->type().resolveOn(context)),
+                                param.memoryFlowType);
+    }
+    function->setParameters(std::move(parameters));
+    function->setErrorType(std::make_unique<ASTLiteralType>(init->errorType()->type().resolveOn(context)));
 
     auto args = ASTArguments(init->position());
     for (auto &param : function->parameters()) {
         args.addArguments(std::make_shared<ASTGetVariable>(param.name, init->position()));
     }
-    auto type = std::make_shared<ASTStaticType>(std::make_unique<ASTLiteralType>(init->owner()->type()),
+    auto type = std::make_shared<ASTStaticType>(std::make_unique<ASTLiteralType>(klass->type()),
                                                 init->position());
-    auto initCall = std::make_shared<ASTInitialization>(init->name(), type, args, init->position());
+    std::shared_ptr<ASTExpr> initCall = std::make_shared<ASTInitialization>(init->name(), type, args, init->position());
+    if (init->errorProne()) {
+        initCall = std::make_shared<ASTReraise>(initCall, init->position());
+    }
     auto block = std::make_unique<ASTBlock>(init->position());
     block->appendNode(std::make_unique<ASTReturn>(initCall, init->position()));
     function->setAst(std::move(block));

@@ -1,0 +1,4 @@
+refused connects succeeded: 0, descriptors leaked: 0
+listens on a used port succeeded: 0, descriptors leaked: 0
+connects succeeded: 20, descriptors leaked: 0
+failed reads: 20, buffers leaked: no

@@ -1,0 +1,26 @@
+💭 test: unoptimized
+💭 Comparisons with NaN are false (ordered predicates), except inequality.
+🏁 🍇
+  🏂10.0 400.0❗️ ➡️ inf
+  inf ➖ inf ➡️ nan
+  0.0 ➡️ zero
+  ↪️ nan 🙌 nan 🍇 😀 🔤eq nan nan🔤❗️ 🍉
+  ↪️ nan 🙌 zero 🍇 😀 🔤eq nan 0🔤❗️ 🍉
+  ↪️ zero 🙌 nan 🍇 😀 🔤eq 0 nan🔤❗️ 🍉
+  ↪️ nan ◀️ zero 🍇 😀 🔤lt nan 0🔤❗️ 🍉
+  ↪️ zero ◀️ nan 🍇 😀 🔤lt 0 nan🔤❗️ 🍉
+  ↪️ nan ◀️🙌 zero 🍇 😀 🔤le nan 0🔤❗️ 🍉
+  ↪️ zero ◀️🙌 nan 🍇 😀 🔤le 0 nan🔤❗️ 🍉
+  ↪️ nan ▶️ zero 🍇 😀 🔤gt nan 0🔤❗️ 🍉
+  ↪️ zero ▶️ nan 🍇 😀 🔤gt 0 nan🔤❗️ 🍉
+  ↪️ nan ▶️🙌 zero 🍇 😀 🔤ge nan 0🔤❗️ 🍉
+  ↪️ zero ▶️🙌 nan 🍇 😀 🔤ge 0 nan🔤❗️ 🍉
+  ↪️ inf 🙌 inf 🍇 😀 🔤inf == inf🔤❗️ 🍉
+  ↪️ inf ▶️ 1.0 🍇 😀 🔤inf > 1🔤❗️ 🍉
+  ↪️ 1.0 ◀️ 2.0 🍇 😀 🔤1 < 2🔤❗️ 🍉
+  ↪️ 2.0 ◀️🙌 2.0 🍇 😀 🔤2 <= 2🔤❗️ 🍉
+  ↪️ 2.0 ▶️🙌 2.0 🍇 😀 🔤2 >= 2🔤❗️ 🍉
+  ↪️ zero 🙌 0.0 ➖ 1.0 ➕ 1.0 🍇 😀 🔤0 == 0🔤❗️ 🍉
+  ↪️ 2.0 ▶️ 3.0 🍇 😀 🔤BAD 2 > 3🔤❗️ 🍉
+  ↪️ nan 🙌 nan 🍇 🍉 🙅 🍇 😀 🔤ne nan nan🔤❗️ 🍉
+🍉
