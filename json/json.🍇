@@ -221,9 +221,28 @@
   🍉
 
   📗
+    Reads all digits like `🔢` but accumulates them in a real, so that integer
+    parts which do not fit into 🔢 do not overflow. `int` is the first digit.
+  📗
+  ☣️🖍🔒❗️🧮 int 🔢➡️💯 🍇
+    💯int❗️➡️🖍🆕real
+    🔁 index ◀️ count 🍇
+      🐽🐚💧🍆string index❗️ ➡️ v
+      ↪️ v ◀️ 0x30 👐 v ▶️ 0x39 🍇
+        ↩️ real
+      🍉
+      🔢v❗️ ➖ 0x30 ➡️ d
+      real ✖️ 10.0 ➕ 💯d❗️ ➡️🖍real
+      index ⬅️➕ 1
+    🍉
+    ↩️ real
+  🍉
+
+  📗
     Reads a number.
   📗
   ☣️🖍🔒❗️💜 initial 🔢 neg 👌 ➡️⚪️ 🚧🚧🔸🌸 🍇
+    index ➡️ digitsStart
     0 ➡️ 🖍🆕integer
     ↪️ neg 🍇
       🔢👇initial❗️➡️ 🖍integer
@@ -240,15 +259,44 @@
     🐽🐚💧🍆string index❗️ ➡️v
 
     💯integer❗️➡️ 🖍🆕real
+    ↪️ v 🙌 0x2E 👐 v 🙌 0x65 👐 v 🙌 0x45 🍇
+      💭 A real: the integer part may exceed 🔢, so read it again into a real.
+      ↪️ neg 👐 initial ▶️ 0 🍇
+        digitsStart ➡️ 🖍index
+        🧮👇initial❗️ ➡️ 🖍real
+        ↪️ neg 🍇
+          real ⬅️✖️-1.0
+        🍉
+      🍉
+    🍉
     ↪️ v 🙌 0x2E 🍇
       index ⬅️➕ 1
       🐽🐚💧🍆string index❗️ ➡️nx
       ↪️ nx ◀️ 0x30 👐 nx ▶️ 0x39 🍇
         🚨🆕🚧🔸🌸 🔤Expected digit after decimal point🔤❗️
       🍉
-      index ➡️ fractionStart
-      💯🔢👇0❗️❗️➡️ place
-      place➗🏂10.0 💯index➖fractionStart❗️❗️ ➡️ fraction
+      💭 Accumulate significant digits in a real; 🔢 would overflow.
+      0.0 ➡️ 🖍🆕mantissa
+      0 ➡️ 🖍🆕significant
+      0 ➡️ 🖍🆕zeros
+      👍 ➡️ 🖍🆕reading
+      🔁 reading 🤝 index ◀️ count 🍇
+        🐽🐚💧🍆string index❗️ ➡️ fv
+        ↪️ fv ◀️ 0x30 👐 fv ▶️ 0x39 🍇
+          👎 ➡️ 🖍reading
+        🍉
+        🙅 🍇
+          ↪️ significant 🙌 0 🤝 fv 🙌 0x30 🍇
+            zeros ⬅️➕ 1
+          🍉
+          🙅↪️ significant ◀️ 17 🍇
+            mantissa ✖️ 10.0 ➕ 💯🔢fv❗️ ➖ 0x30❗️ ➡️🖍mantissa
+            significant ⬅️➕ 1
+          🍉
+          index ⬅️➕ 1
+        🍉
+      🍉
+      mantissa ➗ 🏂10.0 💯significant❗️❗️ ➗ 🏂10.0 💯zeros❗️❗️ ➡️ fraction
       ↪️ neg 🍇
         real ⬅️➖ fraction
       🍉
