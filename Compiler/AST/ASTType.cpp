@@ -85,6 +85,11 @@ Type ASTTypeId::getType(const TypeContext &typeContext, bool allowGenericInferen
     auto args = superPending ? std::vector<Type>() : typeDef->superGenericArguments();
     args.insert(args.end(), ownArgs.begin(), ownArgs.end());
     type.setGenericArguments(std::move(args));
+    if (allowGenericInference && ownArgs.empty() && !typeDef->genericParameters().empty()) {
+        // The own arguments are inferred, then the inherited ones are prepended to them.
+        type.setGenericArguments({});
+        return type;
+    }
     if (allowGenericInference && type.genericArguments().empty()) {
         return type;
     }
