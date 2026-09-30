@@ -12,6 +12,7 @@
 #include "Tokens.hpp"
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <set>
@@ -183,6 +184,10 @@ std::string Checker::includer(const std::string &path) const {
 }
 
 std::string Checker::rootFile(const std::string &path) const {
+    // Nothing can include a document that is not a file, and its directory does not exist.
+    if (path.compare(0, strlen(kVirtualDirectory), kVirtualDirectory) == 0) {
+        return path;
+    }
     std::set<std::string> visited{path};
     auto root = path;
     while (true) {

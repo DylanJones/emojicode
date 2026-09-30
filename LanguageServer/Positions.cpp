@@ -7,6 +7,7 @@
 #include "Lex/SourceManager.hpp"
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 
 namespace EmojicodeLanguageServer {
 
@@ -130,10 +131,21 @@ static std::string percentEncode(const std::string &text) {
     return encoded;
 }
 
+/// Read-only snapshots (the old side of a diff) are not programs of their own: checking one without the files
+/// next to it only produces errors.
+static bool isSnapshotUri(const std::string &uri) {
+    for (const char *scheme : {"git:", "gitlens:"}) {
+        if (uri.compare(0, strlen(scheme), scheme) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::string uriToPath(const std::string &uri) {
     const std::string scheme = "file://";
     if (uri.compare(0, scheme.size(), scheme) != 0) {
-        if (uri.empty()) {
+        if (uri.empty() || isSnapshotUri(uri)) {
             return "";
         }
         // Not a file: the percent-encoding is injective, so different URIs never share a path.

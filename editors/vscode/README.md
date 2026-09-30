@@ -27,7 +27,7 @@ directly.
 
 Documents that are not files (untitled buffers, `vscode-vfs:` and so on) get diagnostics, hover, semantic tokens and
 completion, too. Each is checked as a standalone program or package made from its text alone: it cannot include
-other files (`📜` of a relative path fails), because it has no directory.
+other files (`📜` of a relative path fails), because it has no directory. Read-only snapshots such as the old side of a `git:` diff are not checked.
 
 ## Installing
 
