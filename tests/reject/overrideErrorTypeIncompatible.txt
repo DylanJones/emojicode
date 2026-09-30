@@ -1,0 +1,1 @@
+Error type _🛷 of 📐 is not compatible to the error type _🏜 defined in 🅰.
