@@ -31,7 +31,7 @@ Type ASTSuper::analyse(ExpressionAnalyser *analyser) {
         throw CompilerError(position(), "Class has no superclass.");
     }
 
-    calleeType_ = Type(superclass);
+    calleeType_ = analyser->typeContext().calleeType().klass()->superType()->type();
     function_ = superclass->methods().get(name_, args_.mood(), &args_, &calleeType_, analyser, position());
     return analyser->analyseFunctionCall(&args_, calleeType_, function_);
 }
@@ -50,7 +50,7 @@ void ASTSuper::analyseSuperInit(ExpressionAnalyser *analyser) {
 
     init_ = true;
     auto eclass = analyser->typeContext().calleeType().klass();
-    calleeType_ = Type(eclass->superclass());
+    calleeType_ = eclass->superType()->type();
     auto initializer = eclass->superclass()->inits().get(name_, Mood::Imperative, &args_,
                                                          &calleeType_, analyser, position());
     analyser->analyseFunctionCall(&args_, calleeType_, initializer);
