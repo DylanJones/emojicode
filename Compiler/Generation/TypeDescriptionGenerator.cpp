@@ -63,6 +63,11 @@ void TypeDescriptionGenerator::addType(const Type &type) {
     llvm::Constant *genericInfo;
     auto unboxedType = type.unboxed();
     auto notype = unboxedType.unoptionalized().unboxed();
+    if (unboxedType.type() == TypeType::Optional && (notype.type() == TypeType::GenericVariable ||
+                                                     notype.type() == TypeType::LocalGenericVariable)) {
+        throw CompilerError(fg_->position(), "Optional generic variables as generic type arguments are not "
+                            "supported yet (see issue #186).");
+    }
     switch (notype.type()) {
         case TypeType::Class:
             genericInfo = buildConstant00Gep(fg_->typeHelper().classInfo(), notype.klass()->classInfo(), fg_->ctx());

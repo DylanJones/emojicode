@@ -1,0 +1,1 @@
+Optional generic variables as generic type arguments are not supported yet (see issue #186).
