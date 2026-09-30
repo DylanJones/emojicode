@@ -1,3 +1,4 @@
+💭 test: unoptimized
 🐇 🦆 🍇
   🖍🆕 name 🔡
 
@@ -13,7 +14,30 @@
   🆕 🍼 a A 🍇🍉
 🍉
 
+🐊 🔼 🍇🍉
+🐊 🔽 🍇🍉
+🕊 🐘 🍇
+  🐊 🔼
+  🖍🆕 a 🔢 ⬅️ 0
+  🖍🆕 b 🔢 ⬅️ 0
+  🖍🆕 c 🔢 ⬅️ 0
+  🖍🆕 d 🔢 ⬅️ 0
+  🖍🆕 value 🦆
+  🆕 🍼 value 🦆 🍇🍉
+🍉
+🕊 🐭 🍇
+  🐊 🔼
+  🖍🆕 value 🦆
+  🆕 🍼 value 🦆 🍇🍉
+🍉
 🕊 🏭 🍇
+  🐇❗️ 🧪 🍇
+    🔲 🐘🕊🏭 🔤remote bound🔤❗️ 🐭 ➡️ failed
+  🍉
+  🐇❗️ 🐘 name 🔡 ➡️ ⚪ 🍇 ↩️ 🆕🐘 🆕🦆 name❗️❗️ 🍉
+  🐇❗️ 🐭 name 🔡 ➡️ 🔼 🍇 ↩️ 🆕🐭 🆕🦆 name❗️❗️ 🍉
+  🐇❗️ 🐟 name 🔡 ➡️ 🔼 🍇 ↩️ 🆕🐘 🆕🦆 name❗️❗️ 🍉
+  🐇❗️ 🥛 name 🔡 ➡️ ⚪ 🍇 ↩️ 🆕🥛🐚🦆🍆 🆕🦆 name❗️❗️ 🍉
   🐇❗️ 📦 name 🔡 ➡️ ⚪ 🍇
     ↩️ 🆕🦆 name❗️
   🍉
@@ -32,5 +56,16 @@
   ↪️ 🔲 📦🕊🏭 🔤three🔤 ❗️ 🦆 ➡️ taken 🍇
     😀 🔤cast succeeded🔤❗️
   🍉
+  🧪🕊🏭❗️
+  🔲 🐘🕊🏭 🔤remote discarded🔤❗️ 🐭
+  ↪️ 🔲 🐘🕊🏭 🔤remote success🔤❗️ 🐘 ➡️ remote 🍇
+    😀 🔤remote succeeded🔤❗️
+  🍉
+  🔲 🐭🕊🏭 🔤small protocol🔤❗️ 🔽 ➡️ smallFailed
+  🔲 🐟🕊🏭 🔤remote protocol🔤❗️ 🔽 ➡️ protocolFailed
+  🔲 🥛🕊🏭 🔤generic mismatch🔤❗️ 🥛🐚🔡🍆 ➡️ genericFailed
+  📦🕊🏭 🔤borrowed🔤❗️ ➡️ borrowed
+  🔲 borrowed 🥛🐚🔡🍆 ➡️ borrowedFailed
+  ↪️ 🔲 borrowed 🦆 ➡️ borrowedSuccess 🍇 😀 🔤borrowed succeeded🔤❗️ 🍉
   😀 🔤end🔤❗️
 🍉

@@ -1,4 +1,10 @@
 gray
 not painted
+gray
+yellow
+deinit duck
+gray
+deinit fish
+deinit fish
 end
 deinit fish

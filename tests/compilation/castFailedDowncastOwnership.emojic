@@ -19,6 +19,15 @@
 🍉
 
 🐇 🏭 🍇
+  🖍🆕 value 🦆
+  🆕 🍼 value 🦆 🍇🍉
+  ❗️ 🔎 🍇
+    ↪️ 🔲 value 🐸 🙌 🤷‍♀️ 🍇
+      😀 🔤field not a frog🔤❗️
+    🍉
+    🔦value❗️
+  🍉
+  🐇❗️ 🐸 ➡️ 🦆 🍇 ↩️ 🆕🐸❗️ 🍉
   🐇❗️ 🅱️ ➡️ 🦆 🍇
     ↩️ 🆕🦆🔤call🔤❗️
   🍉
@@ -34,5 +43,13 @@
   ↪️ 🔲 🅱️🐇🏭❗️ 🐸 🙌 🤷‍♀️ 🍇
     😀 🔤call not a frog🔤❗️
   🍉
+  🔲 🅱️🐇🏭❗️ 🐸
+  🔲 a 🐸 ➡️ failedLocal
+  🔲 🅱️🐇🏭❗️ 🐸 ➡️ failedCall
+  🆕🏭 a❗️ ➡️ holder
+  🔎holder❗️
+  🐸🐇🏭❗️ ➡️ base
+  🔦 🍺 🔲 base 🐸❗️
+  ↪️ 🔲 base 🐸 ➡️ taken 🍇 🔦taken❗️ 🍉
   😀 🔤end🔤❗️
 🍉

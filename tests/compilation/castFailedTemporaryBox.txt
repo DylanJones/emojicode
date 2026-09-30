@@ -6,4 +6,13 @@ compared failed cast
 after failed compared cast
 cast succeeded
 deinit three
+deinit remote bound
+deinit remote discarded
+remote succeeded
+deinit remote success
+deinit small protocol
+deinit remote protocol
+deinit generic mismatch
+borrowed succeeded
 end
+deinit borrowed

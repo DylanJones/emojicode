@@ -3,5 +3,12 @@ still alive
 hello base
 free call
 call not a frog
+free call
+free call
+field not a frog
+hello base
+hello frog
+hello frog
 end
 free base
+free frog
