@@ -217,7 +217,7 @@
  📗
  🥯🖍❗️ 🐨 index 🔢 ➡️ 👌 🍇
     📝❗️
-    ↪️ index ◀️ 📏data❓ 🍇
+    ↪️ index ▶️🙌 0 🤝 index ◀️ 📏data❓ 🍇
       ☣️ 🍇
         ♻️🐚Element🍆 🧠data❗️ index✖️⚖️Element❗️
         🚜 🧠data❗️ index✖️⚖️Element 🧠data❗️ 🤜index ➕ 1🤛✖️⚖️Element 🤜📏data❓ ➖ 🤜index ➕ 1🤛🤛✖️⚖️Element❗️
@@ -237,7 +237,7 @@
  🥯🖍❗️ 🐵 index 🔢 item Element ➡️ 👌 🍇
     📝❗️
     ↕️data❗️
-    ↪️ index ◀️ 📏data❓ 🍇
+    ↪️ index ▶️🙌 0 🤝 index ◀️ 📏data❓ 🍇
       ☣️ 🍇
         🚜 🧠data❗️ 🤜index ➕ 1🤛✖️⚖️Element 🧠data❗️ index✖️⚖️Element 🤜📏data❓ ➖ index 🤛✖️⚖️Element❗️
         item ➡️ 🐽🐚Element🍆🧠data❗️  index✖️⚖️Element❗️
