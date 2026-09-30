@@ -248,15 +248,19 @@ def test_paths(name, kind):
 
 
 def library_test(name):
+    """Compiles and runs the library test name optimized and unoptimized, one after the other as the tests write
+    files in their directory."""
     source_path = test_paths(name, 's')[0]
-    with tempfile.TemporaryDirectory() as directory:
-        binary_path = os.path.join(directory, name)
-        run([emojicodec, source_path, '-O', '-o', binary_path], check=True)
-        # The tests read files relative to their directory.
-        completed = run([binary_path], stdout=PIPE, cwd=os.path.join(dist.source, "tests", "s"))
-    if completed.returncode != 0:
-        fail_test(name)
-        log(completed.stdout.decode('utf-8'))
+    for optimize in (True, False):
+        with tempfile.TemporaryDirectory() as directory:
+            binary_path = os.path.join(directory, name)
+            run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
+            # The tests read files relative to their directory.
+            completed = run([binary_path], stdout=PIPE, cwd=os.path.join(dist.source, "tests", "s"))
+        if completed.returncode != 0:
+            fail_test(name)
+            log(completed.stdout.decode('utf-8'))
+            return
 
 
 def check_output(name, binary_path):
