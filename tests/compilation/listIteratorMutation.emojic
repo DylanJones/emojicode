@@ -1,0 +1,8 @@
+💭 A mutating call on an element returned by a 🍨 iterator's 🔽 must not change the iterated list.
+🏁 🍇
+  🍿 🍿 1 🍆 🍆 ➡️ 🖍🆕 ll
+  🍡ll❗️ ➡️ 🖍🆕 it
+  🔽it❗️ ➡️ 🖍🆕 element
+  🐻 element 5❗️
+  😀 🔤ll=🧲📏🐽ll 0❗️❓🧲🔤❗️
+🍉
