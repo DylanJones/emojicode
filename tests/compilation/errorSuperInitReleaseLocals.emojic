@@ -1,0 +1,39 @@
+💭 A superinitializer that raises must release the locals and argument temporaries of the initializer (#185).
+🐇 🐫 🚧 🍇
+  🆕🍇
+    ⤴️🆕 🔤camel🔤❗️
+  🍉
+🍉
+🐇 💰 🍇
+  🖍🆕 name 🔡
+  🆕 🍼 name 🔡 🍇🍉
+  ♻️ 🍇
+    😀 🔤free🔤❗️
+    😀 name❗️
+  🍉
+🍉
+
+🐇 🐠 🍇
+  🆕 fail 👌 d 💰 🚧🐫 🍇
+    ↪️ fail 🍇
+      🚨🆕🐫❗️
+    🍉
+  🍉
+🍉
+
+🐇 🐟 🐠 🍇
+  🖍🆕 mine 💰
+  🆕 fail 👌 🚧🐫 🍇
+    🆕💰 🔤mine🔤❗️ ➡️ 🖍mine
+    🍿 🆕💰 🔤local🔤❗️ 🍆 ➡️ local
+    ⤴️🆕 fail 🆕💰 🔤argtemp🔤❗️❗️
+  🍉
+🍉
+
+🏁 🍇
+  🆗 f 🆕🐟 👍❗️ 🍇 😀 🔤ok🔤❗️ 🍉
+  🙅 e 🍇 😀 🔤err🔤❗️ 🍉
+  🆗 f 🆕🐟 👎❗️ 🍇 😀 🔤ok🔤❗️ 🍉
+  🙅 e 🍇 😀 🔤err🔤❗️ 🍉
+  😀 🔤end🔤❗️
+🍉

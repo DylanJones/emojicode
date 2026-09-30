@@ -1,0 +1,15 @@
+free
+argtemp
+free
+local
+free
+mine
+err
+free
+argtemp
+free
+local
+ok
+free
+mine
+end
