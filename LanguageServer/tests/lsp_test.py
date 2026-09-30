@@ -235,6 +235,32 @@ class DiagnosticsTests(ServerTestCase):
         diagnostic = client.diagnostics(path)[0]
         self.assertEqual(diagnostic["range"]["start"], {"line": 2, "character": position(text, "➕")["character"]})
 
+    def check_line_endings(self, endings, encodings=("utf-16",)):
+        lines = ["🏁 🍇", "  😀 🔤a🔤 ➕ 1❗️", "", "🍉", ""]
+        text = "".join(line + ending for line, ending in zip(lines, endings))
+        path = self.write("main.emojic", text)
+        client = self.start(encodings=encodings)
+        client.open(path, text)
+        diagnostic = client.diagnostics(path)[0]
+        column = lines[1][:lines[1].index("➕")]
+        character = {"utf-16": utf16_length(column), "utf-32": len(column),
+                     "utf-8": len(column.encode("utf-8"))}[client.capabilities["positionEncoding"]]
+        self.assertEqual(diagnostic["range"]["start"], {"line": 1, "character": character}, diagnostic)
+        self.assertEqual(diagnostic["range"]["end"]["line"], 1, diagnostic)
+
+    def test_lone_cr_line_endings(self):
+        self.check_line_endings(["\r"] * 5)
+
+    def test_crlf_line_endings(self):
+        self.check_line_endings(["\r\n"] * 5)
+
+    def test_mixed_line_endings(self):
+        self.check_line_endings(["\r", "\r\n", "\n", "\r\r", "\r"])
+
+    def test_lone_cr_line_endings_utf8_and_utf32(self):
+        self.check_line_endings(["\r"] * 5, ("utf-8",))
+        self.check_line_endings(["\r"] * 5, ("utf-32",))
+
     def test_include_in_comment_is_ignored(self):
         self.write("app/old.🍇", "💭 📜 🔤b.🍇🔤\n🏁 🍇🍉\n")
         b = self.write("app/b.🍇", "🏁 🍇\n  😀 🔤a🔤 ➕ 1❗️\n🍉\n")

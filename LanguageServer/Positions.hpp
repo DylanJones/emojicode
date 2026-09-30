@@ -24,7 +24,7 @@ struct ClientPosition {
 
 /// Converts between positions in one text: code point offsets, client positions, and compiler positions.
 ///
-/// Clients and the compiler split lines differently: the compiler also ends a line at U+2028 and U+2029, and it
+/// Clients end a line at LF, CRLF or a lone CR (LSP). The compiler also ends a line at U+2028 and U+2029, and it
 /// counts lines and characters from 1. The methods that take or return 0-based lines use the client's lines.
 class LineIndex {
 public:
@@ -56,6 +56,8 @@ public:
 private:
     const std::u32string &text_;
     std::vector<size_t> lineStarts_;
+    /// The offset of the line break (or the text's end) of each client line.
+    std::vector<size_t> lineEnds_;
     std::vector<size_t> compilerLineStarts_;
 };
 

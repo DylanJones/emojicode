@@ -14,13 +14,16 @@ LineIndex::LineIndex(const std::u32string &text) : text_(text) {
     lineStarts_.push_back(0);
     compilerLineStarts_.push_back(0);
     for (size_t i = 0; i < text.size(); i++) {
-        if (text[i] == U'\n') {
+        if (text[i] == U'\n' || (text[i] == U'\r' && (i + 1 == text.size() || text[i + 1] != U'\n'))) {
+            // LF, CRLF (its LF) and a lone CR end a client line.
+            lineEnds_.push_back(text[i] == U'\n' && i > 0 && text[i - 1] == U'\r' ? i - 1 : i);
             lineStarts_.push_back(i + 1);
         }
         if (text[i] == U'\n' || text[i] == 0x2028 || text[i] == 0x2029) {
             compilerLineStarts_.push_back(i + 1);
         }
     }
+    lineEnds_.push_back(text.size());
 }
 
 size_t LineIndex::compilerLineEnd(size_t line) const {
@@ -52,8 +55,7 @@ std::u32string_view LineIndex::line(size_t line) const {
         return {};
     }
     auto start = lineStarts_[line];
-    auto end = line + 1 < lineStarts_.size() ? lineStarts_[line + 1] - 1 : text_.size();
-    return std::u32string_view(text_).substr(start, end - start);
+    return std::u32string_view(text_).substr(start, lineEnds_[line] - start);
 }
 
 static size_t units(char32_t c, PositionEncoding encoding) {
