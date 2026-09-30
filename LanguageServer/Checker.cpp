@@ -270,9 +270,10 @@ Analysis Checker::check(const std::string &rootPath) const {
         standalone = false;
     }
     else if (isLibrary(rootPath)) {
-        // The file's name must not be the package name: the compiler treats s and c specially, and _ as a program. A
-        // name with a path separator cannot collide with any package.
-        packageName = "ad-hoc/library";
+        // A package's main file is named like its directory (s/s.🍇, packages/files/files.🍇) and keeps that name, as
+        // the compiler treats s and c specially. Any other file's name must not be the package name, and neither
+        // must _, which is a program. A name with a path separator cannot collide with any package.
+        packageName = root.stem() == root.parent_path().filename() ? root.stem().string() : "ad-hoc/library";
         standalone = false;
     }
 
