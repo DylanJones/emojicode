@@ -67,7 +67,8 @@ ASTCall* ErrorHandling::handleCall(std::shared_ptr<ASTExpr> *expr) {
 }
 
 llvm::Value* ErrorHandling::prepareErrorDestination(FunctionCodeGenerator *fg) const {
-    auto type = fg->typeHelper().llvmTypeFor(handledCall_->errorType());
+    // Errors are always object pointers, even if the error type is a generic variable, which has no LLVM type.
+    auto type = fg->typeHelper().pointer();
     auto alloca = fg->createEntryAlloca(type, "error");
     fg->builder().CreateStore(llvm::Constant::getNullValue(type), alloca);
     handledCall_->setErrorPointer(alloca);
