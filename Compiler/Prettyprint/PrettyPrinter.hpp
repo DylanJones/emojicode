@@ -83,7 +83,6 @@ private:
     void printDocumentation(const std::u32string &doc);
     void printLinkHints();
     void printErrorType(Function *function);
-    std::string filePath(const std::string &path);
     void printBody(Function *function);
 };
 

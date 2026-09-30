@@ -36,6 +36,7 @@ private:
     rapidjson::OStreamWrapper wrapper_;
     rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer_;
     Package *package_;
+    std::string path_;
 
     void reportDocumentation(const std::u32string &documentation);
     void reportType(const Type &type, const TypeContext &tc);
