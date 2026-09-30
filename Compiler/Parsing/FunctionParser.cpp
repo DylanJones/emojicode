@@ -39,6 +39,7 @@ ASTBlock FunctionParser::parseBlock() {
 }
 
 ASTBlock FunctionParser::parseBlockToEnd(const SourcePosition &pos) {
+    NestingGuard guard(pos);
     auto block = ASTBlock(pos);
     block.setBeginIndex(stream_.index());
     while (stream_.nextTokenIsEverythingBut(TokenType::BlockEnd)) {
@@ -247,13 +248,19 @@ int FunctionParser::peakOperatorPrecedence() {
 }
 
 std::shared_ptr<ASTExpr> FunctionParser::parseExprTokens(const Token &token, int precendence) {
+    NestingGuard guard(token.position());
     return parseRight(parseExprLeft(token, precendence), precendence);
 }
 
 std::shared_ptr<ASTExpr> FunctionParser::parseRight(std::shared_ptr<ASTExpr> left, int precendence) {
     int peakedPre;
+    int chainLength = 0;
     while (precendence < (peakedPre = peakOperatorPrecedence())) {
         auto token = stream_.consumeToken();
+        // The AST of a chain is as deep as the chain is long, and the analysis recurses through it.
+        if (++chainLength > NestingGuard::kMaxNesting) {
+            throw CompilerError(token.position(), "Nesting too deep.");
+        }
         auto right = parseExpr(peakedPre);
         left = std::make_shared<ASTBinaryOperator>(operatorType(token.value()), left, right, token.position());
     }

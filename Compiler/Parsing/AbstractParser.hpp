@@ -60,6 +60,27 @@ struct TypeIdentifier {
     const std::u32string& getNamespace() const { return ns.empty() ? kDefaultNamespace : ns; }
 };
 
+/// Bounds the recursion depth of the recursive descent parsers so that pathological input produces a diagnostic rather
+/// than a stack overflow. The count is shared by all parsers of the thread, including those for nested closures.
+class NestingGuard {
+public:
+    explicit NestingGuard(const SourcePosition &position) {
+        if (++depth_ > kMaxNesting) {
+            --depth_;
+            throw CompilerError(position, "Nesting too deep.");
+        }
+    }
+    ~NestingGuard() { --depth_; }
+    NestingGuard(const NestingGuard &) = delete;
+    NestingGuard &operator=(const NestingGuard &) = delete;
+
+    /// The maximum nesting of expressions, blocks and types, and the maximum length of an operator chain.
+    static constexpr int kMaxNesting = 256;
+
+private:
+    static thread_local int depth_;
+};
+
 class AbstractParser {
 protected:
     AbstractParser(Package *pkg, TokenStream &stream) : package_(pkg), stream_(stream) {}
