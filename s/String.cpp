@@ -12,6 +12,7 @@
 #include "String.h"
 #include "utf8proc.h"
 #include <algorithm>
+#include <string>
 #include <cctype>
 #include <cinttypes>
 #include <cmath>
@@ -64,40 +65,34 @@ extern "C" char sStringEndsWith(String *string, String *ending) {
                        ending->count) == 0;
 }
 
-extern "C" String* sStringToLowercase(String *string) {
-    auto newString = String::init();
-    newString->count = string->count;
-    newString->characters = runtime::allocate<char>(string->count);
-
-    size_t doff = 0;
+static String* mapCodepoints(String *string, utf8proc_int32_t (*map)(utf8proc_int32_t)) {
+    // A mapped code point may need more or fewer bytes than the original, so encode into a temporary buffer.
+    std::string result;
+    result.reserve(string->count);
     for (size_t off = 0; off < string->count;) {
         utf8proc_int32_t codepoint;
         auto state = utf8proc_iterate(reinterpret_cast<utf8proc_uint8_t *>(string->characters.get()) + off,
                                       string->count - off, &codepoint);
         if (state < 0) break;
-        doff += utf8proc_encode_char(utf8proc_tolower(codepoint),
-                                     reinterpret_cast<utf8proc_uint8_t *>(newString->characters.get()) + doff);
+        utf8proc_uint8_t encoded[4];
+        auto length = utf8proc_encode_char(map(codepoint), encoded);
+        result.append(reinterpret_cast<char *>(encoded), length);
         off += state;
     }
+
+    auto newString = String::init();
+    newString->count = result.size();
+    newString->characters = runtime::allocate<char>(result.size());
+    std::memcpy(newString->characters.get(), result.data(), result.size());
     return newString;
 }
 
-extern "C" String* sStringToUppercase(String *string) {
-    auto newString = String::init();
-    newString->count = string->count;
-    newString->characters = runtime::allocate<char>(string->count);
+extern "C" String* sStringToLowercase(String *string) {
+    return mapCodepoints(string, utf8proc_tolower);
+}
 
-    size_t doff = 0;
-    for (size_t off = 0; off < string->count;) {
-        utf8proc_int32_t codepoint;
-        auto state = utf8proc_iterate(reinterpret_cast<utf8proc_uint8_t *>(string->characters.get()) + off,
-                                      string->count - off, &codepoint);
-        if (state < 0) break;
-        doff += utf8proc_encode_char(utf8proc_toupper(codepoint),
-                                     reinterpret_cast<utf8proc_uint8_t *>(newString->characters.get()) + doff);
-        off += state;
-    }
-    return newString;
+extern "C" String* sStringToUppercase(String *string) {
+    return mapCodepoints(string, utf8proc_toupper);
 }
 
 extern "C" runtime::SimpleOptional<runtime::Integer> sStringFind(String *string, String* search) {
