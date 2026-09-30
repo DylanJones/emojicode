@@ -60,7 +60,7 @@ Type resolveSuperArgument(const Type &type, const std::vector<Type> &args, size_
 
 }  // namespace
 
-void TypeDescriptionGenerator::addType(const Type &type) {
+void TypeDescriptionGenerator::addType(const Type &type, bool exactInherited) {
     llvm::Constant *genericInfo;
     auto notype = type.unoptionalized().unboxed();
     switch (notype.type()) {
@@ -120,12 +120,12 @@ void TypeDescriptionGenerator::addType(const Type &type) {
     if (recurs || !notype.canHaveGenericArguments()) return;
     auto &args = notype.completeGenericArguments();
     auto superCount = notype.type() == TypeType::Class ? notype.klass()->offset() : 0;
-    if (superCount > 0) expandingSuper_.emplace_back(notype.klass());
+    if (superCount > 0 && !exactInherited) expandingSuper_.emplace_back(notype.klass());
     for (size_t i = 0; i < args.size(); i++) {
-        if (i == superCount && superCount > 0) expandingSuper_.pop_back();
+        if (i == superCount && superCount > 0 && !exactInherited) expandingSuper_.pop_back();
         addType(i < superCount ? resolveSuperArgument(args[i], args, i, superCount, notype.klass()) : args[i]);
     }
-    if (args.size() <= superCount && superCount > 0) expandingSuper_.pop_back();
+    if (args.size() <= superCount && superCount > 0 && !exactInherited) expandingSuper_.pop_back();
 }
 
 llvm::Value* TypeDescriptionGenerator::extractTypeDescriptionPtr() {
@@ -187,7 +187,7 @@ llvm::Value* TypeDescriptionGenerator::generate(const std::vector<std::shared_pt
 
 llvm::Value* TypeDescriptionGenerator::generate(const Type &type) {
     assert(types_.empty());
-    addType(type);
+    addType(type, user_ == User::TypeValue);
     return finish();
 }
 
