@@ -111,16 +111,28 @@ string, but those themselves are then immutable again.
     >!N beings.
   📗
   ❗️ ↔️ b 🔡 ➡️ 🔢 🍇
+    count ➡️ 🖍🆕 common
     ↪️ 📐 b❗️ ◀️ count 🍇
-      ↩️ -1
-    🍉
-    ↪️ 📐 b❗️ ▶️ count 🍇
-      ↩️ 1
+      📐 b❗️ ➡️ common
     🍉
 
     ☣️ 🍇
-      ↩️ ↔️ bytes 🧠b❗️ count❗️
+      ↔️ bytes 🧠b❗️ common❗️ ➡️ result
+      ↪️ result ◀️ 0 🍇
+        ↩️ -1
+      🍉
+      ↪️ result ▶️ 0 🍇
+        ↩️ 1
+      🍉
     🍉
+
+    ↪️ 📐 b❗️ ◀️ count 🍇
+      ↩️ 1
+    🍉
+    ↪️ 📐 b❗️ ▶️ count 🍇
+      ↩️ -1
+    🍉
+    ↩️ 0
   🍉
 
   📗
