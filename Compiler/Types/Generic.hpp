@@ -16,6 +16,7 @@
 #include <cassert>
 #include <functional>
 #include <map>
+#include <type_traits>
 #include <string>
 #include <vector>
 
@@ -164,9 +165,38 @@ public:
         return &genericParameters_[index - offset_].name;
     }
 
+    /// Whether @p type is one of the generic variables this declares (not one of a supertype's).
+    bool refersToOwnVariable(const Type &type) const {
+        if constexpr (std::is_same<T, Function>::value) {
+            return type.unboxedType() == TypeType::LocalGenericVariable &&
+                   type.localResolutionConstraint() == static_cast<const T*>(this) &&
+                   type.genericVariableIndex() >= offset_;
+        }
+        else {
+            return type.unboxedType() == TypeType::GenericVariable &&
+                   type.resolutionConstraint() == static_cast<const T*>(this) &&
+                   type.genericVariableIndex() >= offset_;
+        }
+    }
+
     void analyseConstraints(const TypeContext &typeContext) {
         for (auto &param : genericParameters_) {
             param.constraint->analyseType(typeContext);
+        }
+        for (size_t start = 0; start < genericParameters_.size(); start++) {
+            // Following bare generic variable constraints (A B, B A) must end: resolving them would never terminate.
+            size_t index = start;
+            for (size_t steps = 0; steps <= genericParameters_.size(); steps++) {
+                auto &constraint = genericParameters_[index].constraint;
+                const Type &type = constraint->type();
+                if (!refersToOwnVariable(type)) {
+                    break;
+                }
+                if (steps == genericParameters_.size()) {
+                    throw CompilerError(constraint->position(), "A generic parameter cannot be constrained by itself.");
+                }
+                index = type.genericVariableIndex() - offset_;
+            }
         }
     }
 

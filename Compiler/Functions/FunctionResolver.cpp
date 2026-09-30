@@ -23,21 +23,36 @@ bool operator <(const FunctionTableKey& x, const FunctionTableKey& y) {
     return std::tie(x.paramCount, x.name, x.mood) < std::tie(y.paramCount, y.name, y.mood);
 }
 
+static bool identicalSignatures(Function *a, Function *b) {
+    if (a->genericParameters().size() != b->genericParameters().size()) {
+        return false;
+    }
+    for (size_t i = 0; i < a->genericParameters().size(); i++) {
+        if (!a->constraintForIndex(a->offset() + i).identicalTo(b->constraintForIndex(b->offset() + i),
+                                                                TypeContext(), nullptr)) {
+            return false;
+        }
+    }
+    for (size_t i = 0; i < a->parameters().size(); i++) {
+        if (!a->parameters()[i].type->type().identicalTo(b->parameters()[i].type->type(), TypeContext(), nullptr)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 template <typename T>
-void FunctionResolver<T>::duplicateDeclarationCheck(T *function) {
-    auto prev = map_.find(FunctionTableKey(function->name(), function->mood(), function->parameters().size()));
-    if (prev != map_.end()) {
-        for (auto &fn : prev->second) {
-            bool duplicate = true;
-            for (size_t i = 0; i < function->parameters().size(); i++) {
-                if (!function->parameters()[i].type->type().identicalTo(fn->parameters()[i].type->type(), TypeContext(), nullptr)) {
-                    duplicate = false;
+void FunctionResolver<T>::duplicateDeclarationCheck() const {
+    for (auto &entry : map_) {
+        auto &overloads = entry.second;
+        for (size_t i = 1; i < overloads.size(); i++) {
+            for (size_t j = 0; j < i; j++) {
+                if (identicalSignatures(overloads[j].get(), overloads[i].get())) {
+                    auto ce = CompilerError(overloads[i]->position(), utf8(overloads[i]->name()),
+                                            " overload is declared twice.");
+                    ce.addNotes(overloads[j]->position(), "Previous declaration is here");
+                    throw std::move(ce);
                 }
-            }
-            if (duplicate) {
-                auto ce = CompilerError(function->position(), utf8(function->name()), " overload is declared twice.");
-                ce.addNotes(fn->position(), "Previous declaration is here");
-                throw std::move(ce);
             }
         }
     }

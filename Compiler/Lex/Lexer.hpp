@@ -99,6 +99,7 @@ private:
     /// Calls nextCharOrEnd() until the codePoint() does not return a whitespace character or the end of the source code
     /// was reached.
     void skipWhitespace();
+    void skipByteOrderMark();
 
     /// @returns The current code point to be examined.
     char32_t codePoint() const { return source_->file()[i_]; }
