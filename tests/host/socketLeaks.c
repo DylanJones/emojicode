@@ -31,7 +31,7 @@ static int reservePort(int listening, int *port) {
     address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     socklen_t size = sizeof(address);
     if (bind(fd, (struct sockaddr *)&address, sizeof(address)) == -1 ||
-        getsockname(fd, (struct sockaddr *)&address, &size) == -1 || (listening && listen(fd, 64) == -1)) {
+        getsockname(fd, (struct sockaddr *)&address, &size) == -1 || (listening && listen(fd, 1) == -1)) {
         return -1;
     }
     *port = ntohs(address.sin_port);
@@ -47,12 +47,38 @@ int main(int argc, char **argv) {
     ejcInit(argc, argv);
     int failed = 0;
 
+    /* A bound socket that does not listen refuses connections; once it listens, its port is taken. */
     int port;
-    int reserved = reservePort(1, &port);
+    int reserved = reservePort(0, &port);
     if (reserved == -1) {
         printf("cannot reserve a port\n");
         return 1;
     }
+    int before = openDescriptors();
+    int connected = 0;
+    for (int i = 0; i < 20; i++) {
+        connected += ejcTestConnect(port);
+    }
+    printf("refused connects succeeded: %d, descriptors leaked: %d\n", connected, openDescriptors() - before);
+    failed |= connected != 0 || openDescriptors() != before;
+
+    listen(reserved, 64);
+    before = openDescriptors();
+    int listened = 0;
+    for (int i = 0; i < 20; i++) {
+        listened += ejcTestListen(port);
+    }
+    printf("listens on a used port succeeded: %d, descriptors leaked: %d\n", listened, openDescriptors() - before);
+    failed |= listened != 0 || openDescriptors() != before;
+
+    /* Successful connects and listeners are closed again. */
+    before = openDescriptors();
+    int successes = 0;
+    for (int i = 0; i < 20; i++) {
+        successes += ejcTestConnect(port);
+    }
+    printf("connects succeeded: %d, descriptors leaked: %d\n", successes, openDescriptors() - before);
+    failed |= successes != 20 || openDescriptors() != before;
 
     /* Reading from a closed socket fails and must release its buffer. */
     long heap = heapBytes();
