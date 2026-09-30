@@ -6,6 +6,7 @@ import dist
 import subprocess
 import sys
 import re
+import shlex
 import shutil
 import signal
 import tempfile
@@ -18,8 +19,7 @@ valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
 # Test discovery
 #
 # Compilation, library, host and importing tests are found on disk, so adding one only adds files (see
-# CONTRIBUTING.md). A test may start with a directive comment, on its own line among the file's leading "💭"
-# comments, of the form
+# CONTRIBUTING.md). A test may have a directive comment, on a line of its own anywhere in the file, of the form
 #
 #   💭 test: TOKEN TOKEN ...
 #
@@ -38,8 +38,9 @@ valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
 # A library test's tokens may be "slow": like "stress", it takes seconds to run and so starts first, but unlike
 # "stress" it is not excluded from quick runs (valgrind runs do not include library tests at all).
 #
-# A file that looks like a test but is missing a file its category requires (e.g. NAME.txt), or that carries an
-# unrecognized directive token, fails the suite instead of being silently skipped.
+# A file that looks like a test but is missing a file its category requires (e.g. NAME.txt), a companion file
+# (NAME.txt, NAME.ir, ...) without its source, or an unrecognized directive token, fails the suite instead of being
+# silently skipped.
 COMPILATION_DIRECTIVES = {"unoptimized", "panic", "stress", "leak_check"}
 LIBRARY_DIRECTIVES = {"slow"}
 
@@ -47,22 +48,28 @@ DIRECTIVE_RE = re.compile(r'^💭\s*test:\s*(.*)$')
 
 
 def read_directives(path, allowed):
-    """Returns the tokens of the "💭 test: ..." directive among path's leading comments, if any. Fails the suite if
-    an unrecognized token is used."""
+    """Returns the tokens of the "💭 test: ..." directive lines of path, wherever they are in the file. Fails the suite
+    if an unrecognized token is used, so that a directive can neither be silently ignored nor mistyped."""
     tokens = set()
     with open(path, "r", encoding='utf-8') as f:
         for line in f:
-            stripped = line.strip()
-            if not stripped.startswith('💭'):
-                break
-            match = DIRECTIVE_RE.match(stripped)
+            match = DIRECTIVE_RE.match(line.strip())
             if match:
-                tokens = set(match.group(1).split())
-                break
+                tokens |= set(match.group(1).split())
     unknown = tokens - allowed
     if unknown:
         sys.exit("🛑 {0}: unknown test directive(s): {1}".format(path, ", ".join(sorted(unknown))))
     return tokens
+
+
+def reject_orphans(directory, companion_extensions, source_extension, description):
+    """Fails the suite if directory has a file with one of companion_extensions whose source_extension file is
+    missing, which is a typo that would otherwise make the test silently not run."""
+    for extension in companion_extensions:
+        for name in names_with_extension(directory, extension):
+            if not os.path.exists(os.path.join(directory, name + source_extension)):
+                sys.exit("🛑 {0} has {1}, but no {2} ({3}).".format(directory, name + extension,
+                                                                  name + source_extension, description))
 
 
 def require(path, description):
@@ -83,6 +90,7 @@ def discover_compilation_tests(directory, include_fragments, quick, valgrind):
     quick and valgrind runs exclude the "stress" tests, which take seconds to run; that exclusion is applied to
     compilation_tests before unoptimized_tests, specialization_tests and ir_tests are derived from it, so a stress
     test's other tasks are excluded consistently with its own compilation task."""
+    reject_orphans(directory, [".txt", ".ir", ".specializations"], ".emojic", "its compilation test")
     compilation_test_directives = {}
     for name in names_with_extension(directory, ".emojic"):
         if name in include_fragments:
@@ -138,6 +146,7 @@ def discover_library_tests(directory):
 def discover_host_tests(directory):
     """Finds the host tests in directory: Emojicode packages whose C functions (🎍🌊) are called by a C program of
     the same name, which also provides main. Requires each to have a NAME.c and NAME.txt."""
+    reject_orphans(directory, [".c", ".txt"], ".emojic", "its host test")
     host_tests = names_with_extension(directory, ".emojic")
     for name in host_tests:
         require(os.path.join(directory, name + ".c"), "tests/host/{0}.c".format(name))
@@ -150,6 +159,10 @@ def discover_importing_tests(directory):
     appended, which is compiled first. They test code that is only generated in importers, like the bodies of
     inlined methods. Requires each to have a NAMEPackage.🍇 and NAME.txt. Their IR is checked against NAME.ir and
     NAME.specializations, if present."""
+    reject_orphans(directory, [".txt", ".ir", ".specializations"], ".emojic", "its importing test")
+    for name in names_with_extension(directory, ".🍇"):
+        if name.endswith("Package") and not os.path.exists(os.path.join(directory, name[:-len("Package")] + ".emojic")):
+            sys.exit("🛑 {0}/{1}.🍇 has no {2}.emojic importing it.".format(directory, name, name[:-len("Package")]))
     importing_tests = names_with_extension(directory, ".emojic")
     for name in importing_tests:
         require(os.path.join(directory, name + "Package.🍇"), "tests/importing/{0}Package.🍇".format(name))
@@ -227,14 +240,33 @@ def fail_test(name):
         failed_tests.append(name)
 
 
+def run_process(args, timeout, **kwargs):
+    """Like subprocess.run, but a command that times out is killed along with the processes it started."""
+    with subprocess.Popen(args, start_new_session=True, **kwargs) as process:
+        try:
+            stdout, stderr = process.communicate(timeout=timeout)
+        except BaseException:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.wait()
+            raise
+        # Processes that outlive the command must not keep running (or hold its pipes) either.
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    return subprocess.CompletedProcess(args, process.returncode, stdout, stderr)
+
+
 def run(args, check=False, **kwargs):
     """Runs a command like subprocess.run. Its standard error is kept for the report of a test that fails, unless
     the caller handles it."""
     keep_stderr = 'stderr' not in kwargs
     if keep_stderr:
         kwargs['stderr'] = PIPE
-    kwargs.setdefault('timeout', command_timeout)
-    completed = subprocess.run(args, **kwargs)
+    completed = run_process(args, kwargs.pop('timeout', command_timeout), **kwargs)
     if keep_stderr and completed.stderr:
         report.stderr.append(completed.stderr.decode('utf-8', 'replace'))
     if check and completed.returncode != 0:
@@ -356,12 +388,22 @@ def check_ir(name, ir, check_path):
         if kind == '=':
             count_text, pattern = pattern.split(' ', 1)
             count = int(count_text)
+            if not bodies:
+                log("{0} is not preceded by an @ line that selects a function".format(line))
+                failed = True
             for function_name, body in bodies:
                 actual = len(re.findall(pattern, body))
                 if actual != count:
                     log("{0}: expected {1} matches of {2}, found {3}".format(function_name, count, pattern, actual))
                     failed = True
             continue
+        if kind not in '+-':
+            log("Unknown check line: " + line)
+            failed = True
+            continue
+        if not bodies:
+            log("{0} is not preceded by an @ line that selects a function".format(line))
+            failed = True
         for function_name, body in bodies:
             if (re.search(pattern, body) is not None) != (kind == '+'):
                 log("{0}: {1} {2}".format(function_name, "missing" if kind == '+' else "unexpected", pattern))
@@ -385,16 +427,19 @@ def package_ir_test(name):
 def host_test(name):
     directory = os.path.join(dist.source, "tests", "host")
     source_path = os.path.join(directory, name + ".emojic")
-    object_path = os.path.join(directory, name + ".o")
-    host_object_path = os.path.join(directory, name + "_host.o")
-    binary_path = os.path.join(directory, name)
-    run([emojicodec, '-p', name, '-o', object_path, '-c', source_path, '-O'], check=True)
-    run([os.environ.get("CC", "cc"), '-c', os.path.join(directory, name + ".c"), '-o', host_object_path],
-        check=True)
-    libraries = [os.path.abspath(path) for path in ["c/libc.a", "s/libs.a", "runtime/libruntime.a"]]
-    run([os.environ.get("CXX", "c++"), host_object_path, object_path] + libraries +
-        ['-lm', '-lpthread', '-o', binary_path], check=True)
-    completed = run([binary_path], stdout=PIPE)
+    # Everything generated, including the interface file, is in a directory of its own, as host tests run at once.
+    with tempfile.TemporaryDirectory() as build_directory:
+        object_path = os.path.join(build_directory, name + ".o")
+        host_object_path = os.path.join(build_directory, name + "_host.o")
+        binary_path = os.path.join(build_directory, name)
+        run([emojicodec, '-p', name, '-o', object_path, '-i', os.path.join(build_directory, name + ".emojii"),
+             '-c', source_path, '-O'], check=True)
+        run(shlex.split(os.environ.get("CC", "cc")) +
+            ['-c', os.path.join(directory, name + ".c"), '-o', host_object_path], check=True)
+        libraries = [os.path.abspath(path) for path in ["c/libc.a", "s/libs.a", "runtime/libruntime.a"]]
+        run(shlex.split(os.environ.get("CXX", "c++")) + [host_object_path, object_path] + libraries +
+            ['-lm', '-lpthread', '-o', binary_path], check=True)
+        completed = run([binary_path], stdout=PIPE)
     output = completed.stdout.decode('utf-8')
     if output != open(os.path.join(directory, name + ".txt"), "r", encoding='utf-8').read() or \
             completed.returncode != 0:

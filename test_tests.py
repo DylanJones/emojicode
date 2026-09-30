@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -151,6 +152,101 @@ class DiscoverImportingTestsTests(unittest.TestCase):
             write(directory, "importer", ".txt")
 
             self.assertEqual(tests_py.discover_importing_tests(directory), ["importer"])
+
+
+class DirectiveTests(unittest.TestCase):
+    def read(self, content, allowed=None):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "t", ".emojic", content)
+            return tests_py.read_directives(os.path.join(directory, "t.emojic"),
+                                            allowed or tests_py.COMPILATION_DIRECTIVES)
+
+    def test_directive_after_code_is_not_ignored(self):
+        self.assertEqual(self.read("📦 s\n\n💭 test: panic\n"), {"panic"})
+
+    def test_later_directive_with_unknown_token_fails(self):
+        with self.assertRaises(SystemExit):
+            self.read("💭 test: panic\n💭 test: typo\n")
+
+    def test_directives_are_merged(self):
+        self.assertEqual(self.read("💭 test: panic\n💭 test: stress\n"), {"panic", "stress"})
+
+
+class OrphanTests(unittest.TestCase):
+    def test_compilation_companions_without_source_fail(self):
+        for extension in [".txt", ".ir", ".specializations"]:
+            with self.subTest(extension=extension), tempfile.TemporaryDirectory() as directory:
+                write(directory, "typo", extension)
+                with self.assertRaises(SystemExit):
+                    tests_py.discover_compilation_tests(directory, set(), quick=False, valgrind=False)
+
+    def test_host_companions_without_source_fail(self):
+        for extension in [".c", ".txt"]:
+            with self.subTest(extension=extension), tempfile.TemporaryDirectory() as directory:
+                write(directory, "typo", extension)
+                with self.assertRaises(SystemExit):
+                    tests_py.discover_host_tests(directory)
+
+    def test_importing_package_without_importer_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "typoPackage", ".🍇")
+            with self.assertRaises(SystemExit):
+                tests_py.discover_importing_tests(directory)
+
+
+class CheckIRTests(unittest.TestCase):
+    IR = 'define void @"f"() {\nentry:\n  ret void\n}\n'
+
+    def check(self, checks):
+        with tempfile.TemporaryDirectory() as directory:
+            write(directory, "t", ".ir", checks)
+            tests_py.report.lines = []
+            tests_py.report.stderr = []
+            tests_py.report.failed = False
+            tests_py.check_ir("t", self.IR, os.path.join(directory, "t.ir"))
+            return tests_py.report.failed
+
+    def test_line_without_selected_function_fails(self):
+        self.assertTrue(self.check("+ impossible\n"))
+        self.assertTrue(self.check("- ret\n"))
+
+    def test_selected_function_is_checked(self):
+        self.assertFalse(self.check("@ ^f$\n+ ret void\n"))
+        self.assertTrue(self.check("@ ^f$\n+ impossible\n"))
+
+
+class RunTests(unittest.TestCase):
+    @staticmethod
+    def running(pid):
+        """Whether the process exists and is not a zombie that nothing has reaped yet."""
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        try:
+            with open("/proc/{0}/stat".format(pid)) as f:
+                return f.read().rsplit(")", 1)[1].split()[0] != "Z"
+        except OSError:
+            return True
+
+    def test_timeout_kills_child_processes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pid_file = os.path.join(directory, "pid")
+            script = "import subprocess,sys,time;" \
+                     "p=subprocess.Popen(['sleep','30']);open(sys.argv[1],'w').write(str(p.pid));time.sleep(30)"
+            tests_py.report.stderr = []
+            with self.assertRaises(subprocess.TimeoutExpired):
+                tests_py.run([sys.executable, "-c", script, pid_file], timeout=1)
+            child = int(open(pid_file).read())
+            for _ in range(50):
+                if not self.running(child):
+                    return
+                time.sleep(0.1)
+            os.kill(child, 9)
+            self.fail("the child of a timed-out command is still running")
+
+    def test_compiler_command_with_arguments_is_split(self):
+        self.assertEqual(tests_py.shlex.split("cc -O0 -w"), ["cc", "-O0", "-w"])
 
 
 class LibraryFixtureTests(unittest.TestCase):
