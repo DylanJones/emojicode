@@ -78,8 +78,8 @@ Type ASTTypeId::getType(const TypeContext &typeContext, bool allowGenericInferen
         ownArgs.emplace_back(arg->analyseType(typeContext));
     }
     // A class that is named in its own superclass arguments (e.g. 🐇 🍐 🍎🐚🍐🍆) does not know the arguments of its
-    // superclass yet, which would contain this very type. The type then holds only the own arguments and the check
-    // is completed with the inherited arguments once the superclass is analysed.
+    // superclass yet, which would contain this very type. The type then holds only the own arguments and Type adds
+    // the inherited ones once the superclass is analysed.
     auto klass = dynamic_cast<Class *>(typeDef);
     bool superPending = klass != nullptr && klass->superType() != nullptr && !klass->superType()->wasAnalysed();
     auto args = superPending ? std::vector<Type>() : typeDef->superGenericArguments();
@@ -93,14 +93,8 @@ Type ASTTypeId::getType(const TypeContext &typeContext, bool allowGenericInferen
     if (allowGenericInference && type.genericArguments().empty()) {
         return type;
     }
-    auto check = [type, superPending, ownArgs = std::move(ownArgs), context = TypeContext(typeContext, nullptr),
-                  p = position()]() mutable {
-        if (superPending) {
-            auto args = type.typeDefinition()->superGenericArguments();
-            args.insert(args.end(), ownArgs.begin(), ownArgs.end());
-            type.setGenericArguments(std::move(args));
-        }
-        type.typeDefinition()->requestReificationAndCheck(context, TypeContext(type), type.genericArguments(), p);
+    auto check = [type, context = TypeContext(typeContext, nullptr), p = position()]() {
+        type.typeDefinition()->requestReificationAndCheck(context, TypeContext(type), type.completeGenericArguments(), p);
     };
     if (auto checks = typeContext.deferredChecks()) {
         checks->emplace_back(std::move(check));
