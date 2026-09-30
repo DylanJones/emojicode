@@ -58,7 +58,10 @@ Value* ASTCast::downcast(FunctionCodeGenerator *fg) const {
     return fg->createIfElsePhi(inheritsFrom, [&] {
         return fg->buildSimpleOptionalWithValue(value, toType.optionalized());
     }, [&] {
-        fg->release(value, expr_->expressionType());
+        if (!isTemporary()) {
+            // A taken result owns its operand; if the result is temporary, the operand manages its own release.
+            fg->release(value, expr_->expressionType());
+        }
         return fg->buildSimpleOptionalWithoutValue(toType.optionalized());
     });
 }
