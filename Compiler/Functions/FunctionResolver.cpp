@@ -56,6 +56,9 @@ std::vector<Type> analyseArgs(ExpressionAnalyser *analyser, ASTArguments *args) 
     types.reserve(args->args().size());
     for (auto &arg : args->args()) {
         types.emplace_back(analyser->analyse(arg));
+        if (types.back().type() == TypeType::NoReturn) {
+            throw CompilerError(arg->position(), "Expression does not produce a value.");
+        }
     }
     return types;
 }

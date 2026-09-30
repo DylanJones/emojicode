@@ -208,6 +208,9 @@ Type ExpressionAnalyser::comply(const TypeExpectation &expectation, std::shared_
     if (!expectation.shouldPerformBoxing()) {
         return exprType;
     }
+    if (exprType.type() == TypeType::NoReturn) {
+        throw CompilerError((*node)->position(), "Expression does not produce a value.");
+    }
 
     exprType = upcast(std::move(exprType), expectation, node);
     exprType = callableBox(std::move(exprType), expectation, node);
