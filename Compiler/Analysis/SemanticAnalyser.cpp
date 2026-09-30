@@ -66,6 +66,8 @@ void SemanticAnalyser::analyse(bool executable) {
         protocol->eachFunction([this](Function *function) {
             analyseFunctionDeclaration(function);
         });
+        protocol->methods().duplicateDeclarationCheck();
+        protocol->typeMethods().duplicateDeclarationCheck();
     }
     for (auto &vt : package_->valueTypes()) {
         enqueueFunctionsOfTypeDefinition(vt.get());
@@ -330,6 +332,9 @@ void SemanticAnalyser::enqueueFunctionsOfTypeDefinition(TypeDefinition *typeDef)
     typeDef->eachFunction([this](Function *function) {
         enqueueFunction(function);
     });
+    typeDef->methods().duplicateDeclarationCheck();
+    typeDef->typeMethods().duplicateDeclarationCheck();
+    typeDef->inits().duplicateDeclarationCheck();
 }
 
 void SemanticAnalyser::enqueueFunction(Function *function) {

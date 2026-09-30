@@ -20,6 +20,7 @@ namespace EmojicodeCompiler {
 
 class FunctionCodeGenerator;
 class Type;
+class Class;
 class ASTType;
 
 enum class TypeDescriptionUser {
@@ -62,7 +63,12 @@ public:
     llvm::Value* entryFor(const Type &type);
 
 private:
-    void addType(const Type &type);
+    /// @param exactInherited Whether a class that recurs in its own inherited arguments is described once in full
+    /// there, instead of as something already at this level. A class type value needs this: its type methods read
+    /// the arguments of the class from it.
+    void addType(const Type &type, bool exactInherited = false);
+    /// The classes whose inherited arguments are being described.
+    std::vector<Class *> expandingSuper_;
     llvm::Value* finish();
     llvm::Value* finishStatic();
     void addDynamic(llvm::Value *gargs, size_t index);

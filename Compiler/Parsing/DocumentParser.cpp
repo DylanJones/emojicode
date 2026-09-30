@@ -71,7 +71,7 @@ void DocumentParser::parse() {
             case TokenType::PackageDocumentationComment:
                 attributes.check(theToken.position(), package_->compiler());
                 documentation.disallow();
-                package_->setDocumentation(theToken.value());
+                package_->setDocumentation(theToken.value(), theToken.position());
                 continue;
             case TokenType::Identifier:
                 switch (theToken.value()[0]) {
@@ -171,7 +171,7 @@ void DocumentParser::parseInclude(const SourcePosition &p) {
         throw CompilerError(pathString.position(), "Including ", originalPathString,
                             " is circular as it is already being included.");
     }
-    package_->includeDocument(fileString, originalPathString);
+    package_->includeDocument(fileString, originalPathString, p);
 }
 
 void DocumentParser::parseLinkHints(const SourcePosition &p) {
@@ -186,7 +186,7 @@ void DocumentParser::parseLinkHints(const SourcePosition &p) {
     if (p.file != nullptr) {
         package_->setLinkHintsDirectory(llvm::sys::path::parent_path(p.file->path()).str());
     }
-    package_->setLinkHints(std::move(hints));
+    package_->setLinkHints(std::move(hints), p);
 }
 
 void DocumentParser::parseProtocol(const std::u32string &documentation, const Token &theToken, bool exported) {

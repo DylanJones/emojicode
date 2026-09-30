@@ -24,7 +24,7 @@ struct ClientPosition {
 
 /// Converts between positions in one text: code point offsets, client positions, and compiler positions.
 ///
-/// Clients and the compiler split lines differently: the compiler also ends a line at U+2028 and U+2029, and it
+/// Clients end a line at LF, CRLF or a lone CR (LSP). The compiler also ends a line at U+2028 and U+2029, and it
 /// counts lines and characters from 1. The methods that take or return 0-based lines use the client's lines.
 class LineIndex {
 public:
@@ -56,10 +56,18 @@ public:
 private:
     const std::u32string &text_;
     std::vector<size_t> lineStarts_;
+    /// The offset of the line break (or the text's end) of each client line.
+    std::vector<size_t> lineEnds_;
     std::vector<size_t> compilerLineStarts_;
 };
 
-/// Returns the absolute, canonical file system path for a file:// URI, or an empty string for other URIs.
+/// The directory of the synthetic paths of documents that are not files, e.g. untitled: buffers. It does not
+/// exist, so such a document is a standalone program that is backed by its overlay and cannot include other files.
+constexpr const char *kVirtualDirectory = "/.emojicode-virtual-documents";
+
+/// Returns the absolute, canonical file system path for a file:// URI. Any other URI gets a stable synthetic path
+/// below kVirtualDirectory that is unique for the URI. Returns an empty string for an empty URI and for
+/// read-only snapshots (git: and gitlens:), which are not served.
 std::string uriToPath(const std::string &uri);
 /// Returns a file:// URI for an absolute path.
 std::string pathToUri(const std::string &path);

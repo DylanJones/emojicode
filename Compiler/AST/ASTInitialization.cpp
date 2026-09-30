@@ -39,8 +39,14 @@ Type ASTInitialization::analyse(ExpressionAnalyser *analyser) {
         if (!init->required()) {
             throw CompilerError(position(), "Type is not exact; can only use required initializer.");
         }
-        initializer_ = type.typeDefinition()->typeMethods().get(std::u32string({ E_KEY }) + name_, Mood::Imperative,
-                                                                &args_, &type, analyser, position());
+        // Initializer resolution has already analysed the arguments and inferred the type arguments.
+        std::vector<Type> argumentTypes;
+        for (auto &arg : args_.args()) {
+            argumentTypes.push_back(arg->expressionType());
+        }
+        initializer_ = type.typeDefinition()->typeMethods().lookup(std::u32string({ E_KEY }) + name_, Mood::Imperative,
+                                                                   argumentTypes, type, analyser->typeContext(),
+                                                                   analyser->semanticAnalyser());
     }
     else {
         initializer_ = init;

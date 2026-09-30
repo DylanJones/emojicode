@@ -6,6 +6,7 @@
 //  Copyright © 2017 Theo Weidmann. All rights reserved.
 //
 
+#include "Package/Package.hpp"
 #include "ASTMethod.hpp"
 #include <algorithm>
 #include "ASTTypeAsValue.hpp"
@@ -45,11 +46,7 @@ Type ASTMethodable::analyseMethodCall(ExpressionAnalyser *analyser, const std::u
     method_ = calleeType_.typeDefinition()->methods().get(name, args_.mood(), &args_,
                                                           &calleeType_, analyser, position());
 
-    // A private or 🔏 method cannot be overridden, and an exact type has no subclass that could override it.
-    if (calleeType_.type() == TypeType::Class &&
-        (method_->accessLevel() == AccessLevel::Private || method_->final() || calleeType_.isExact())) {
-        callType_ = CallType::StaticDispatch;
-    }
+    selectStaticDispatch(false);
 
     checkMutation(analyser, callee);
     ensureErrorIsHandled(analyser);
@@ -125,7 +122,32 @@ void ASTMethodable::checkMutation(ExpressionAnalyser *analyser, const std::share
 }
 
 void ASTMethod::mutateReference(ExpressionAnalyser *analyser) {
+    // A value type's copies can share the storage the returned reference points into. 📝 makes it unique. Only the
+    // standard package's value types (🍨) are known to provide 📝 for this; a user's method of that name is ordinary.
+    if (prepare_ == nullptr && method_ != nullptr && callType_ == CallType::StaticDispatch &&
+        calleeType_.type() == TypeType::ValueType && calleeType_.typeDefinition()->package()->name() == "s" &&
+        method_->returnType() != nullptr &&
+        method_->returnType()->type().isReference()) {
+        auto &methods = calleeType_.typeDefinition()->methods().list();
+        auto it = std::find_if(methods.begin(), methods.end(), [](Function *method) {
+            return method->name() == U"\U0001F4DD" && method->mutating() && method->parameters().empty();
+        });
+        if (it != methods.end()) {
+            prepare_ = *it;
+            analyser->analyseFunctionCall(&prepareArgs_, calleeType_, prepare_, &prepare_);
+        }
+    }
     callee_->mutateReference(analyser);
+}
+
+void ASTMethodable::selectStaticDispatch(bool namedClass) {
+    // A private or 🔏 method cannot be overridden, and neither an exact type nor a class named in the call, as in
+    // 🤯🐇💻, can be a subclass that overrides it. (A class named elsewhere, e.g. in a list of type values, can
+    // become a subclass, so its type is not exact.)
+    if (calleeType_.type() == TypeType::Class && (method_->accessLevel() == AccessLevel::Private ||
+                                                  method_->final() || calleeType_.isExact() || namedClass)) {
+        callType_ = CallType::StaticDispatch;
+    }
 }
 
 Type ASTMethodable::analyseTypeMethodCall(ExpressionAnalyser *analyser, const std::u32string &name,
@@ -145,14 +167,7 @@ Type ASTMethodable::analyseTypeMethodCall(ExpressionAnalyser *analyser, const st
     method_ = calleeType_.typeDefinition()->typeMethods().get(name, args_.mood(), &args_,
                                                               &calleeType_, analyser, position());
 
-    // A private or 🔏 method cannot be overridden, and neither an exact type nor a class named in the call, as in
-    // 🤯🐇💻, can be a subclass that overrides it. (A class named elsewhere, e.g. in a list of type values, can
-    // become a subclass, so its type is not exact.)
-    auto namedClass = std::dynamic_pointer_cast<ASTTypeAsValue>(callee) != nullptr;
-    if (calleeType_.type() == TypeType::Class && (method_->accessLevel() == AccessLevel::Private ||
-                                                  method_->final() || calleeType_.isExact() || namedClass)) {
-        callType_ = CallType::StaticDispatch;
-    }
+    selectStaticDispatch(std::dynamic_pointer_cast<ASTTypeAsValue>(callee) != nullptr);
     ensureErrorIsHandled(analyser);
     return analyser->analyseFunctionCall(&args_, calleeType_, method_, &method_);
 }
@@ -161,6 +176,8 @@ Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const
                                              const std::shared_ptr<ASTExpr> &callee) {
     auto argTypes = analyseArgs(analyser, &args_);
     auto genericArgs = transformTypeAstVector(args_.genericArguments(), analyser->typeContext());
+    auto error = CompilerError(position(), "No type in ", calleeType_.toString(analyser->typeContext()),
+                               " provides a method ", utf8(name), ".");
     // The generic parameters of a method, e.g. Element in 🍡🐚🔢🍆, are resolved on the protocol that declares it.
     for (multiprotocolN_ = 0; multiprotocolN_ < calleeType_.protocols().size(); multiprotocolN_++) {
         auto protocol = calleeType_.protocols()[multiprotocolN_];
@@ -174,9 +191,9 @@ Type ASTMethodable::analyseMultiProtocolCall(ExpressionAnalyser *analyser, const
             checkMutation(analyser, callee);
             return analyser->analyseFunctionCall(&args_, protocol, method_);
         }
+        resolution.explain(&error);
     }
-    throw CompilerError(position(), "No type in ", calleeType_.toString(analyser->typeContext()),
-                        " provides a method ", utf8(name), ".");
+    throw std::move(error);
 }
 
 std::map<std::pair<TypeDefinition*, char32_t>, ASTMethodable::BuiltInType> ASTMethodable::kBuiltIns = {};

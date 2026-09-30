@@ -267,6 +267,21 @@ struct ConformancesLess {
 extern "C" void** ejcMultiprotocolTable(void **conformances, runtime::Integer count) {
     static std::mutex mutex;
     static std::map<std::vector<void *>, std::unique_ptr<void *[]>, ConformancesLess> tables;
+    // Tables live as long as the program, so each thread can remember recent results and skip the global lock.
+    struct CacheEntry {
+        std::vector<void *> key;
+        void **table = nullptr;
+    };
+    static thread_local CacheEntry cache[64];
+    size_t hash = static_cast<size_t>(count);
+    for (runtime::Integer i = 0; i < count; i++) {
+        hash = hash * 1099511628211ULL + reinterpret_cast<size_t>(conformances[i]);
+    }
+    auto &entry = cache[(hash ^ (hash >> 17)) % 64];
+    if (entry.table != nullptr && entry.key.size() == static_cast<size_t>(count) &&
+        std::equal(conformances, conformances + count, entry.key.begin())) {
+        return entry.table;
+    }
     Conformances key { conformances, conformances + count };
     std::lock_guard<std::mutex> lock(mutex);
     auto it = tables.find(key);
@@ -275,7 +290,9 @@ extern "C" void** ejcMultiprotocolTable(void **conformances, runtime::Integer co
         std::copy(conformances, conformances + count, table.get());
         it = tables.emplace(std::vector<void *>(key.begin(), key.end()), std::move(table)).first;
     }
-    return it->second.get();
+    entry.key.assign(conformances, conformances + count);
+    entry.table = it->second.get();
+    return entry.table;
 }
 
 extern "C" void* ejcFindProtocolConformance(ProtocolConformanceEntry *info, void *protocolId) {

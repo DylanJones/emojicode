@@ -7,6 +7,7 @@
 //
 
 #include "FunctionParser.hpp"
+#include <algorithm>
 #include "AST/ASTBinaryOperator.hpp"
 #include "AST/ASTCast.hpp"
 #include "AST/ASTClosure.hpp"
@@ -23,6 +24,7 @@
 #include "AST/ASTConditionalAssignment.hpp"
 #include "AST/ASTTypeAsValue.hpp"
 #include "Compiler.hpp"
+#include <stdexcept>
 #include "Lex/Token.hpp"
 #include "Package/Package.hpp"
 #include "Functions/Function.hpp"
@@ -39,6 +41,7 @@ ASTBlock FunctionParser::parseBlock() {
 }
 
 ASTBlock FunctionParser::parseBlockToEnd(const SourcePosition &pos) {
+    NestingGuard guard(pos);
     auto block = ASTBlock(pos);
     block.setBeginIndex(stream_.index());
     while (stream_.nextTokenIsEverythingBut(TokenType::BlockEnd)) {
@@ -246,15 +249,38 @@ int FunctionParser::peakOperatorPrecedence() {
     return 0;
 }
 
+namespace {
+
+/// The height of the tallest expression parsed directly below the expression currently being parsed. The AST of a chain
+/// of binary operators is as high as the chain is long, and the analysis recurses through it, so the height of the AST,
+/// which nesting groups multiply with chain length, is bounded as well as the depth of the parser.
+thread_local int childHeight = 0;
+
+}  // namespace
+
 std::shared_ptr<ASTExpr> FunctionParser::parseExprTokens(const Token &token, int precendence) {
-    return parseRight(parseExprLeft(token, precendence), precendence);
+    NestingGuard guard(token.position());
+    struct HeightScope {
+        int saved = childHeight;
+        int height = 0;
+        HeightScope() { childHeight = 0; }
+        ~HeightScope() { childHeight = std::max(saved, height); }
+    } scope;
+    auto left = parseExprLeft(token, precendence);
+    scope.height = childHeight + 1;
+    return parseRight(std::move(left), precendence, scope.height);
 }
 
-std::shared_ptr<ASTExpr> FunctionParser::parseRight(std::shared_ptr<ASTExpr> left, int precendence) {
+std::shared_ptr<ASTExpr> FunctionParser::parseRight(std::shared_ptr<ASTExpr> left, int precendence, int &height) {
     int peakedPre;
     while (precendence < (peakedPre = peakOperatorPrecedence())) {
         auto token = stream_.consumeToken();
+        childHeight = 0;
         auto right = parseExpr(peakedPre);
+        height = std::max(height, childHeight) + 1;
+        if (height > NestingGuard::kMaxNesting) {
+            throw CompilerError(token.position(), "Nesting too deep.");
+        }
         left = std::make_shared<ASTBinaryOperator>(operatorType(token.value()), left, right, token.position());
     }
     return left;
@@ -271,11 +297,31 @@ std::shared_ptr<ASTExpr> FunctionParser::parseExprLeft(const EmojicodeCompiler::
         case TokenType::BooleanFalse:
             return std::make_shared<ASTBooleanFalse>(token.position());
         case TokenType::Integer: {
-            int64_t value = std::stoll(utf8(token.value()), nullptr, 0);
+            int64_t value;
+            try {
+                auto text = utf8(token.value());
+                bool isHex = text.size() > 1 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X');
+                size_t consumed = 0;
+                value = std::stoll(text, &consumed, isHex ? 16 : 10);
+                if (consumed != text.size()) {
+                    throw std::invalid_argument("trailing characters");
+                }
+            }
+            catch (std::logic_error &) {
+                throw CompilerError(token.position(), "Integer literal ", utf8(token.value()),
+                                    " is invalid or does not fit into a 🔢.");
+            }
             return std::make_shared<ASTNumberLiteral>(value, token.value(), token.position());
         }
         case TokenType::Double: {
-            double d = std::stod(utf8(token.value()));
+            double d;
+            try {
+                d = std::stod(utf8(token.value()));
+            }
+            catch (std::logic_error &) {
+                throw CompilerError(token.position(), "Real literal ", utf8(token.value()),
+                                    " is invalid or does not fit into a 🚂.");
+            }
             return std::make_shared<ASTNumberLiteral>(d, token.value(), token.position());
         }
         case TokenType::Symbol:

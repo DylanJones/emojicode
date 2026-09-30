@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from subprocess import PIPE, CalledProcessError, TimeoutExpired
 import glob
+import shutil
 import os
 import dist
 import subprocess
@@ -187,6 +188,7 @@ importing_tests = discover_importing_tests(importing_directory)
 
 reject_tests = glob.glob(os.path.join(dist.source, "tests", "reject",
                                       "*.emojic"))
+format_tests = glob.glob(os.path.join(dist.source, "tests", "format", "*.emojic"))
 parse_tests = glob.glob(os.path.join(dist.source, "tests", "parse",
                                      "*.emojic"))
 test_packages = os.path.join(dist.source, "tests", "packages")
@@ -259,7 +261,7 @@ def library_test(name):
             completed = run([binary_path], stdout=PIPE, cwd=os.path.join(dist.source, "tests", "s"))
         if completed.returncode != 0:
             fail_test(name)
-            log(completed.stdout.decode('utf-8'))
+            log(completed.stdout.decode('utf-8', 'backslashreplace'))
             return
 
 
@@ -268,7 +270,7 @@ def check_output(name, binary_path):
     directive above), and checks its output."""
     completed = run([binary_path], stdout=PIPE, env=dict(os.environ, EMOJICODE_CHECK_LEAKS='1'))
     exp_path = os.path.join(dist.source, "tests", "compilation", name + ".txt")
-    output = completed.stdout.decode('utf-8')
+    output = completed.stdout.decode('utf-8', 'backslashreplace')
     expected_returncode = -signal.SIGABRT if name in panic_tests else 0
     if output != open(exp_path, "r", encoding='utf-8').read() or completed.returncode != expected_returncode:
         log(output)
@@ -373,11 +375,11 @@ def host_test(name):
     run([emojicodec, '-p', name, '-o', object_path, '-c', source_path, '-O'], check=True)
     run([os.environ.get("CC", "cc"), '-c', os.path.join(directory, name + ".c"), '-o', host_object_path],
         check=True)
-    libraries = [os.path.abspath(path) for path in ["c/libc.a", "s/libs.a", "runtime/libruntime.a"]]
+    libraries = [os.path.abspath(path) for path in ["c/libc.a", "sockets/libsockets.a", "s/libs.a", "runtime/libruntime.a"]]
     run([os.environ.get("CXX", "c++"), host_object_path, object_path] + libraries +
         ['-lm', '-lpthread', '-o', binary_path], check=True)
     completed = run([binary_path], stdout=PIPE)
-    output = completed.stdout.decode('utf-8')
+    output = completed.stdout.decode('utf-8', 'backslashreplace')
     if output != open(os.path.join(directory, name + ".txt"), "r", encoding='utf-8').read() or \
             completed.returncode != 0:
         log(output)
@@ -406,7 +408,7 @@ def importing_test(name):
         if os.path.exists(check_path):
             check_ir(name, ir, check_path)
     completed = run([os.path.join(directory, name)], stdout=PIPE)
-    output = completed.stdout.decode('utf-8')
+    output = completed.stdout.decode('utf-8', 'backslashreplace')
     if output != open(os.path.join(directory, name + ".txt"), "r", encoding='utf-8').read() or \
             completed.returncode != 0:
         log(output)
@@ -415,7 +417,7 @@ def importing_test(name):
 
 def reject_test(filename):
     completed = run([emojicodec, '-S', test_packages, filename], stderr=PIPE)
-    output = completed.stderr.decode('utf-8')
+    output = completed.stderr.decode('utf-8', 'backslashreplace')
     # NAME.txt, if there is one, holds text that the error must contain, e.g. to tell apart errors of the same check.
     expected_path = os.path.splitext(filename)[0] + ".txt"
     expected = open(expected_path, encoding='utf-8').read().strip() if os.path.exists(expected_path) else ""
@@ -424,34 +426,113 @@ def reject_test(filename):
         fail_test(filename)
 
 
+def command_line_test(_):
+    """Usage errors and unwritable outputs make the compiler fail with a diagnostic, not succeed or abort in LLVM."""
+    source = os.path.join(dist.source, "tests", "compilation", "class.emojic")
+    with tempfile.TemporaryDirectory() as directory:
+        missing = os.path.join(directory, "missing", "out")
+        writable = os.path.join(directory, "out")
+        cases = [
+            (['--help'], 0, None),
+            (['--bogus', source], 1, None),
+            ([], 1, None),
+            ([source, '-o'], 1, None),
+            ([source, '--emit-llvm', '-o', writable, '-S', test_packages], 0, None),
+            ([source, '--emit-llvm', '-o', missing, '-S', test_packages], 1, "Could not write"),
+            ([source, '-c', '-o', missing, '-S', test_packages], 1, "Could not write"),
+            ([source, '-c', '-o', directory, '-S', test_packages], 1, "Could not write"),
+        ]
+        for arguments, status, message in cases:
+            completed = run([emojicodec] + arguments, stdout=PIPE, stderr=PIPE)
+            output = (completed.stdout + completed.stderr).decode('utf-8', 'replace')
+            if completed.returncode != status or "LLVM ERROR" in output or (message and message not in output):
+                log("{0}: exit status {1}\n{2}".format(arguments, completed.returncode, output))
+                fail_test("command line " + " ".join(arguments))
+
+
 def parse_test(filename):
     completed = run([emojicodec, '--parse-only', '-S', test_packages, filename],
                     stderr=PIPE)
     if completed.returncode != 0:
-        log(completed.stderr.decode('utf-8'))
+        log(completed.stderr.decode('utf-8', 'backslashreplace'))
         fail_test(filename)
+
+
+TEXT_TOKENS = ('MultilineComment\t', 'SinglelineComment\t', 'DocumentationComment\t',
+               'Package Documentation Token\t', 'String\t', 'BeginInterpolation\t', 'MiddleInterpolation\t',
+               'EndInterpolation\t')
+
+
+def source_text_tokens(path):
+    """Returns the comments, documentation and string tokens of the source at path, sorted and without their
+    positions. Formatting normalises the code around them (e.g. it writes attributes that are implied and moves
+    instance variables and destructors), but it must keep every one of them."""
+    completed = run([emojicodec, '--dump-tokens', path], stdout=PIPE, check=True)
+    tokens = [line.split('\t', 1)[1] for line in completed.stdout.decode('utf-8').splitlines()]
+    return sorted(token for token in tokens if token.startswith(TEXT_TOKENS))
 
 
 def formatted_test(name, formatted):
     """Formats the sources of the compilation tests in formatted, compiles the test name from them and checks its
-    output. The sources are restored before the program runs."""
+    output. Formatting must keep all tokens (including comments and documentation) and formatting the result again
+    must not change it. The sources are restored before the program runs."""
     source_path = test_paths(name, 'compilation')[0]
     paths = [test_paths(file, 'compilation')[0] for file in formatted]
     with tempfile.TemporaryDirectory() as directory:
         binary_path = os.path.join(directory, name)
         with source_lock(source_path):
+            pristine = {path: open(path, 'rb').read() for path in paths}
             try:
+                tokens = {path: source_text_tokens(path) for path in paths}
                 run([emojicodec, '--format', paths[0]], check=True)
+                once = {path: open(path, 'rb').read() for path in paths}
+                for path in paths:
+                    if source_text_tokens(path) != tokens[path]:
+                        log("Formatting changed the comments, documentation or strings of " + path)
+                        fail_test(name + " (formatted)")
                 run([emojicodec, source_path, '-O', '-o', binary_path], check=True)
+                run([emojicodec, '--format', paths[0]], check=True)
+                for path in paths:
+                    if open(path, 'rb').read() != once[path]:
+                        log("Formatting " + path + " a second time changed it")
+                        fail_test(name + " (formatted)")
             finally:
                 for path in paths:
+                    open(path, 'wb').write(pristine[path])
                     if os.path.exists(path + '_original'):
-                        os.replace(path + '_original', path)
+                        os.remove(path + '_original')
         check_output(name, binary_path)
+
+
+def format_test(filename):
+    """Formats a copy of filename and compares the result with the .formatted file next to it. The comments,
+    documentation and strings must survive and formatting the result again must not change it."""
+    expected = open(os.path.splitext(filename)[0] + ".formatted", encoding='utf-8').read()
+    with tempfile.TemporaryDirectory() as directory:
+        path = os.path.join(directory, os.path.basename(filename))
+        shutil.copyfile(filename, path)
+        run([emojicodec, '-S', test_packages, '--format', path], check=True)
+        formatted = open(path, encoding='utf-8').read()
+        if formatted != expected:
+            log("Formatted source differs from the expected one:\n" + formatted)
+            fail_test(filename)
+        if source_text_tokens(path) != source_text_tokens(filename):
+            log("Formatting changed the comments, documentation or strings of " + filename)
+            fail_test(filename)
+        run([emojicodec, '-S', test_packages, '--format', path], check=True)
+        if open(path, encoding='utf-8').read() != formatted:
+            log("Formatting the formatted source changed it")
+            fail_test(filename)
 
 
 def prettyprint_test(name):
     formatted_test(name, [name] + formatted_includes.get(name, []))
+
+
+def fail_unreported(name):
+    """Fails a test that raised, unless it already reported its failure before raising."""
+    if not report.failed:
+        fail_test(name)
 
 
 def perform(name, function, *args):
@@ -463,14 +544,14 @@ def perform(name, function, *args):
         function(*args)
     except CalledProcessError as error:
         log("Command failed with exit code {0}: {1}".format(error.returncode, " ".join(map(str, error.cmd))))
-        fail_test(name)
+        fail_unreported(name)
     except TimeoutExpired as error:
         log("Command timed out after {0} s: {1}".format(error.timeout, " ".join(map(str, error.cmd))))
-        fail_test(name)
+        fail_unreported(name)
     except Exception:
-        # E.g. a missing expected output or output that is not UTF-8, which must not abort the other tests.
+        # E.g. a missing expected output file, which must not abort the other tests.
         log(traceback.format_exc())
-        fail_test(name)
+        fail_unreported(name)
     return report.lines, report.stderr, report.failed
 
 
@@ -513,6 +594,8 @@ def test():
     tasks += [(test + " (package IR)", package_ir_test, test) for test in package_ir_tests]
     tasks += [(test, reject_test, test) for test in reject_tests]
     tasks += [(test, parse_test, test) for test in parse_tests]
+    tasks += [(test, format_test, test) for test in format_tests]
+    tasks += [("command line", command_line_test, None)]
     tasks.sort(key=lambda task: task[2] not in slow_tests)  # A stable sort, which keeps the order otherwise.
     run_all(tasks)
 
@@ -533,8 +616,8 @@ def valgrind_test(name):
         completed = run(['valgrind', '--error-exitcode=22', '--leak-check=full', binary_path], stdout=PIPE,
                         stderr=PIPE)
     if completed.returncode == 22:
-        log(completed.stdout.decode('utf-8'))
-        log(completed.stderr.decode('utf-8'))
+        log(completed.stdout.decode('utf-8', 'backslashreplace'))
+        log(completed.stderr.decode('utf-8', 'backslashreplace'))
         fail_test(name)
 
 

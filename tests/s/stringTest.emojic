@@ -19,6 +19,16 @@
     🔡👇 🔪🔤🇦🇽👨‍👩‍👧‍👧🤚🏾🔤 0 2❗️ 🔤🇦🇽👨‍👩‍👧‍👧🔤 🔤Slice 0 2🔤❗️
     🔡👇 🔪🔤🇦🇽👨‍👩‍👧‍👧🤚🏾🔤 1 1❗️ 🔤👨‍👩‍👧‍👧🔤 🔤Slice 1 1🔤❗️
     🔡👇 🔪🔤🇦🇽👨‍👩‍👧‍👧🤚🏾🔤 2 1❗️ 🔤🤚🏾🔤 🔤Slice 1 1🔤❗️
+    🔡👇 🔪🔤abc🔤 3 1❗️ 🔤🔤 🔤Slice 3 1🔤❗️
+    🔡👇 🔪🔤abc🔤 5 2❗️ 🔤🔤 🔤Slice 5 2🔤❗️
+    🔡👇 🔪🔤abc🔤 1 -1❗️ 🔤🔤 🔤Slice 1 -1🔤❗️
+    🔡👇 🔪🔤abc🔤 -1 2❗️ 🔤🔤 🔤Slice -1 2🔤❗️
+    🔡👇 🔪🔤🔤 1 1❗️ 🔤🔤 🔤Slice 1 1🔤❗️
+    🔡👇 🔪🔤🔤 0 1❗️ 🔤🔤 🔤Slice 0 1🔤❗️
+    🔡👇 🔪🔤a🔤 1 1❗️ 🔤🔤 🔤Slice 1 1🔤❗️
+    🔡👇 🔪🔤abc🔤 1 9223372036854775807❗️ 🔤bc🔤 🔤Slice 1 9223372036854775807🔤❗️
+    🔡👇 🔪🔤abc🔤 -9223372036854775807 2❗️ 🔤🔤 🔤Slice -9223372036854775807 2🔤❗️
+    🔡👇 🔪🔤🇦🇽👨‍👩‍👧‍👧🤚🏾🔤 3 1❗️ 🔤🔤 🔤Slice at grapheme end🔤❗️
 
     ⛔👇 🍺🔍🔤a🔤 🔤a🔤❗️ 🙌 0 🔤Search A 0 1🔤❗️
     ⛔👇 🍺🔍🔤aa🔤 🔤a🔤❗️ 🙌 0 🔤Search A 0 2🔤❗️
@@ -33,6 +43,8 @@
     ⛔👇 🍺🕵️‍♀️🔤abab🔤 🔤ab🔤 1❗️ 🙌 2 🔤Search from AB 2🔤❗️
     ⛔👇 🍺🕵️‍♀️🔤abab🔤 🔤ab🔤 2❗️ 🙌 2 🔤Search from AB 2🔤❗️
     ⛔👇 🍺🕵️‍♀️🔤ababaab🔤 🔤ab🔤 3❗️ 🙌 5 🔤Search from AB 2🔤❗️
+    ⛔👇 🕵️‍♀️🔤abab🔤 🔤ab🔤 -1❗️ 🙌 🤷‍♀️ 🔤Search negative offset🔤❗️
+    ⛔👇 🕵️‍♀️🔤abab🔤 🔤ab🔤 -100000000❗️ 🙌 🤷‍♀️ 🔤Search huge negative offset🔤❗️
 
     ❎👇 🎼🔤Das ist ein Affe.🔤 🔤Affe🔤❗️🔤Begins false🔤❗️
     ⛔👇 🎼🔤Das ist ein Affe.🔤 🔤Das🔤❗️🔤Begins true🔤❗️
@@ -43,6 +55,15 @@
     🔡👇 🔧🔤    Affe     🔤❗️ 🔤Affe🔤🔤Trim both🔤❗️
     🔡👇 🔧🔤Affe     🔤❗️ 🔤Affe🔤🔤Trim right🔤❗️
     🔡👇 🔧🔤     🔤❗️ 🔤🔤🔤Trim empty🔤❗️
+    🔡👇 🔧🔤café🔤❗️ 🔤café🔤 🔤Trim 2 byte final🔤❗️
+    🔡👇 🔧🔤  café  🔤❗️ 🔤café🔤 🔤Trim 2 byte final spaces🔤❗️
+    🔡👇 🔧🔤 한 🔤❗️ 🔤한🔤 🔤Trim 3 byte final🔤❗️
+    🔡👇 🔧🔤 a😀 🔤❗️ 🔤a😀🔤 🔤Trim 4 byte final🔤❗️
+    🔡👇 🔧🔤😀🔤❗️ 🔤😀🔤 🔤Trim only 4 byte🔤❗️
+    🔡👇 🔧🔤  é  🔤❗️ 🔤é🔤 🔤Trim combining char🔤❗️
+    🔡👇 🔧🔤 xé 🔤❗️ 🔤xé🔤 🔤Trim combining sequence🔤❗️
+    🔡👇 🔧🔤🔤❗️ 🔤🔤 🔤Trim empty string🔤❗️
+    ⛔👇 📏📇🔧🔤 café 🔤❗️❗️❓ 🙌 5 🔤Trim byte length🔤❗️
 
     🔢👇 📏🔫🔤Gans;Ente;Schwein🔤 🔤;🔤❗️❓ 3 🔤Split ;🔤❗️
     🔫🔤Gans;d!Ente;d!Schwein🔤 🔤;d!🔤❗️ ➡️ split
@@ -71,6 +92,15 @@
     🔡👇 📪🔤ABcDjOWlD🔤❗️ 🔤abcdjowld🔤🔤ABcDjOWlD to lowercase🔤❗️
     🔡👇 📪🔤LO-2:dDG🔤❗️ 🔤lo-2:ddg🔤🔤LO-2:dDG to lowercase🔤❗️
     🔡👇 📫🔤äö*3øœ🔤❗️ 🔤ÄÖ*3ØŒ🔤🔤äö*3øœ to uppercase🔤❗️
+    🔡👇 📪🔤İ🔤❗️ 🔤i🔤 🔤İ to lowercase shrinks🔤❗️
+    🔡👇 📫🔤ſ🔤❗️ 🔤S🔤 🔤ſ to uppercase shrinks🔤❗️
+    🔡👇 📪🔤Ⱥ🔤❗️ 🔤ⱥ🔤 🔤Ⱥ to lowercase grows🔤❗️
+    🔡👇 📫🔤ɐ🔤❗️ 🔤Ɐ🔤 🔤ɐ to uppercase grows🔤❗️
+    🔡👇 📪🔤aȺİb🔤❗️ 🔤aⱥib🔤 🔤mixed lowercase🔤❗️
+    🔡👇 📫🔤aɐſb🔤❗️ 🔤AⱯSB🔤 🔤mixed uppercase🔤❗️
+    🔡👇 📪🔤🔤❗️ 🔤🔤 🔤empty lowercase🔤❗️
+    ⛔👇 📏📇📪🔤Ⱥ🔤❗️❗️❓ 🙌 3 🔤grown byte length🔤❗️
+    ⛔👇 📏📇📫🔤ſ🔤❗️❗️❓ 🙌 1 🔤shrunk byte length🔤❗️
     🔡👇 📪🔤ÄÖ*3ØŒ🔤❗️ 🔤äö*3øœ🔤 🔤AÖ*3ØŒ to lowercase🔤❗️
     🔡👇 🆕🔡 🍿 🔤123🔤 🔤dang🔤 🔤oh_man🔤 🍆🔤--🔤❗️ 🔤123--dang--oh_man🔤🔤Join 2 symbols🔤❗️
     🔡👇 🆕🔡 🍿 🔤123🔤 🔤dang🔤 🔤oh_man🔤 🍆🔤🔤❗️ 🔤123dangoh_man🔤🔤Join empty seperator🔤❗️
@@ -80,7 +110,7 @@
     🔡👇 🔡342  10❗️ 🔤342🔤🔤342 to string🔤❗️
     🔡👇 🔡0x28  16❗️ 🔤28🔤🔤0x28 to string🔤❗️
     🔡👇 🔡0xFA  16❗️ 🔤fa🔤🔤0xFA to string🔤❗️
-    🔡👇 🔡010  8❗️ 🔤10🔤🔤010 to string🔤❗️
+    🔡👇 🔡8 8❗️ 🔤10🔤🔤010 to string🔤❗️
     🔡👇 🔡0  19❗️ 🔤0🔤🔤0 to string🔤❗️
     🔡👇 🔡-12  10❗️ 🔤-12🔤🔤0 to string🔤❗️
     🔡👇 🔡-3421231293991  10❗️ 🔤-3421231293991🔤🔤-3421231293991 to string🔤❗️
@@ -102,8 +132,8 @@
     ⛔👇 🍺🔢🔤0🔤 10❗️ 🙌 0 🔤0 from string🔤❗️
     ⛔👇 🍺🔢🔤FF🔤 16❗️ 🙌 0xFF 🔤0xFF from string🔤❗️
     ⛔👇 🍺🔢🔤ADDFF🔤 16❗️ 🙌 0xADDFF 🔤0xFF from string🔤❗️
-    ⛔👇 🍺🔢🔤10🔤 8❗️ 🙌 010 🔤010 from string🔤❗️
-    ⛔👇 🍺🔢🔤+10🔤 8❗️ 🙌 010 🔤+010 from string🔤❗️
+    ⛔👇 🍺🔢🔤10🔤 8❗️ 🙌 8 🔤010 from string🔤❗️
+    ⛔👇 🍺🔢🔤+10🔤 8❗️ 🙌 8 🔤+010 from string🔤❗️
     ⛔👇 🔢🔤🔤 16❗️ 🙌 🤷‍♀️ 🔤Nothingness Empty String int🔤❗️
     ⛔👇 🔢🔤0xAF🔤 16❗🙌 🤷‍♀️🔤Nothingness 0xAF String int🔤❗️
     ⛔👇 🔢🔤13!🔤 16❗️ 🙌 🤷‍♀️🔤Nothingness 13! String int🔤❗️

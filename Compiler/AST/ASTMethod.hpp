@@ -9,6 +9,7 @@
 #ifndef ASTMethod_hpp
 #define ASTMethod_hpp
 
+#include <functional>
 #include "ASTExpr.hpp"
 #include "Functions/CallType.h"
 #include <utility>
@@ -88,6 +89,8 @@ private:
 
     void checkMutation(ExpressionAnalyser *analyser, const std::shared_ptr<ASTExpr> &callee) const;
     void determineCallType(const ExpressionAnalyser *analyser);
+    /// Calls a method that cannot be overridden by a subclass without dynamic dispatch.
+    void selectStaticDispatch(bool namedClass);
     void determineCalleeType(ExpressionAnalyser *analyser, const std::u32string &name,
                              std::shared_ptr<ASTExpr> &callee, const Type &otype);
     Type analyseTypeMethodCall(ExpressionAnalyser *analyser, const std::u32string &name,
@@ -97,7 +100,7 @@ private:
 class ASTMethod final : public ASTMethodable {
 public:
     ASTMethod(std::u32string name, std::shared_ptr<ASTExpr> callee, const ASTArguments &args, const SourcePosition &p)
-    : ASTMethodable(p, args), name_(std::move(name)), callee_(std::move(callee)) {}
+    : ASTMethodable(p, args), name_(std::move(name)), callee_(std::move(callee)), prepareArgs_(p) {}
     Type analyse(ExpressionAnalyser *analyser) override;
     void toCode(PrettyStream &pretty) const override;
     Value* generate(FunctionCodeGenerator *fg) const override;
@@ -107,8 +110,16 @@ public:
     const std::u32string& name() const { return name_; }
 
 private:
+    /// Generates the operands of a call to a method and returns a function that performs the call. Used for the
+    /// callee of another call, whose operands must all be evaluated before this call computes its reference.
+    std::function<llvm::Value*()> generateDeferred(FunctionCodeGenerator *fg) const;
+
     std::u32string name_;
     std::shared_ptr<ASTExpr> callee_;
+    /// The 📝 method of the callee's value type to be called before this call, if this call returns a reference that is
+    /// mutated. The returned reference points into storage the callee shares with its copies until it is prepared.
+    Function *prepare_ = nullptr;
+    ASTArguments prepareArgs_;
 
     llvm::Value* buildMemoryAddress(FunctionCodeGenerator *fg, llvm::Value *memory, llvm::Value *offset,
                                     const Type &type) const;

@@ -1,0 +1,17 @@
+💭 test: unoptimized
+🏁 🍇
+  🍿 1 2 3 🍆 ➡️ 🖍🆕 l
+  🐥 l l❗️
+  😀 🔤🧲📏l❓🧲🔤❗️
+  🔂 i l 🍇
+    😀 🔤🧲i🧲🔤❗️
+  🍉
+
+  💭 Appending a list to itself repeatedly.
+  🍿 🔤a🔤 🔤b🔤 🍆 ➡️ 🖍🆕 s
+  🔂 i 🆕⏩ 0 5❗️ 🍇
+    🐥 s s❗️
+  🍉
+  😀 🔤🧲📏s❓🧲🔤❗️
+  😀 🔤🧲🐽s 63❗️🧲🔤❗️
+🍉

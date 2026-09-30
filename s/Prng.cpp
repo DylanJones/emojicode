@@ -17,6 +17,9 @@ extern "C" PRNG* sPrngNew() {
 }
 
 extern "C" runtime::Integer sPrngGetInteger(PRNG *prng, runtime::Integer from, runtime::Integer to) {
+    if (from > to) {
+        ejcPanic("Reversed bounds: the lower bound of a random integer must not exceed the upper bound");
+    }
     return std::uniform_int_distribution<runtime::Integer>(from, to)(prng->prng);
 }
 

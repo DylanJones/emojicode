@@ -36,7 +36,7 @@ void mangleIdentifier(std::stringstream &stream, const std::u32string &string) {
 /// and every type it is composed of is delimited, so that the name identifies the type. Otherwise the name is the one
 /// used for the type definition, e.g. in the names of its functions.
 void mangleTypeName(std::stringstream &stream, const Type &typeb, bool withGenericArguments = false) {
-    auto type = typeb.unboxed();
+    auto &type = typeb.withoutBox();
     auto mangleComponent = [&stream, withGenericArguments](const Type &component) {
         if (withGenericArguments) {
             stream << '<';
@@ -87,7 +87,7 @@ void mangleTypeName(std::stringstream &stream, const Type &typeb, bool withGener
             return;
         case TypeType::Optional:
             stream << "op_";
-            mangleComponent(type.unoptionalized());
+            mangleComponent(type.withoutBoxAndOptional());
             return;
         case TypeType::TypeAsValue:
             stream << "tv_";
@@ -117,8 +117,11 @@ void mangleTypeName(std::stringstream &stream, const Type &typeb, bool withGener
     }
     mangleIdentifier(stream, type.typeDefinition()->name());
     if (withGenericArguments) {
-        for (auto &argument : type.genericArguments()) {
-            mangleComponent(argument);
+        // The arguments inherited by a class follow from its own and may contain the class itself (e.g. 🐇 🅱️ 🅰️🐚🅱️🍆),
+        // which would make the name infinite. So only the own arguments are mangled.
+        auto &arguments = type.completeGenericArguments();
+        for (size_t i = type.is<TypeType::Class>() ? type.klass()->offset() : 0; i < arguments.size(); i++) {
+            mangleComponent(arguments[i]);
         }
     }
 }

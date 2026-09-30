@@ -1,0 +1,32 @@
+💭 A superclass call resolves the superclass's generic arguments as the subclass passes them: 🍬🔢 accepts 🤷‍♀️.
+🐇 🐰🐚T⚪️🍆 🍇
+  🖍🆕 a T
+  🆕 🍼 a T 🍇🍉
+  ❗️ 🍏 x T ➡️ 🔡 🍇
+    ↩️ 🔤method🔤
+  🍉
+  ❗️ 🍎 ➡️ T 🍇 ↩️ a 🍉
+🍉
+🐇 🐭 🐰🐚🍬🔢🍆 🍇
+  🆕 🍇
+    ⤴️🆕 🤷‍♀️❗️
+  🍉
+  🆕 v 🔢 🍇
+    ⤴️🆕 v❗️
+  🍉
+  ❗️ 🍊 ➡️ 🔡 🍇
+    ↩️ ⤴️🍏 🤷‍♀️❗️
+  🍉
+  ❗️ 🍋 v 🍬🔢 ➡️ 🔡 🍇
+    ↩️ ⤴️🍏 v❗️
+  🍉
+🍉
+🏁 🍇
+  🆕🐭❗️ ➡️ m
+  😀 🍊 m❗️❗️
+  😀 🍋 m 🤷‍♀️❗️❗️
+  😀 🍋 m 3❗️❗️
+  😀 🔤ok🔤❗️
+  🆕🐭 5❗️ ➡️ n
+  😀 🍋 n 🤷‍♀️❗️❗️
+🍉

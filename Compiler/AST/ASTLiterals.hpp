@@ -122,6 +122,10 @@ protected:
     bool pairs_ = false;
     std::unique_ptr<CommonTypeFinder> finder_;
     Value* generatePairs(FunctionCodeGenerator *fg) const;
+    /// Sets type_ to the expected collection type, or to the default literal type, and ends the common type search.
+    void adoptType(ExpressionAnalyser *analyser, const TypeExpectation &expectation);
+    /// Looks up the 🍪 initializer that takes the given arguments.
+    void lookupInitializer(ExpressionAnalyser *analyser, const std::vector<Type> &arguments);
     Type complyPairs(ExpressionAnalyser *analyser, const TypeExpectation &expectation);
     /// Returns the element type of a literal whose elements are of the types @p types.
     Type commonElementType(const std::vector<Type> &types, const TypeContext &typeContext);

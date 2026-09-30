@@ -18,7 +18,7 @@ void SpecializationParser::parse(Function *generic, Function *specialization) {
     auto &position = generic->position();
     // Minimal mode, as a normal lexer records the lines and comments of the file again.
     Lexer lexer(position.file, true);
-    lexer.seekLine(position.line);
+    lexer.seekPosition(position.line, position.character);
     TokenStream stream(std::move(lexer));
     SpecializationParser parser(generic->package(), stream);
     parser.skipToName(position);

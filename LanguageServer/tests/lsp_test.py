@@ -21,6 +21,8 @@ SERVER = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT
 
 
 def uri(path):
+    if not os.path.isabs(path):
+        return path  # already a URI, e.g. untitled:Untitled-1
     return "file://" + urllib.parse.quote(os.path.realpath(path))
 
 
@@ -31,7 +33,7 @@ def utf16_length(text):
 class Client:
     """A minimal LSP client that talks to a server process over stdio."""
 
-    def __init__(self, encodings=("utf-16",), options=None, capabilities=None):
+    def __init__(self, encodings=("utf-16",), options=None, capabilities=None, initialize=True):
         # stderr goes to a file: a pipe that nobody reads would block the server once it is full.
         self.log = tempfile.TemporaryFile()
         self.process = subprocess.Popen([SERVER], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log)
@@ -39,6 +41,8 @@ class Client:
         self.buffer = b""
         self.notifications = []
         self.versions = {}
+        if not initialize:
+            return
         try:
             result = self.request("initialize", {
                 "processId": os.getpid(), "rootUri": None,
@@ -156,7 +160,10 @@ class ServerTestCase(unittest.TestCase):
             f.write(text)
         return path
 
-    def start(self, **kwargs):
+    def start(self, fault=None, **kwargs):
+        if fault:
+            os.environ["EMOJICODE_LSP_TEST_FAULT"] = fault
+            self.addCleanup(os.environ.pop, "EMOJICODE_LSP_TEST_FAULT", None)
         self.client = Client(**kwargs)
         self.addCleanup(self.client.kill)
         return self.client
@@ -235,6 +242,92 @@ class DiagnosticsTests(ServerTestCase):
         diagnostic = client.diagnostics(path)[0]
         self.assertEqual(diagnostic["range"]["start"], {"line": 2, "character": position(text, "➕")["character"]})
 
+    def check_line_endings(self, endings, encodings=("utf-16",)):
+        lines = ["🏁 🍇", "  😀 🔤a🔤 ➕ 1❗️", "", "🍉", ""]
+        text = "".join(line + ending for line, ending in zip(lines, endings))
+        path = self.write("main.emojic", text)
+        client = self.start(encodings=encodings)
+        client.open(path, text)
+        diagnostic = client.diagnostics(path)[0]
+        column = lines[1][:lines[1].index("➕")]
+        character = {"utf-16": utf16_length(column), "utf-32": len(column),
+                     "utf-8": len(column.encode("utf-8"))}[client.capabilities["positionEncoding"]]
+        self.assertEqual(diagnostic["range"]["start"], {"line": 1, "character": character}, diagnostic)
+        self.assertEqual(diagnostic["range"]["end"]["line"], 1, diagnostic)
+
+    def test_lone_cr_line_endings(self):
+        self.check_line_endings(["\r"] * 5)
+
+    def test_crlf_line_endings(self):
+        self.check_line_endings(["\r\n"] * 5)
+
+    def test_mixed_line_endings(self):
+        self.check_line_endings(["\r", "\r\n", "\n", "\r\r", "\r"])
+
+    def test_lone_cr_line_endings_utf8_and_utf32(self):
+        self.check_line_endings(["\r"] * 5, ("utf-8",))
+        self.check_line_endings(["\r"] * 5, ("utf-32",))
+
+    def test_lone_cr_tokens_and_hover(self):
+        text = "🏁 🍇\r  🔤a\rb🔤 ➡️ greeting\r  😀 greeting❗️\r🍉\r"
+        path = self.write("main.emojic", text)
+        client = self.start()
+        client.open(path, text)
+        self.assertEqual(client.diagnostics(path), [])
+        hover = client.request("textDocument/hover", {"textDocument": {"uri": uri(path)},
+                                                      "position": {"line": 3, "character": 5}})
+        self.assertIn("greeting", hover["contents"]["value"])
+        tokens = client.request("textDocument/semanticTokens/full", {"textDocument": {"uri": uri(path)}})["data"]
+        lines, line = [], 0
+        for i in range(0, len(tokens), 5):
+            line += tokens[i]
+            lines.append(line)
+        self.assertEqual(sorted(set(lines)), [0, 1, 2, 3], lines)
+        self.assertEqual(client.shutdown(), 0)
+
+    def test_untitled_documents(self):
+        valid = "🏁 🍇\n  🔤hello🔤 ➡️ greeting\n  😀 greeting❗️\n🍉\n"
+        one, two = "untitled:Untitled-1", "untitled:Untitled-2"
+        client = self.start()
+        client.open(one, TYPE_ERROR)
+        client.open(two, valid)
+        diagnostics = client.diagnostics(one)
+        self.assertEqual(len(diagnostics), 1, diagnostics)
+        self.assertEqual(diagnostics[0]["range"]["start"], position(TYPE_ERROR, "➕"))
+        self.assertEqual(client.diagnostics(two), [])
+        # Hover, tokens and completion work, and the documents do not share state.
+        hover = client.request("textDocument/hover", {"textDocument": {"uri": two},
+                                                      "position": position(valid, "greeting❗️")})
+        self.assertIn("greeting", hover["contents"]["value"])
+        tokens = client.request("textDocument/semanticTokens/full", {"textDocument": {"uri": two}})["data"]
+        self.assertGreater(len(tokens), 0)
+        items = client.request("textDocument/completion", {"textDocument": {"uri": two},
+                                                           "position": position(valid, "greeting❗️")})
+        items = items["items"] if isinstance(items, dict) else items
+        self.assertIn("greeting", [item["label"] for item in items])
+
+        client.change(one, valid)
+        self.assertEqual(client.diagnostics(one), [])
+        client.change(one, TYPE_ERROR)
+        self.assertEqual(len(client.diagnostics(one)), 1)
+        client.close(one)
+        self.assertEqual(client.diagnostics(one), [])
+        self.assertEqual(client.shutdown(), 0)
+
+    def test_git_snapshots_are_not_checked(self):
+        client = self.start()
+        snapshot = 'git:/home/me/app/dog.emojic?{"path":"/home/me/app/dog.emojic","ref":"HEAD"}'
+        client.open(snapshot, "🐇 🐕 🍇\n🍉\n")
+        client.open("untitled:Sentinel", TYPE_ERROR)
+        self.assertEqual(len(client.diagnostics("untitled:Sentinel")), 1)
+        published = [m["params"]["uri"] for m in client.notifications
+                     if m.get("method") == "textDocument/publishDiagnostics"]
+        self.assertEqual(published, [])
+        hover = client.request("textDocument/hover", {"textDocument": {"uri": snapshot},
+                                                      "position": {"line": 0, "character": 0}})
+        self.assertIsNone(hover)
+        self.assertEqual(client.shutdown(), 0)
+
     def test_include_in_comment_is_ignored(self):
         self.write("app/old.🍇", "💭 📜 🔤b.🍇🔤\n🏁 🍇🍉\n")
         b = self.write("app/b.🍇", "🏁 🍇\n  😀 🔤a🔤 ➕ 1❗️\n🍉\n")
@@ -291,6 +384,44 @@ class DiagnosticsTests(ServerTestCase):
             path = self.write(name, text)
             client.open(path)
             self.assertEqual([d["message"] for d in client.diagnostics(path)], diagnostics, name)
+
+    def test_library_named_like_a_standard_package(self):
+        # The file name is not the package name: s and c are special to the compiler, and _ is a program.
+        client = self.start()
+        for name in ("s", "c", "_", "files"):
+            path = self.write("lib%s/%s.🍇" % (name, name), "🌍 🐇 🐠 🍇\n  🆕 🍇🍉\n🍉\n")
+            client.open(path)
+            self.assertEqual(client.diagnostics(path), [], name)
+
+    def test_standard_package_main_file_keeps_its_name(self):
+        # The repository's own s/s.🍇 declares the standard value types itself, so it must be checked as package s.
+        client = self.start()
+        for name in sorted(n for n in os.listdir(os.path.join(ROOT, "s")) if n.endswith(".🍇")):
+            with open(os.path.join(ROOT, "s", name), encoding="utf-8") as f:
+                self.write("copy/s/" + name, f.read())
+        for name in ("s.🍇", "👌.🍇"):
+            path = os.path.join(os.path.realpath(self.directory.name), "copy/s", name)
+            client.open(path)
+            self.assertEqual(client.diagnostics(path), [], name)
+
+    def test_many_open_documents_with_many_candidates(self):
+        # Finding the roots of the open documents must not scan the directories again for each document.
+        for directory in range(20):
+            for index in range(20):
+                self.write("tree/d%d/f%d.🍇" % (directory, index), "📜 🔤x.🍇🔤\n" + "🐇 🐠 🍇\n🍉\n" * 100)
+        client = self.start()
+        paths = [self.write("tree/d0/p%d.🍇" % i, HELLO) for i in range(8)]
+        for path in paths:
+            client.open(path)
+        for path in paths:
+            client.diagnostics(path)
+        start = time.time()
+        for path in paths:
+            client.notify("textDocument/didSave", {"textDocument": {"uri": uri(path)}})
+            with self.assertRaises(RuntimeError):
+                client.request("unsupported/request", {})
+        # Rescanning for each document took about 1 s here; the margin is wide to be robust.
+        self.assertLess(time.time() - start, 2)
 
     def test_file_included_by_two_programs(self):
         util = self.write("util.🍇", "🐇 🐠 🍇\n  🆕 🍇\n    😀 🔤a🔤 ➕ 1❗️\n  🍉\n🍉\n")
@@ -377,6 +508,171 @@ class DiagnosticsTests(ServerTestCase):
             client.change(path, text)
             client.diagnostics(path)
         self.assertEqual(client.shutdown(), 0)
+
+
+class TransportTests(ServerTestCase):
+    def raw(self, client, body, length=None):
+        length = len(body) if length is None else length
+        client.process.stdin.write(b"Content-Length: %s\r\n\r\n" % str(length).encode() + body)
+        client.process.stdin.flush()
+
+    def assert_error(self, client, code, request_id=None):
+        message = client.receive()
+        self.assertEqual(message["error"]["code"], code, message)
+        self.assertEqual(message["id"], request_id)
+
+    def assert_alive(self, client):
+        self.assertEqual(client.shutdown(), 0)
+
+    def test_deep_nesting_is_a_parse_error(self):
+        client = self.start()
+        for body in (b"[" * 100000 + b"]" * 100000, b"[" * 100000,
+                     b'{"jsonrpc":"2.0","id":7,"method":"textDocument/hover","params":' + b'{"a":' * 100000 + b"1" +
+                     b"}" * 100000 + b"}"):
+            self.raw(client, body)
+            self.assert_error(client, -32700)
+        self.assert_alive(client)
+
+    def test_depth_limit_boundary(self):
+        client = self.start()
+        limit = 256
+        ok = b'{"jsonrpc":"2.0","id":9,"method":"textDocument/unknownThing","params":' + b"[" * (limit - 1) + \
+            b"]" * (limit - 1) + b"}"
+        self.raw(client, ok)
+        self.assert_error(client, -32601, 9)
+        self.raw(client, ok.replace(b'"params":[', b'"params":[[').replace(b"]}", b"]]}"))
+        self.assert_error(client, -32700)
+        self.assert_alive(client)
+
+    def test_brackets_in_strings_do_not_count(self):
+        client = self.start()
+        text = "[" * 1000 + '\\"' + "{" * 1000
+        body = json.dumps({"jsonrpc": "2.0", "id": 4, "method": "textDocument/unknownThing",
+                           "params": {"text": text, "other": "\\"}}).encode()
+        self.raw(client, body)
+        self.assert_error(client, -32601, 4)
+        self.assert_alive(client)
+
+    def test_deep_id_is_invalid(self):
+        client = self.start()
+        self.raw(client, b'{"jsonrpc":"2.0","id":' + b"[" * 1000 + b"]" * 1000 + b',"method":"x"}')
+        self.assert_error(client, -32700)
+        self.raw(client, b'{"jsonrpc":"2.0","id":[1],"method":"x"}')
+        self.assert_error(client, -32600)
+        self.assert_alive(client)
+
+    def test_invalid_content_length(self):
+        client = self.start()
+        body = b'{"jsonrpc":"2.0","id":3,"method":"shutdown"}'
+        for length in (b"-5", b"18446744073709551615", b"+3", b"12x", b"", b"99999999999999999999999"):
+            client.process.stdin.write(b"Content-Length: " + length + b"\r\n\r\n")
+            client.process.stdin.flush()
+            self.assert_error(client, -32700)
+        self.raw(client, body)
+        self.assertEqual(client.receive()["id"], 3)
+        client.notify("exit", None)
+        self.assertEqual(client.process.wait(timeout=10), 0)
+
+    def test_body_behind_invalid_content_length_is_skipped(self):
+        client = self.start()
+        body = b'{"jsonrpc":"2.0","id":1,"method":"textDocument/unknownThing"}'
+        for header in (b"Content-Length: -5", b"Content-Length: 18446744073709551615", b"Content-Length: 12x",
+                       b"X-Other: 1"):
+            client.process.stdin.write(header + b"\r\n\r\n" + body)
+            client.process.stdin.flush()
+            self.assert_error(client, -32700)
+            # The next frame is read properly, also if it arrives in pieces.
+            framed = b"Content-Length: %d\r\n\r\n" % len(body) + body
+            client.process.stdin.write(framed[:7])
+            client.process.stdin.flush()
+            time.sleep(0.05)
+            client.process.stdin.write(framed[7:])
+            client.process.stdin.flush()
+            self.assert_error(client, -32601, 1)
+        self.assert_alive(client)
+
+    def test_unterminated_header_is_bounded(self):
+        client = self.start()
+        client.process.stdin.write(b"X-Junk: " + b"a" * 200000 + b"\r\n\r\n")
+        client.process.stdin.flush()
+        self.assert_error(client, -32700)
+        self.assert_alive(client)
+
+    def test_invalid_requests_get_an_error(self):
+        client = self.start()
+        for message, request_id in (({"jsonrpc": "2.0", "id": 3}, 3),
+                                    ({"jsonrpc": "2.0", "id": 4, "method": 5}, 4),
+                                    ({"jsonrpc": "2.0", "id": "a", "method": ""}, "a"),
+                                    ({"id": 5, "method": "shutdownx"}, 5),
+                                    ({"jsonrpc": "2.0", "method": 5}, None)):
+            client.send(message)
+            self.assert_error(client, -32600, request_id)
+        client.send([1])
+        self.assert_error(client, -32600)
+        # A response to the server is ignored.
+        client.send({"jsonrpc": "2.0", "id": 1, "result": None})
+        self.assert_alive(client)
+
+    def test_null_id_is_answered(self):
+        client = self.start()
+        client.send({"jsonrpc": "2.0", "id": None, "method": "textDocument/unknownThing"})
+        self.assert_error(client, -32601)
+        self.assert_alive(client)
+
+    def test_request_before_initialize(self):
+        client = self.start(initialize=False)
+        client.send({"jsonrpc": "2.0", "id": 1, "method": "textDocument/hover", "params": {}})
+        self.assert_error(client, -32002, 1)
+        client.send({"jsonrpc": "2.0", "id": 2, "method": "shutdown"})
+        self.assert_error(client, -32002, 2)
+        client.send({"jsonrpc": "2.0", "id": 3, "method": "initialize", "params": {}})
+        self.assertIn("capabilities", client.receive()["result"])
+        client.send({"jsonrpc": "2.0", "id": 4, "method": "initialize", "params": {}})
+        self.assert_error(client, -32600, 4)
+        client.send({"jsonrpc": "2.0", "id": 5, "method": "shutdown"})
+        self.assertEqual(client.receive()["id"], 5)
+        client.notify("exit", None)
+        self.assertEqual(client.process.wait(timeout=10), 0)
+
+    def test_failing_scheduled_check_does_not_end_the_server(self):
+        path = self.write("main.emojic", HELLO)
+        client = self.start(fault="check")
+        client.open(path)
+        time.sleep(1)  # The check is due after 250 ms and fails.
+        self.assertIsNone(client.process.poll())
+        self.assert_alive(client)
+
+    def test_failing_check_still_answers_deferred_requests(self):
+        path = self.write("main.emojic", HELLO)
+        client = self.start(fault="check")
+        client.open(path)
+        client.send({"jsonrpc": "2.0", "id": 60, "method": "textDocument/hover",
+                     "params": {"textDocument": {"uri": uri(path)}, "position": {"line": 1, "character": 3}}})
+        client.send({"jsonrpc": "2.0", "id": 61, "method": "textDocument/hover",
+                     "params": {"textDocument": {"uri": uri(path)}, "position": {"line": 1, "character": 3}}})
+        ids = set()
+        while ids != {60, 61}:
+            message = client.receive()
+            if "id" in message:
+                ids.add(message["id"])
+        self.assert_alive(client)
+
+    def test_failing_request_gets_an_internal_error(self):
+        client = self.start(fault="request")
+        client.send({"jsonrpc": "2.0", "id": 70, "method": "emojicode/testFault"})
+        self.assert_error(client, -32603, 70)
+        client.send({"jsonrpc": "2.0", "id": 71, "method": "emojicode/testFault"})
+        self.assert_error(client, -32603, 71)
+        self.assert_alive(client)
+
+    def test_requests_after_shutdown(self):
+        client = self.start()
+        client.request("shutdown", None)
+        for i, method in enumerate(("textDocument/hover", "initialize", "shutdown")):
+            client.send({"jsonrpc": "2.0", "id": 100 + i, "method": method, "params": {}})
+            self.assert_error(client, -32600, 100 + i)
+        client.notify("exit", None)
+        self.assertEqual(client.process.wait(timeout=10), 0)
 
 
 FISH = """📗 A fish that can swim. 📗

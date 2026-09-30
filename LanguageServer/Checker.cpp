@@ -12,6 +12,7 @@
 #include "Tokens.hpp"
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <set>
@@ -118,7 +119,28 @@ std::u32string Checker::read(const std::string &path) const {
 }
 
 std::vector<std::string> Checker::includes(const std::string &path) const {
-    std::vector<std::string> includes;
+    auto cached = includesCache_.find(path);
+    if (cached != includesCache_.end()) {
+        return cached->second;
+    }
+    auto &includes = includesCache_[path];
+    // A file that is not open can be remembered until it changes.
+    DiskIncludesCache::Entry *entry = nullptr;
+    if (diskCache_ != nullptr && overlays_.find(canonicalPath(path)) == overlays_.end()) {
+        std::error_code modifiedError, sizeError;
+        auto modified = fs::last_write_time(path, modifiedError);
+        auto size = fs::file_size(path, sizeError);
+        if (!modifiedError && !sizeError) {
+            entry = &diskCache_->entries[path];
+            if (entry->modified == modified && entry->size == size) {
+                includes = entry->includes;
+                return includes;
+            }
+            entry->modified = modified;
+            entry->size = size;
+            entry->includes.clear();
+        }
+    }
     auto content = read(path);
     if (content.find(U'📜') == std::u32string::npos) {
         return includes;
@@ -131,7 +153,35 @@ std::vector<std::string> Checker::includes(const std::string &path) const {
             includes.emplace_back(canonicalPath((fs::path(path).parent_path() / utf8(tokens[i + 1].value)).string()));
         }
     });
+    if (entry != nullptr) {
+        entry->includes = includes;
+    }
     return includes;
+}
+
+const std::vector<fs::path>& Checker::sourceFiles(const fs::path &ancestor, int level) const {
+    auto key = std::make_pair(ancestor.string(), level);
+    auto cached = sourceFilesCache_.find(key);
+    if (cached != sourceFilesCache_.end()) {
+        return cached->second;
+    }
+    auto &files = sourceFilesCache_[key];
+    std::error_code error;
+    size_t entries = 0;
+    for (auto it = fs::recursive_directory_iterator(ancestor, fs::directory_options::skip_permission_denied, error);
+         !error && it != fs::recursive_directory_iterator() && entries++ < kMaxIncluderSearchEntries;
+         it.increment(error)) {
+        std::error_code entryError;
+        if (it->is_directory(entryError)) {
+            if (it.depth() >= level || it->path().filename().string().front() == '.') {
+                it.disable_recursion_pending();
+            }
+        }
+        else if (isSourceFile(it->path()) && it->is_regular_file(entryError)) {
+            files.push_back(it->path());
+        }
+    }
+    return files;
 }
 
 std::string Checker::includer(const std::string &path) const {
@@ -143,21 +193,9 @@ std::string Checker::includer(const std::string &path) const {
     auto ancestor = directory;
     for (int level = 0; level < 3; level++) {
         std::vector<fs::path> candidates;
-        std::error_code error;
-        size_t entries = 0;
-        for (auto it = fs::recursive_directory_iterator(ancestor, fs::directory_options::skip_permission_denied,
-                                                        error);
-             !error && it != fs::recursive_directory_iterator() && entries++ < kMaxIncluderSearchEntries;
-             it.increment(error)) {
-            std::error_code entryError;
-            if (it->is_directory(entryError)) {
-                if (it.depth() >= level || it->path().filename().string().front() == '.') {
-                    it.disable_recursion_pending();
-                }
-            }
-            else if (isSourceFile(it->path()) && it->path() != fs::path(path) && it->is_regular_file(entryError) &&
-                     checked.insert(it->path()).second) {
-                candidates.push_back(it->path());
+        for (auto &file : sourceFiles(ancestor, level)) {
+            if (file != fs::path(path) && checked.insert(file).second) {
+                candidates.push_back(file);
             }
         }
         auto distance = [&](const fs::path &candidate) {
@@ -183,6 +221,10 @@ std::string Checker::includer(const std::string &path) const {
 }
 
 std::string Checker::rootFile(const std::string &path) const {
+    // Nothing can include a document that is not a file, and its directory does not exist.
+    if (path.compare(0, strlen(kVirtualDirectory), kVirtualDirectory) == 0) {
+        return path;
+    }
     std::set<std::string> visited{path};
     auto root = path;
     while (true) {
@@ -226,14 +268,19 @@ Analysis Checker::check(const std::string &rootPath) const {
 
     auto root = fs::path(rootPath);
     std::string packageName = "_";
+    bool standalone = true;
     if (isInterfaceFile(root)) {
         // The interface of an installed package, e.g. s/🏛, which go-to-definition opens.
         packageName = root.parent_path().filename().string();
+        standalone = false;
     }
     else if (isLibrary(rootPath)) {
-        packageName = root.stem().string();
+        // A package's main file is named like its directory (s/s.🍇, packages/files/files.🍇) and keeps that name, as
+        // the compiler treats s and c specially. Any other file's name must not be the package name, and neither
+        // must _, which is a program. A name with a path separator cannot collide with any package.
+        packageName = root.stem() == root.parent_path().filename() ? root.stem().string() : "ad-hoc/library";
+        standalone = false;
     }
-    bool standalone = packageName == "_";
 
     auto searchPaths = searchPaths_;
     searchPaths.push_back((root.parent_path() / "packages").string());

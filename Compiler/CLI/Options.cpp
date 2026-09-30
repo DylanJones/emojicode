@@ -74,16 +74,16 @@ Options::Options(int argc, char *argv[]) {
     }
     catch (args::Help &e) {
         std::cout << parser;
-        throw CompilationCancellation();
+        throw CompilationCancellation(true);
     }
     catch (args::ParseError &e) {
         printCliMessage(e.what());
         std::cerr << parser;
-        throw CompilationCancellation();
+        throw CompilationCancellation(false);
     }
     catch (args::ValidationError &e) {
         printCliMessage(e.what());
-        throw CompilationCancellation();
+        throw CompilationCancellation(false);
     }
 
     configureOutPath();

@@ -1,0 +1,15 @@
+💭 A generic class in an indirect cycle works in either declaration order.
+🐇 🍎🐚T ⚪️🍆 🍇
+  🆕 🍇🍉
+  ❗️ 🥝 ➡️ 🔡 🍇 ↩️ 🔤base🔤 🍉
+🍉
+🐇 🍐🐚A⚪️🍆 🍎🐚🍒🍆 🍇
+  🆕 🍇 ⤴️🆕❗️ 🍉
+🍉
+🐇 🍒 🍐🐚🔢🍆 🍇
+  🆕 🍇 ⤴️🆕❗️ 🍉
+🍉
+🏁 🍇
+  🆕🍒❗️ ➡️ a
+  😀 🥝 a❗️❗️
+🍉
