@@ -1,0 +1,4 @@
+not a 🧺⚪️
+42
+via variable
+generic ok
