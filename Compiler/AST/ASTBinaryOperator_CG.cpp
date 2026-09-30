@@ -26,6 +26,12 @@ Value* ASTBinaryOperator::generate(FunctionCodeGenerator *fg) const {
                 : fg->buildOptionalHasNoValue(value, operand->expressionType());
     }
 
+    if (BuiltInType::Multiprotocol == builtIn_) {
+        return handleResult(fg, MultiprotocolCallCodeGenerator(fg, callType_).generate(left_->generate(fg), calleeType_,
+                                                                                       args_, method_, errorPointer(),
+                                                                                       multiprotocolN_));
+    }
+
     if (builtIn_ != BuiltInType::None) {
         auto left = left_->generate(fg);
         auto right = right_->generate(fg);
