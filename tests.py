@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from subprocess import PIPE, CalledProcessError, TimeoutExpired
+import filecmp
 import glob
 import shutil
 import os
@@ -462,12 +463,16 @@ def command_line_test(_):
             os.chmod(locked_source, 0o444)
             os.chmod(locked, 0o555)
             cases.append(([locked_source, '--format', '-S', test_packages], 1, "Could not write"))
+        else:
+            locked_source = None
         for arguments, status, message in cases:
             completed = run([emojicodec] + arguments, stdout=PIPE, stderr=PIPE)
             output = (completed.stdout + completed.stderr).decode('utf-8', 'replace')
             if completed.returncode != status or "LLVM ERROR" in output or (message and message not in output):
                 log("{0}: exit status {1}\n{2}".format(arguments, completed.returncode, output))
                 fail_test("command line " + " ".join(arguments))
+        if locked_source and not filecmp.cmp(source, locked_source, shallow=False):
+            fail_test("command line: failed --format altered the source")
 
 
 def parse_test(filename):

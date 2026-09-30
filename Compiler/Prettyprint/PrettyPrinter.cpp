@@ -20,6 +20,8 @@
 #include "Lex/SourceManager.hpp"
 #include "Scoping/Scope.hpp"
 #include <algorithm>
+#include <cerrno>
+#include <cstring>
 #include <iostream>
 
 namespace EmojicodeCompiler {
@@ -35,7 +37,9 @@ void PrettyPrinter::print() {
         auto sourceFile = package_->compiler()->sourceManager().read(file.path_);
         // The source is moved aside before it is rewritten; a failed rewrite must not leave the user without it.
         auto backup = file.path_ + "_original";
-        std::rename(file.path_.c_str(), backup.c_str());
+        if (std::rename(file.path_.c_str(), backup.c_str()) != 0) {
+            throw CompilerError(SourcePosition(), "Could not write ", file.path_, ": ", std::strerror(errno));
+        }
         try {
             prettyStream_.setOutPath(file.path_);
             prettyStream_.startFile();
