@@ -28,8 +28,12 @@ void PackageCreator::generate() {
     for (auto &protocol : package_->protocols()) {
         createProtocol(protocol.get());
     }
+    // Bodies of destructors and copy-retains refer to those of other value types, so declare all of them first.
     for (auto &valueType : package_->valueTypes()) {
-        createValueType(valueType.get());
+        declareValueType(valueType.get());
+    }
+    for (auto &valueType : package_->valueTypes()) {
+        defineValueType(valueType.get());
     }
     for (auto &klass : package_->classes()) {
         createClass(klass.get());
@@ -116,7 +120,7 @@ void ImportedPackageCreator::createClassInfo(Class *klass) {
     klass->setClassInfo(info);
 }
 
-void PackageCreator::createValueType(ValueType *valueType) {
+void PackageCreator::declareValueType(ValueType *valueType) {
     valueType->createUnspecificReification();
     valueType->eachFunction([&](Function *function) { createFunction(function); });
 
@@ -127,9 +131,13 @@ void PackageCreator::createValueType(ValueType *valueType) {
     else if (valueType->isManaged()) {
         valueType->setDestructor(createMemoryFunction(mangleDestructor(valueType->type()), generator_, valueType));
         valueType->setCopyRetain(createMemoryFunction(mangleCopyRetain(valueType->type()), generator_, valueType));
+    }
+}
+
+void PackageCreator::defineValueType(ValueType *valueType) {
+    if (valueType != package_->compiler()->sWeak && valueType->isManaged()) {
         createDestructorRetain(valueType);
     }
-
     createBoxInfo(valueType);
 }
 

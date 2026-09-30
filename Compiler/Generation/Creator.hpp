@@ -39,7 +39,8 @@ protected:
 
 private:
     void createProtocol(Protocol *protocol);
-    void createValueType(ValueType *valueType);
+    void declareValueType(ValueType *valueType);
+    void defineValueType(ValueType *valueType);
     void createClass(Class *klass);
 };
 
