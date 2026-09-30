@@ -1,0 +1,1 @@
+s🔡 cannot be a field of a C struct (🎍🌊).

@@ -1,0 +1,1 @@
+Non-optional variable must be initialized on all paths. Move variable into a subscope where this applies or make it optional.

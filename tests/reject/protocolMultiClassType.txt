@@ -1,0 +1,1 @@
+🍱 may only consist of non-optional protocol types.

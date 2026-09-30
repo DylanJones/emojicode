@@ -1,0 +1,1 @@
+Foreign classes cannot have native initializers.

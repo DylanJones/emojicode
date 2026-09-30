@@ -1,0 +1,1 @@
+Cannot call an error-prone super initializer in a non error-prone initializer.

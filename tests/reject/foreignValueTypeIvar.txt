@@ -1,0 +1,1 @@
+A value type marked with 📻 cannot have instance variables.

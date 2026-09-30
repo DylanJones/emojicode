@@ -235,12 +235,14 @@
 
   📗 Appends the content of `list` to this list. Complexity: `O(n)`. 📗
   🥯🖍❗️ 🐥 list 🍨🐚Element🍆 🍇
+    💭 list can be this list itself, which grows while it is read, so its count is taken first.
+    📏list❓ ➡️ listCount
     📝❗️
     📏data❓ ➡️ oldCount
-    📏data 📏list❓❗️
+    📏data listCount❗️
     🐴data 📏data❓❗️
     ☣️ 🍇
-      🔂 i 🆕⏩ 0 📏list❓❗️ 🍇
+      🔂 i 🆕⏩ 0 listCount❗️ 🍇
         🐽🐚Element🍆 🧠🍧list❗️❗ i✖️⚖️Element❗️ ➡️ 🐽🐚Element🍆🧠data❗️ 🤜i ➕ oldCount🤛✖️⚖️Element❗️
       🍉
     🍉
