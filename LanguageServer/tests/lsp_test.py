@@ -31,7 +31,7 @@ def utf16_length(text):
 class Client:
     """A minimal LSP client that talks to a server process over stdio."""
 
-    def __init__(self, encodings=("utf-16",), options=None, capabilities=None):
+    def __init__(self, encodings=("utf-16",), options=None, capabilities=None, initialize=True):
         # stderr goes to a file: a pipe that nobody reads would block the server once it is full.
         self.log = tempfile.TemporaryFile()
         self.process = subprocess.Popen([SERVER], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log)
@@ -39,6 +39,8 @@ class Client:
         self.buffer = b""
         self.notifications = []
         self.versions = {}
+        if not initialize:
+            return
         try:
             result = self.request("initialize", {
                 "processId": os.getpid(), "rootUri": None,
@@ -156,7 +158,10 @@ class ServerTestCase(unittest.TestCase):
             f.write(text)
         return path
 
-    def start(self, **kwargs):
+    def start(self, fault=None, **kwargs):
+        if fault:
+            os.environ["EMOJICODE_LSP_TEST_FAULT"] = fault
+            self.addCleanup(os.environ.pop, "EMOJICODE_LSP_TEST_FAULT", None)
         self.client = Client(**kwargs)
         self.addCleanup(self.client.kill)
         return self.client
@@ -377,6 +382,171 @@ class DiagnosticsTests(ServerTestCase):
             client.change(path, text)
             client.diagnostics(path)
         self.assertEqual(client.shutdown(), 0)
+
+
+class TransportTests(ServerTestCase):
+    def raw(self, client, body, length=None):
+        length = len(body) if length is None else length
+        client.process.stdin.write(b"Content-Length: %s\r\n\r\n" % str(length).encode() + body)
+        client.process.stdin.flush()
+
+    def assert_error(self, client, code, request_id=None):
+        message = client.receive()
+        self.assertEqual(message["error"]["code"], code, message)
+        self.assertEqual(message["id"], request_id)
+
+    def assert_alive(self, client):
+        self.assertEqual(client.shutdown(), 0)
+
+    def test_deep_nesting_is_a_parse_error(self):
+        client = self.start()
+        for body in (b"[" * 100000 + b"]" * 100000, b"[" * 100000,
+                     b'{"jsonrpc":"2.0","id":7,"method":"textDocument/hover","params":' + b'{"a":' * 100000 + b"1" +
+                     b"}" * 100000 + b"}"):
+            self.raw(client, body)
+            self.assert_error(client, -32700)
+        self.assert_alive(client)
+
+    def test_depth_limit_boundary(self):
+        client = self.start()
+        limit = 256
+        ok = b'{"jsonrpc":"2.0","id":9,"method":"textDocument/unknownThing","params":' + b"[" * (limit - 1) + \
+            b"]" * (limit - 1) + b"}"
+        self.raw(client, ok)
+        self.assert_error(client, -32601, 9)
+        self.raw(client, ok.replace(b'"params":[', b'"params":[[').replace(b"]}", b"]]}"))
+        self.assert_error(client, -32700)
+        self.assert_alive(client)
+
+    def test_brackets_in_strings_do_not_count(self):
+        client = self.start()
+        text = "[" * 1000 + '\\"' + "{" * 1000
+        body = json.dumps({"jsonrpc": "2.0", "id": 4, "method": "textDocument/unknownThing",
+                           "params": {"text": text, "other": "\\"}}).encode()
+        self.raw(client, body)
+        self.assert_error(client, -32601, 4)
+        self.assert_alive(client)
+
+    def test_deep_id_is_invalid(self):
+        client = self.start()
+        self.raw(client, b'{"jsonrpc":"2.0","id":' + b"[" * 1000 + b"]" * 1000 + b',"method":"x"}')
+        self.assert_error(client, -32700)
+        self.raw(client, b'{"jsonrpc":"2.0","id":[1],"method":"x"}')
+        self.assert_error(client, -32600)
+        self.assert_alive(client)
+
+    def test_invalid_content_length(self):
+        client = self.start()
+        body = b'{"jsonrpc":"2.0","id":3,"method":"shutdown"}'
+        for length in (b"-5", b"18446744073709551615", b"+3", b"12x", b"", b"99999999999999999999999"):
+            client.process.stdin.write(b"Content-Length: " + length + b"\r\n\r\n")
+            client.process.stdin.flush()
+            self.assert_error(client, -32700)
+        self.raw(client, body)
+        self.assertEqual(client.receive()["id"], 3)
+        client.notify("exit", None)
+        self.assertEqual(client.process.wait(timeout=10), 0)
+
+    def test_body_behind_invalid_content_length_is_skipped(self):
+        client = self.start()
+        body = b'{"jsonrpc":"2.0","id":1,"method":"textDocument/unknownThing"}'
+        for header in (b"Content-Length: -5", b"Content-Length: 18446744073709551615", b"Content-Length: 12x",
+                       b"X-Other: 1"):
+            client.process.stdin.write(header + b"\r\n\r\n" + body)
+            client.process.stdin.flush()
+            self.assert_error(client, -32700)
+            # The next frame is read properly, also if it arrives in pieces.
+            framed = b"Content-Length: %d\r\n\r\n" % len(body) + body
+            client.process.stdin.write(framed[:7])
+            client.process.stdin.flush()
+            time.sleep(0.05)
+            client.process.stdin.write(framed[7:])
+            client.process.stdin.flush()
+            self.assert_error(client, -32601, 1)
+        self.assert_alive(client)
+
+    def test_unterminated_header_is_bounded(self):
+        client = self.start()
+        client.process.stdin.write(b"X-Junk: " + b"a" * 200000 + b"\r\n\r\n")
+        client.process.stdin.flush()
+        self.assert_error(client, -32700)
+        self.assert_alive(client)
+
+    def test_invalid_requests_get_an_error(self):
+        client = self.start()
+        for message, request_id in (({"jsonrpc": "2.0", "id": 3}, 3),
+                                    ({"jsonrpc": "2.0", "id": 4, "method": 5}, 4),
+                                    ({"jsonrpc": "2.0", "id": "a", "method": ""}, "a"),
+                                    ({"id": 5, "method": "shutdownx"}, 5),
+                                    ({"jsonrpc": "2.0", "method": 5}, None)):
+            client.send(message)
+            self.assert_error(client, -32600, request_id)
+        client.send([1])
+        self.assert_error(client, -32600)
+        # A response to the server is ignored.
+        client.send({"jsonrpc": "2.0", "id": 1, "result": None})
+        self.assert_alive(client)
+
+    def test_null_id_is_answered(self):
+        client = self.start()
+        client.send({"jsonrpc": "2.0", "id": None, "method": "textDocument/unknownThing"})
+        self.assert_error(client, -32601)
+        self.assert_alive(client)
+
+    def test_request_before_initialize(self):
+        client = self.start(initialize=False)
+        client.send({"jsonrpc": "2.0", "id": 1, "method": "textDocument/hover", "params": {}})
+        self.assert_error(client, -32002, 1)
+        client.send({"jsonrpc": "2.0", "id": 2, "method": "shutdown"})
+        self.assert_error(client, -32002, 2)
+        client.send({"jsonrpc": "2.0", "id": 3, "method": "initialize", "params": {}})
+        self.assertIn("capabilities", client.receive()["result"])
+        client.send({"jsonrpc": "2.0", "id": 4, "method": "initialize", "params": {}})
+        self.assert_error(client, -32600, 4)
+        client.send({"jsonrpc": "2.0", "id": 5, "method": "shutdown"})
+        self.assertEqual(client.receive()["id"], 5)
+        client.notify("exit", None)
+        self.assertEqual(client.process.wait(timeout=10), 0)
+
+    def test_failing_scheduled_check_does_not_end_the_server(self):
+        path = self.write("main.emojic", HELLO)
+        client = self.start(fault="check")
+        client.open(path)
+        time.sleep(1)  # The check is due after 250 ms and fails.
+        self.assertIsNone(client.process.poll())
+        self.assert_alive(client)
+
+    def test_failing_check_still_answers_deferred_requests(self):
+        path = self.write("main.emojic", HELLO)
+        client = self.start(fault="check")
+        client.open(path)
+        client.send({"jsonrpc": "2.0", "id": 60, "method": "textDocument/hover",
+                     "params": {"textDocument": {"uri": uri(path)}, "position": {"line": 1, "character": 3}}})
+        client.send({"jsonrpc": "2.0", "id": 61, "method": "textDocument/hover",
+                     "params": {"textDocument": {"uri": uri(path)}, "position": {"line": 1, "character": 3}}})
+        ids = set()
+        while ids != {60, 61}:
+            message = client.receive()
+            if "id" in message:
+                ids.add(message["id"])
+        self.assert_alive(client)
+
+    def test_failing_request_gets_an_internal_error(self):
+        client = self.start(fault="request")
+        client.send({"jsonrpc": "2.0", "id": 70, "method": "emojicode/testFault"})
+        self.assert_error(client, -32603, 70)
+        client.send({"jsonrpc": "2.0", "id": 71, "method": "emojicode/testFault"})
+        self.assert_error(client, -32603, 71)
+        self.assert_alive(client)
+
+    def test_requests_after_shutdown(self):
+        client = self.start()
+        client.request("shutdown", None)
+        for i, method in enumerate(("textDocument/hover", "initialize", "shutdown")):
+            client.send({"jsonrpc": "2.0", "id": 100 + i, "method": method, "params": {}})
+            self.assert_error(client, -32600, 100 + i)
+        client.notify("exit", None)
+        self.assertEqual(client.process.wait(timeout=10), 0)
 
 
 FISH = """📗 A fish that can swim. 📗
