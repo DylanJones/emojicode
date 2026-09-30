@@ -25,6 +25,11 @@ Type ASTInitialization::analyse(ExpressionAnalyser *analyser) {
         return analyseEnumInit(analyser, type);
     }
 
+    if (type.type() != TypeType::Class && type.type() != TypeType::ValueType && type.type() != TypeType::Protocol) {
+        throw CompilerError(position(), "Cannot initialize a value of type ", type.toString(analyser->typeContext()),
+                            ".");
+    }
+
     if (type.type() == TypeType::ValueType) {
         initType_ = type.valueType() == analyser->compiler()->sMemory ? InitType::MemoryAllocation : InitType::ValueType;
     }
