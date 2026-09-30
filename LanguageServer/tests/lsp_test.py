@@ -263,6 +263,23 @@ class DiagnosticsTests(ServerTestCase):
         self.check_line_endings(["\r"] * 5, ("utf-8",))
         self.check_line_endings(["\r"] * 5, ("utf-32",))
 
+    def test_lone_cr_tokens_and_hover(self):
+        text = "🏁 🍇\r  🔤a\rb🔤 ➡️ greeting\r  😀 greeting❗️\r🍉\r"
+        path = self.write("main.emojic", text)
+        client = self.start()
+        client.open(path, text)
+        self.assertEqual(client.diagnostics(path), [])
+        hover = client.request("textDocument/hover", {"textDocument": {"uri": uri(path)},
+                                                      "position": {"line": 3, "character": 5}})
+        self.assertIn("greeting", hover["contents"]["value"])
+        tokens = client.request("textDocument/semanticTokens/full", {"textDocument": {"uri": uri(path)}})["data"]
+        lines, line = [], 0
+        for i in range(0, len(tokens), 5):
+            line += tokens[i]
+            lines.append(line)
+        self.assertEqual(sorted(set(lines)), [0, 1, 2, 3], lines)
+        self.assertEqual(client.shutdown(), 0)
+
     def test_untitled_documents(self):
         valid = "🏁 🍇\n  🔤hello🔤 ➡️ greeting\n  😀 greeting❗️\n🍉\n"
         one, two = "untitled:Untitled-1", "untitled:Untitled-2"
