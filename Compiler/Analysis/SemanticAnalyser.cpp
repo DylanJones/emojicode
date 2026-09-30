@@ -97,6 +97,7 @@ void SemanticAnalyser::analyse(bool executable) {
             klass->setFinal();
         }
     }
+    analyseInstanceVariableDefaults();
     for (auto &function : package_->functions()) {
         enqueueFunction(function.get());
     }
@@ -429,13 +430,40 @@ bool SemanticAnalyser::storesInline(TypeDefinition *container, ValueType *target
     return false;
 }
 
+void SemanticAnalyser::analyseInstanceVariableDefaults() {
+    for (auto &pending : pendingDefaults_) {
+        auto scoper = std::make_unique<SemanticScoper>();
+        scoper->pushScope();  // For closure analysis
+        ExpressionAnalyser analyser(this, TypeContext(pending.owner), package_, std::move(scoper));
+        auto expr = pending.expr;
+        analyser.expectType(pending.type->type(), &expr);
+        if (expr == pending.expr) {
+            continue;
+        }
+        // expectType can wrap the expression. Subclasses hold copies of their superclasses' declarations.
+        auto update = [&](TypeDefinition *typeDef) {
+            for (auto &var : typeDef->instanceVariablesMut()) {
+                if (var.expr == pending.expr) {
+                    var.expr = expr;
+                }
+            }
+        };
+        for (auto &klass : package_->classes()) {
+            update(klass.get());
+        }
+        for (auto &vt : package_->valueTypes()) {
+            update(vt.get());
+        }
+    }
+    pendingDefaults_.clear();
+}
+
 void SemanticAnalyser::declareInstanceVariables(const Type &type) {
     TypeDefinition *typeDef = type.typeDefinition();
 
     auto context = TypeContext(type);
     auto scoper = std::make_unique<SemanticScoper>();
     scoper->pushScope();  // For closure analysis
-    ExpressionAnalyser analyser(this, context, package_, std::move(scoper));
 
     auto cStruct = type.type() == TypeType::ValueType && type.valueType()->isCStruct();
     if (cStruct && !typeDef->genericParameters().empty()) {
@@ -451,7 +479,8 @@ void SemanticAnalyser::declareInstanceVariables(const Type &type) {
                                 " cannot be a field of a C struct (🎍🌊).");
         }
         if (var.expr != nullptr) {
-            analyser.expectType(var.type->type(), &var.expr);
+            // Default values may use any declaration, so they are analysed once all declarations are.
+            pendingDefaults_.push_back({type, var.type, var.expr});
         }
     }
 
