@@ -7,6 +7,7 @@
 #include "Lex/SourceManager.hpp"
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 
 namespace EmojicodeLanguageServer {
 
@@ -14,13 +15,16 @@ LineIndex::LineIndex(const std::u32string &text) : text_(text) {
     lineStarts_.push_back(0);
     compilerLineStarts_.push_back(0);
     for (size_t i = 0; i < text.size(); i++) {
-        if (text[i] == U'\n') {
+        if (text[i] == U'\n' || (text[i] == U'\r' && (i + 1 == text.size() || text[i + 1] != U'\n'))) {
+            // LF, CRLF (its LF) and a lone CR end a client line.
+            lineEnds_.push_back(text[i] == U'\n' && i > 0 && text[i - 1] == U'\r' ? i - 1 : i);
             lineStarts_.push_back(i + 1);
         }
         if (text[i] == U'\n' || text[i] == 0x2028 || text[i] == 0x2029) {
             compilerLineStarts_.push_back(i + 1);
         }
     }
+    lineEnds_.push_back(text.size());
 }
 
 size_t LineIndex::compilerLineEnd(size_t line) const {
@@ -52,8 +56,7 @@ std::u32string_view LineIndex::line(size_t line) const {
         return {};
     }
     auto start = lineStarts_[line];
-    auto end = line + 1 < lineStarts_.size() ? lineStarts_[line + 1] - 1 : text_.size();
-    return std::u32string_view(text_).substr(start, end - start);
+    return std::u32string_view(text_).substr(start, lineEnds_[line] - start);
 }
 
 static size_t units(char32_t c, PositionEncoding encoding) {
@@ -112,10 +115,42 @@ static int hexValue(char c) {
     return -1;
 }
 
+static std::string percentEncode(const std::string &text) {
+    static const char *hex = "0123456789ABCDEF";
+    std::string encoded;
+    for (unsigned char c : text) {
+        if (isalnum(c) || c == '-' || c == '.' || c == '_' || c == '~') {
+            encoded.push_back(static_cast<char>(c));
+        }
+        else {
+            encoded.push_back('%');
+            encoded.push_back(hex[c >> 4]);
+            encoded.push_back(hex[c & 15]);
+        }
+    }
+    return encoded;
+}
+
+/// Read-only snapshots (the old side of a diff) are not programs of their own: checking one without the files
+/// next to it only produces errors.
+static bool isSnapshotUri(const std::string &uri) {
+    for (const char *scheme : {"git:", "gitlens:"}) {
+        if (uri.compare(0, strlen(scheme), scheme) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::string uriToPath(const std::string &uri) {
     const std::string scheme = "file://";
     if (uri.compare(0, scheme.size(), scheme) != 0) {
-        return "";
+        if (uri.empty() || isSnapshotUri(uri)) {
+            return "";
+        }
+        // Not a file: the percent-encoding is injective, so different URIs never share a path.
+        // Every document has its own directory, because files in one directory are one package.
+        return std::string(kVirtualDirectory) + "/" + percentEncode(uri) + "/document.emojic";
     }
     std::string path;
     for (size_t i = scheme.size(); i < uri.size(); i++) {
@@ -136,6 +171,24 @@ std::string uriToPath(const std::string &uri) {
 }
 
 std::string pathToUri(const std::string &path) {
+    // The inverse of the synthetic path of a document that is not a file.
+    const std::string prefix = std::string(kVirtualDirectory) + "/";
+    const std::string suffix = "/document.emojic";
+    if (path.size() > prefix.size() + suffix.size() && path.compare(0, prefix.size(), prefix) == 0 &&
+        path.compare(path.size() - suffix.size(), suffix.size(), suffix) == 0) {
+        std::string encoded = path.substr(prefix.size(), path.size() - prefix.size() - suffix.size());
+        std::string uri;
+        for (size_t i = 0; i < encoded.size(); i++) {
+            if (encoded[i] == '%' && i + 2 < encoded.size()) {
+                uri.push_back(static_cast<char>(hexValue(encoded[i + 1]) * 16 + hexValue(encoded[i + 2])));
+                i += 2;
+            }
+            else {
+                uri.push_back(encoded[i]);
+            }
+        }
+        return uri;
+    }
     static const char *hex = "0123456789ABCDEF";
     std::string uri = "file://";
     for (unsigned char c : path) {

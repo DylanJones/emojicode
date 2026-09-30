@@ -14,13 +14,20 @@ namespace EmojicodeCompiler {
 
 class GenericInferer {  // TODO: store TypeContext in attribute
 public:
-    GenericInferer(size_t localCount, size_t typeCount, SemanticAnalyser *analyser)
-        : local_(localCount, CommonTypeFinder(analyser)), type_(typeCount, CommonTypeFinder(analyser)) {}
+    /// @param typeOffset The number of generic arguments the type inherits from its superclass. Generic variable
+    ///                   indices of the type are offset by it, the inferer only infers the own arguments.
+    GenericInferer(size_t localCount, size_t typeCount, size_t typeOffset, SemanticAnalyser *analyser)
+        : local_(localCount, CommonTypeFinder(analyser)), type_(typeCount, CommonTypeFinder(analyser)),
+          typeOffset_(typeOffset) {}
     bool inferringLocal() const { return !local_.empty(); }
     bool inferringType() const { return !type_.empty(); }
 
     void addLocal(size_t index, const Type &type, const TypeContext &tc) { local_[index].addType(type, tc); }
-    void addType(size_t index, const Type &type, const TypeContext &tc) { type_[index].addType(type, tc); }
+    void addType(size_t index, const Type &type, const TypeContext &tc) {
+        if (index >= typeOffset_) {
+            type_[index - typeOffset_].addType(type, tc);
+        }
+    }
 
     std::vector<std::shared_ptr<ASTType>> localArguments() const {
         std::vector<std::shared_ptr<ASTType>> result;
@@ -59,6 +66,7 @@ public:
 private:
     std::vector<CommonTypeFinder> local_;
     std::vector<CommonTypeFinder> type_;
+    size_t typeOffset_;
 };
 
 }  // namespace EmojicodeCompiler

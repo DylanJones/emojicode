@@ -8,6 +8,7 @@
 #include "SemanticTokens.hpp"
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <tuple>
 
@@ -23,6 +24,7 @@ namespace ErrorCodes {
 const int ParseError = -32700;
 const int InvalidRequest = -32600;
 const int InternalError = -32603;
+const int ServerNotInitialized = -32002;
 const int MethodNotFound = -32601;
 }  // namespace ErrorCodes
 
@@ -47,6 +49,24 @@ static const Value& member(const Value &object, const char *key) {
     return null;
 }
 
+/// Returns whether @p id is a valid request id.
+static bool isValidId(const Value &id) {
+    return id.IsString() || id.IsNumber() || id.IsNull();
+}
+
+/// Throws if the tests asked for a failure named @p fault with EMOJICODE_LSP_TEST_FAULT, which they use to check that a
+/// bug in one check or request does not end the session.
+static bool faultInjected(const char *fault) {
+    auto wanted = std::getenv("EMOJICODE_LSP_TEST_FAULT");
+    return wanted != nullptr && std::string(wanted) == fault;
+}
+
+static void injectFault(const char *fault) {
+    if (faultInjected(fault)) {
+        throw std::runtime_error(std::string("injected fault ") + fault);
+    }
+}
+
 static Value jsonString(const std::string &string, rapidjson::Document::AllocatorType &allocator) {
     return Value(string.c_str(), static_cast<rapidjson::SizeType>(string.size()), allocator);
 }
@@ -62,7 +82,15 @@ int Server::run() {
             return shutdown_ ? 0 : 1;
         }
         if (!message) {
-            runChecks();
+            try {
+                runChecks();
+            }
+            catch (EndOfInput &) {
+                return shutdown_ ? 0 : 1;
+            }
+            catch (std::exception &e) {
+                std::cerr << "emojicode-lsp: scheduled check failed: " << e.what() << std::endl;
+            }
             continue;
         }
         if (parseError) {
@@ -81,9 +109,8 @@ int Server::run() {
         catch (std::exception &e) {
             // A bug in handling one message should not end the session. Requests get an error response.
             std::cerr << "emojicode-lsp: " << string(*message, "method") << " failed: " << e.what() << std::endl;
-            auto &id = member(*message, "id");
-            if (!id.IsNull()) {
-                respondError(id, ErrorCodes::InternalError, e.what());
+            if (message->IsObject() && message->HasMember("id") && isValidId(member(*message, "id"))) {
+                respondError(member(*message, "id"), ErrorCodes::InternalError, e.what());
             }
         }
     }
@@ -94,14 +121,41 @@ void Server::handle(const rapidjson::Document &message) {
         respondError(Value(), ErrorCodes::InvalidRequest, "The message is not a JSON object.");
         return;
     }
-    auto method = string(message, "method");
-    auto &params = member(message, "params");
+    bool hasId = message.HasMember("id");
     auto &id = member(message, "id");
-    if (method.empty()) {
+    if (hasId && !isValidId(id)) {
+        respondError(Value(), ErrorCodes::InvalidRequest, "The id must be a string, a number or null.");
+        return;
+    }
+    auto &methodValue = member(message, "method");
+    if (!methodValue.IsString() && hasId && (message.HasMember("result") || message.HasMember("error"))) {
         return;  // A response to a request of the server, which does not send any.
     }
-    if (id.IsNull()) {
-        handleNotification(method, params);
+    if (!methodValue.IsString() || methodValue.GetStringLength() == 0) {
+        respondError(id, ErrorCodes::InvalidRequest, "The message has no method.");
+        return;
+    }
+    auto &version = member(message, "jsonrpc");
+    if (!version.IsString() || std::string(version.GetString()) != "2.0") {
+        respondError(id, ErrorCodes::InvalidRequest, "The message is not JSON-RPC 2.0.");
+        return;
+    }
+    auto method = string(message, "method");
+    auto &params = member(message, "params");
+    if (!hasId) {
+        if (initialized_ && !shutdown_) {
+            handleNotification(method, params);
+        }
+        return;
+    }
+    if (shutdown_) {
+        respondError(id, ErrorCodes::InvalidRequest, "The server has been shut down.");
+    }
+    else if (method == "initialize" && initialized_) {
+        respondError(id, ErrorCodes::InvalidRequest, "The server is already initialized.");
+    }
+    else if (method != "initialize" && !initialized_) {
+        respondError(id, ErrorCodes::ServerNotInitialized, "The server is not initialized.");
     }
     else {
         handleRequest(method, id, params);
@@ -111,6 +165,7 @@ void Server::handle(const rapidjson::Document &message) {
 void Server::handleRequest(const std::string &method, const Value &id, const Value &params) {
     if (method == "initialize") {
         initialize(id, params);
+        initialized_ = true;
     }
     else if (method == "textDocument/hover") {
         hover(id, params);
@@ -129,6 +184,13 @@ void Server::handleRequest(const std::string &method, const Value &id, const Val
     }
     else if (method == "textDocument/completion") {
         completion(id, params);
+    }
+    else if (method == "emojicode/testFault" && std::getenv("EMOJICODE_LSP_TEST_FAULT") != nullptr) {
+        // Test-only: lets the tests trigger a failure while handling a request.
+        injectFault("request");
+        rapidjson::Document document;
+        Value result;
+        respond(id, result, document);
     }
     else if (method == "shutdown") {
         shutdown_ = true;
@@ -375,15 +437,25 @@ void Server::runChecks() {
 }
 
 void Server::check(const std::string &root) {
-    auto analysis = checker().check(root);
-    if (analysis.analysed) {
-        parsedAnalyses_.erase(root);  // The latest analysis is now the last one that parsed.
+    try {
+        injectFault("check");
+        auto analysis = checker().check(root);
+        if (analysis.analysed) {
+            parsedAnalyses_.erase(root);  // The latest analysis is now the last one that parsed.
+        }
+        else if (analyses_.count(root) > 0 && analyses_[root].analysed) {
+            parsedAnalyses_[root] = std::move(analyses_[root]);
+        }
+        analyses_[root] = std::move(analysis);
+        publishDiagnostics(root);
     }
-    else if (analyses_.count(root) > 0 && analyses_[root].analysed) {
-        parsedAnalyses_[root] = std::move(analyses_[root]);
+    catch (EndOfInput &) {
+        throw;
     }
-    analyses_[root] = std::move(analysis);
-    publishDiagnostics(root);
+    catch (std::exception &e) {
+        // The deferred requests are still answered, from the previous analysis if there is one.
+        std::cerr << "emojicode-lsp: checking " << root << " failed: " << e.what() << std::endl;
+    }
     answerDeferred(root);
 }
 
@@ -408,7 +480,16 @@ void Server::answerDeferred(const std::string &root) {
     auto requests = std::move(it->second);
     deferred_.erase(it);
     for (auto &request : requests) {
-        handleRequest(request.method, *request.id, *request.params);
+        try {
+            handleRequest(request.method, *request.id, *request.params);
+        }
+        catch (EndOfInput &) {
+            throw;
+        }
+        catch (std::exception &e) {
+            std::cerr << "emojicode-lsp: " << request.method << " failed: " << e.what() << std::endl;
+            respondError(*request.id, ErrorCodes::InternalError, e.what());
+        }
     }
 }
 

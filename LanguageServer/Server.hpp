@@ -129,6 +129,7 @@ private:
     Transport *transport_;
     std::vector<std::string> searchPaths_;
     PositionEncoding encoding_ = PositionEncoding::UTF16;
+    bool initialized_ = false;
     bool shutdown_ = false;
     bool snippetSupport_ = false;
 

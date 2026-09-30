@@ -111,15 +111,28 @@ bool FunctionResolution<T>::checkFunctionAccess(Function *function) {
     return true;
 }
 
+/// Prepends the arguments that @p type inherits from its superclass to the inferred own arguments.
+static std::vector<Type> typeArgumentsWithInherited(const Type &type, const GenericInferer &inf) {
+    auto args = type.typeDefinition()->superGenericArguments();
+    auto own = inf.typeArguments();
+    args.insert(args.end(), own.begin(), own.end());
+    return args;
+}
+
 template <typename T>
 std::optional<GenericInferer> FunctionResolution<T>::checkCallSignature(Function *function) {
     bool inferLocalArgs = genericArgs_.empty() && !function->genericParameters().empty();
-    bool inferTypeArgs = callee_.genericArguments().empty() && !callee_.typeDefinition()->genericParameters().empty();
+    auto inheritedCount = callee_.typeDefinition()->superGenericArguments().size();
+    bool inferTypeArgs = callee_.genericArguments().size() <= inheritedCount &&
+        !callee_.typeDefinition()->genericParameters().empty();
 
     GenericInferer inf(inferLocalArgs ? function->genericParameters().size() : 0,
-                       inferTypeArgs ? callee_.typeDefinition()->genericParameters().size() : 0, analyser_);
+                       inferTypeArgs ? callee_.typeDefinition()->genericParameters().size() : 0, inheritedCount,
+                       analyser_);
 
-    TypeContext callTypeContext = TypeContext(inferTypeArgs ? Type::noReturn() : callee_, function,
+    // A parameter type can mention an inherited generic parameter, which the type's own parameters determine.
+    Type inferringCallee = inheritedCount > 0 ? Type(static_cast<Class *>(callee_.typeDefinition())) : Type::noReturn();
+    TypeContext callTypeContext = TypeContext(inferTypeArgs ? inferringCallee : callee_, function,
                                               inferLocalArgs ? nullptr : &genericArgs_);
     size_t i = 0;
     for (auto &param : function->parameters()) {
@@ -137,7 +150,7 @@ bool FunctionResolution<T>::checkGenericArguments(Function *function, const Gene
     // A constraint can mention the generic parameters of the callee's type, whose arguments this call can infer too.
     Type callee = callee_;
     if (inf.inferringType()) {
-        callee.setGenericArguments(inf.typeArguments());
+        callee.setGenericArguments(typeArgumentsWithInherited(callee_, inf));
     }
     TypeContext instanceContext(callee, function, &args);
     for (size_t i = function->offset(); i < args.size(); i++) {
@@ -259,7 +272,7 @@ T* FunctionResolution<T>::resolveAndReificate(ASTArguments *args, Type *type) {
         args->genericArguments() = candidate->genericInferer.localArguments();
     }
     if (candidate->genericInferer.inferringType()) {
-        type->setGenericArguments(candidate->genericInferer.typeArguments());
+        type->setGenericArguments(typeArgumentsWithInherited(*type, candidate->genericInferer));
         type->typeDefinition()->requestReificationAndCheck(typeContext_, TypeContext(*type), type->genericArguments(),
                                                            args->position());
         *type = type->resolveOnSuperArgumentsAndConstraints(typeContext_);

@@ -1,0 +1,21 @@
+💭 The generic arguments of a generic subclass are inferred from an initializer call.
+🐇 🍎🐚T ⚪️🍆 🍇
+  🖍🆕 t T
+  🆕 🍼 t T 🍇🍉
+  ❗️ 🥝 ➡️ T 🍇 ↩️ t 🍉
+🍉
+🐇 🍐🐚U ⚪️🍆 🍎🐚U🍆 🍇
+  🖍🆕 u U
+  🆕 x U 🍇
+    x ➡️ 🖍u
+    ⤴️🆕 x❗️
+  🍉
+  ❗️ 🍄 ➡️ U 🍇 ↩️ u 🍉
+🍉
+🏁 🍇
+  🆕🍐 5❗️ ➡️ p
+  😀 🔡 🍄 p❗️❗️❗️
+  😀 🔡 🥝 p❗️❗️❗️
+  🆕🍐 🔤s🔤❗️ ➡️ q
+  😀 🥝 q❗️❗️
+🍉

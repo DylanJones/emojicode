@@ -1,0 +1,14 @@
+💭 test: unoptimized
+💭 ↔️ on 🔡 compares bytes first and only uses the length to order a prefix.
+📦 testtube 🏠
+🏁 🍇
+  😀 🔡↔🔤aa🔤 🔤b🔤❗️❗️❗️
+  😀 🔡↔🔤b🔤 🔤aa🔤❗️❗️❗️
+  😀 🔡↔🔤a🔤 🔤aa🔤❗️❗️❗️
+  😀 🔡↔🔤aa🔤 🔤a🔤❗️❗️❗️
+  😀 🔡↔🔤🔤 🔤a🔤❗️❗️❗️
+  😀 🔡↔🔤a🔤 🔤🔤❗️❗️❗️
+  😀 🔡↔🔤a🔤 🔤a🔤❗️❗️❗️
+  😀 🔡↔🔤é🔤 🔤z🔤❗️❗️❗️
+  😀 🔡↔🔤abcd🔤 🔤abce🔤❗️❗️❗️
+🍉

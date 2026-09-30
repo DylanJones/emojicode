@@ -225,9 +225,20 @@ public:
     /// Returns the generic arguments with which this type was specialized.
     const std::vector<Type>& genericArguments() const {
         if (type() == TypeType::Box) {
-            return genericArguments_[0].genericArguments_;
+            return genericArguments_[0].genericArguments();
         }
         assert(canHaveGenericArguments());
+        return genericArguments_;
+    }
+    /// Like genericArguments(), but adds the inherited arguments of a class that was named in its own superclass
+    /// arguments (e.g. 🐇 🍐 🍎🐚🍐🍆), which are stored without them as they would contain this very type. The
+    /// result is only one level complete, so that it must not be traversed recursively.
+    const std::vector<Type>& completeGenericArguments() const {
+        if (type() == TypeType::Box) {
+            return genericArguments_[0].completeGenericArguments();
+        }
+        assert(canHaveGenericArguments());
+        completeGenericArgumentsInPlace();
         return genericArguments_;
     }
     /// Allows to change a specific generic argument. @c index must be smaller than @c genericArguments().size()
@@ -410,7 +421,10 @@ private:
     size_t genericArgumentIndex_ = 0;
     TypeDefinition *typeDefinition_ = nullptr;
     Function *localResolutionConstraint_ = nullptr;
-    std::vector<Type> genericArguments_;
+    mutable std::vector<Type> genericArguments_;
+
+    void completeGenericArgumentsInPlace() const;
+    Type resolveOnWithoutCompletion(const TypeContext &typeContext) const;
 
     bool isReference_ = false;
     bool mutable_ = false;

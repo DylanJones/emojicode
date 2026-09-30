@@ -307,7 +307,7 @@ llvm::Type* LLVMTypeHelper::getSimpleType(const Type &type) {
 }
 
 llvm::Type* LLVMTypeHelper::llvmTypeForTypeDefinition(const Type &type) {
-    auto &reification = type.typeDefinition()->reificationFor(type.genericArguments());
+    auto &reification = type.typeDefinition()->reificationFor(type.completeGenericArguments());
     if (reification.type != nullptr) {
         return reification.type;
     }

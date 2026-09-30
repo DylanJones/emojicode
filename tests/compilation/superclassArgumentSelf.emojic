@@ -1,0 +1,19 @@
+💭 A class may name itself in its own superclass arguments (curiously recurring template pattern).
+🐇 🍎🐚T ⚪️🍆 🍇
+  🆕 🍇🍉
+  ❗️ 🥝 ➡️ 🔡 🍇 ↩️ 🔤base🔤 🍉
+  ❗️ 🍌 ➡️ 🍬T 🍇 ↩️ 🤷‍♀️ 🍉
+🍉
+🐇 🍐 🍎🐚🍐🍆 🍇
+  🆕 🍇 ⤴️🆕❗️ 🍉
+🍉
+🐇 🍒🐚U ⚪️🍆 🍎🐚🍒🐚U🍆🍆 🍇
+  🆕 🍇 ⤴️🆕❗️ 🍉
+🍉
+🏁 🍇
+  🆕🍐❗️ ➡️ x
+  😀 🥝 x❗️❗️
+  🆕🍒🐚🔢🍆❗️ ➡️ y
+  😀 🥝 y❗️❗️
+  🍌 x❗️ ➡️ z
+🍉
