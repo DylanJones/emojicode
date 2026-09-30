@@ -163,6 +163,9 @@ public:
 
     const std::vector<Type>& genericArgumentTypes() const { return genericArgumentsTypes_; }
     void setGenericArgumentTypes(std::vector<Type> types) { genericArgumentsTypes_ = std::move(types); }
+    /// The error type of the called function resolved on the generic arguments, or 🚫 if it cannot raise an error.
+    const Type& errorType() const { return errorType_; }
+    void setErrorType(Type type) { errorType_ = std::move(type); }
     /// Removes the generic arguments, as the call uses a specialization, which takes none.
     void clearGenericArguments() {
         genericArguments_.clear();
@@ -176,6 +179,7 @@ private:
     std::vector<std::shared_ptr<ASTType>> genericArguments_;
     std::vector<std::shared_ptr<ASTExpr>> arguments_;
     std::vector<Type> genericArgumentsTypes_;
+    Type errorType_ = Type::noReturn();
 };
 
 class ASTCallableCall final : public ASTCall {
