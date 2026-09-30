@@ -17,9 +17,7 @@ namespace {
 
 /// Stores @p value of @p type, whose storage type is simple, into the box to which @p box points.
 void boxSimple(FunctionCodeGenerator &fg, llvm::Value *box, llvm::Value *value, const Type &type) {
-    auto boxInfo = type.type() == TypeType::Someobject ? fg.generator()->runTime().boxInfoForObjects()
-                                                       : fg.boxInfoFor(type);
-    fg.builder().CreateStore(boxInfo, fg.buildGetBoxInfoPtr(box));
+    fg.builder().CreateStore(fg.boxInfoFor(type), fg.buildGetBoxInfoPtr(box));
     if (fg.typeHelper().isRemote(type)) {
         auto managable = fg.typeHelper().managable(fg.typeHelper().llvmTypeFor(type));
         fg.builder().CreateStore(value, fg.buildSetRemoteBoxObject(box, managable, fg.alloc(managable)));
