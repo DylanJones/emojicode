@@ -18,6 +18,7 @@ namespace EmojicodeCompiler {
 struct EnumValue {
     long value;
     std::u32string documentation;
+    SourcePosition position;
 };
 
 class Enum : public ValueType {

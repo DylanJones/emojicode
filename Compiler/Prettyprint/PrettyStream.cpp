@@ -85,6 +85,25 @@ void PrettyStream::printComments(const SourcePosition &p) {
     }
 }
 
+bool PrettyStream::hasCommentsBefore(const SourcePosition &p) const {
+    auto found = false;
+    if (p.file != nullptr) {
+        p.file->findComments(lastCommentQuery_, p, [&](const Token &comment) {
+            auto &position = comment.position();
+            found = found || printedComments_.count(std::make_tuple(position.file, position.line,
+                                                                    position.character)) == 0;
+        });
+    }
+    return found;
+}
+
+void PrettyStream::finishLine() {
+    if (lastChar_ != '\n' && lastChar_ != 0) {
+        write("\n");
+    }
+    whitespaceOffer_ = 0;
+}
+
 void PrettyStream::printRemainingComments(SourceFile *file) {
     if (file != nullptr) {
         printComments(SourcePosition(std::numeric_limits<unsigned int>::max(), 0, file));

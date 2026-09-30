@@ -65,6 +65,10 @@ public:
     void printComments(const SourcePosition &p);
     /// Prints all comments of @p file that were not printed yet.
     void printRemainingComments(SourceFile *file);
+    /// Returns true iff there is a comment that was not printed yet in front of @p p.
+    bool hasCommentsBefore(const SourcePosition &p) const;
+    /// Ends the current line if it is not empty, instead of offering a new line.
+    void finishLine();
     /// Must be called when starting to print another source file.
     void startFile();
     /// Offers a space unless the output already ends with whitespace.

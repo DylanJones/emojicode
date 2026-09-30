@@ -62,7 +62,8 @@ public:
     /// @param path A file path to a source code document.
     /// @param relativePath The path as it was discovered in the source code document. Value is provided for
     ///                     subclasses that might be interested in this. (e.g. RecordingPackage)
-    virtual void includeDocument(const std::string &path, const std::string &relativePath);
+    virtual void includeDocument(const std::string &path, const std::string &relativePath,
+                                 const SourcePosition &p);
 
     /// @returns True iff the document at path is being included, i.e. including it again would be circular.
     bool isIncluding(const std::string &path) const;
@@ -83,7 +84,7 @@ public:
     const std::string& path() const { return path_; }
 
     const std::u32string& documentation() const { return documentation_; }
-    virtual void setDocumentation(const std::u32string &doc) { documentation_ = doc; }
+    virtual void setDocumentation(const std::u32string &doc, const SourcePosition &p) { documentation_ = doc; }
 
     virtual void setStartFlagFunction(Function *function) { startFlag_ = function; }
     Function* startFlagFunction() const { return startFlag_; }
@@ -144,7 +145,7 @@ public:
     /// @complexity O(n)
     std::u32string findNamespace(const Type &type);
 
-    virtual void setLinkHints(std::vector<std::string> hints) { linkHints_ = std::move(hints); }
+    virtual void setLinkHints(std::vector<std::string> hints, const SourcePosition &p) { linkHints_ = std::move(hints); }
     const std::vector<std::string>& linkHints() { return linkHints_; }
     /// The directory of the document that provided the link hints. Native source hints are relative to it.
     void setLinkHintsDirectory(std::string directory) { linkHintsDirectory_ = std::move(directory); }

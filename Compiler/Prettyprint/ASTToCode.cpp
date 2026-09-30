@@ -53,7 +53,7 @@ void ASTArguments::toCode(PrettyStream &pretty) const {
 
 void ASTBlock::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    if (stmts_.empty()) {
+    if (stmts_.empty() && !pretty.hasCommentsBefore(endPosition_)) {
         pretty << "🍇🍉\n";
         return;
     }

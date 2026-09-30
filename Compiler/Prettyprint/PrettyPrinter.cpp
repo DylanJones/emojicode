@@ -38,6 +38,7 @@ void PrettyPrinter::print() {
 
         printRecordings(file.recordings_);
         prettyStream_.printRemainingComments(sourceFile);
+        prettyStream_.finishLine();
     }
 }
 
@@ -72,11 +73,27 @@ void PrettyPrinter::printLinkHints() {
     }
 }
 
+void PrettyPrinter::printComments(const SourcePosition &p) {
+    // Interfaces do not keep comments.
+    if (!interface_) {
+        prettyStream_.printComments(p);
+    }
+}
+
 void PrettyPrinter::print(RecordingPackage::Recording *recording) {
-    if (dynamic_cast<RecordingPackage::DocumentationRecording *>(recording) && !interface_) {
+    if (recording->position().file != nullptr) {
+        printComments(recording->position());
+        // The recordings are printed without offering whitespace.
+        if (!interface_) {
+            prettyStream_.finishLine();
+        }
+    }
+    if (auto documentation = dynamic_cast<RecordingPackage::DocumentationRecording *>(recording)) {
         // Interfaces print the documentation at their beginning, see printInterface().
-        prettyStream_.refuseOffer() << "📘" << package_->documentation() << "📘\n";
-        prettyStream_.offerNewLine();
+        if (!interface_) {
+            prettyStream_.refuseOffer() << "📘" << documentation->documentation_ << "📘\n";
+            prettyStream_.offerNewLine();
+        }
     }
     if (auto import = dynamic_cast<RecordingPackage::Import *>(recording)) {
         prettyStream_.refuseOffer() << "📦 " << import->package << " " << import->destNamespace << "\n";
@@ -179,9 +196,7 @@ void PrettyPrinter::printDocumentation(const std::u32string &doc) {
 void PrettyPrinter::printTypeDef(const Type &type) {
     auto typeDef = type.typeDefinition();
 
-    if (!interface_) {
-        prettyStream_.printComments(typeDef->position());
-    }
+    printComments(typeDef->position());
 
     printDocumentation(typeDef->documentation());
 
@@ -224,8 +239,8 @@ void PrettyPrinter::printTypeDef(const Type &type) {
         for (auto &member : sortedMembers(std::move(methods))) {
             print(member.key, member.function, false, member.noMutate);
         }
+        printTypeEnd(typeDef);
         prettyStream_ << "🍉\n\n";
-        prettyStream_.decreaseIndent();
         return;
     }
     if (auto enumeration = type.enumeration()) {
@@ -239,13 +254,23 @@ void PrettyPrinter::printTypeDef(const Type &type) {
 
     if (auto klass = type.klass()) {
         if (klass->deinitializer() != nullptr) {
+            printComments(klass->deinitializer()->position());
             prettyStream_.indent() << "♻️";
             printBody(klass->deinitializer());
         }
     }
 
-    prettyStream_.decreaseIndent();
+    printTypeEnd(typeDef);
     prettyStream_.refuseOffer() << "🍉\n\n";
+}
+
+void PrettyPrinter::printTypeEnd(TypeDefinition *typeDef) {
+    // Comments in front of the 🍉 belong to the type.
+    printComments(typeDef->endPosition());
+    if (!interface_) {
+        prettyStream_.finishLine();
+    }
+    prettyStream_.decreaseIndent();
 }
 
 void PrettyPrinter::printTypeDefName(const Type &type) {
@@ -311,6 +336,7 @@ std::vector<PrettyPrinter::Member> PrettyPrinter::sortedMembers(std::vector<Memb
 
 void PrettyPrinter::printProtocolConformances(TypeDefinition *typeDef, const TypeContext &typeContext) {
     for (auto &protocol : typeDef->protocols()) {
+        printComments(protocol.position);
         prettyStream_.indent() << "🐊 " << protocol.type << "\n";
     }
     prettyStream_.offerNewLineUnlessEmpty(typeDef->protocols());
@@ -321,6 +347,7 @@ void PrettyPrinter::printInstanceVariables(TypeDefinition *typeDef, const TypeCo
         if (interface_ && typeDef->instanceScope().getLocalVariable(ivar.name).inherited()) {
             continue;
         }
+        printComments(ivar.position);
         prettyStream_.indent() << "🖍🆕 " << ivar.name << " " << ivar.type;
         if (ivar.expr != nullptr) {
             prettyStream_ << " ⬅️ " << ivar.expr;
@@ -336,6 +363,7 @@ void PrettyPrinter::printEnumValues(Enum *enumeration) {
                    [](auto pair){ return std::make_pair(pair.first, pair.second); });
     std::sort(values.begin(), values.end(), [](auto &a, auto &b) { return a.second.value < b.second.value; });
     for (auto &value : values) {
+        printComments(value.second.position);
         printDocumentation(value.second.documentation);
         prettyStream_.indent() << "🆕▶️" << value.first << "\n";
     }
@@ -410,9 +438,7 @@ void PrettyPrinter::print(const char *key, Function *function, bool body, bool n
         return;
     }
     if (documentation) {
-        if (!interface_) {
-            prettyStream_.printComments(function->position());
-        }
+        printComments(function->position());
         printDocumentation(function->documentation());
     }
 

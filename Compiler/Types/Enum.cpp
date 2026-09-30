@@ -23,7 +23,7 @@ void Enum::addValueFor(const std::u32string &c, const SourcePosition &position, 
     if (map_.count(c) > 0) {
         throw CompilerError(position, "Duplicate enum value.");
     }
-    map_.emplace(c, EnumValue{ nextValue_++, documentation });
+    map_.emplace(c, EnumValue{ nextValue_++, documentation, position });
 }
 
 }  // namespace EmojicodeCompiler
