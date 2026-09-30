@@ -73,7 +73,7 @@ extern "C" String* sStringToLowercase(String *string) {
     for (size_t off = 0; off < string->count;) {
         utf8proc_int32_t codepoint;
         auto state = utf8proc_iterate(reinterpret_cast<utf8proc_uint8_t *>(string->characters.get()) + off,
-                                      string->count, &codepoint);
+                                      string->count - off, &codepoint);
         if (state < 0) break;
         doff += utf8proc_encode_char(utf8proc_tolower(codepoint),
                                      reinterpret_cast<utf8proc_uint8_t *>(newString->characters.get()) + doff);
@@ -91,7 +91,7 @@ extern "C" String* sStringToUppercase(String *string) {
     for (size_t off = 0; off < string->count;) {
         utf8proc_int32_t codepoint;
         auto state = utf8proc_iterate(reinterpret_cast<utf8proc_uint8_t *>(string->characters.get()) + off,
-                                      string->count, &codepoint);
+                                      string->count - off, &codepoint);
         if (state < 0) break;
         doff += utf8proc_encode_char(utf8proc_toupper(codepoint),
                                      reinterpret_cast<utf8proc_uint8_t *>(newString->characters.get()) + doff);
@@ -127,7 +127,7 @@ extern "C" void sStringCodepoints(String *string, runtime::Callable<void, runtim
     for (size_t off = 0; off < string->count;) {
         utf8proc_int32_t codepoint;
         auto state = utf8proc_iterate(reinterpret_cast<utf8proc_uint8_t *>(string->characters.get()) + off,
-                                      string->count, &codepoint);
+                                      string->count - off, &codepoint);
         if (state < 0) break;
         cb(codepoint, off);
         off += state;
@@ -140,7 +140,7 @@ extern "C" s::String* sStringTrim(String *string) {
     for (; begin < string->count;) {
         utf8proc_int32_t codepoint;
         auto state = utf8proc_iterate(reinterpret_cast<utf8proc_uint8_t *>(string->characters.get()) + begin,
-                                      string->count, &codepoint);
+                                      string->count - begin, &codepoint);
         if (state < 0) break;
         if (utf8proc_get_property(codepoint)->bidi_class != UTF8PROC_BIDI_CLASS_WS) break;
         begin += state;
@@ -150,7 +150,7 @@ extern "C" s::String* sStringTrim(String *string) {
     for (size_t i = begin; i < string->count;) {
         utf8proc_int32_t codepoint;
         auto state = utf8proc_iterate(reinterpret_cast<utf8proc_uint8_t *>(string->characters.get()) + i,
-                                      string->count, &codepoint);
+                                      string->count - i, &codepoint);
         if (state < 0) break;
         if (utf8proc_get_property(codepoint)->bidi_class != UTF8PROC_BIDI_CLASS_WS) {
             end = i;
@@ -175,11 +175,16 @@ extern "C" void sStringGraphemes(String *string, runtime::Callable<void, s::Stri
     }
 
     size_t lastCut = 0;
-    size_t off = utf8proc_iterate(bytes, string->count, &prev);
+    auto first = utf8proc_iterate(bytes, string->count, &prev);
+    if (first < 0) {
+        return;
+    }
+    size_t off = first;
 
     while (off < string->count) {
         utf8proc_int32_t cp;
-        auto c = utf8proc_iterate(bytes + off, string->count, &cp);
+        auto c = utf8proc_iterate(bytes + off, string->count - off, &cp);
+        if (c < 0) break;
 
         if (utf8proc_grapheme_break_stateful(prev, cp, &state)) {
             auto newString = String::init();
@@ -207,17 +212,27 @@ extern "C" s::String* sStringGraphemeSubstring(String *string, runtime::Integer 
     auto bytes = reinterpret_cast<utf8proc_uint8_t *>(string->characters.get());
     utf8proc_int32_t state = 0;
     utf8proc_int32_t prev, cp;
-    size_t beginCut = 0, off = utf8proc_iterate(bytes, string->count, &prev);
+    size_t beginCut = 0, off = 0;
 
-    if (length == 0) {
+    if (length == 0 || string->count == 0) {
         auto newString = String::init();
         newString->count = 0;
         newString->characters = runtime::allocate<char>(0);
         return newString;
     }
 
+    auto first = utf8proc_iterate(bytes, string->count, &prev);
+    if (first < 0) {
+        auto newString = String::init();
+        newString->count = 0;
+        newString->characters = runtime::allocate<char>(0);
+        return newString;
+    }
+    off = first;
+
     while (off < string->count && from > 0) {
-        auto c = utf8proc_iterate(bytes + off, string->count, &cp);
+        auto c = utf8proc_iterate(bytes + off, string->count - off, &cp);
+        if (c < 0) break;
 
         if (utf8proc_grapheme_break_stateful(prev, cp, &state) && --from == 0) {
             beginCut = off;
@@ -229,7 +244,8 @@ extern "C" s::String* sStringGraphemeSubstring(String *string, runtime::Integer 
         off += c;
     }
     while (off < string->count) {
-        auto c = utf8proc_iterate(bytes + off, string->count, &cp);
+        auto c = utf8proc_iterate(bytes + off, string->count - off, &cp);
+        if (c < 0) break;
 
         if (utf8proc_grapheme_break_stateful(prev, cp, &state) && --length == 0) {
             break;

@@ -1,0 +1,58 @@
+📦 testtube 🏠
+
+🐇🦔🧪  🍇
+  💭 Builds a 📇 from the given byte values (0-255).
+  ❗️ 🎒 bytes 🍨🐚🔢🍆 ➡️ 📇 🍇
+    ☣️ 🍇
+      🆕🧠 📏bytes❓❗️ ➡️ mem
+    🍉
+    🔂 i 🆕⏩ 0 📏bytes❓❗️ 🍇
+      🐽bytes i❗️ ➡️ 🖍🆕v
+      ↪️ v ▶️ 127 🍇
+        v ➖ 256 ➡️ 🖍v
+      🍉
+      ☣️ 🍇
+        ✍️mem 💧 v❗️ i 1❗️
+      🍉
+    🍉
+    ☣️ 🍇
+      ↩️ 🆕📇 mem 📏bytes❓❗️
+    🍉
+  🍉
+
+  ✒️ ❗️ 🏁 🍇
+    ⛔👇 🔡🎒 👇 🍿 128 97 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: lead continuation🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 97 191 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: continuation as lead🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 97 98 255 254 32 99 100 195 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: 0xFF🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 255 97 98 99 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: 0xFF first🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 97 195 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: truncated 2🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 97 226 130 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: truncated 3🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 97 240 159 152 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: truncated 4🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 192 175 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: overlong 2🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 224 128 175 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: overlong 3🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 240 128 128 175 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: overlong 4🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 237 160 128 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: surrogate🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 244 144 128 128 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: out of range🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 245 128 128 128 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: 0xF5🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 97 0 98 255 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: invalid after NUL🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 226 40 161 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: bad continuation🔤❗️
+    ⛔👇 🔡🎒 👇 🍿 0 255 🍆❗️❗️ 🙌 🤷‍♀️ 🔤invalid: NUL then byte🔤❗️
+
+    🔡👇 🍺🔡🎒 👇 🍿 🍆❗️❗️ 🔤🔤 🔤valid: empty🔤❗️
+    🔡👇 🍺🔡🎒 👇 🍿 72 105 🍆❗️❗️ 🔤Hi🔤 🔤valid: ASCII🔤❗️
+    🔡👇 🍺🔡🎒 👇 🍿 99 97 102 195 169 🍆❗️❗️ 🔤café🔤 🔤valid: 2 byte🔤❗️
+    🔡👇 🍺🔡🎒 👇 🍿 237 149 156 🍆❗️❗️ 🔤한🔤 🔤valid: 3 byte🔤❗️
+    🔡👇 🍺🔡🎒 👇 🍿 240 159 152 128 🍆❗️❗️ 🔤😀🔤 🔤valid: 4 byte🔤❗️
+    🍺🔡🎒 👇 🍿 97 0 98 🍆❗️❗️ ➡️ withNul
+    📇withNul❗️ ➡️ nulBytes
+    ⛔👇 📏nulBytes❓ 🙌 3 🔤valid: NUL is kept🔤❗️
+
+    🎒 👇 🍿 99 97 102 195 169 32 240 159 152 128 🍆❗️ ➡️ acceptedData
+    🍺🔡acceptedData❗️ ➡️ accepted
+    🔡👇 🔪accepted 2 3❗️ 🔤fé 🔤 🔤accepted string can be sliced🔤❗️
+  🍉
+🍉
+
+🏁 ➡️ 🔢 🍇
+  ↩️ 👔🆕🦔❗️❗️
+🍉
