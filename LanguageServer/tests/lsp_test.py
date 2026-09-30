@@ -21,6 +21,8 @@ SERVER = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT
 
 
 def uri(path):
+    if not os.path.isabs(path):
+        return path  # already a URI, e.g. untitled:Untitled-1
     return "file://" + urllib.parse.quote(os.path.realpath(path))
 
 
@@ -260,6 +262,35 @@ class DiagnosticsTests(ServerTestCase):
     def test_lone_cr_line_endings_utf8_and_utf32(self):
         self.check_line_endings(["\r"] * 5, ("utf-8",))
         self.check_line_endings(["\r"] * 5, ("utf-32",))
+
+    def test_untitled_documents(self):
+        valid = "🏁 🍇\n  🔤hello🔤 ➡️ greeting\n  😀 greeting❗️\n🍉\n"
+        one, two = "untitled:Untitled-1", "untitled:Untitled-2"
+        client = self.start()
+        client.open(one, TYPE_ERROR)
+        client.open(two, valid)
+        diagnostics = client.diagnostics(one)
+        self.assertEqual(len(diagnostics), 1, diagnostics)
+        self.assertEqual(diagnostics[0]["range"]["start"], position(TYPE_ERROR, "➕"))
+        self.assertEqual(client.diagnostics(two), [])
+        # Hover, tokens and completion work, and the documents do not share state.
+        hover = client.request("textDocument/hover", {"textDocument": {"uri": two},
+                                                      "position": position(valid, "greeting❗️")})
+        self.assertIn("greeting", hover["contents"]["value"])
+        tokens = client.request("textDocument/semanticTokens/full", {"textDocument": {"uri": two}})["data"]
+        self.assertGreater(len(tokens), 0)
+        items = client.request("textDocument/completion", {"textDocument": {"uri": two},
+                                                           "position": position(valid, "greeting❗️")})
+        items = items["items"] if isinstance(items, dict) else items
+        self.assertIn("greeting", [item["label"] for item in items])
+
+        client.change(one, valid)
+        self.assertEqual(client.diagnostics(one), [])
+        client.change(one, TYPE_ERROR)
+        self.assertEqual(len(client.diagnostics(one)), 1)
+        client.close(one)
+        self.assertEqual(client.diagnostics(one), [])
+        self.assertEqual(client.shutdown(), 0)
 
     def test_include_in_comment_is_ignored(self):
         self.write("app/old.🍇", "💭 📜 🔤b.🍇🔤\n🏁 🍇🍉\n")

@@ -114,10 +114,31 @@ static int hexValue(char c) {
     return -1;
 }
 
+static std::string percentEncode(const std::string &text) {
+    static const char *hex = "0123456789ABCDEF";
+    std::string encoded;
+    for (unsigned char c : text) {
+        if (isalnum(c) || c == '-' || c == '.' || c == '_' || c == '~') {
+            encoded.push_back(static_cast<char>(c));
+        }
+        else {
+            encoded.push_back('%');
+            encoded.push_back(hex[c >> 4]);
+            encoded.push_back(hex[c & 15]);
+        }
+    }
+    return encoded;
+}
+
 std::string uriToPath(const std::string &uri) {
     const std::string scheme = "file://";
     if (uri.compare(0, scheme.size(), scheme) != 0) {
-        return "";
+        if (uri.empty()) {
+            return "";
+        }
+        // Not a file: the percent-encoding is injective, so different URIs never share a path.
+        // Every document has its own directory, because files in one directory are one package.
+        return std::string(kVirtualDirectory) + "/" + percentEncode(uri) + "/document.emojic";
     }
     std::string path;
     for (size_t i = scheme.size(); i < uri.size(); i++) {
@@ -138,6 +159,24 @@ std::string uriToPath(const std::string &uri) {
 }
 
 std::string pathToUri(const std::string &path) {
+    // The inverse of the synthetic path of a document that is not a file.
+    const std::string prefix = std::string(kVirtualDirectory) + "/";
+    const std::string suffix = "/document.emojic";
+    if (path.size() > prefix.size() + suffix.size() && path.compare(0, prefix.size(), prefix) == 0 &&
+        path.compare(path.size() - suffix.size(), suffix.size(), suffix) == 0) {
+        std::string encoded = path.substr(prefix.size(), path.size() - prefix.size() - suffix.size());
+        std::string uri;
+        for (size_t i = 0; i < encoded.size(); i++) {
+            if (encoded[i] == '%' && i + 2 < encoded.size()) {
+                uri.push_back(static_cast<char>(hexValue(encoded[i + 1]) * 16 + hexValue(encoded[i + 2])));
+                i += 2;
+            }
+            else {
+                uri.push_back(encoded[i]);
+            }
+        }
+        return uri;
+    }
     static const char *hex = "0123456789ABCDEF";
     std::string uri = "file://";
     for (unsigned char c : path) {

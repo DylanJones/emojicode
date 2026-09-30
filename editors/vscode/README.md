@@ -23,6 +23,12 @@ Literals*, since it is just text there. With the language server, methods and ty
 to their page in the package documentation. **Emojicode: Open Documentation for Token at Cursor** opens the link
 directly.
 
+## Untitled and virtual documents
+
+Documents that are not files (untitled buffers, `vscode-vfs:` and so on) get diagnostics, hover, semantic tokens and
+completion, too. Each is checked as a standalone program or package made from its text alone: it cannot include
+other files (`📜` of a relative path fails), because it has no directory.
+
 ## Installing
 
 ```bash

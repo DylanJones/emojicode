@@ -61,7 +61,12 @@ private:
     std::vector<size_t> compilerLineStarts_;
 };
 
-/// Returns the absolute, canonical file system path for a file:// URI, or an empty string for other URIs.
+/// The directory of the synthetic paths of documents that are not files, e.g. untitled: buffers. It does not
+/// exist, so such a document is a standalone program that is backed by its overlay and cannot include other files.
+constexpr const char *kVirtualDirectory = "/.emojicode-virtual-documents";
+
+/// Returns the absolute, canonical file system path for a file:// URI. Any other URI gets a stable synthetic path
+/// below kVirtualDirectory that is unique for the URI. Returns an empty string for an empty URI.
 std::string uriToPath(const std::string &uri);
 /// Returns a file:// URI for an absolute path.
 std::string pathToUri(const std::string &path);
