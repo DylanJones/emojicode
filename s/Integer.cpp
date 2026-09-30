@@ -108,6 +108,15 @@ s::String* makeString(const std::string &string) {
 }  // namespace
 
 extern "C" s::String* sRealToString(runtime::Real *real, runtime::Integer precision) {
+    // Non-finite values cannot be converted to integers below. They have a fixed spelling regardless of precision,
+    // and every NaN, whatever its sign or payload, is spelled NaN.
+    if (std::isnan(*real)) {
+        return makeString("NaN");
+    }
+    if (std::isinf(*real)) {
+        return makeString(*real < 0 ? "-∞" : "∞");
+    }
+
     double integral;
     double fractional = std::abs(std::modf(*real, &integral));
 

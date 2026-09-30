@@ -149,6 +149,9 @@
     For example, `🔡 0.99 20❗️` returns `0.99000000000000000000` rather than the
     exact binary expansion of 0.99, and digits of an exactly representable value
     beyond its shortest representation are shown as zeros.
+
+    Infinities are represented as `∞` and `-∞`, and every NaN, regardless of
+    its sign, as `NaN`. The precision is ignored for these values.
   📗
   ❗️ 🔡 precision 🔢 ➡️ 🔡 📻 🔤sRealToString🔤
 
