@@ -23,6 +23,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
+#include <algorithm>
 #include <stdexcept>
 
 namespace EmojicodeCompiler {
@@ -160,6 +161,20 @@ llvm::Value* FunctionCodeGenerator::buildGetBoxConformance(llvm::Value *boxInfo,
     }
     assert(type.boxedFor().type() == TypeType::Protocol);
     return boxInfo;
+}
+
+std::optional<size_t> FunctionCodeGenerator::multiprotocolIndex(const Type &type, const Protocol *protocol) {
+    if (type.boxedFor().type() != TypeType::MultiProtocol) {
+        return std::nullopt;
+    }
+    auto &protocols = type.boxedFor().protocols();
+    auto it = std::find_if(protocols.begin(), protocols.end(), [protocol](const Type &t) {
+        return t.protocol() == protocol;
+    });
+    if (it == protocols.end()) {
+        return std::nullopt;
+    }
+    return static_cast<size_t>(it - protocols.begin());
 }
 
 llvm::Value* FunctionCodeGenerator::buildGetValueBoxInfo(llvm::Value *boxInfo, const Type &type) {

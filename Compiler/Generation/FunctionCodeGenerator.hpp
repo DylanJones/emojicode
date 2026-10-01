@@ -13,6 +13,7 @@
 #include "Scoping/IDScoper.hpp"
 #include <llvm/IR/IRBuilder.h>
 #include <functional>
+#include <optional>
 #include <queue>
 
 namespace EmojicodeCompiler {
@@ -147,6 +148,10 @@ public:
     /// protocol or a multiprotocol. The box info field of a box for a multiprotocol points to the conformances to each
     /// of its protocols, of which the one to protocol number @p multiprotocolN is returned.
     llvm::Value* buildGetBoxConformance(llvm::Value *boxInfo, const Type &type, size_t multiprotocolN = 0);
+    /// Finds the index of @p protocol (by identity) in the conformance table of a box of @p type, i.e. the
+    /// multiprotocolN to pass to buildGetBoxConformance. Returns nullopt if the box is not for a multiprotocol or its
+    /// multiprotocol does not contain @p protocol; the caller must then look the conformance up at run time.
+    static std::optional<size_t> multiprotocolIndex(const Type &type, const Protocol *protocol);
     /// Gets the box info of the type of the value from the box info field @p boxInfo of a box of @p type. A box for a
     /// protocol or a multiprotocol holds a protocol conformance there, which points to the box info.
     llvm::Value* buildGetValueBoxInfo(llvm::Value *boxInfo, const Type &type);

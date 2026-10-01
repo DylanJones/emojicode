@@ -55,15 +55,9 @@ Value* ASTRebox::rebox(Value *box, FunctionCodeGenerator *fg) const {
 
     Value *boxPtr = nullptr, *valueBoxInfo = nullptr;
     auto conformanceTo = [&](Protocol *protocol) -> Value* {
-        if (from.boxedFor().type() == TypeType::MultiProtocol) {
-            // The box already has the conformance to each protocol of the multiprotocol.
-            auto &protocols = from.boxedFor().protocols();
-            auto it = std::find_if(protocols.begin(), protocols.end(), [protocol](auto &t) {
-                return t.protocol() == protocol;
-            });
-            if (it != protocols.end()) {
-                return fg->buildGetBoxConformance(boxInfo, from, it - protocols.begin());
-            }
+        // A box for a multiprotocol already has the conformance to each of its protocols.
+        if (auto index = FunctionCodeGenerator::multiprotocolIndex(from, protocol)) {
+            return fg->buildGetBoxConformance(boxInfo, from, *index);
         }
         if (boxPtr == nullptr) {
             boxPtr = fg->createEntryAlloca(fg->typeHelper().box());
