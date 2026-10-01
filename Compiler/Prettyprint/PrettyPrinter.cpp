@@ -166,7 +166,7 @@ void PrettyPrinter::printArguments(Function *function) {
                 prettyStream_ << "🎍🥡 ";
             }
             prettyStream_ << arg.name << " " << arg.type;
-        prettyStream_.offerSpace();
+            prettyStream_.offerSpace();
         }
         return;
     }
