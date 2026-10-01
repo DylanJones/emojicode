@@ -100,6 +100,8 @@ public:
     void offerSpace() { whitespaceOffer_ = ' '; }
     /// Offers a new line character unless the output already ends with one, which blocks do.
     void endLine() { if (lastChar_ != '\n') { offerNewLine(); } }
+    /// @returns Whether a new line is currently offered.
+    bool newLineOffered() const { return whitespaceOffer_ == '\n'; }
     /// Offers a new line character
     void offerNewLine() { whitespaceOffer_ = '\n'; }
     /// Calls offerSpace() unless collection returns true for empty()
