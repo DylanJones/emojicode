@@ -82,12 +82,16 @@ void ASTBlock::innerToCode(PrettyStream &pretty) const {
 
 void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🔁 " << condition_ << " " << block_;
+    pretty.indent() << "🔁 " << condition_;
+    pretty.offerSpace();
+    pretty << block_;
 }
 
 void ASTForIn::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🔂 " << varName_ << " " << iteratee_ << " " << block_;
+    pretty.indent() << "🔂 " << varName_ << " " << iteratee_;
+    pretty.offerSpace();
+    pretty << block_;
 }
 
 void ASTUnsafeBlock::toCode(PrettyStream &pretty) const {
@@ -110,11 +114,13 @@ void printBranchSpeed(PrettyStream &pretty, ASTIf::BranchSpeed speed) {
 
 void ASTIf::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "↪️ " << conditions_.front() << " ";
+    pretty.indent() << "↪️ " << conditions_.front();
+    pretty.offerSpace();
     printBranchSpeed(pretty, blocks_.front().speed);
     pretty << blocks_.front().block;
     for (size_t i = 1; i < conditions_.size(); i++) {
-        pretty.indent() << "🙅↪️ " << conditions_[i] << " ";
+        pretty.indent() << "🙅↪️ " << conditions_[i];
+        pretty.offerSpace();
         printBranchSpeed(pretty, blocks_[i].speed);
         pretty << blocks_[i].block;
     }
@@ -130,8 +136,12 @@ void ASTClosure::toCode(PrettyStream &pretty) const {
 
 void ASTErrorHandler::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🆗 " << valueVarName_ << " " << value_ << " " << valueBlock_;
-    pretty.indent() << "🙅‍♀️ " << errorVarName_ << " " << errorBlock_;
+    pretty.indent() << "🆗 " << valueVarName_ << " " << value_;
+    pretty.offerSpace();
+    pretty << valueBlock_;
+    pretty.indent() << "🙅‍♀️ " << errorVarName_;
+    pretty.offerSpace();
+    pretty << errorBlock_;
 }
 
 void ASTExprStatement::toCode(PrettyStream &pretty) const {
@@ -439,7 +449,9 @@ void ASTLiteralType::toCode(PrettyStream &pretty) const {
 }
 
 void ASTSelection::toCode(PrettyStream &pretty) const {
-    pretty << "📣 " << expr_ << " " << typeExpr_;
+    pretty << "📣 " << expr_;
+    pretty.offerSpace();
+    pretty << typeExpr_;
 }
 
 } // namespace EmojicodeCompiler
