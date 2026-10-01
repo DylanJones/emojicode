@@ -171,7 +171,8 @@ void PrettyPrinter::printArguments(Function *function) {
             if (arg.memoryFlowType.isEscaping()) {
                 prettyStream_ << "🎍🥡 ";
             }
-            prettyStream_ << arg.name << " " << arg.type << " ";
+            prettyStream_ << arg.name << " " << arg.type;
+            prettyStream_.offerSpace();
         }
         return;
     }
@@ -179,7 +180,8 @@ void PrettyPrinter::printArguments(Function *function) {
         if (arg.memoryFlowType.isEscaping()) {
             prettyStream_ << "🎍🥡 ";
         }
-        prettyStream_ << arg.name << " " << arg.type << " ";
+        prettyStream_ << arg.name << " " << arg.type;
+        prettyStream_.offerSpace();
     }
 }
 
@@ -190,7 +192,7 @@ void PrettyPrinter::printClosure(Function *function, bool escaping) {
     printArguments(function);
     printReturnType(function);
     printErrorType(function);
-    prettyStream_ << "\n";
+    prettyStream_.refuseOffer() << "\n";
     function->ast()->innerToCode(prettyStream_);
     prettyStream_.indent() << "🍉";
     prettyStream_.printTrailingComments(function->ast()->endPosition(), true);
@@ -464,7 +466,8 @@ void PrettyPrinter::printFunctionAccessLevel(Function *function) {
 void PrettyPrinter::printErrorType(Function *function) {
     if (function->errorType() != nullptr && !(function->errorType()->wasAnalysed() &&
                                               function->errorType()->type().type() == TypeType::NoReturn)) {
-        prettyStream_ << "🚧" << function->errorType() << " ";
+        prettyStream_ << "🚧" << function->errorType();
+        prettyStream_.offerSpace();
     }
 }
 
@@ -486,7 +489,8 @@ void PrettyPrinter::print(const char *key, Function *function, bool body, bool n
         if (initializer != nullptr) {
             prettyStream_ << key;
             if (initializer->name().front() != E_NEW_SIGN) {
-                prettyStream_ << " ▶️" << function->name() << " ";
+                prettyStream_ << " ▶️" << function->name();
+                prettyStream_.offerSpace();
             }
         }
         else {
@@ -494,9 +498,14 @@ void PrettyPrinter::print(const char *key, Function *function, bool body, bool n
                 prettyStream_ << key << " ";
             }
 
-            prettyStream_ << function->name() << " ";
+            prettyStream_ << function->name();
+            prettyStream_.offerSpace();
         }
 
+        if (!function->genericParameters().empty()) {
+            // printGenericParameters refuses the pending offer, but function headers separate the name from 🐚.
+            prettyStream_.refuseOffer() << " ";
+        }
         printGenericParameters(function);
         printArguments(function);
         if (initializer == nullptr) {
