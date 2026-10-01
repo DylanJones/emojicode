@@ -142,12 +142,16 @@ void ASTVariableDeclaration::toCode(PrettyStream &pretty) const {
 
 void ASTVariableAssignment::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << expr_ << " ➡️ 🖍" << name();
+    pretty.indent() << expr_;
+    pretty.ensureSpace();
+    pretty << "➡️ 🖍" << name();
 }
 
 void ASTVariableDeclareAndAssign::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << expr_ << " ➡️ 🖍🆕 " << name();
+    pretty.indent() << expr_;
+    pretty.ensureSpace();
+    pretty << "➡️ 🖍🆕 " << name();
 }
 
 void ASTConstantVariable::toCode(PrettyStream &pretty) const {
