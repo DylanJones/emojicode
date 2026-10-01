@@ -160,7 +160,13 @@ std::string PrettyPrinter::declaration(Function *function) {
     return prettyStream_.takeString();
 }
 
+/// Protocol methods always get public access and escaping parameters and `this`; these are not written in source.
+static bool hasImplicitProtocolDefaults(Function *function) {
+    return function->owner() != nullptr && function->owner()->type().type() == TypeType::Protocol;
+}
+
 void PrettyPrinter::printArguments(Function *function) {
+    bool implicitEscaping = hasImplicitProtocolDefaults(function);
     if (auto initializer = dynamic_cast<Initializer *>(function)) {
         auto it = initializer->argumentsToVariables().begin();
         for (auto &arg : function->parameters()) {
@@ -168,7 +174,7 @@ void PrettyPrinter::printArguments(Function *function) {
                 it++;
                 prettyStream_ << "🍼 ";
             }
-            if (arg.memoryFlowType.isEscaping()) {
+            if (!implicitEscaping && arg.memoryFlowType.isEscaping()) {
                 prettyStream_ << "🎍🥡 ";
             }
             prettyStream_ << arg.name << " " << arg.type << " ";
@@ -176,7 +182,7 @@ void PrettyPrinter::printArguments(Function *function) {
         return;
     }
     for (auto &arg : function->parameters()) {
-        if (arg.memoryFlowType.isEscaping()) {
+        if (!implicitEscaping && arg.memoryFlowType.isEscaping()) {
             prettyStream_ << "🎍🥡 ";
         }
         prettyStream_ << arg.name << " " << arg.type << " ";
@@ -440,21 +446,22 @@ void PrettyPrinter::printFunctionAttributes(Function *function, bool noMutate) {
             prettyStream_ << "🔑 ";
         }
     }
-    if (!function->memoryFlowTypeForThis().isUnknown() && function->memoryFlowTypeForThis().isEscaping()) {
+    if (!hasImplicitProtocolDefaults(function) && !function->memoryFlowTypeForThis().isUnknown() && function->memoryFlowTypeForThis().isEscaping()) {
         prettyStream_ << "🎍🥡 ";
     }
 }
 
 void PrettyPrinter::printFunctionAccessLevel(Function *function) {
+    if (hasImplicitProtocolDefaults(function)) return;
     switch (function->accessLevel()) {
         case AccessLevel::Private:
-            prettyStream_ << "🔒";
+            prettyStream_ << "🔒 ";
             break;
         case AccessLevel::Protected:
-            prettyStream_ << "🔐";
+            prettyStream_ << "🔐 ";
             break;
         case AccessLevel::Public:
-            prettyStream_ << "🔓";
+            prettyStream_ << "🔓 ";
             break;
         case AccessLevel::Default:
             break;
