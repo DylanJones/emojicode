@@ -25,6 +25,15 @@ namespace {
 /// later arguments: 🎁🐚🔢🍆 of 🐇 🎁🐚V⚪️🍆 📦🐚🔡 V🍆 holds [🔡, V, 🔢].
 /// This replaces these variables in @p type, the argument at @p slot of @p args, with the arguments they stand for.
 /// Variables that don't refer to a later argument belong to the code the type appears in and are kept.
+///
+/// This is deliberately not Type::selfResolvedGenericArgs(). Both substitute from the instance's argument list and
+/// only accept class constraints the class inherits from, but they differ in:
+///  - the bound: this refuses any variable at or before @p slot (index <= slot), so a variable never resolves to
+///    itself or an earlier argument; resolveOnWithoutCompletion() substitutes any index the constraint accepts and
+///    only stops chaining when the next variable doesn't move forward;
+///  - boxes: resolveOnWithoutCompletion() also resolves the box's boxedFor type, this keeps it;
+///  - storage: resolveOnWithoutCompletion() keeps the reference and mutable flags and normalizes optionals
+///    (rewrapped), this rebuilds the wrappers with optionalized() and boxedFor().
 Type resolveSuperArgument(const Type &type, const std::vector<Type> &args, size_t slot, size_t superCount,
                           Class *klass) {
     switch (type.type()) {

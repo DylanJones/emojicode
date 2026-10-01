@@ -246,6 +246,11 @@ bool LLVMTypeHelper::isErasedReference(const Type &type) {
     return type.isReference() && type.type() == TypeType::Box;
 }
 
+bool LLVMTypeHelper::callerMayRestoreDescriptions(const Function *function) {
+    auto returnType = function->returnType();
+    return returnType == nullptr || !isErasedReference(returnType->type());
+}
+
 bool LLVMTypeHelper::isErased(const Type &type) {
     return !type.isReference() && type.type() == TypeType::Box &&
         (type.unboxedType() == TypeType::GenericVariable || type.unboxedType() == TypeType::LocalGenericVariable);

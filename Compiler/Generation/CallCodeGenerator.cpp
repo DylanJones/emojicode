@@ -124,8 +124,7 @@ llvm::Value *CallCodeGenerator::dispatchEvaluated(llvm::Value *callee, const std
 }
 
 void CallCodeGenerator::restoreStack(Function *function) {
-    auto returnType = function->returnType();
-    if (tdg_ != nullptr && (returnType == nullptr || !LLVMTypeHelper::isErasedReference(returnType->type()))) {
+    if (tdg_ != nullptr && LLVMTypeHelper::callerMayRestoreDescriptions(function)) {
         tdg_->restoreStack();
     }
 }
