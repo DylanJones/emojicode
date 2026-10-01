@@ -62,6 +62,10 @@ void PrettyStream::printComment(const Token &comment) {
         if ((lastChar_ != '\n' && lastChar_ != 0) || offeredNewLine) {
             write("\n");
         }
+        // Keep a blank line between two comments.
+        if (lastCommentFile_ == position.file && lastCommentEndLine_ != 0 && position.line > lastCommentEndLine_ + 1) {
+            write("\n");
+        }
         write(std::string(indentation_ * 2, ' '));
     }
     write(multiline ? "💭🔜" : "💭");
@@ -76,6 +80,8 @@ void PrettyStream::printComment(const Token &comment) {
         offerNewLine();
     }
     indentPending_ = wasIndentPending;
+    lastCommentFile_ = position.file;
+    lastCommentEndLine_ = position.line + std::count(comment.value().begin(), comment.value().end(), U'\n');
 }
 
 void PrettyStream::printComments(const SourcePosition &p) {
@@ -85,6 +91,25 @@ void PrettyStream::printComments(const SourcePosition &p) {
     p.file->findComments(lastCommentQuery_, p, [this](const Token &comment) { printComment(comment); });
     if (isBefore(lastCommentQuery_, p)) {
         lastCommentQuery_ = p;
+    }
+}
+
+void PrettyStream::printTrailingComments(const SourcePosition &p) {
+    if (p.file == nullptr || lastChar_ == '\n' || lastChar_ == 0) {
+        return;
+    }
+    auto endOfLine = SourcePosition(p.line, std::numeric_limits<unsigned int>::max(), p.file);
+    auto printed = false;
+    p.file->findComments(lastCommentQuery_, endOfLine, [&](const Token &comment) {
+        auto &position = comment.position();
+        if (position.line == p.line && hasCodeBefore(position)) {
+            printComment(comment);
+            printed = true;
+        }
+    });
+    if (printed) {
+        // The caller ends the line.
+        whitespaceOffer_ = 0;
     }
 }
 
@@ -116,6 +141,7 @@ void PrettyStream::printRemainingComments(SourceFile *file) {
 void PrettyStream::startFile() {
     lastCommentQuery_ = SourcePosition();
     printedComments_.clear();
+    lastCommentEndLine_ = 0;
 }
 
 void PrettyStream::ensureSpace() {
@@ -183,6 +209,9 @@ PrettyStream& PrettyStream::operator<<(const Type &type) {
 PrettyStream& PrettyStream::operator<<(const std::string &rhs) {
     if (rhs.empty()) {
         return *this;
+    }
+    if (rhs.find_first_not_of(" \n") != std::string::npos) {
+        lastCommentEndLine_ = 0;
     }
     if (whitespaceOffer_ != 0) {
         write(std::string(1, whitespaceOffer_));
