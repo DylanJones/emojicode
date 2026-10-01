@@ -54,13 +54,17 @@ void ASTArguments::toCode(PrettyStream &pretty) const {
 void ASTBlock::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     if (stmts_.empty() && !pretty.hasCommentsBefore(endPosition_)) {
-        pretty << "🍇🍉\n";
+        pretty << "🍇🍉";
+        pretty.printTrailingComments(endPosition_, true);
+        pretty.refuseOffer() << "\n";
         return;
     }
     pretty << "🍇";
     pretty.offerNewLine();
     innerToCode(pretty);
-    pretty.indent() << "🍉\n";
+    pretty.indent() << "🍉";
+    pretty.printTrailingComments(endPosition_, true);
+    pretty.refuseOffer() << "\n";
 }
 
 void ASTBlock::innerToCode(PrettyStream &pretty) const {
@@ -142,22 +146,29 @@ void ASTVariableDeclaration::toCode(PrettyStream &pretty) const {
 
 void ASTVariableAssignment::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << expr_ << "➡️ 🖍" << name();
+    pretty.indent() << expr_;
+    pretty.ensureSpace();
+    pretty << "➡️ 🖍" << name();
 }
 
 void ASTVariableDeclareAndAssign::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << expr_ << "➡️ 🖍🆕 " << name();
+    pretty.indent() << expr_;
+    pretty.ensureSpace();
+    pretty << "➡️ 🖍🆕 " << name();
 }
 
 void ASTConstantVariable::toCode(PrettyStream &pretty) const {
     pretty.indent() << expr_;
     pretty.printComments(position());
-    pretty << " ➡️ " << name();
+    pretty.ensureSpace();
+    pretty << "➡️ " << name();
 }
 
 void ASTConditionalAssignment::toCode(PrettyStream &pretty) const {
-    pretty << expr_ << " ➡️ " << varName_;
+    pretty << expr_;
+    pretty.ensureSpace();
+    pretty << "➡️ " << varName_;
 }
 
 void ASTOperatorAssignment::toCode(PrettyStream &pretty) const {
@@ -298,7 +309,9 @@ void ASTCast::toCode(PrettyStream &pretty) const {
 void ASTMethod::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     if (args_.mood() == Mood::Assignment) {
-        pretty << args_.args().front() << " ➡️ " << name_;
+        pretty << args_.args().front();
+        pretty.ensureSpace();
+        pretty << "➡️ " << name_;
         args_.genericArgsToCode(pretty);
         pretty << callee_;
         pretty.offerSpace();
@@ -329,7 +342,9 @@ void ASTCollectionLiteral::toCode(PrettyStream &pretty) const {
     pretty << "🍿 ";
     if (pairs_) {
         for (auto it = values_.begin(); it != values_.end(); it++) {
-            pretty << *it++ << " ➡️ " << *it;
+            pretty << *it++;
+            pretty.ensureSpace();
+            pretty << "➡️ " << *it;
         }
         // An empty dictionary is 🍿➡️🍆, which would otherwise be printed as an empty list.
         if (values_.empty()) {
@@ -337,7 +352,8 @@ void ASTCollectionLiteral::toCode(PrettyStream &pretty) const {
         }
     } else {
         for (auto &val : values_) {
-            pretty << val << " ";
+            pretty << val;
+            pretty.ensureSpace();
         }
     }
     pretty << "🍆";

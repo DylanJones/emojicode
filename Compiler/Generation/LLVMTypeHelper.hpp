@@ -89,6 +89,16 @@ public:
     /// copying it into a box and back, releasing and retaining it (see ValueWitnessBuilder). A type description points
     /// to one.
     llvm::StructType* valueWitness() const { return valueWitness_; }
+    /// The fields of valueWitness() in order of their position in the struct.
+    enum ValueWitnessField : unsigned {
+        WitnessSize = 0,
+        WitnessLoad,
+        WitnessStore,
+        WitnessRelease,
+        WitnessRetain,
+        WitnessIsUnmanaged,
+        WitnessFieldCount,
+    };
     /// An erased reference is a reference to a box, which may refer to a value of a generic parameter in memory: the
     /// address of the value and the entry of the type description of its type, or null. If the entry is null, the
     /// address is that of a box, like that of a variable of the generic type. Otherwise, it is that of a value of the
@@ -96,6 +106,10 @@ public:
     llvm::StructType* erasedReference() const { return erasedReference_; }
     /// Whether @p type is a reference to a box, which is an erased reference.
     static bool isErasedReference(const Type &type);
+    /// Whether the caller may release the generic descriptions it built for a call of @p function once the call has
+    /// returned. An erased reference that the function returns may point into description storage of the caller
+    /// (see TypeDescriptionGenerator::entryFor()), so the stack of descriptions must stay. @p function may be without a return type.
+    static bool callerMayRestoreDescriptions(const Function *function);
     /// Whether @p type is a generic parameter (in a box), whose values in memory are of the type it stands for.
     static bool isErased(const Type &type);
     /// The type of the functions of a value witness that copy a value from memory into a box or back, taking a

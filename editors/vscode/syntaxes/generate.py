@@ -7,6 +7,11 @@ refine this highlighting, e.g. to tell method calls and types apart.
 """
 import json
 import os
+import sys
+
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'tools', 'emoji_roles.json'),
+          encoding='utf-8') as roles_file:
+    ROLES = json.load(roles_file)
 
 V = r'\x{FE0F}?'
 EMOJI = r'(?:\p{Extended_Pictographic}|[\x{1F1E6}-\x{1F1FF}])'
@@ -17,7 +22,8 @@ IDENT = ('(?![' + RESERVED + '])' + EMOJI + r'[\x{FE0F}\x{1F3FB}-\x{1F3FF}\x{1F1
          r'(?:[\x{200D}🔸][\x{FE0F}\x{200D}]*' + EMOJI + r'[\x{FE0F}\x{1F3FB}-\x{1F3FF}]*)*')
 # The lexer also treats regional indicators and skin tones as emoji, which are not Extended_Pictographic.
 NOT_VAR = r'\s\p{Extended_Pictographic}\x{FE0F}\x{200D}\x{1F1E6}-\x{1F1FF}\x{1F3FB}-\x{1F3FF}'
-MODIFIERS = ['🌍', '🔏', '✒', '🥯', '⚠', '🔑', '☣', '🖍', '🔓', '🔒', '🔐', '📻', '🍼']
+# Shared with the language server and the other editors: tools/emoji_roles.json.
+MODIFIERS = list(ROLES['modifier'])
 
 
 def any_of(emoji):
@@ -102,10 +108,10 @@ grammar = {
             {"name": "variable.language.super.emojicode", "match": any_of(['⤴'])},
             {"name": "constant.language.boolean.emojicode", "match": any_of(['👍', '👎'])},
             {"name": "constant.language.novalue.emojicode", "match": any_of(['🤷'])},
-            {"name": "support.type.builtin.emojicode", "match": any_of(['◼', '⚪', '🔵', '⚫'])},
+            {"name": "support.type.builtin.emojicode", "match": any_of(ROLES['builtinType'])},
             {"name": "keyword.operator.type.emojicode", "match": any_of(['🍬', '✴', '⬛', '🚧', '🍱'])},
             {"name": "keyword.operator.emojicode", "match": "[◀▶]" + V + "(?:🙌" + V + ")?|" + any_of(
-                ['➕', '➖', '➗', '✖', '👐', '🤝', '⭕', '💢', '❌', '👈', '👉', '🚮', '🙌', '😜',
+                [e for e in ROLES['operator'] if e not in '◀▶'] + [
                  '🍺', '🔺', '🔲', '⚖', '🏮', '📣', '⁉'])},
             {"name": "keyword.operator.assignment.emojicode", "match": any_of(['➡', '⬅'])},
             {"name": "punctuation.terminator.mood.emojicode", "match": any_of(['❗', '❓'])},
@@ -129,6 +135,12 @@ grammar = {
 }
 
 path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'emojicode.tmLanguage.json')
-with open(path, 'w') as f:
-    json.dump(grammar, f, ensure_ascii=False, indent=2)
-    f.write('\n')
+text = json.dumps(grammar, ensure_ascii=False, indent=2) + '\n'
+if '--check' in sys.argv:
+    with open(path) as f:
+        if f.read() != text:
+            print('emojicode.tmLanguage.json is out of date, run editors/vscode/syntaxes/generate.py')
+            sys.exit(1)
+else:
+    with open(path, 'w') as f:
+        f.write(text)

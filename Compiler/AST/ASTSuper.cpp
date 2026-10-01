@@ -120,10 +120,7 @@ Value* ASTSuper::generate(FunctionCodeGenerator *fg) const {
     if (manageErrorProneness_) {
         fg->createIfElseBranchCond(isError(fg, fg->errorPointer()), [&]() {
             // The call raised, so it produced no temporary object of its own to skip.
-            fg->releaseTemporaryObjects(false);
-            release(fg);
-            buildDestruct(fg);
-            fg->buildErrorReturn();
+            buildErrorExit(fg, this, false, false);
             return false;
         }, [] { return true; });
     }

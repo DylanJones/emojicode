@@ -51,10 +51,7 @@ void ASTReturn::generate(FunctionCodeGenerator *fg) const {
 
 void ASTRaise::generate(FunctionCodeGenerator *fg) const {
     fg->builder().CreateStore(value_->generate(fg), fg->errorPointer());
-    fg->releaseTemporaryObjects();
-    release(fg);
-    buildDestruct(fg);
-    fg->buildErrorReturn();
+    buildErrorExit(fg, this, true, false);
 }
 
 }  // namespace EmojicodeCompiler
