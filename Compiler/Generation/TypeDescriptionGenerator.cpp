@@ -25,6 +25,10 @@ namespace {
 /// later arguments: 🎁🐚🔢🍆 of 🐇 🎁🐚V⚪️🍆 📦🐚🔡 V🍆 holds [🔡, V, 🔢].
 /// This replaces these variables in @p type, the argument at @p slot of @p args, with the arguments they stand for.
 /// Variables that don't refer to a later argument belong to the code the type appears in and are kept.
+///
+/// This is deliberately not Type::selfResolvedGenericArgs(): that resolves on the class declaration (its
+/// superGenericArguments() and constraints, without a bound by slot, preserving storage flags and local generic
+/// variables), whereas this substitutes the arguments of one concrete instance's list, bounded by slot and size.
 Type resolveSuperArgument(const Type &type, const std::vector<Type> &args, size_t slot, size_t superCount,
                           Class *klass) {
     switch (type.type()) {
