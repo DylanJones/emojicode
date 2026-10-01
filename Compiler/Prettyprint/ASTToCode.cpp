@@ -48,7 +48,9 @@ void ASTArguments::toCode(PrettyStream &pretty) const {
             pretty.offerSpace();
         }
     }
-    pretty.refuseOffer() << (mood_ == Mood::Imperative ? "❗️" : "❓️");
+    pretty.printComments(moodPosition_);
+    // A comment in front of the mood ends the line and the mood must not end up in it.
+    pretty.refuseSpaceOffer().indentAtLineStart() << (mood_ == Mood::Imperative ? "❗️" : "❓️");
 }
 
 void ASTBlock::toCode(PrettyStream &pretty) const {
@@ -159,9 +161,9 @@ void ASTVariableAssignment::toCode(PrettyStream &pretty) const {
 }
 
 void ASTVariableDeclareAndAssign::toCode(PrettyStream &pretty) const {
-    pretty.printComments(position());
     pretty.indent() << expr_;
-    pretty.ensureSpace();
+    pretty.printComments(position());
+    pretty.indentAtLineStart().ensureSpace();
     pretty << "➡️ 🖍🆕 " << name();
 }
 
@@ -325,7 +327,8 @@ void ASTMethod::toCode(PrettyStream &pretty) const {
         for (size_t i = 1; i < args_.args().size(); i++) {
             pretty << args_.args()[i];
         }
-        pretty.refuseOffer() << "❗️";
+        pretty.printComments(args_.moodPosition());
+        pretty.refuseSpaceOffer().indentAtLineStart() << "❗️";
     }
     else {
         pretty << name_;
@@ -371,14 +374,9 @@ void ASTBinaryOperator::printBinaryOperand(int precedence, const std::shared_ptr
     if (auto oper = dynamic_cast<ASTBinaryOperator *>(expr.get())) {
         if (operatorPrecedence(oper->operator_) < precedence) {
             pretty << "🤜" << expr;
-            pretty.printComments(oper->groupEnd_);
             pretty.indentAtLineStart() << "🤛";
             return;
         }
-        // The group is dropped; keep its comments in place.
-        pretty << expr;
-        pretty.printComments(oper->groupEnd_);
-        return;
     }
     pretty << expr;
 }
