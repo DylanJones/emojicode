@@ -69,6 +69,8 @@ CONTEXT_ERRORS = [
     'initialized with 🍼 more than once',
     's package',
     'is not a known C type',
+    'is invalid or does not fit into a',
+    'Nesting too deep.',
 ]
 
 # Directories whose sources are packages. A mutated file from one of them is parsed together with the rest of its
@@ -489,7 +491,8 @@ class Lexer:
         matcher = Matcher(self.g, source, False)
         n = len(source)
         tokens = []
-        i = 0
+        # Like the compiler, skip a leading byte order mark but keep offsets physical.
+        i = 1 if source.startswith('\ufeff') else 0
         while i < n:
             end = last(matcher.ref('ignorable', i), n)
             if end is not None and end > i:
