@@ -128,8 +128,8 @@ public:
     /// @returns The LLVM type of the value to which genericArgsPtr() returns a pointer.
     /// @pre The function must not be a type method.
     llvm::Type* genericArgsType();
-    /// Frees the class generic description @c gargs ({ptr, i1}) if it was dynamically allocated, i.e. if its flag
-    /// word is null. Static descriptions are left alone. Not for value type descriptions (see releaseMemory).
+    /// Frees the class generic description @c gargs ({ptr, i1}) if its flag is false, i.e. it was dynamically
+    /// allocated. Static descriptions (flag true) are left alone. Not for value type descriptions (see releaseMemory).
     void freeOwnedDescription(llvm::Value *gargs);
     /// Returns an i1 that is true if the error slot @c errorPointer holds an error (is non-null).
     llvm::Value* isErrorSet(llvm::Value *errorPointer);

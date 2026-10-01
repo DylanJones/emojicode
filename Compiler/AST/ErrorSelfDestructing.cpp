@@ -14,6 +14,7 @@
 #include "Types/TypeExpectation.hpp"
 #include "AST/ASTExpr.hpp"
 #include "AST/ASTUnary.hpp"
+#include "AST/Releasing.hpp"
 
 namespace EmojicodeCompiler {
 
@@ -51,6 +52,14 @@ void ErrorSelfDestructing::buildDestruct(FunctionCodeGenerator *fg) const {
             fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), fg->thisValue());
         });
     }
+}
+
+void ErrorSelfDestructing::buildErrorExit(FunctionCodeGenerator *fg, const Releasing *node, bool clearQueue,
+                                          bool skipLast) const {
+    fg->releaseTemporaryObjects(clearQueue, skipLast);
+    node->release(fg);
+    buildDestruct(fg);
+    fg->buildErrorReturn();
 }
 
 ASTCall* ErrorHandling::handleCall(std::shared_ptr<ASTExpr> *expr) {
