@@ -31,12 +31,12 @@ valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
 # - "panic": its program prints what NAME.txt says and then panics, which aborts it.
 # - "stress": it takes seconds to run, so it is excluded from quick and valgrind runs and starts first, along with
 #   the other slow tests, so that it does not end up running alone at the end.
-# - "leak_check": also run, at both optimized and unoptimized settings, with EMOJICODE_CHECK_DESCRIPTION_LEAKS set.
-#   The runtime then counts calls to ejcAllocDescription/ejcFreeDescription (the malloc/free pair generated
-#   exclusively for dynamic class generic-argument type descriptions, see TypeDescriptionGenerator) and aborts at
-#   exit if they are unbalanced. Unlike an IR check, which inspects unoptimized IR text and so cannot see calls an
-#   optimizer's tail-merging collapses together, this observes actual executed allocation/deallocation counts and
-#   so still catches an ownership bug (a missing or duplicated free) at -O.
+# Every program of a compilation test runs with EMOJICODE_CHECK_LEAKS set. The runtime then counts calls to
+# ejcAllocDescription/ejcFreeDescription (the malloc/free pair generated exclusively for dynamic class generic-argument
+# type descriptions, see TypeDescriptionGenerator) and the blocks ejcAlloc allocates and the release functions free,
+# and aborts at exit if they are unbalanced. Unlike an IR check, which inspects unoptimized IR text and so cannot see
+# calls an optimizer's tail-merging collapses together, this observes actual executed allocation/deallocation counts
+# and so still catches an ownership bug (a missing or duplicated free) at -O; add "unoptimized" to check both.
 # A library test's tokens may be "slow": like "stress", it takes seconds to run and so starts first, but unlike
 # "stress" it is not excluded from quick runs (valgrind runs do not include library tests at all).
 #
@@ -47,7 +47,7 @@ valgrind = len(sys.argv) > 1 and sys.argv[1] == 'valgrind'
 # A file that looks like a test but is missing a file its category requires (e.g. NAME.txt), a companion file
 # (NAME.txt, NAME.ir, ...) without its source, or an unrecognized directive token, fails the suite instead of being
 # silently skipped.
-COMPILATION_DIRECTIVES = {"unoptimized", "panic", "stress", "leak_check"}
+COMPILATION_DIRECTIVES = {"unoptimized", "panic", "stress"}
 LIBRARY_DIRECTIVES = {"slow"}
 
 DIRECTIVE_RE = re.compile(r'^💭\s*test:\s*(.*)$')
@@ -90,7 +90,7 @@ def names_with_extension(directory, extension):
 
 def discover_compilation_tests(directory, include_fragments, quick, valgrind):
     """Finds the compilation tests in directory and returns a dict of the lists tests.py schedules from them:
-    compilation_tests, stress_tests, unoptimized_tests, panic_tests, leak_check_tests, specialization_tests and
+    compilation_tests, stress_tests, unoptimized_tests, panic_tests, specialization_tests and
     ir_tests (see the module docstring above for directive semantics).
 
     quick and valgrind runs exclude the "stress" tests, which take seconds to run; that exclusion is applied to
@@ -117,8 +117,6 @@ def discover_compilation_tests(directory, include_fragments, quick, valgrind):
     unoptimized_tests = [name for name in compilation_tests if "unoptimized" in compilation_test_directives[name]]
     # Compilation tests whose programs print what NAME.txt says and then panic, which aborts them.
     panic_tests = [name for name in compilation_tests if "panic" in compilation_test_directives[name]]
-    # Compilation tests also run with EMOJICODE_CHECK_DESCRIPTION_LEAKS set (see the "leak_check" directive above).
-    leak_check_tests = [name for name in compilation_tests if "leak_check" in compilation_test_directives[name]]
     # Compilation tests whose specializations, functions whose symbol contains $s<, are compared with the names in
     # NAME.specializations. A function that is not specialized, but called generically, does not change what a
     # program prints.
@@ -136,7 +134,6 @@ def discover_compilation_tests(directory, include_fragments, quick, valgrind):
         "stress_tests": stress_tests,
         "unoptimized_tests": unoptimized_tests,
         "panic_tests": panic_tests,
-        "leak_check_tests": leak_check_tests,
         "specialization_tests": specialization_tests,
         "ir_tests": ir_tests,
     }
@@ -205,7 +202,6 @@ compilation_tests = discovered_compilation_tests["compilation_tests"]
 stress_tests = discovered_compilation_tests["stress_tests"]
 unoptimized_tests = discovered_compilation_tests["unoptimized_tests"]
 panic_tests = discovered_compilation_tests["panic_tests"]
-leak_check_tests = discovered_compilation_tests["leak_check_tests"]
 specialization_tests = discovered_compilation_tests["specialization_tests"]
 ir_tests = discovered_compilation_tests["ir_tests"]
 
@@ -307,24 +303,29 @@ def copy_library_fixtures(source_directory, destination):
 
 
 def library_test(name):
+    """Compiles and runs the library test name optimized and unoptimized, one after the other."""
     source_path = test_paths(name, 's')[0]
-    with tempfile.TemporaryDirectory() as directory:
-        binary_path = os.path.join(directory, name)
-        run([emojicodec, source_path, '-O', '-o', binary_path], check=True)
-        # The tests read files relative to their directory and may write there, so they run in a copy of it instead
-        # of modifying the source tree.
-        working_directory = os.path.join(directory, "cwd")
-        os.mkdir(working_directory)
-        copy_library_fixtures(os.path.join(dist.source, "tests", "s"), working_directory)
-        completed = run([binary_path], stdout=PIPE, cwd=working_directory)
-    if completed.returncode != 0:
-        fail_test(name)
-        log(completed.stdout.decode('utf-8', 'backslashreplace'))
+    for optimize in (True, False):
+        with tempfile.TemporaryDirectory() as directory:
+            binary_path = os.path.join(directory, name)
+            run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
+            # The tests read files relative to their directory and may write there, so they run in a copy of it
+            # instead of modifying the source tree.
+            working_directory = os.path.join(directory, "cwd")
+            os.mkdir(working_directory)
+            copy_library_fixtures(os.path.join(dist.source, "tests", "s"), working_directory)
+            completed = run([binary_path], stdout=PIPE, cwd=working_directory)
+        if completed.returncode != 0:
+            log("{0} failed {1}".format(name, "optimized" if optimize else "unoptimized"))
+            fail_test(name)
+            log(completed.stdout.decode('utf-8', 'backslashreplace'))
+            return
 
 
-def check_output(name, binary_path, env=None):
-    """Runs the program of the compilation test name and checks its output."""
-    completed = run([binary_path], stdout=PIPE, env=env)
+def check_output(name, binary_path):
+    """Runs the program of the compilation test name, with the leak check of the runtime (see the comment above
+    COMPILATION_DIRECTIVES), and checks its output."""
+    completed = run([binary_path], stdout=PIPE, env=dict(os.environ, EMOJICODE_CHECK_LEAKS='1'))
     exp_path = os.path.join(dist.source, "tests", "compilation", name + ".txt")
     output = completed.stdout.decode('utf-8', 'backslashreplace')
     expected_returncode = -signal.SIGABRT if name in panic_tests else 0
@@ -371,18 +372,6 @@ def compilation_test(name, optimize=True):
         check_warnings(name, compiled.stderr.decode('utf-8', 'replace'),
                        os.path.join(dist.source, "tests", "compilation", name + ".warnings"))
         check_output(name, binary_path)
-
-
-def leak_check_test(name, optimize=True):
-    """Like compilation_test, but with EMOJICODE_CHECK_DESCRIPTION_LEAKS set (see leak_check_tests), so that the
-    program aborts (and so fails check_output's return code comparison) if it leaked or double-freed a dynamic
-    generic type description, regardless of optimization."""
-    source_path = test_paths(name, 'compilation')[0]
-    with tempfile.TemporaryDirectory() as directory:
-        binary_path = os.path.join(directory, name)
-        with source_lock(source_path):
-            run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
-        check_output(name, binary_path, env=dict(os.environ, EMOJICODE_CHECK_DESCRIPTION_LEAKS='1'))
 
 
 def specialization_test(name):
@@ -714,8 +703,6 @@ def test():
         tasks += [(test + " (formatted)", prettyprint_test, test) for test in compilation_tests]
         tasks += [("includer (included formatted)", formatted_test, 'includer', ['included'])]
     tasks += [(test + " (unoptimized)", compilation_test, test, False) for test in unoptimized_tests]
-    tasks += [(test + " (leak check)", leak_check_test, test) for test in leak_check_tests]
-    tasks += [(test + " (leak check, unoptimized)", leak_check_test, test, False) for test in leak_check_tests]
     tasks += [(test, library_test, test) for test in library_tests]
     tasks += [(test, host_test, test) for test in host_tests]
     tasks += [(test, importing_test, test) for test in importing_tests]
@@ -762,9 +749,11 @@ def valgrind_test(name):
         run([emojicodec, source_path, '-O', '-o', binary_path], check=True)
         # Only definite leaks are errors, and not in panic tests: a panic ends the process with whatever its aborted
         # frames allocated still unreferenced, which memcheck reports as definitely lost.
+        # EMOJICODE_CHECK_LEAKS makes a deliberately leaking test (leakDetected) abort instead of failing memcheck.
         leak_kinds = 'none' if name in panic_tests else 'definite'
         completed = run(['valgrind', '--error-exitcode=22', '--leak-check=full',
-                         '--errors-for-leak-kinds=' + leak_kinds, binary_path], stdout=PIPE, stderr=PIPE)
+                         '--errors-for-leak-kinds=' + leak_kinds, binary_path], stdout=PIPE, stderr=PIPE,
+                        env=dict(os.environ, EMOJICODE_CHECK_LEAKS='1'))
     stderr = completed.stderr.decode('utf-8', 'backslashreplace')
     reason = valgrind_failure(completed.returncode, stderr, name in panic_tests)
     if reason:

@@ -25,6 +25,10 @@ struct Capture;
 }
 
 extern "C" int8_t* ejcAlloc(int64_t size);
+
+/// Must be called for each heap block that is not allocated by ejcAlloc but is freed by one of the release functions
+/// (Object::init), so that the leak check (EMOJICODE_CHECK_LEAKS) balances.
+extern "C" void ejcCountObjectAllocation();
 extern "C" [[noreturn]] void ejcPanic(const char *message);
 
 /// Allocates a dynamic class generic-arguments type description (see TypeDescriptionGenerator). Unlike ejcAlloc,
@@ -112,6 +116,7 @@ public:
         if (ptr == nullptr) {
             ejcPanic("Out of memory");
         }
+        ejcCountObjectAllocation();
         return new(ptr) Subclass(std::forward<Args>(args)...);
     }
 

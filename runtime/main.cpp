@@ -24,13 +24,25 @@
 runtime::internal::ControlBlock ejcIgnoreBlock;
 
 namespace {
-// Set by ejcInit if EMOJICODE_CHECK_DESCRIPTION_LEAKS is present in the environment. Gates both the balance
-// tracking below and its check at exit, so that this instrumentation is entirely inert (no atomic operations, no
-// atexit handler) unless a test opts into it.
-bool checkDescriptionLeaks = false;
+// Set by ejcInit if EMOJICODE_CHECK_LEAKS is present in the environment. Gates
+// both the balance tracking below and its check at exit, so that this instrumentation is entirely inert (no atomic
+// operations, no atexit handler) unless a test opts into it.
+bool checkLeaks = false;
 std::atomic<long> descriptionAllocationBalance{0};
+// Balance of the heap blocks allocated by ejcAlloc (objects, captures, memory) and freed by the release functions.
+std::atomic<long> objectAllocationBalance{0};
 
-void reportDescriptionLeaksAtExit() {
+void freeObject(void *object) {
+    if (checkLeaks) objectAllocationBalance.fetch_sub(1, std::memory_order_relaxed);
+    free(object);
+}
+
+void reportLeaksAtExit() {
+    if (objectAllocationBalance.load(std::memory_order_relaxed) != 0) {
+        std::cerr << "🚨 " << objectAllocationBalance.load(std::memory_order_relaxed)
+                  << " heap block(s) allocated by ejcAlloc leaked." << std::endl;
+        abort();
+    }
     if (descriptionAllocationBalance.load(std::memory_order_relaxed) != 0) {
         std::cerr << "🚨 " << descriptionAllocationBalance.load(std::memory_order_relaxed)
                   << " generic type description(s) leaked." << std::endl;
@@ -59,11 +71,16 @@ extern "C" int8_t* ejcAlloc(runtime::Integer size) {
         ejcPanic("Out of memory");
     }
     *static_cast<runtime::internal::ControlBlock**>(ptr) = controlBlock;
+    if (checkLeaks) objectAllocationBalance.fetch_add(1, std::memory_order_relaxed);
     return static_cast<int8_t*>(ptr);
 }
 
+extern "C" void ejcCountObjectAllocation() {
+    if (checkLeaks) objectAllocationBalance.fetch_add(1, std::memory_order_relaxed);
+}
+
 extern "C" int8_t* ejcAllocDescription(runtime::Integer size) {
-    if (checkDescriptionLeaks) descriptionAllocationBalance.fetch_add(1, std::memory_order_relaxed);
+    if (checkLeaks) descriptionAllocationBalance.fetch_add(1, std::memory_order_relaxed);
     auto ptr = malloc(size);
     if (ptr == nullptr) {
         ejcPanic("Out of memory");
@@ -72,7 +89,7 @@ extern "C" int8_t* ejcAllocDescription(runtime::Integer size) {
 }
 
 extern "C" void ejcFreeDescription(int8_t *ptr) {
-    if (checkDescriptionLeaks) descriptionAllocationBalance.fetch_sub(1, std::memory_order_relaxed);
+    if (checkLeaks) descriptionAllocationBalance.fetch_sub(1, std::memory_order_relaxed);
     free(ptr);
 }
 
@@ -124,7 +141,7 @@ extern "C" void ejcRelease(runtime::Object<void> *object) {
     if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
 
     object->classInfo()->destructor(object);
-    free(object);
+    freeObject(object);
     releaseWeakCount(controlBlock);
 }
 
@@ -140,7 +157,7 @@ extern "C" void ejcReleaseCapture(runtime::internal::Capture *capture) {
     if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
 
     capture->deinit(capture);
-    free(capture);
+    freeObject(capture);
     releaseWeakCount(controlBlock);
 }
 
@@ -151,7 +168,7 @@ extern "C" void ejcReleaseMemory(runtime::Object<void> *object) {
 
     if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
 
-    free(object);
+    freeObject(object);
     releaseWeakCount(controlBlock);
 }
 
@@ -163,7 +180,7 @@ extern "C" void ejcReleaseWithoutDeinit(runtime::Object<void> *object) {
     }
     if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
 
-    free(object);
+    freeObject(object);
     releaseWeakCount(controlBlock);
 }
 
@@ -397,8 +414,8 @@ extern "C" void ejcInit(int argc, char **argv) {
     runtime::internal::argc = argc;
     runtime::internal::argv = argv;
     runtime::internal::seed = std::random_device()();
-    if (std::getenv("EMOJICODE_CHECK_DESCRIPTION_LEAKS") != nullptr) {
-        checkDescriptionLeaks = true;
-        std::atexit(reportDescriptionLeaksAtExit);
+    if (std::getenv("EMOJICODE_CHECK_LEAKS") != nullptr) {
+        checkLeaks = true;
+        std::atexit(reportLeaksAtExit);
     }
 }

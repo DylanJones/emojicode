@@ -1,0 +1,38 @@
+💭 test: unoptimized
+💭 A 🍯 of 60 keys has keys that share buckets whatever the seed of the string hashes. Copying it when one of the copies
+💭 is changed copies the bucket storage, which must keep every entry of every chain. The original is checked after the
+💭 copy is changed and the copy before (#247, the bug of 877bdfb4 lost entries only for some seeds).
+🕊 🧮 🍇
+  🐇❗️ 📊 dict 🍯🐚🔢🍆 ➡️ 🔡 🍇
+    0 ➡️ 🖍🆕 found
+    0 ➡️ 🖍🆕 sum
+    🔂 i 🆕⏩ 0 60❗️ 🍇
+      ↪️ 🐽dict 🔡 i❗️❗️ ➡️ value 🍇
+        found ⬅️➕ 1
+        sum ⬅️➕ value
+      🍉
+    🍉
+    ↩️ 🔤🧲🔡 found❗️🧲 found, 🧲🔡 sum❗️🧲 in sum, 🧲🔡 📏dict❓❗️🧲 counted🔤
+  🍉
+🍉
+
+🏁 🍇
+  🆕🍯🐚🔢🍆❗️ ➡️ 🖍🆕 original
+  🔂 i 🆕⏩ 0 60❗️ 🍇
+    i ➡️ 🐽original 🔡 i❗️❗️
+  🍉
+  😀 📊🕊🧮 original❗️❗️
+
+  original ➡️ 🖍🆕 copy
+  😀 📊🕊🧮 copy❗️❗️
+  1000 ➡️ 🐽copy 🔤0🔤❗️
+  🐨copy 🔤1🔤❗️
+  😀 📊🕊🧮 copy❗️❗️
+  😀 📊🕊🧮 original❗️❗️
+
+  💭 Copying the copy, and changing the original instead.
+  copy ➡️ second
+  2000 ➡️ 🐽original 🔤59🔤❗️
+  😀 📊🕊🧮 second❗️❗️
+  😀 📊🕊🧮 original❗️❗️
+🍉
