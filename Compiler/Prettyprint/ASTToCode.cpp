@@ -92,7 +92,9 @@ void ASTForIn::toCode(PrettyStream &pretty) const {
 
 void ASTUnsafeBlock::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "☣️ " << block_;
+    pretty.indent() << "☣️";
+    pretty.ensureSpace();
+    pretty << block_;
 }
 
 void printBranchSpeed(PrettyStream &pretty, ASTIf::BranchSpeed speed) {
