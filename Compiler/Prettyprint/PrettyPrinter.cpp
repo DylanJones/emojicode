@@ -171,7 +171,8 @@ void PrettyPrinter::printArguments(Function *function) {
             if (arg.memoryFlowType.isEscaping()) {
                 prettyStream_ << "🎍🥡 ";
             }
-            prettyStream_ << arg.name << " " << arg.type << " ";
+            prettyStream_ << arg.name << " " << arg.type;
+            prettyStream_.ensureSpace();
         }
         return;
     }
@@ -179,7 +180,8 @@ void PrettyPrinter::printArguments(Function *function) {
         if (arg.memoryFlowType.isEscaping()) {
             prettyStream_ << "🎍🥡 ";
         }
-        prettyStream_ << arg.name << " " << arg.type << " ";
+        prettyStream_ << arg.name << " " << arg.type;
+        prettyStream_.ensureSpace();
     }
 }
 

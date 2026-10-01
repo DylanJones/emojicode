@@ -634,6 +634,11 @@ def format_test(filename):
         if formatted != expected:
             log("Formatted source differs from the expected one:\n" + formatted)
             fail_test(filename)
+        for line in expected.split("\n"):
+            code = line.split("💭")[0].split("🔤")[0]
+            if "  " in code.lstrip(" "):
+                log("Two consecutive spaces in a line of " + filename + ": " + line)
+                fail_test(filename)
         if source_text_tokens(path) != source_text_tokens(filename):
             log("Formatting changed the comments, documentation or strings of " + filename)
             fail_test(filename)
