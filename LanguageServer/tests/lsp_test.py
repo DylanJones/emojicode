@@ -1090,6 +1090,9 @@ class CompletionTests(ServerTestCase):
 
     def complete_at(self, text):
         """Returns the labels of the completion items at the | in text, a file of its own."""
+        return [item["label"] for item in self.complete_items_at(text)]
+
+    def complete_items_at(self, text):
         offset = text.index("|")
         text = text.replace("|", "")
         path = self.write("place.emojic", text)
@@ -1101,7 +1104,7 @@ class CompletionTests(ServerTestCase):
         character = utf16_length(text[text.rfind("\n", 0, offset) + 1:offset])
         result = self.client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
                                                                  "position": {"line": line, "character": character}})
-        return [item["label"] for item in result["items"]]
+        return result["items"]
 
     def test_members_at_the_start_of_a_line_in_a_type(self):
         for text in ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n",
@@ -1117,10 +1120,16 @@ class CompletionTests(ServerTestCase):
 
     def test_keywords_of_every_attribute(self):
         for text, label in (("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n", "📻"), ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n", "🥯"),
-                            ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n", "⚠️"), ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n", "🍼"),
+                            ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n", "⚠️"), ("🐇 🐟 🍇\n  🆕 |\n🍉\n🏁 🍇🍉\n", "🍼"),
                             ("|\n🏁 🍇🍉\n", "🔗")):
             labels = self.complete_at(text)
             self.assertTrue([l for l in labels if l.startswith(label)], (label, labels))
+
+    def test_link_snippet_is_closed(self):
+        self.start(capabilities={"textDocument": {"completion": {"completionItem": {"snippetSupport": True}}}})
+        items = self.complete_items_at("|\n🏁 🍇🍉\n")
+        link = [i for i in items if i["label"].startswith("🔗")][0]
+        self.assertEqual(link["textEdit"]["newText"], "🔗 🔤$1🔤 🔗")
 
     def test_member_by_keyword(self):
         self.assertEqual(self.complete_at("🐇 🐟 🍇\n  meth|\n🍉\n🏁 🍇🍉\n")[0], "❗️ method function func def")

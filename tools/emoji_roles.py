@@ -49,8 +49,7 @@ def quoted(emoji):
 
 
 def highlights(roles, current):
-    block = SCM_BEGIN + '["{}"] @keyword.modifier\n'.format(''.join(roles['modifier'])).replace('"' + ''.join(
-        roles['modifier']) + '"', quoted(roles['modifier'])) + SCM_END
+    block = SCM_BEGIN + '[{}] @keyword.modifier\n'.format(quoted(roles['modifier'])) + SCM_END
     begin, end = current.index(SCM_BEGIN), current.index(SCM_END) + len(SCM_END)
     return current[:begin] + block + current[end:]
 
