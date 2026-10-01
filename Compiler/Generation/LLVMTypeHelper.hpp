@@ -98,7 +98,7 @@ public:
     static bool isErasedReference(const Type &type);
     /// Whether the caller may release the generic descriptions it built for a call of @p function once the call has
     /// returned. An erased reference that the function returns may point into description storage of the caller
-    /// (see entryFor()), so the stack of descriptions must stay. @p function may be without a return type.
+    /// (see TypeDescriptionGenerator::entryFor()), so the stack of descriptions must stay. @p function may be without a return type.
     static bool callerMayRestoreDescriptions(const Function *function);
     /// Whether @p type is a generic parameter (in a box), whose values in memory are of the type it stands for.
     static bool isErased(const Type &type);

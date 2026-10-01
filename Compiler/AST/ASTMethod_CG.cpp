@@ -215,7 +215,6 @@ std::function<Value*()> ASTMethod::generateDeferred(FunctionCodeGenerator *fg) c
             }
         });
 
-        // An erased reference that the method returns may point into the generic arguments (see entryFor()).
         if (!supplArgs.empty() && LLVMTypeHelper::callerMayRestoreDescriptions(method_)) {
             tdg->restoreStack();
         }
