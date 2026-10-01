@@ -78,12 +78,16 @@ void ASTBlock::innerToCode(PrettyStream &pretty) const {
 
 void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🔁 " << condition_ << " " << block_;
+    pretty.indent() << "🔁 " << condition_;
+    pretty.ensureSpace();
+    pretty << block_;
 }
 
 void ASTForIn::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🔂 " << varName_ << " " << iteratee_ << " " << block_;
+    pretty.indent() << "🔂 " << varName_ << " " << iteratee_;
+    pretty.ensureSpace();
+    pretty << block_;
 }
 
 void ASTUnsafeBlock::toCode(PrettyStream &pretty) const {
@@ -106,11 +110,13 @@ void printBranchSpeed(PrettyStream &pretty, ASTIf::BranchSpeed speed) {
 
 void ASTIf::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "↪️ " << conditions_.front() << " ";
+    pretty.indent() << "↪️ " << conditions_.front();
+    pretty.ensureSpace();
     printBranchSpeed(pretty, blocks_.front().speed);
     pretty << blocks_.front().block;
     for (size_t i = 1; i < conditions_.size(); i++) {
-        pretty.indent() << "🙅↪️ " << conditions_[i] << " ";
+        pretty.indent() << "🙅↪️ " << conditions_[i];
+        pretty.ensureSpace();
         printBranchSpeed(pretty, blocks_[i].speed);
         pretty << blocks_[i].block;
     }
@@ -126,7 +132,9 @@ void ASTClosure::toCode(PrettyStream &pretty) const {
 
 void ASTErrorHandler::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🆗 " << valueVarName_ << " " << value_ << " " << valueBlock_;
+    pretty.indent() << "🆗 " << valueVarName_ << " " << value_;
+    pretty.ensureSpace();
+    pretty << valueBlock_;
     pretty.indent() << "🙅‍♀️ " << errorVarName_ << " " << errorBlock_;
 }
 
@@ -359,7 +367,8 @@ void ASTBinaryOperator::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     auto precedence = operatorPrecedence(operator_);
     printBinaryOperand(precedence, left_, pretty);
-    pretty << " " << operatorName(operator_) << " ";
+    pretty.ensureSpace();
+    pretty << operatorName(operator_) << " ";
     printBinaryOperand(precedence, right_, pretty);
 }
 
@@ -423,7 +432,9 @@ void ASTLiteralType::toCode(PrettyStream &pretty) const {
 }
 
 void ASTSelection::toCode(PrettyStream &pretty) const {
-    pretty << "📣 " << expr_ << " " << typeExpr_;
+    pretty << "📣 " << expr_;
+    pretty.ensureSpace();
+    pretty << typeExpr_;
 }
 
 } // namespace EmojicodeCompiler
