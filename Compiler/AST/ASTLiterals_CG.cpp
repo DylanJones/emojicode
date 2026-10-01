@@ -50,7 +50,14 @@ Value* ASTNumberLiteral::generate(FunctionCodeGenerator *fg) const {
             if (cType_.valueType()->cRepresentation()->isFloat()) {
                 return llvm::ConstantFP::get(type, doubleValue_);
             }
-            return llvm::ConstantInt::get(type, integerValue_, cType_.valueType()->cRepresentation()->isSigned);
+            // A literal that does not fit is truncated like in C (see warnIfOutOfRange). LLVM 23 no longer truncates
+            // implicitly, and older versions have no flag to ask for it, so the value is masked here.
+            auto bits = type->getIntegerBitWidth();
+            auto value = static_cast<uint64_t>(integerValue_);
+            if (bits < 64) {
+                value &= (uint64_t(1) << bits) - 1;
+            }
+            return llvm::ConstantInt::get(type, value);
         }
     }
 }
