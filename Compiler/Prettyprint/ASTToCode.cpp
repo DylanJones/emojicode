@@ -114,11 +114,13 @@ void printBranchSpeed(PrettyStream &pretty, ASTIf::BranchSpeed speed) {
 void ASTIf::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent() << "↪️ " << conditions_.front();
+    pretty.printComments(blocks_.front().block.position());
     pretty.indentAtLineStart().ensureSpace();
     printBranchSpeed(pretty, blocks_.front().speed);
     pretty << blocks_.front().block;
     for (size_t i = 1; i < conditions_.size(); i++) {
         pretty.indent() << "🙅↪️ " << conditions_[i];
+        pretty.printComments(blocks_[i].block.position());
         pretty.indentAtLineStart().ensureSpace();
         printBranchSpeed(pretty, blocks_[i].speed);
         pretty << blocks_[i].block;
