@@ -378,7 +378,6 @@ private:
     std::unique_ptr<TypeContext> typeContext_;
 
     /// Releases (@p isRetain false) or retains (@p isRetain true) @p value, which is of type @p type.
-    /// Releases (@p isRetain false) or retains (@p isRetain true) @p value, which is of type @p type.
     void manage(bool isRetain, llvm::Value *value, const Type &type);
     /// @param retain True if the box should be retained, false if it should be released.
     void manageBox(bool retain, llvm::Value *boxInfo, llvm::Value *value, const Type &type);
