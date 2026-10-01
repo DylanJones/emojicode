@@ -37,9 +37,9 @@ bool isTypeMethod(Function *function);
 /// Whether @p function takes the generic arguments of its type as a parameter, which a type method of a value type or
 /// enum that stores them does. A closure in such a type method captures them instead.
 bool takesTypeGenericArgs(Function *function);
-
-/// Whether an initializer takes the generic arguments of the type it initializes as its last argument, directly after
-/// the parameters. Classes pass them as a {ptr, i1} struct, value types as a pointer.
+/// Whether @p function, an initializer of a type that stores generic arguments, takes them as a parameter, directly
+/// after its parameters (see LLVMTypeHelper::functionTypeFor()). Classes pass them as a {ptr, i1} struct, value types
+/// as a pointer.
 bool takesInitializerGenericArgs(Function *function);
 /// Whether @p function, a type method of a class that stores generic arguments, reads them from its this, the class
 /// type value, which describes the class it is called on. All type methods of classes are called the same way, so an
