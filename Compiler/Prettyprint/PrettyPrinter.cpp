@@ -166,7 +166,7 @@ void PrettyPrinter::printArguments(Function *function) {
                 prettyStream_ << "🎍🥡 ";
             }
             prettyStream_ << arg.name << " " << arg.type;
-            prettyStream_.offerSpace();
+        prettyStream_.offerSpace();
         }
         return;
     }
@@ -175,7 +175,7 @@ void PrettyPrinter::printArguments(Function *function) {
             prettyStream_ << "🎍🥡 ";
         }
         prettyStream_ << arg.name << " " << arg.type;
-            prettyStream_.offerSpace();
+        prettyStream_.offerSpace();
     }
 }
 
@@ -477,6 +477,10 @@ void PrettyPrinter::print(const char *key, Function *function, bool body, bool n
             prettyStream_.offerSpace();
         }
 
+        if (!function->genericParameters().empty()) {
+            // printGenericParameters refuses the pending offer, but function headers separate the name from 🐚.
+            prettyStream_.refuseOffer() << " ";
+        }
         printGenericParameters(function);
         printArguments(function);
         if (initializer == nullptr) {
