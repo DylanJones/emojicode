@@ -99,9 +99,11 @@ void printBranchSpeed(PrettyStream &pretty, ASTIf::BranchSpeed speed) {
     switch (speed) {
         case ASTIf::BranchSpeed::Fast:
             pretty << "🎍🏎";
+            pretty.offerSpace();
             break;
         case ASTIf::BranchSpeed::Slow:
             pretty << "🎍🐌";
+            pretty.offerSpace();
             break;
         default:
             break;
