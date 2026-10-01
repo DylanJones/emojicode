@@ -39,26 +39,21 @@ public:
     void addTemporaryRawAllocation(llvm::Value *pointerVariable) {
         temporaryObjects_.emplace_back(pointerVariable, Type::noReturn(), Kind::RawAllocation, false);
     }
-    /// Same as addTemporaryRemoteObject(), but marks the entry protected (see releaseTemporaryObjects()).
+    /// Same as addTemporaryRemoteObject(), but marks the entry protected (see releaseTemporaryObjectsSince()).
     void addProtectedRemoteObject(llvm::Value *objectVariable) {
         temporaryObjects_.emplace_back(objectVariable, Type::noReturn(), Kind::RemoteObject, true);
     }
-    /// Same as addTemporaryRawAllocation(), but marks the entry protected (see releaseTemporaryObjects()).
+    /// Same as addTemporaryRawAllocation(), but marks the entry protected (see releaseTemporaryObjectsSince()).
     void addProtectedRawAllocation(llvm::Value *pointerVariable) {
         temporaryObjects_.emplace_back(pointerVariable, Type::noReturn(), Kind::RawAllocation, true);
     }
 
     /// Releases the registered temporary values in the order they were added.
-    /// @param clearQueue Whether entries that are visited (see @p includeProtected) are removed from the queue.
-    /// Regardless of this, an entry is only ever removed once it has been visited, so a protected entry skipped
-    /// because @p includeProtected is false always survives the call, however @p clearQueue is set.
+    /// Protected entries are released like any other here.
+    /// @param clearQueue Whether the visited entries are removed from the queue.
     /// @param skipLast Whether the last entry is left unvisited, e.g. because it does not hold a valid value on the
     /// path being generated.
-    /// @param includeProtected Whether protected entries, registered to survive checkpoints that are not certain to
-    /// be reached after the call that owns them, are visited too. A protected entry must only be included once that
-    /// call is known to be unreachable on the path being generated (e.g. because it reraised) or has been reached.
-    void releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast,
-                                 bool includeProtected = true);
+    void releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast);
 
     /// Returns a mark that can later be passed to releaseTemporaryObjectsSince() to release only the temporaries
     /// registered after this call.
@@ -321,9 +316,8 @@ public:
     }
     /// Registers a variable holding a receiver that was allocated before its initializer’s arguments are evaluated,
     /// but whose ownership is only transferred to the initializer call once it is reached. Unlike
-    /// addTemporaryRemoteObject(), this entry is protected: releaseTemporaryObjects() skips it unless told
-    /// otherwise, so it survives checkpoints hit while evaluating those arguments (e.g. short-circuiting 🤝/👐)
-    /// that must not assume the initializer, which alone would take ownership of it, has been reached. It is still
+    /// addTemporaryRemoteObject(), this entry is protected: releaseTemporaryObjectsSince() skips it, so it
+    /// survives checkpoints hit while evaluating those arguments (e.g. short-circuiting 🤝/👐) that must not assume the initializer, which alone would take ownership of it, has been reached. It is still
     /// released, by ASTReraise on its error path, if one of the arguments reraises. Disarm by storing null once the
     /// initializer call is reached.
     void addPendingReceiver(llvm::Value *objectVariable) {
@@ -337,8 +331,8 @@ public:
     /// Releases all temporary values that were previously registered with addTemporaryObject() in the order
     /// they were added.
     /// @see addTemporaryObject
-    void releaseTemporaryObjects(bool clearQueue = true, bool skipLast = false, bool includeProtected = true) {
-        tom_.releaseTemporaryObjects(this, clearQueue, skipLast, includeProtected);
+    void releaseTemporaryObjects(bool clearQueue = true, bool skipLast = false) {
+        tom_.releaseTemporaryObjects(this, clearQueue, skipLast);
     }
 
     /// Returns a mark that can later be passed to releaseTemporaryObjectsSince() to release only the temporaries
@@ -383,6 +377,8 @@ private:
     std::unique_ptr<TypeContext> typeContext_;
 
     /// @param retain True if the box should be released, false if it should be retained.
+    /// Releases (@p isRetain false) or retains (@p isRetain true) @p value, which is of type @p type.
+    void manage(bool isRetain, llvm::Value *value, const Type &type);
     void manageBox(bool retain, llvm::Value *boxInfo, llvm::Value *value, const Type &type);
 
     void addParamAttrs(const Type &argType, llvm::Argument &llvmArg);

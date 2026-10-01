@@ -71,6 +71,7 @@ llvm::Constant* ValueWitnessBuilder::witnessFor(const Type &otype) {
         buildRetain(type, name + ".retain"),
         llvm::ConstantInt::getBool(generator_->context(), !type.isManaged()),
     });
+    assert(witness->getNumOperands() == LLVMTypeHelper::WitnessFieldCount);
     auto variable = new llvm::GlobalVariable(*generator_->module(), typeHelper.valueWitness(), true,
                                              llvm::GlobalValue::PrivateLinkage, witness, name);
     variable->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);

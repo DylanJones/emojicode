@@ -89,6 +89,16 @@ public:
     /// copying it into a box and back, releasing and retaining it (see ValueWitnessBuilder). A type description points
     /// to one.
     llvm::StructType* valueWitness() const { return valueWitness_; }
+    /// The fields of valueWitness() in order of their position in the struct.
+    enum ValueWitnessField : unsigned {
+        WitnessSize = 0,
+        WitnessLoad,
+        WitnessStore,
+        WitnessRelease,
+        WitnessRetain,
+        WitnessIsUnmanaged,
+        WitnessFieldCount,
+    };
     /// An erased reference is a reference to a box, which may refer to a value of a generic parameter in memory: the
     /// address of the value and the entry of the type description of its type, or null. If the entry is null, the
     /// address is that of a box, like that of a variable of the generic type. Otherwise, it is that of a value of the
