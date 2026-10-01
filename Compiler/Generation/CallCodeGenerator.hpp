@@ -70,6 +70,10 @@ public:
 protected:
     std::vector<llvm::Value *> createArgsVector(llvm::Value *callee, const ASTArguments &args,
                                                 llvm::Value *errorPointer, const std::vector<llvm::Value *> &supplArgs);
+    /// Replaces by-value arguments in @p args that can alias the receiver with owned copies, which
+    /// releaseSnapshots() releases after the call.
+    void snapshotArguments(const ASTArguments &astArgs, std::vector<llvm::Value *> &args);
+    void releaseSnapshots();
     FunctionCodeGenerator* fg() const { return fg_; }
     /// @param uniqueBox Whether the callee box is a mutable variable whose value must be made unique, as the method
     /// may mutate it (see FunctionCodeGenerator::makeBoxValueUnique()).
