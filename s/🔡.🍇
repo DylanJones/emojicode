@@ -258,6 +258,17 @@ string, but those themselves are then immutable again.
   📗
   ❗️ 💯 ➡️ 🍬💯 📻 🔤sStringToReal🔤
 
+  📗
+    Converts the string to the nearest 💯, independent of the locale. The
+    caller must have validated the syntax: an optional `-`, one or more digits,
+    an optional `.` followed by one or more digits, and an optional `e` or `E`
+    with an optional sign and one or more digits. Out-of-range values result in
+    infinity or zero. For other input the result is unspecified: the longest
+    valid prefix is converted, which includes hexadecimal, `inf` and `nan`
+    forms, and 0.0 is returned if nothing can be converted.
+  📗
+  ☣️❗️🔬 ➡️ 💯 📻 🔤sStringToRealExact🔤
+
   📗 Converts the string to data encoded as UTF8. 📗
   ❗️ 📇 ➡️ 📇 🍇
     ☣️ 🍇

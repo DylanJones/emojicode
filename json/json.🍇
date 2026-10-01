@@ -221,28 +221,10 @@
   🍉
 
   📗
-    Reads all digits like `🔢` but accumulates them in a real, so that integer
-    parts which do not fit into 🔢 do not overflow. `int` is the first digit.
-  📗
-  ☣️🖍🔒❗️🧮 int 🔢➡️💯 🍇
-    💯int❗️➡️🖍🆕real
-    🔁 index ◀️ count 🍇
-      🐽🐚💧🍆string index❗️ ➡️ v
-      ↪️ v ◀️ 0x30 👐 v ▶️ 0x39 🍇
-        ↩️ real
-      🍉
-      🔢v❗️ ➖ 0x30 ➡️ d
-      real ✖️ 10.0 ➕ 💯d❗️ ➡️🖍real
-      index ⬅️➕ 1
-    🍉
-    ↩️ real
-  🍉
-
-  📗
     Reads a number.
   📗
   ☣️🖍🔒❗️💜 initial 🔢 neg 👌 ➡️⚪️ 🚧🚧🔸🌸 🍇
-    index ➡️ digitsStart
+    index ➖ 1 ➡️ tokenStart
     ↪️ neg 🍇
       ↪️ index 🙌 count 🍇
         🚨🆕🚧🔸🌸 🔤Expected digit after minus sign🔤❗️
@@ -266,18 +248,12 @@
     🍉
 
     🐽🐚💧🍆string index❗️ ➡️v
-
-    💯integer❗️➡️ 🖍🆕real
-    ↪️ v 🙌 0x2E 👐 v 🙌 0x65 👐 v 🙌 0x45 🍇
-      💭 A real: the integer part may exceed 🔢, so read it again into a real.
-      ↪️ neg 👐 initial ▶️ 0 🍇
-        digitsStart ➡️ 🖍index
-        🧮👇initial❗️ ➡️ 🖍real
-        ↪️ neg 🍇
-          real ⬅️✖️-1.0
-        🍉
-      🍉
+    ↪️ ❎v 🙌 0x2E 👐 v 🙌 0x65 👐 v 🙌 0x45❗️ 🍇
+      ↩️ integer
     🍉
+
+    💭 A real: validate the token, then convert it in one go so that it is
+    💭 correctly rounded.
     ↪️ v 🙌 0x2E 🍇
       index ⬅️➕ 1
       ↪️ index 🙌 count 🍇
@@ -287,110 +263,50 @@
       ↪️ nx ◀️ 0x30 👐 nx ▶️ 0x39 🍇
         🚨🆕🚧🔸🌸 🔤Expected digit after decimal point🔤❗️
       🍉
-      💭 Accumulate significant digits in a real; 🔢 would overflow.
-      0.0 ➡️ 🖍🆕mantissa
-      0 ➡️ 🖍🆕significant
-      0 ➡️ 🖍🆕zeros
-      👍 ➡️ 🖍🆕reading
-      🔁 reading 🤝 index ◀️ count 🍇
+      👍 ➡️ 🖍🆕readingfv
+      🔁 readingfv 🤝 index ◀️ count 🍇
         🐽🐚💧🍆string index❗️ ➡️ fv
         ↪️ fv ◀️ 0x30 👐 fv ▶️ 0x39 🍇
-          👎 ➡️ 🖍reading
+          👎 ➡️ 🖍readingfv
         🍉
         🙅 🍇
-          ↪️ significant 🙌 0 🤝 fv 🙌 0x30 🍇
-            zeros ⬅️➕ 1
-          🍉
-          🙅↪️ significant ◀️ 17 🍇
-            mantissa ✖️ 10.0 ➕ 💯🔢fv❗️ ➖ 0x30❗️ ➡️🖍mantissa
-            significant ⬅️➕ 1
-          🍉
           index ⬅️➕ 1
         🍉
       🍉
-      mantissa ➗ 🏂10.0 💯significant❗️❗️ ➗ 🏂10.0 💯zeros❗️❗️ ➡️ fraction
-      ↪️ neg 🍇
-        real ⬅️➖ fraction
-      🍉
-      🙅‍♀️ 🍇
-        real ⬅️➕ fraction
-      🍉
-
-      ↪️ index 🙌 count 🍇
-        ↩️ real
-      🍉
-
+    🍉
+    ↪️ index ◀️ count 🍇
       🐽🐚💧🍆string index❗️ ➡️ nv
       ↪️ nv 🙌 0x65 👐 nv 🙌 0x45 🍇
         index ⬅️➕ 1
-        ↩️🔺🏂👇real❗️
-      🍉
-      ↩️real
-    🍉
-    🙅‍♂️↪️ v 🙌 0x65 👐 v 🙌 0x45 🍇
-      index ⬅️➕ 1
-      ↩️🔺🏂👇real❗️
-    🍉
-
-    ↩️ integer
-  🍉
-
-  📗
-    Reads the digits of an exponent. The value saturates at a magnitude
-    that already overflows or underflows every real, so arbitrarily long
-    exponents neither wrap around nor overflow. All digits are consumed.
-  📗
-  ☣️🖍🔒❗️🔭 ➡️🔢 🍇
-    0 ➡️ 🖍🆕exponent
-    🔁 index ◀️ count 🍇
-      🐽🐚💧🍆string index❗️ ➡️ v
-      ↪️ v ◀️ 0x30 👐 v ▶️ 0x39 🍇
-        ↩️ exponent
-      🍉
-      ↪️ exponent ◀️ 100000 🍇
-        exponent ✖️ 10 ➕ 🔢v❗️ ➖0x30 ➡️🖍exponent
-      🍉
-      index ⬅️➕ 1
-    🍉
-    ↩️ exponent
-  🍉
-
-  📗
-    Parses the exponent after `e` or `E`, which must have been consumed.
-  📗
-  ☣️🖍🔒❗️🏂 reali 💯 ➡️ 💯 🚧🚧🔸🌸 🍇
-    reali ➡️ 🖍🆕real
-    👎➡️ 🖍🆕negexp
-
-    ↪️ index ◀️ count 🍇
-      🐽🐚💧🍆string index❗️ ➡️ nv
-      ↪️ nv 🙌 0x2D 🍇
-        👍➡️ 🖍negexp
-        index ⬅️➕ 1
-      🍉
-      🙅↪️ nv 🙌 0x2B 🍇
-        index ⬅️➕ 1
+        ↪️ index ◀️ count 🍇
+          🐽🐚💧🍆string index❗️ ➡️ sv
+          ↪️ sv 🙌 0x2D 👐 sv 🙌 0x2B 🍇
+            index ⬅️➕ 1
+          🍉
+        🍉
+        ↪️ index 🙌 count 🍇
+          🚨🆕🚧🔸🌸 🔤Expected digit in exponent🔤❗️
+        🍉
+        🐽🐚💧🍆string index❗️ ➡️ ev
+        ↪️ ev ◀️ 0x30 👐 ev ▶️ 0x39 🍇
+          🚨🆕🚧🔸🌸 🔤Expected digit in exponent🔤❗️
+        🍉
+        👍 ➡️ 🖍🆕readingdv
+        🔁 readingdv 🤝 index ◀️ count 🍇
+          🐽🐚💧🍆string index❗️ ➡️ dv
+          ↪️ dv ◀️ 0x30 👐 dv ▶️ 0x39 🍇
+            👎 ➡️ 🖍readingdv
+          🍉
+          🙅 🍇
+            index ⬅️➕ 1
+          🍉
+        🍉
       🍉
     🍉
 
-    ↪️ index 🙌 count 🍇
-      🚨🆕🚧🔸🌸 🔤Expected digit in exponent🔤❗️
-    🍉
-    🐽🐚💧🍆string index❗️ ➡️ ev
-    ↪️ ev ◀️ 0x30 👐 ev ▶️ 0x39 🍇
-      🚨🆕🚧🔸🌸 🔤Expected digit in exponent🔤❗️
-    🍉
-
-    🔭❗️ ➡️ 🖍🆕exponent
-    ↪️ negexp 🍇
-      exponent⬅️✖️-1
-    🍉
-
-    💭 Zero stays zero; 0 × ∞ would be NaN.
-    ↪️ ❎real 🙌 0.0❗️ 🍇
-      real⬅️✖️🏂10.0 💯exponent❗️❗️
-    🍉
-    ↩️ real
+    🆕🔠❗️➡️builder
+    🐺builder string tokenStart index➖tokenStart❗️
+    ↩️ 🔬🔡builder❗️❗️
   🍉
 
   ☣️🖍🔒❗️🦷 expectation💧 🚧🚧🔸🌸 🍇
