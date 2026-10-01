@@ -401,7 +401,10 @@ std::shared_ptr<ASTExpr> FunctionParser::parseExprIdentifier(const Token &token)
 
 std::shared_ptr<ASTExpr> FunctionParser::parseGroup() {
     auto expr = parseExpr(0);
-    stream_.consumeToken(TokenType::GroupEnd);
+    auto end = stream_.consumeToken(TokenType::GroupEnd);
+    if (auto oper = std::dynamic_pointer_cast<ASTBinaryOperator>(expr)) {
+        oper->setGroupEnd(end.position());
+    }
     return expr;
 }
 

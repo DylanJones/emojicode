@@ -90,6 +90,13 @@ public:
     /// The indentation is not written until then, so that comments can go in front of the line.
     PrettyStream& indent() { indentPending_ = true; return *this; }
 
+    /// Like indent(), but only if the stream is at the start of a line or a new line is about to be written, e.g.
+    /// after a comment.
+    PrettyStream& indentAtLineStart() {
+        indentPending_ = indentPending_ || whitespaceOffer_ == '\n' || lastChar_ == '\n';
+        return *this;
+    }
+
     void increaseIndent() { indentation_++; }
     void decreaseIndent() { indentation_--; }
 
