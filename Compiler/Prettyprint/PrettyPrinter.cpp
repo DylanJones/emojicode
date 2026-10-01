@@ -186,7 +186,7 @@ void PrettyPrinter::printClosure(Function *function, bool escaping) {
     printErrorType(function);
     prettyStream_ << "\n";
     function->ast()->innerToCode(prettyStream_);
-    prettyStream_ << "🍉\n";
+    prettyStream_.indent() << "🍉";
 }
 
 void PrettyPrinter::printReturnType(Function *function) {
