@@ -161,7 +161,7 @@ void ASTVariableDeclareAndAssign::toCode(PrettyStream &pretty) const {
 void ASTConstantVariable::toCode(PrettyStream &pretty) const {
     pretty.indent() << expr_;
     pretty.printComments(position());
-    pretty.ensureSpace();
+    pretty.indentAtLineStart().ensureSpace();
     pretty << "➡️ " << name();
 }
 
@@ -361,20 +361,26 @@ void ASTCollectionLiteral::toCode(PrettyStream &pretty) const {
 
 void ASTBinaryOperator::printBinaryOperand(int precedence, const std::shared_ptr<ASTExpr> &expr,
                                            PrettyStream &pretty) const {
-    pretty.printComments(position());
     if (auto oper = dynamic_cast<ASTBinaryOperator *>(expr.get())) {
         if (operatorPrecedence(oper->operator_) < precedence) {
-            pretty << "🤜" << expr << "🤛";
+            pretty << "🤜" << expr;
+            pretty.printComments(oper->groupEnd_);
+            pretty.indentAtLineStart() << "🤛";
             return;
         }
+        // The group is dropped; keep its comments in place.
+        pretty << expr;
+        pretty.printComments(oper->groupEnd_);
+        return;
     }
     pretty << expr;
 }
 
 void ASTBinaryOperator::toCode(PrettyStream &pretty) const {
-    pretty.printComments(position());
     auto precedence = operatorPrecedence(operator_);
     printBinaryOperand(precedence, left_, pretty);
+    // The operator comes after the left operand, so the comments before it must as well.
+    pretty.printComments(position());
     pretty << " " << operatorName(operator_) << " ";
     printBinaryOperand(precedence, right_, pretty);
 }
