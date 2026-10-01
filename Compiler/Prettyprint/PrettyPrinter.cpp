@@ -446,7 +446,8 @@ void PrettyPrinter::printFunctionAttributes(Function *function, bool noMutate) {
             prettyStream_ << "🔑 ";
         }
     }
-    if (!hasImplicitProtocolDefaults(function) && !function->memoryFlowTypeForThis().isUnknown() && function->memoryFlowTypeForThis().isEscaping()) {
+    if (!hasImplicitProtocolDefaults(function) && !function->memoryFlowTypeForThis().isUnknown() &&
+        function->memoryFlowTypeForThis().isEscaping()) {
         prettyStream_ << "🎍🥡 ";
     }
 }
