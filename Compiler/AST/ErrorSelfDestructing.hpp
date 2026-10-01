@@ -24,6 +24,7 @@ class FunctionCodeGenerator;
 class ASTExpr;
 class ASTCall;
 class ASTHandledCall;
+class Releasing;
 struct SourcePosition;
 
 /// This class encapsulates the logic of deinitializing an object when initialization is aborted by raising an error.
@@ -38,6 +39,10 @@ protected:
     /// Builds the IR to release all instance variables that were initialized when analyseInstanceVariables() was
     /// called.
     void buildDestruct(FunctionCodeGenerator *fg) const;
+    /// Builds the exit of a function that is aborted by an error already stored in the function's error slot:
+    /// releases the temporary objects (see FunctionCodeGenerator::releaseTemporaryObjects()), the variables
+    /// attached to @c node, and the initialized instance variables, then returns the error.
+    void buildErrorExit(FunctionCodeGenerator *fg, const Releasing *node, bool clearQueue, bool skipLast) const;
 
 private:
     std::vector<std::pair<size_t, Type>> release_;

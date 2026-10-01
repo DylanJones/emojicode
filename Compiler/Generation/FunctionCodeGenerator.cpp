@@ -839,6 +839,17 @@ llvm::Value* FunctionCodeGenerator::genericArgsPtr() {
                                                 callee.type() == TypeType::Class ? 2 : 0);
 }
 
+void FunctionCodeGenerator::freeOwnedDescription(llvm::Value *gargs) {
+    createIf(builder().CreateIsNull(builder().CreateExtractValue(gargs, { 1 })), [&] {
+        builder().CreateCall(generator()->runTime().freeDescription(), { builder().CreateExtractValue(gargs, { 0 }) });
+    });
+}
+
+llvm::Value* FunctionCodeGenerator::isErrorSet(llvm::Value *errorPointer) {
+    return builder().CreateICmpNE(llvm::ConstantPointerNull::get(typeHelper().pointer()),
+                                  builder().CreateLoad(typeHelper().pointer(), errorPointer));
+}
+
 llvm::Type* FunctionCodeGenerator::genericArgsType() {
     return typeHelper().genericArgsStore(calleeType());
 }
