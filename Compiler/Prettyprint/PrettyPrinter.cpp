@@ -362,7 +362,7 @@ void PrettyPrinter::printInstanceVariables(TypeDefinition *typeDef, const TypeCo
         if (ivar.expr != nullptr) {
             prettyStream_ << " ⬅️ " << ivar.expr;
         }
-        prettyStream_ << "\n";
+        prettyStream_.refuseOffer() << "\n";
     }
     prettyStream_.offerNewLineUnlessEmpty(typeDef->instanceVariables());
 }
