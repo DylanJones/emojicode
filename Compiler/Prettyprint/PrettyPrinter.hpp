@@ -78,6 +78,10 @@ private:
     void printTypeDef(const Type &type);
     /// Prints the comments in front of @p p unless printing an interface.
     void printComments(const SourcePosition &p);
+    /// Prints the comments that follow the code on the source line of @p p, unless printing an interface.
+    void printTrailingComments(const SourcePosition &p);
+    /// Writes the 🍉 that closes the type, followed by the comments on its line and a blank line.
+    void printTypeClose(TypeDefinition *typeDef);
     /// Prints the comments that end the type, which ends after this function.
     void printTypeEnd(TypeDefinition *typeDef);
     void printDocumentation(const std::u32string &doc);

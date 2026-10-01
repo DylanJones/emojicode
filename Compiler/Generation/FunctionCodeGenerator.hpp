@@ -13,6 +13,7 @@
 #include "Scoping/IDScoper.hpp"
 #include <llvm/IR/IRBuilder.h>
 #include <functional>
+#include <optional>
 #include <queue>
 
 namespace EmojicodeCompiler {
@@ -39,26 +40,21 @@ public:
     void addTemporaryRawAllocation(llvm::Value *pointerVariable) {
         temporaryObjects_.emplace_back(pointerVariable, Type::noReturn(), Kind::RawAllocation, false);
     }
-    /// Same as addTemporaryRemoteObject(), but marks the entry protected (see releaseTemporaryObjects()).
+    /// Same as addTemporaryRemoteObject(), but marks the entry protected (see releaseTemporaryObjectsSince()).
     void addProtectedRemoteObject(llvm::Value *objectVariable) {
         temporaryObjects_.emplace_back(objectVariable, Type::noReturn(), Kind::RemoteObject, true);
     }
-    /// Same as addTemporaryRawAllocation(), but marks the entry protected (see releaseTemporaryObjects()).
+    /// Same as addTemporaryRawAllocation(), but marks the entry protected (see releaseTemporaryObjectsSince()).
     void addProtectedRawAllocation(llvm::Value *pointerVariable) {
         temporaryObjects_.emplace_back(pointerVariable, Type::noReturn(), Kind::RawAllocation, true);
     }
 
     /// Releases the registered temporary values in the order they were added.
-    /// @param clearQueue Whether entries that are visited (see @p includeProtected) are removed from the queue.
-    /// Regardless of this, an entry is only ever removed once it has been visited, so a protected entry skipped
-    /// because @p includeProtected is false always survives the call, however @p clearQueue is set.
+    /// Protected entries are released like any other here.
+    /// @param clearQueue Whether the visited entries are removed from the queue.
     /// @param skipLast Whether the last entry is left unvisited, e.g. because it does not hold a valid value on the
     /// path being generated.
-    /// @param includeProtected Whether protected entries, registered to survive checkpoints that are not certain to
-    /// be reached after the call that owns them, are visited too. A protected entry must only be included once that
-    /// call is known to be unreachable on the path being generated (e.g. because it reraised) or has been reached.
-    void releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast,
-                                 bool includeProtected = true);
+    void releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast);
 
     /// Returns a mark that can later be passed to releaseTemporaryObjectsSince() to release only the temporaries
     /// registered after this call.
@@ -128,6 +124,11 @@ public:
     /// @returns The LLVM type of the value to which genericArgsPtr() returns a pointer.
     /// @pre The function must not be a type method.
     llvm::Type* genericArgsType();
+    /// Frees the class generic description @c gargs ({ptr, i1}) if its flag is false, i.e. it was dynamically
+    /// allocated. Static descriptions (flag true) are left alone. Not for value type descriptions (see releaseMemory).
+    void freeOwnedDescription(llvm::Value *gargs);
+    /// Returns an i1 that is true if the error slot @c errorPointer holds an error (is non-null).
+    llvm::Value* isErrorSet(llvm::Value *errorPointer);
     llvm::Value* functionGenericArgs() const { return functionGenericArgs_; };
 
     /// @returns The number of bytes an instance of @c type takes up in memory.
@@ -147,6 +148,10 @@ public:
     /// protocol or a multiprotocol. The box info field of a box for a multiprotocol points to the conformances to each
     /// of its protocols, of which the one to protocol number @p multiprotocolN is returned.
     llvm::Value* buildGetBoxConformance(llvm::Value *boxInfo, const Type &type, size_t multiprotocolN = 0);
+    /// Finds the index of @p protocol (by identity) in the conformance table of a box of @p type, i.e. the
+    /// multiprotocolN to pass to buildGetBoxConformance. Returns nullopt if the box is not for a multiprotocol or its
+    /// multiprotocol does not contain @p protocol; the caller must then look the conformance up at run time.
+    static std::optional<size_t> multiprotocolIndex(const Type &type, const Protocol *protocol);
     /// Gets the box info of the type of the value from the box info field @p boxInfo of a box of @p type. A box for a
     /// protocol or a multiprotocol holds a protocol conformance there, which points to the box info.
     llvm::Value* buildGetValueBoxInfo(llvm::Value *boxInfo, const Type &type);
@@ -157,6 +162,16 @@ public:
     /// in the box to which @p box points, whose box info is @p boxInfo: its conformance to the protocol, or a table of
     /// its conformances to those of the multiprotocol.
     llvm::Value* buildBoxConformance(llvm::Value *box, llvm::Value *boxInfo, const Type &type);
+    /// Builds the table of the conformances to @p protocols, in that order, with @p conformanceAt(i) returning the one
+    /// to protocols[i].
+    llvm::Value* buildMultiprotocolTable(const std::vector<Type> &protocols,
+                                         const std::function<llvm::Value*(size_t)> &conformanceAt);
+    /// Replaces the protocol conformance (or table of them) in the box of @p type to which @p box points with the box
+    /// info of its value, as the boxes of value witnesses hold. Does nothing for an empty box.
+    void conformanceToBoxInfo(llvm::Value *box, const Type &type);
+    /// Replaces the box info in the box of @p type to which @p box points with what a box of @p type holds instead (see
+    /// buildBoxConformance()). Does nothing for an empty box.
+    void boxInfoToConformance(llvm::Value *box, const Type &type);
     /// Ensures that the box to which @p box points is the only box storing its value of the remote @p type, by copying
     /// the value into a new object if other boxes share the object storing it. Copies of a box share the object, so a
     /// value must be made unique before it is mutated in place.
@@ -321,9 +336,9 @@ public:
     }
     /// Registers a variable holding a receiver that was allocated before its initializer’s arguments are evaluated,
     /// but whose ownership is only transferred to the initializer call once it is reached. Unlike
-    /// addTemporaryRemoteObject(), this entry is protected: releaseTemporaryObjects() skips it unless told
-    /// otherwise, so it survives checkpoints hit while evaluating those arguments (e.g. short-circuiting 🤝/👐)
-    /// that must not assume the initializer, which alone would take ownership of it, has been reached. It is still
+    /// addTemporaryRemoteObject(), this entry is protected: releaseTemporaryObjectsSince() skips it, so it
+    /// survives checkpoints hit while evaluating those arguments (e.g. short-circuiting 🤝/👐) that must not assume
+    /// the initializer, which alone would take ownership of it, has been reached. It is still
     /// released, by ASTReraise on its error path, if one of the arguments reraises. Disarm by storing null once the
     /// initializer call is reached.
     void addPendingReceiver(llvm::Value *objectVariable) {
@@ -337,8 +352,8 @@ public:
     /// Releases all temporary values that were previously registered with addTemporaryObject() in the order
     /// they were added.
     /// @see addTemporaryObject
-    void releaseTemporaryObjects(bool clearQueue = true, bool skipLast = false, bool includeProtected = true) {
-        tom_.releaseTemporaryObjects(this, clearQueue, skipLast, includeProtected);
+    void releaseTemporaryObjects(bool clearQueue = true, bool skipLast = false) {
+        tom_.releaseTemporaryObjects(this, clearQueue, skipLast);
     }
 
     /// Returns a mark that can later be passed to releaseTemporaryObjectsSince() to release only the temporaries
@@ -382,7 +397,9 @@ private:
 
     std::unique_ptr<TypeContext> typeContext_;
 
-    /// @param retain True if the box should be released, false if it should be retained.
+    /// Releases (@p isRetain false) or retains (@p isRetain true) @p value, which is of type @p type.
+    void manage(bool isRetain, llvm::Value *value, const Type &type);
+    /// @param retain True if the box should be retained, false if it should be released.
     void manageBox(bool retain, llvm::Value *boxInfo, llvm::Value *value, const Type &type);
 
     void addParamAttrs(const Type &argType, llvm::Argument &llvmArg);

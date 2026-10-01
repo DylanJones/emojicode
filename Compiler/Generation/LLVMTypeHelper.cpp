@@ -53,6 +53,7 @@ LLVMTypeHelper::LLVMTypeHelper(llvm::LLVMContext &context, CodeGenerator *codeGe
         pointer(),  // retains a value in memory: void (ptr value)
         llvm::Type::getInt1Ty(context_),  // whether a value can be copied by copying its bytes, i.e. is not managed
     }, "valueWitness");
+    assert(valueWitness_->getNumElements() == WitnessFieldCount);
     erasedReference_ = llvm::StructType::create({ pointer(), pointer() }, "erasedReference");
     valueWitnessCopy_ = llvm::FunctionType::get(llvm::Type::getVoidTy(context_), { pointer(), pointer() }, false);
 
@@ -185,8 +186,7 @@ llvm::FunctionType* LLVMTypeHelper::functionTypeFor(Function *function) {
     std::transform(function->parameters().begin(), function->parameters().end(), std::back_inserter(args), [&](auto &arg) {
         return typeForFunction(arg.type->type(), function);
     });
-    if ((function->functionType() == FunctionType::ObjectInitializer ||
-         function->functionType() == FunctionType::ValueTypeInitializer) && function->owner()->storesGenericArgs()) {
+    if (takesInitializerGenericArgs(function)) {
         args.emplace_back(genericArgsStore(function->typeContext().calleeType()));
     }
     if (takesTypeGenericArgs(function)) {
@@ -245,6 +245,11 @@ bool LLVMTypeHelper::isErasedReference(const Type &type) {
     // Every reference to a box, as a reference to a box of e.g. 🔢 in a caller may be one to a value of a generic
     // parameter of the callee.
     return type.isReference() && type.type() == TypeType::Box;
+}
+
+bool LLVMTypeHelper::callerMayRestoreDescriptions(const Function *function) {
+    auto returnType = function->returnType();
+    return returnType == nullptr || !isErasedReference(returnType->type());
 }
 
 bool LLVMTypeHelper::isErased(const Type &type) {

@@ -4,8 +4,10 @@
 //
 
 #include "SemanticTokens.hpp"
+#include "EmojiRoles.hpp"
 #include <algorithm>
 #include <optional>
+#include <string_view>
 
 namespace EmojicodeLanguageServer {
 
@@ -33,20 +35,12 @@ struct Classification {
 
 /// Emoji that the parser gives a meaning by the first code point of an identifier.
 std::optional<Classification> contextualKeyword(char32_t c) {
-    switch (c) {
-        case U'🏁': case U'📦': case U'📜': case U'🔗': case U'🙅': case U'🤷': case U'♻': case U'↪':
-            return Classification{Keyword};
-        case U'🌍': case U'🔏': case U'✒': case U'🥯': case U'⚠': case U'🔑': case U'🔓': case U'🔒': case U'🔐':
-        case U'📻': case U'🍼':
-            return Classification{Modifier};
-        case U'🍺': case U'🔺': case U'🔲': case U'⚖': case U'🏮': case U'🍬': case U'✴': case U'⬛': case U'🚧':
-        case U'🍱':
-            return Classification{Operator};
-        case U'◼': case U'⚪': case U'🔵': case U'⚫':
-            return Classification{TypeParameter, DefaultLibrary};
-        default:
-            return std::nullopt;
-    }
+    auto has = [c](const char32_t *emoji) { return std::u32string_view(emoji).find(c) != std::u32string_view::npos; };
+    if (has(EmojiRoles::kKeyword)) return Classification{Keyword};
+    if (has(EmojiRoles::kModifier)) return Classification{Modifier};
+    if (has(EmojiRoles::kTypeOperator)) return Classification{Operator};
+    if (has(EmojiRoles::kBuiltinType)) return Classification{TypeParameter, DefaultLibrary};
+    return std::nullopt;
 }
 
 std::optional<Classification> classify(const Symbol &symbol) {
@@ -163,7 +157,6 @@ std::optional<Classification> classify(const TokenSpan &token, const Navigator &
         case TokenType::ErrorHandler:
         case TokenType::New:
         case TokenType::This:
-        case TokenType::Unsafe:
         case TokenType::Super:
         case TokenType::Generic:
         case TokenType::Class:
@@ -172,6 +165,7 @@ std::optional<Classification> classify(const TokenSpan &token, const Navigator &
         case TokenType::Protocol:
         case TokenType::CollectionLiteral:
             return Classification{Keyword};
+        case TokenType::Unsafe:
         case TokenType::Mutable:
             return Classification{Modifier};
         case TokenType::Identifier:

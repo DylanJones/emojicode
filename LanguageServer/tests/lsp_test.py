@@ -451,7 +451,9 @@ class DiagnosticsTests(ServerTestCase):
         client.change(main, "🏁 🍇🍉\n")
         # b is its own root now, as main no longer includes it, so its errors are published.
         client.change(b, "🐇 🐠 🍇\n  🆕 🍇\n    😀 🔤a🔤 ➕ 1❗️\n  🍉\n🍉\n")
-        self.assertIn("➕", client.diagnostics_until(b, bool)[0]["message"])
+        # The check of main's change may publish "No 🏁 block was found." for b before the edit is
+        # processed, so wait for the type error itself.
+        client.diagnostics_until(b, lambda d: any("➕" in x["message"] for x in d))
 
     def test_debounce_checks_only_last_change(self):
         path = self.write("main.emojic", HELLO)
@@ -914,6 +916,16 @@ class NavigationTests(ServerTestCase):
             self.assertEqual(tokens[("🏊", call + 1)], "method", broken)
             self.assertEqual(tokens[("😀", text.split("\n").index("  😀 🔤Depth 🧲total🧲🔤❗️"))], "method")
 
+    def test_semantic_tokens_of_modifiers(self):
+        # ☣ and 🖍 are modifiers like the other attributes, as in the TextMate and tree-sitter grammars.
+        text = "☣️ 🐇 🐟 🍇\n  🖍🆕 a 🔢\n🍉\n🔏 🐇 🐠 🍇🍉\n🏁 🍇\n  ☣️ 🍇🍉\n🍉\n"
+        self.client.change(self.path, text)
+        tokens = self.semantic_types(text)
+        self.assertEqual(tokens[("☣️", 0)], "modifier")
+        self.assertEqual(tokens[("🖍", 1)], "modifier")
+        self.assertEqual(tokens[("🔏", 3)], "modifier")
+        self.assertEqual(tokens[("☣️", 5)], "modifier")
+
     def test_document_symbols(self):
         symbols = self.client.request("textDocument/documentSymbol", {"textDocument": {"uri": uri(self.path)}})
         self.assertEqual([s["name"] for s in symbols], ["🐟"])
@@ -1080,6 +1092,9 @@ class CompletionTests(ServerTestCase):
 
     def complete_at(self, text):
         """Returns the labels of the completion items at the | in text, a file of its own."""
+        return [item["label"] for item in self.complete_items_at(text)]
+
+    def complete_items_at(self, text):
         offset = text.index("|")
         text = text.replace("|", "")
         path = self.write("place.emojic", text)
@@ -1091,7 +1106,7 @@ class CompletionTests(ServerTestCase):
         character = utf16_length(text[text.rfind("\n", 0, offset) + 1:offset])
         result = self.client.request("textDocument/completion", {"textDocument": {"uri": uri(path)},
                                                                  "position": {"line": line, "character": character}})
-        return [item["label"] for item in result["items"]]
+        return result["items"]
 
     def test_members_at_the_start_of_a_line_in_a_type(self):
         for text in ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n",
@@ -1104,6 +1119,19 @@ class CompletionTests(ServerTestCase):
             self.assertNotIn("↪️ if", labels, text)
             self.assertNotIn("🐇 class", labels, text)
             self.assertFalse([label for label in labels if label.startswith("🔢")], text)
+
+    def test_keywords_of_every_attribute(self):
+        for text, label in (("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n", "📻"), ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n", "🥯"),
+                            ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n", "⚠️"), ("🐇 🐟 🍇\n  🆕 |\n🍉\n🏁 🍇🍉\n", "🍼"),
+                            ("|\n🏁 🍇🍉\n", "🔗")):
+            labels = self.complete_at(text)
+            self.assertTrue([l for l in labels if l.startswith(label)], (label, labels))
+
+    def test_link_snippet_is_closed(self):
+        self.start(capabilities={"textDocument": {"completion": {"completionItem": {"snippetSupport": True}}}})
+        items = self.complete_items_at("|\n🏁 🍇🍉\n")
+        link = [i for i in items if i["label"].startswith("🔗")][0]
+        self.assertEqual(link["textEdit"]["newText"], "🔗 🔤$1🔤 🔗")
 
     def test_member_by_keyword(self):
         self.assertEqual(self.complete_at("🐇 🐟 🍇\n  meth|\n🍉\n🏁 🍇🍉\n")[0], "❗️ method function func def")

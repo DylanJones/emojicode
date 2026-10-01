@@ -23,6 +23,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
+#include <algorithm>
 #include <stdexcept>
 
 namespace EmojicodeCompiler {
@@ -77,8 +78,7 @@ void FunctionCodeGenerator::declareArguments(llvm::Function *function) {
         llvmArg.setName(utf8(arg.name));
     }
 
-    if ((fn_->functionType() == FunctionType::ValueTypeInitializer ||
-         fn_->functionType() == FunctionType::ObjectInitializer) && fn_->owner()->storesGenericArgs()) {
+    if (takesInitializerGenericArgs(fn_)) {
         auto llvmArg = (it++);
         llvmArg->setName("genericArgs");
         builder().CreateStore(llvmArg, genericArgsPtr());
@@ -160,6 +160,20 @@ llvm::Value* FunctionCodeGenerator::buildGetBoxConformance(llvm::Value *boxInfo,
     }
     assert(type.boxedFor().type() == TypeType::Protocol);
     return boxInfo;
+}
+
+std::optional<size_t> FunctionCodeGenerator::multiprotocolIndex(const Type &type, const Protocol *protocol) {
+    if (type.boxedFor().type() != TypeType::MultiProtocol) {
+        return std::nullopt;
+    }
+    auto &protocols = type.boxedFor().protocols();
+    auto it = std::find_if(protocols.begin(), protocols.end(), [protocol](const Type &t) {
+        return t.protocol() == protocol;
+    });
+    if (it == protocols.end()) {
+        return std::nullopt;
+    }
+    return static_cast<size_t>(it - protocols.begin());
 }
 
 llvm::Value* FunctionCodeGenerator::buildGetValueBoxInfo(llvm::Value *boxInfo, const Type &type) {
@@ -438,7 +452,7 @@ llvm::Value* FunctionCodeGenerator::buildTypeDescriptionEntry(const Type &type) 
 }
 
 /// Returns the field at @p index of the value witness of the type described by @p entry.
-static llvm::Value* witnessField(FunctionCodeGenerator *fg, llvm::Value *entry, unsigned index) {
+static llvm::Value* witnessField(FunctionCodeGenerator *fg, llvm::Value *entry, LLVMTypeHelper::ValueWitnessField index) {
     auto &th = fg->typeHelper();
     auto witness = fg->builder().CreateLoad(th.pointer(),
                                             fg->builder().CreateConstInBoundsGEP2_32(th.typeDescription(), entry, 0, 2));
@@ -457,37 +471,39 @@ llvm::Value* FunctionCodeGenerator::buildBoxConformance(llvm::Value *box, llvm::
         return buildFindProtocolConformance(box, boxInfo, boxedFor.protocol()->rtti());
     }
     auto &protocols = boxedFor.protocols();
+    return buildMultiprotocolTable(protocols, [&](size_t i) {
+        return buildFindProtocolConformance(box, boxInfo, protocols[i].protocol()->rtti());
+    });
+}
+
+llvm::Value* FunctionCodeGenerator::buildMultiprotocolTable(const std::vector<Type> &protocols,
+                                                            const std::function<llvm::Value*(size_t)> &conformanceAt) {
     auto arrayType = llvm::ArrayType::get(typeHelper().pointer(), protocols.size());
     auto conformances = createEntryAlloca(arrayType);
     for (size_t i = 0; i < protocols.size(); i++) {
-        auto conformance = buildFindProtocolConformance(box, boxInfo, protocols[i].protocol()->rtti());
-        builder().CreateStore(conformance, builder().CreateConstInBoundsGEP2_32(arrayType, conformances, 0, i));
+        builder().CreateStore(conformanceAt(i), builder().CreateConstInBoundsGEP2_32(arrayType, conformances, 0, i));
     }
     return builder().CreateCall(generator()->runTime().multiprotocolTable(), { conformances, int64(protocols.size()) });
 }
 
-/// Replaces the protocol conformance (or table of them) in the box of @p type to which @p box points with the box info
-/// of its value, as the boxes of value witnesses hold.
-static void conformanceToBoxInfo(FunctionCodeGenerator *fg, llvm::Value *box, const Type &type) {
-    auto infoPtr = fg->buildGetBoxInfoPtr(box);
-    auto conformance = fg->builder().CreateLoad(fg->typeHelper().pointer(), infoPtr);
-    fg->createIf(fg->builder().CreateIsNotNull(conformance), [&] {
-        fg->builder().CreateStore(fg->buildGetValueBoxInfo(conformance, type), infoPtr);
+void FunctionCodeGenerator::conformanceToBoxInfo(llvm::Value *box, const Type &type) {
+    auto infoPtr = buildGetBoxInfoPtr(box);
+    auto conformance = builder().CreateLoad(typeHelper().pointer(), infoPtr);
+    createIf(builder().CreateIsNotNull(conformance), [&] {
+        builder().CreateStore(buildGetValueBoxInfo(conformance, type), infoPtr);
     });
 }
 
-/// Replaces the box info in the box of @p type to which @p box points with what a box of @p type holds instead (see
-/// FunctionCodeGenerator::buildBoxConformance()).
-static void boxInfoToConformance(FunctionCodeGenerator *fg, llvm::Value *box, const Type &type) {
-    auto infoPtr = fg->buildGetBoxInfoPtr(box);
-    auto boxInfo = fg->builder().CreateLoad(fg->typeHelper().pointer(), infoPtr);
-    fg->createIf(fg->builder().CreateIsNotNull(boxInfo), [&] {
-        fg->builder().CreateStore(fg->buildBoxConformance(box, boxInfo, type), infoPtr);
+void FunctionCodeGenerator::boxInfoToConformance(llvm::Value *box, const Type &type) {
+    auto infoPtr = buildGetBoxInfoPtr(box);
+    auto boxInfo = builder().CreateLoad(typeHelper().pointer(), infoPtr);
+    createIf(builder().CreateIsNotNull(boxInfo), [&] {
+        builder().CreateStore(buildBoxConformance(box, boxInfo, type), infoPtr);
     });
 }
 
 llvm::Value* FunctionCodeGenerator::buildValueSize(llvm::Value *entry) {
-    return witnessField(this, entry, 0);
+    return witnessField(this, entry, LLVMTypeHelper::WitnessSize);
 }
 
 llvm::Value* FunctionCodeGenerator::buildLoadErased(llvm::Value *reference, const Type &otype) {
@@ -500,9 +516,9 @@ llvm::Value* FunctionCodeGenerator::buildLoadErased(llvm::Value *reference, cons
         builder().CreateStore(builder().CreateLoad(typeHelper().box(), address), box);
         retain(box, type);
     }, [&] {
-        builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, 1), { address, box });
+        builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, LLVMTypeHelper::WitnessLoad), { address, box });
         if (boxHasConformance(type)) {
-            boxInfoToConformance(this, box, type);
+            boxInfoToConformance(box, type);
         }
     });
     return builder().CreateLoad(typeHelper().box(), box);
@@ -513,21 +529,21 @@ void FunctionCodeGenerator::buildStoreErased(llvm::Value *address, llvm::Value *
     auto box = createEntryAlloca(typeHelper().box());
     builder().CreateStore(boxValue, box);
     if (boxHasConformance(type)) {
-        conformanceToBoxInfo(this, box, type);
+        conformanceToBoxInfo(box, type);
     }
-    builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, 2), { address, box });
+    builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, LLVMTypeHelper::WitnessStore), { address, box });
 }
 
 void FunctionCodeGenerator::buildReleaseErased(llvm::Value *address, llvm::Value *entry) {
-    createIf(builder().CreateNot(witnessField(this, entry, 5)), [&] {
-        builder().CreateCall(typeHelper().boxRetainRelease(), witnessField(this, entry, 3), { address });
+    createIf(builder().CreateNot(witnessField(this, entry, LLVMTypeHelper::WitnessIsUnmanaged)), [&] {
+        builder().CreateCall(typeHelper().boxRetainRelease(), witnessField(this, entry, LLVMTypeHelper::WitnessRelease), { address });
     });
 }
 
 void FunctionCodeGenerator::buildReleaseErased(llvm::Value *address, llvm::Value *entry, llvm::Value *count) {
     // The flag is checked once, so that the values of a type that is not managed, like 🔢, aren't visited at all.
-    createIf(builder().CreateNot(witnessField(this, entry, 5)), [&] {
-        auto release = witnessField(this, entry, 3);
+    createIf(builder().CreateNot(witnessField(this, entry, LLVMTypeHelper::WitnessIsUnmanaged)), [&] {
+        auto release = witnessField(this, entry, LLVMTypeHelper::WitnessRelease);
         createForEachValue(address, count, buildValueSize(entry), [&](llvm::Value *valueAddress) {
             builder().CreateCall(typeHelper().boxRetainRelease(), release, { valueAddress });
         });
@@ -539,8 +555,8 @@ void FunctionCodeGenerator::buildCopyErased(llvm::Value *destination, llvm::Valu
     auto size = buildValueSize(entry);
     builder().CreateMemMove(destination, llvm::MaybeAlign(), source, llvm::MaybeAlign(),
                             builder().CreateMul(size, count));
-    createIf(builder().CreateNot(witnessField(this, entry, 5)), [&] {
-        auto retain = witnessField(this, entry, 4);
+    createIf(builder().CreateNot(witnessField(this, entry, LLVMTypeHelper::WitnessIsUnmanaged)), [&] {
+        auto retain = witnessField(this, entry, LLVMTypeHelper::WitnessRetain);
         createForEachValue(destination, count, size, [&](llvm::Value *address) {
             builder().CreateCall(typeHelper().boxRetainRelease(), retain, { address });
         });
@@ -554,9 +570,9 @@ llvm::Value* FunctionCodeGenerator::buildErasedReferenceBox(llvm::Value *referen
     auto entry = builder().CreateExtractValue(reference, 1);
     return createIfElsePhi(builder().CreateIsNull(entry), [&] { return address; }, [&]() -> llvm::Value* {
         auto box = createEntryAlloca(typeHelper().box());
-        builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, 1), { address, box });
+        builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, LLVMTypeHelper::WitnessLoad), { address, box });
         if (boxHasConformance(type)) {
-            boxInfoToConformance(this, box, type);
+            boxInfoToConformance(box, type);
         }
         return box;
     });
@@ -611,18 +627,11 @@ llvm::Constant* FunctionCodeGenerator::boxInfoFor(const Type &type) {
     return generator()->boxInfoFor(type);
 }
 
-void TemporaryObjectsManager::releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast,
-                                                       bool includeProtected) {
+void TemporaryObjectsManager::releaseTemporaryObjects(FunctionCodeGenerator *fg, bool clearQueue, bool skipLast) {
     if (temporaryObjects_.empty()) return;
     auto end = skipLast ? temporaryObjects_.end() - 1 : temporaryObjects_.end();
-    // A protected entry not visited here (includeProtected is false) must never be dropped, whatever clearQueue
-    // says, since it is still owned by a call that has not been reached yet on this path.
     std::vector<Temporary> kept;
     for (auto it = temporaryObjects_.begin(); it != temporaryObjects_.end(); it++) {
-        if (it->protectedEntry && !includeProtected) {
-            kept.push_back(*it);
-            continue;
-        }
         if (it < end) {
             release(fg, *it);
         }
@@ -635,7 +644,7 @@ void TemporaryObjectsManager::releaseTemporaryObjects(FunctionCodeGenerator *fg,
 
 void TemporaryObjectsManager::releaseTemporaryObjectsSince(FunctionCodeGenerator *fg, size_t mark) {
     if (mark >= temporaryObjects_.size()) return;
-    // Protected entries stay: they belong to a call that has not been reached yet (see releaseTemporaryObjects()).
+    // Protected entries stay: they belong to a call that has not been reached yet (see addPendingReceiver()).
     std::vector<Temporary> kept(temporaryObjects_.begin(), temporaryObjects_.begin() + mark);
     for (auto it = temporaryObjects_.begin() + mark; it != temporaryObjects_.end(); it++) {
         if (it->protectedEntry) {
@@ -669,69 +678,39 @@ void TemporaryObjectsManager::release(FunctionCodeGenerator *fg, const Temporary
     }
 }
 
-void FunctionCodeGenerator::release(llvm::Value *value, const Type &otype) {
-    auto type = otype.resolveOnSuperArgumentsAndConstraints(*typeContext_);
-    if (type.type() == TypeType::Class || type.type() == TypeType::Someobject) {
-        builder().CreateCall(generator()->runTime().release(), value);
-    }
-    else if (type.type() == TypeType::ValueType && type.valueType() == compiler()->sMemory) {
-        builder().CreateCall(generator()->runTime().releaseMemory(), value);
-    }
-    else if (type.type() == TypeType::ValueType) {
-        builder().CreateCall(type.valueType()->destructor(), value);
-    }
-    else if (type.type() == TypeType::Optional) {
-        if (isManagedByReference(type)) {
-            createIf(buildOptionalHasValuePtr(value, type), [&] {
-                release(buildGetOptionalValuePtr(value, type), type.optionalType());
-            });
-        }
-        else {
-            createIf(buildOptionalHasValue(value, type), [&] {
-                release(buildGetOptionalValue(value, type), type.optionalType());
-            });
-        }
-    }
-    else if (type.type() == TypeType::Box) {
-        auto boxInfo = builder().CreateLoad(typeHelper().pointer(), buildGetBoxInfoPtr(value));
-        if (type.unboxed().type() == TypeType::Optional || type.unboxed().type() == TypeType::Something) {
-            auto null = llvm::ConstantPointerNull::get(typeHelper().pointer());
-            createIf(builder().CreateICmpNE(boxInfo, null), [&] {
-                manageBox(false, boxInfo, value, type);
-            });
-        }
-        else {
-            manageBox(false, boxInfo, value, type);
-        }
-    }
-    else if (type.type() == TypeType::Callable && !type.isCCallable()) {
-        builder().CreateCall(generator()->runTime().releaseCapture(), builder().CreateExtractValue(value, 1));
-    }
+void FunctionCodeGenerator::release(llvm::Value *value, const Type &type) {
+    manage(false, value, type);
 }
 
-void FunctionCodeGenerator::retain(llvm::Value *value, const Type &otype) {
+void FunctionCodeGenerator::retain(llvm::Value *value, const Type &type) {
+    manage(true, value, type);
+}
+
+void FunctionCodeGenerator::manage(bool isRetain, llvm::Value *value, const Type &otype) {
     auto type = otype.resolveOnSuperArgumentsAndConstraints(*typeContext_);
+    auto &runTime = generator()->runTime();
     if (type.type() == TypeType::Class || type.type() == TypeType::Someobject) {
-        builder().CreateCall(generator()->runTime().retain(), value);
+        builder().CreateCall(isRetain ? runTime.retain() : runTime.release(), value);
     }
     else if (type.type() == TypeType::ValueType && type.valueType() == compiler()->sMemory) {
-        builder().CreateCall(generator()->runTime().retainMemory(), value);
-    }
-    else if (type.type() == TypeType::Callable && !type.isCCallable()) {
-        builder().CreateCall(generator()->runTime().retain(), builder().CreateExtractValue(value, 1));
+        builder().CreateCall(isRetain ? runTime.retainMemory() : runTime.releaseMemory(), value);
     }
     else if (type.type() == TypeType::ValueType) {
-        builder().CreateCall(type.valueType()->copyRetain(), value);
+        builder().CreateCall(isRetain ? type.valueType()->copyRetain() : type.valueType()->destructor(), value);
+    }
+    else if (type.type() == TypeType::Callable && !type.isCCallable()) {
+        builder().CreateCall(isRetain ? runTime.retain() : runTime.releaseCapture(),
+                             builder().CreateExtractValue(value, 1));
     }
     else if (type.type() == TypeType::Optional) {
         if (isManagedByReference(type)) {
             createIf(buildOptionalHasValuePtr(value, type), [&] {
-                retain(buildGetOptionalValuePtr(value, type), type.optionalType());
+                manage(isRetain, buildGetOptionalValuePtr(value, type), type.optionalType());
             });
         }
         else {
             createIf(buildOptionalHasValue(value, type), [&] {
-                retain(buildGetOptionalValue(value, type), type.optionalType());
+                manage(isRetain, buildGetOptionalValue(value, type), type.optionalType());
             });
         }
     }
@@ -740,11 +719,11 @@ void FunctionCodeGenerator::retain(llvm::Value *value, const Type &otype) {
         if (type.unboxed().type() == TypeType::Optional || type.unboxed().type() == TypeType::Something) {
             auto null = llvm::ConstantPointerNull::get(typeHelper().pointer());
             createIf(builder().CreateICmpNE(boxInfo, null), [&] {
-                manageBox(true, boxInfo, value, type);
+                manageBox(isRetain, boxInfo, value, type);
             });
         }
         else {
-            manageBox(true, boxInfo, value, type);
+            manageBox(isRetain, boxInfo, value, type);
         }
     }
 }
@@ -836,6 +815,17 @@ llvm::Value* FunctionCodeGenerator::genericArgsPtr() {
     assert(callee.typeDefinition()->storesGenericArgs());
     return builder().CreateConstInBoundsGEP2_32(calleeStructType(), thisValue(), 0,
                                                 callee.type() == TypeType::Class ? 2 : 0);
+}
+
+void FunctionCodeGenerator::freeOwnedDescription(llvm::Value *gargs) {
+    createIf(builder().CreateIsNull(builder().CreateExtractValue(gargs, { 1 })), [&] {
+        builder().CreateCall(generator()->runTime().freeDescription(), { builder().CreateExtractValue(gargs, { 0 }) });
+    });
+}
+
+llvm::Value* FunctionCodeGenerator::isErrorSet(llvm::Value *errorPointer) {
+    return builder().CreateICmpNE(llvm::ConstantPointerNull::get(typeHelper().pointer()),
+                                  builder().CreateLoad(typeHelper().pointer(), errorPointer));
 }
 
 llvm::Type* FunctionCodeGenerator::genericArgsType() {
