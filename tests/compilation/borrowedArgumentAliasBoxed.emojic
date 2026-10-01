@@ -2,8 +2,12 @@
 🐊 🔄 🍇
   🖍❗️ 🔃 other ⚪️
 🍉
+🐊 🌀 🍇
+  🖍❗️ 🔀 other ⚪️
+🍉
 🕊 🧺 🍇
   🐊 🔄
+  🐊 🌀
   🖍🆕 items 🍨🐚🔢🍆
   🆕 🍼items 🍨🐚🔢🍆 🍇🍉
   🖍❗️ 🔀 other 🍬🧺 🍇
@@ -18,6 +22,12 @@
       😀 🔤box argument=🧲🐽📦o❗️ 0❗️🧲🔤❗️
     🍉
   🍉
+  🖍❗️ 🔀 other ⚪️ 🍇
+    9 ➡️ 🐽items 0❗️
+    ↪️ 🔲other 🧺 ➡️ o 🍇
+      😀 🔤multi argument=🧲🐽📦o❗️ 0❗️🧲🔤❗️
+    🍉
+  🍉
   ❗️ 📦 ➡️ 🍨🐚🔢🍆 🍇 ↩️ items 🍉
 🍉
 🏁 🍇
@@ -28,6 +38,9 @@
   🖍🆕 p 🔄
   🆕🧺 🍿 1 🍆❗️ ➡️ 🖍p
   🔃p p❗️
+  🖍🆕 m 🍱🔄🌀🍱
+  🆕🧺 🍿 1 🍆❗️ ➡️ 🖍m
+  🔀m m❗️
   💭 A generic argument that refers into the receiver.
   🍿 🍿 1 2 🍆 🍿 3 🍆 🍆 ➡️ 🖍🆕 ll
   🐻 ll 🐽ll 0❗️❗️
