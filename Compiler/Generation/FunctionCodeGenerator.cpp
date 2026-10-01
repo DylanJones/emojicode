@@ -77,8 +77,7 @@ void FunctionCodeGenerator::declareArguments(llvm::Function *function) {
         llvmArg.setName(utf8(arg.name));
     }
 
-    if ((fn_->functionType() == FunctionType::ValueTypeInitializer ||
-         fn_->functionType() == FunctionType::ObjectInitializer) && fn_->owner()->storesGenericArgs()) {
+    if (takesInitializerGenericArgs(fn_)) {
         auto llvmArg = (it++);
         llvmArg->setName("genericArgs");
         builder().CreateStore(llvmArg, genericArgsPtr());

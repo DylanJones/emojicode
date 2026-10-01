@@ -185,8 +185,7 @@ llvm::FunctionType* LLVMTypeHelper::functionTypeFor(Function *function) {
     std::transform(function->parameters().begin(), function->parameters().end(), std::back_inserter(args), [&](auto &arg) {
         return typeForFunction(arg.type->type(), function);
     });
-    if ((function->functionType() == FunctionType::ObjectInitializer ||
-         function->functionType() == FunctionType::ValueTypeInitializer) && function->owner()->storesGenericArgs()) {
+    if (takesInitializerGenericArgs(function)) {
         args.emplace_back(genericArgsStore(function->typeContext().calleeType()));
     }
     if (takesTypeGenericArgs(function)) {
