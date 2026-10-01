@@ -106,12 +106,16 @@ void PrettyPrinter::print(RecordingPackage::Recording *recording) {
     if (auto documentation = dynamic_cast<RecordingPackage::DocumentationRecording *>(recording)) {
         // Interfaces print the documentation at their beginning, see printInterface().
         if (!interface_) {
-            prettyStream_.refuseOffer() << "📘" << documentation->documentation_ << "📘\n";
+            prettyStream_.refuseOffer() << "📘" << documentation->documentation_ << "📘";
+            printTrailingComments(recording->position());
+            prettyStream_.refuseOffer() << "\n";
             prettyStream_.offerNewLine();
         }
     }
     if (auto import = dynamic_cast<RecordingPackage::Import *>(recording)) {
-        prettyStream_.refuseOffer() << "📦 " << import->package << " " << import->destNamespace << "\n";
+        prettyStream_.refuseOffer() << "📦 " << import->package << " " << import->destNamespace;
+        printTrailingComments(import->position());
+        prettyStream_.refuseOffer() << "\n";
         prettyStream_.offerNewLine();
     }
     if (auto type = dynamic_cast<RecordingPackage::RecordedType *>(recording)) {
@@ -122,7 +126,9 @@ void PrettyPrinter::print(RecordingPackage::Recording *recording) {
             printRecordings(package_->files()[interfaceFileIndex++].recordings_);
         }
         else {
-            prettyStream_.refuseOffer() << "📜 🔤" << include->path_ << "🔤\n";
+            prettyStream_.refuseOffer() << "📜 🔤" << include->path_ << "🔤";
+            printTrailingComments(include->position());
+            prettyStream_.refuseOffer() << "\n";
             prettyStream_.offerNewLine();
         }
     }
@@ -186,7 +192,9 @@ void PrettyPrinter::printClosure(Function *function, bool escaping) {
     printErrorType(function);
     prettyStream_ << "\n";
     function->ast()->innerToCode(prettyStream_);
-    prettyStream_ << "🍉\n";
+    prettyStream_.indent() << "🍉";
+    prettyStream_.printTrailingComments(function->ast()->endPosition(), true);
+    prettyStream_.refuseOffer() << "\n";
 }
 
 void PrettyPrinter::printReturnType(Function *function) {
@@ -250,7 +258,7 @@ void PrettyPrinter::printTypeDef(const Type &type) {
             print(member.key, member.function, false, member.noMutate);
         }
         printTypeEnd(typeDef);
-        prettyStream_ << "🍉\n\n";
+        printTypeClose(typeDef);
         return;
     }
     if (auto enumeration = type.enumeration()) {
@@ -271,7 +279,19 @@ void PrettyPrinter::printTypeDef(const Type &type) {
     }
 
     printTypeEnd(typeDef);
-    prettyStream_.refuseOffer() << "🍉\n\n";
+    printTypeClose(typeDef);
+}
+
+void PrettyPrinter::printTypeClose(TypeDefinition *typeDef) {
+    prettyStream_.refuseOffer() << "🍉";
+    printTrailingComments(typeDef->endPosition());
+    prettyStream_.refuseOffer() << "\n\n";
+}
+
+void PrettyPrinter::printTrailingComments(const SourcePosition &p) {
+    if (!interface_) {
+        prettyStream_.printTrailingComments(p);
+    }
 }
 
 void PrettyPrinter::printTypeEnd(TypeDefinition *typeDef) {
@@ -347,7 +367,9 @@ std::vector<PrettyPrinter::Member> PrettyPrinter::sortedMembers(std::vector<Memb
 void PrettyPrinter::printProtocolConformances(TypeDefinition *typeDef, const TypeContext &typeContext) {
     for (auto &protocol : typeDef->protocols()) {
         printComments(protocol.position);
-        prettyStream_.indent() << "🐊 " << protocol.type << "\n";
+        prettyStream_.indent() << "🐊 " << protocol.type;
+        printTrailingComments(protocol.position);
+        prettyStream_.refuseOffer() << "\n";
     }
     prettyStream_.offerNewLineUnlessEmpty(typeDef->protocols());
 }
@@ -362,7 +384,8 @@ void PrettyPrinter::printInstanceVariables(TypeDefinition *typeDef, const TypeCo
         if (ivar.expr != nullptr) {
             prettyStream_ << " ⬅️ " << ivar.expr;
         }
-        prettyStream_ << "\n";
+        printTrailingComments(ivar.position);
+        prettyStream_.refuseOffer() << "\n";
     }
     prettyStream_.offerNewLineUnlessEmpty(typeDef->instanceVariables());
 }
@@ -375,7 +398,9 @@ void PrettyPrinter::printEnumValues(Enum *enumeration) {
     for (auto &value : values) {
         printComments(value.second.position);
         printDocumentation(value.second.documentation);
-        prettyStream_.indent() << "🆕▶️" << value.first << "\n";
+        prettyStream_.indent() << "🆕▶️" << value.first;
+        printTrailingComments(value.second.position);
+        prettyStream_.refuseOffer() << "\n";
     }
     prettyStream_.offerNewLineUnlessEmpty(values);
 }
@@ -482,7 +507,8 @@ void PrettyPrinter::print(const char *key, Function *function, bool body, bool n
         if (body) {
             printBody(function);
         }
-        prettyStream_ << "\n";
+        printTrailingComments(function->position());
+        prettyStream_.refuseOffer() << "\n";
     });
 }
 

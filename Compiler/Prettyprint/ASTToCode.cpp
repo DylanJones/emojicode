@@ -54,13 +54,17 @@ void ASTArguments::toCode(PrettyStream &pretty) const {
 void ASTBlock::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     if (stmts_.empty() && !pretty.hasCommentsBefore(endPosition_)) {
-        pretty << "🍇🍉\n";
+        pretty << "🍇🍉";
+        pretty.printTrailingComments(endPosition_, true);
+        pretty.refuseOffer() << "\n";
         return;
     }
     pretty << "🍇";
     pretty.offerNewLine();
     innerToCode(pretty);
-    pretty.indent() << "🍉\n";
+    pretty.indent() << "🍉";
+    pretty.printTrailingComments(endPosition_, true);
+    pretty.refuseOffer() << "\n";
 }
 
 void ASTBlock::innerToCode(PrettyStream &pretty) const {
