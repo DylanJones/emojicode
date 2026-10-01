@@ -451,7 +451,9 @@ class DiagnosticsTests(ServerTestCase):
         client.change(main, "🏁 🍇🍉\n")
         # b is its own root now, as main no longer includes it, so its errors are published.
         client.change(b, "🐇 🐠 🍇\n  🆕 🍇\n    😀 🔤a🔤 ➕ 1❗️\n  🍉\n🍉\n")
-        self.assertIn("➕", client.diagnostics_until(b, bool)[0]["message"])
+        # The check of main's change may publish "No 🏁 block was found." for b before the edit is
+        # processed, so wait for the type error itself.
+        client.diagnostics_until(b, lambda d: any("➕" in x["message"] for x in d))
 
     def test_debounce_checks_only_last_change(self):
         path = self.write("main.emojic", HELLO)
