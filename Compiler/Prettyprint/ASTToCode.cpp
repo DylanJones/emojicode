@@ -44,8 +44,9 @@ void ASTArguments::toCode(PrettyStream &pretty) const {
     if (!arguments_.empty()) {
         pretty << " ";
         for (auto &arg : arguments_) {
-            pretty << arg;
-            pretty.offerSpace();
+            pretty.printComments(arg->position());
+            pretty.indentAtLineStart() << arg;
+            pretty.ensureSpace();
         }
     }
     pretty.printComments(moodPosition_);
@@ -92,7 +93,9 @@ void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
 
 void ASTForIn::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🔂 " << varName_ << " " << iteratee_ << " " << block_;
+    pretty.indent() << "🔂 " << varName_ << " " << iteratee_;
+    pretty.indentAtLineStart().ensureSpace();
+    pretty << block_;
 }
 
 void ASTUnsafeBlock::toCode(PrettyStream &pretty) const {
@@ -323,9 +326,10 @@ void ASTMethod::toCode(PrettyStream &pretty) const {
         pretty << "➡️ " << name_;
         args_.genericArgsToCode(pretty);
         pretty << callee_;
-        pretty.offerSpace();
+        pretty.ensureSpace();
         for (size_t i = 1; i < args_.args().size(); i++) {
-            pretty << args_.args()[i];
+            pretty.printComments(args_.args()[i]->position());
+            pretty.indentAtLineStart() << args_.args()[i];
         }
         pretty.printComments(args_.moodPosition());
         pretty.refuseSpaceOffer().indentAtLineStart() << "❗️";
