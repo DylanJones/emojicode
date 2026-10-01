@@ -77,21 +77,32 @@ void CallCodeGenerator::evaluateArguments(bool hasCallee, const Type &type, cons
     bool receiverOwnsStorage = (type.type() == TypeType::ValueType && callType_ == CallType::StaticDispatch) ||
                                (type.type() == TypeType::Box && callType_ == CallType::DynamicProtocolDispatch);
     if (function->mutating() && hasCallee && receiverOwnsStorage && dynamic_cast<Initializer *>(function) == nullptr) {
-        for (size_t i = 0; i < astArgs.args().size(); i++) {
-            auto &argType = astArgs.args()[i]->expressionType();
-            if (!mayAliasReceiver(argType) || !fg_->isManagedByReference(argType)) continue;
-            auto &arg = args_[i + 1];
-            auto llvmType = fg_->typeHelper().llvmTypeFor(argType);
-            auto slot = fg_->createEntryAlloca(llvmType);
-            fg_->builder().CreateStore(arg->getType()->isPointerTy() ? fg_->builder().CreateLoad(llvmType, arg) : arg,
-                                       slot);
-            if (arg->getType()->isPointerTy()) {
-                arg = slot;
-            }
-            fg_->retain(slot, argType);
-            snapshots_.emplace_back(slot, argType);
-        }
+        snapshotArguments(astArgs, args_);
     }
+}
+
+void CallCodeGenerator::snapshotArguments(const ASTArguments &astArgs, std::vector<llvm::Value *> &args) {
+    for (size_t i = 0; i < astArgs.args().size(); i++) {
+        auto &argType = astArgs.args()[i]->expressionType();
+        if (!mayAliasReceiver(argType) || !fg_->isManagedByReference(argType)) continue;
+        auto &arg = args[i + 1];
+        auto llvmType = fg_->typeHelper().llvmTypeFor(argType);
+        auto slot = fg_->createEntryAlloca(llvmType);
+        fg_->builder().CreateStore(arg->getType()->isPointerTy() ? fg_->builder().CreateLoad(llvmType, arg) : arg,
+                                   slot);
+        if (arg->getType()->isPointerTy()) {
+            arg = slot;
+        }
+        fg_->retain(slot, argType);
+        snapshots_.emplace_back(slot, argType);
+    }
+}
+
+void CallCodeGenerator::releaseSnapshots() {
+    for (auto &snapshot : snapshots_) {
+        fg_->release(snapshot.first, snapshot.second);
+    }
+    snapshots_.clear();
 }
 
 llvm::Value *CallCodeGenerator::dispatchEvaluated(llvm::Value *callee, const std::function<void()> &beforeDispatch) {
@@ -104,10 +115,7 @@ llvm::Value *CallCodeGenerator::dispatchEvaluated(llvm::Value *callee, const std
         beforeDispatch();
     }
     auto value = dispatch(function_, type_, *astArgs_, args_);
-    for (auto &snapshot : snapshots_) {
-        fg_->release(snapshot.first, snapshot.second);
-    }
-    snapshots_.clear();
+    releaseSnapshots();
     if (erasedReference) {
         fg_->buildErasedReferenceWriteBack(callee, args_.front(), type_, function_->mutating());
     }
@@ -116,8 +124,7 @@ llvm::Value *CallCodeGenerator::dispatchEvaluated(llvm::Value *callee, const std
 }
 
 void CallCodeGenerator::restoreStack(Function *function) {
-    auto returnType = function->returnType();
-    if (tdg_ != nullptr && (returnType == nullptr || !LLVMTypeHelper::isErasedReference(returnType->type()))) {
+    if (tdg_ != nullptr && LLVMTypeHelper::callerMayRestoreDescriptions(function)) {
         tdg_->restoreStack();
     }
 }
@@ -228,27 +235,26 @@ llvm::Value *MultiprotocolCallCodeGenerator::generate(llvm::Value *callee, const
     }
 
     auto argsv = createArgsVector(callee, args, errorPointer, {});
+    // The method may mutate the receiver, which a by-value argument can alias.
+    if (function->mutating() && isMutableVariable(calleeType)) {
+        snapshotArguments(args, argsv);
+    }
 
     auto &protocol = calleeType.protocols()[multiprotocolN];
     llvm::Value *conformance = nullptr;
-    if (calleeType.boxedFor().type() == TypeType::MultiProtocol) {
-        // The box can be for a multiprotocol of some of the protocols, e.g. a multiprotocol value returned as a generic
-        // argument for it, whose table has the conformances in its order.
-        auto &boxProtocols = calleeType.boxedFor().protocols();
-        auto it = std::find_if(boxProtocols.begin(), boxProtocols.end(), [&protocol](const Type &t) {
-            return t.protocol() == protocol.protocol();
-        });
-        if (it != boxProtocols.end()) {
-            auto boxInfo = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
-                                                      fg()->buildGetBoxInfoPtr(argsv.front()));
-            conformance = fg()->buildGetBoxConformance(boxInfo, calleeType, it - boxProtocols.begin());
-        }
+    // The box can be for a multiprotocol of some of the protocols, e.g. a multiprotocol value returned as a generic
+    // argument for it, whose table has the conformances in its order.
+    if (auto index = FunctionCodeGenerator::multiprotocolIndex(calleeType, protocol.protocol())) {
+        auto boxInfo = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
+                                                  fg()->buildGetBoxInfoPtr(argsv.front()));
+        conformance = fg()->buildGetBoxConformance(boxInfo, calleeType, *index);
     }
     if (conformance == nullptr) {
         conformance = buildFindProtocolConformance(argsv, calleeType, protocol);
     }
     auto value = createDynamicProtocolDispatch(function, std::move(argsv), args.genericArgumentTypes(), conformance,
                                                isMutableVariable(calleeType) && function->mutating());
+    releaseSnapshots();
     restoreStack(function);
     return value;
 }

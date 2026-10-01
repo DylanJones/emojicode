@@ -315,7 +315,7 @@ llvm::Function* CodeGenerator::createLlvmFunction(Function *function, Reificatio
 
     // The generic arguments of an initializer directly follow the parameters (see LLVMTypeHelper::functionTypeFor()).
     // A class's are a {ptr, i1} struct, which takes no pointer attributes.
-    if (function->functionType() == FunctionType::ValueTypeInitializer && function->owner()->storesGenericArgs()) {
+    if (function->functionType() == FunctionType::ValueTypeInitializer && takesInitializerGenericArgs(function)) {
         fn->addParamAttr(i, llvm::Attribute::NonNull);
         fn->addParamAttr(i, llvm::Attribute::ReadOnly);
     }

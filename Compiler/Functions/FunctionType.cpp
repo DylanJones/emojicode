@@ -50,6 +50,11 @@ bool takesTypeGenericArgs(Function *function) {
         !function->isClosure() && function->owner()->storesGenericArgs();
 }
 
+bool takesInitializerGenericArgs(Function *function) {
+    return (function->functionType() == FunctionType::ObjectInitializer ||
+            function->functionType() == FunctionType::ValueTypeInitializer) && function->owner()->storesGenericArgs();
+}
+
 bool readsTypeGenericArgsFromThis(Function *function) {
     return function->functionType() == FunctionType::ClassMethod && !function->isClosure() &&
         function->owner()->storesGenericArgs();

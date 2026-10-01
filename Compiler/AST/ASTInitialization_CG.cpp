@@ -78,15 +78,7 @@ Value* ASTInitialization::generateClassInit(FunctionCodeGenerator *fg) const {
             // failure; this call site is the only remaining owner.
             if (storesGenericArgs && isErrorProne() &&
                 initializer_->owner() != typeExpr_->expressionType().klass()) {
-                auto null = llvm::ConstantPointerNull::get(fg->typeHelper().pointer());
-                auto isError = fg->builder().CreateICmpNE(
-                    null, fg->builder().CreateLoad(fg->typeHelper().pointer(), errorPointer()));
-                fg->createIf(isError, [&] {
-                    fg->createIf(fg->builder().CreateIsNull(fg->builder().CreateExtractValue(gargs, { 1 })), [&] {
-                        fg->builder().CreateCall(fg->generator()->runTime().freeDescription(),
-                                                 { fg->builder().CreateExtractValue(gargs, { 0 }) });
-                    });
-                });
+                fg->createIf(fg->isErrorSet(errorPointer()), [&] { fg->freeOwnedDescription(gargs); });
             }
         }
     }
@@ -162,10 +154,7 @@ Value* ASTInitialization::initObject(FunctionCodeGenerator *fg, const ASTArgumen
         // the fields it initialized itself, but only releases the receiver if the object's runtime class info is
         // its own owner's, which lets a subclass's explicit superinitializer call keep ownership of that release.
         // That never matches here, as obj's class info is the class actually being instantiated: release obj here.
-        auto pointerType = fg->typeHelper().pointer();
-        auto isError = fg->builder().CreateICmpNE(llvm::ConstantPointerNull::get(pointerType),
-                                                   fg->builder().CreateLoad(pointerType, errorPointer));
-        fg->createIf(isError, [&] {
+        fg->createIf(fg->isErrorSet(errorPointer), [&] {
             fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), obj);
         });
     }

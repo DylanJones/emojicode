@@ -218,14 +218,12 @@ std::string mangleTypeName(const Type &type) {
     return stream.str();
 }
 
-/// The layout of protocol conformances, which is part of their names, so that code expecting another layout, e.g. a
-/// package compiled by an earlier version of the compiler, does not link.
-constexpr int kProtocolConformanceLayout = 2;
-
 std::string mangleProtocolConformance(const Type &type, const Type &protocol) {
     std::stringstream stream;
     mangleTypeName(stream, type);
-    stream << ".conformances" << kProtocolConformanceLayout << ".";
+    // The ABI version is part of the name, so that objects compiled by another version of the compiler, e.g. linked
+    // by hand, do not link, even though the importer already refuses their interfaces.
+    stream << ".conformances" << kABIVersion << ".";
     mangleTypeName(stream, protocol);
     return stream.str();
 }

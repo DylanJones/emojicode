@@ -70,6 +70,11 @@ public:
     void printComments(const SourcePosition &p);
     /// Prints all comments of @p file that were not printed yet.
     void printRemainingComments(SourceFile *file);
+    /// Prints the comments that follow the code on the source line of @p p after what is already written to the
+    /// current line. Does nothing if the current line is empty. Must be called before the line is ended.
+    /// @param tokenEnd If true, p is the position of a single-character token and only a comment directly
+    /// following that token on its line (no other code in between) is printed.
+    void printTrailingComments(const SourcePosition &p, bool tokenEnd = false);
     /// Returns true iff there is a comment that was not printed yet in front of @p p.
     bool hasCommentsBefore(const SourcePosition &p) const;
     /// Ends the current line if it is not empty, instead of offering a new line.
@@ -116,6 +121,9 @@ private:
     void printComment(const Token &comment);
     unsigned int indentation_ = 0;
     SourcePosition lastCommentQuery_ = SourcePosition();
+    /// The source line on which the comment that was printed last ends, if nothing but whitespace was written since.
+    unsigned int lastCommentEndLine_ = 0;
+    const SourceFile *lastCommentFile_ = nullptr;
 };
 
 }  // namespace EmojicodeCompiler

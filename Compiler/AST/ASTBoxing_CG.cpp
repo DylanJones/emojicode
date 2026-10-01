@@ -55,15 +55,9 @@ Value* ASTRebox::rebox(Value *box, FunctionCodeGenerator *fg) const {
 
     Value *boxPtr = nullptr, *valueBoxInfo = nullptr;
     auto conformanceTo = [&](Protocol *protocol) -> Value* {
-        if (from.boxedFor().type() == TypeType::MultiProtocol) {
-            // The box already has the conformance to each protocol of the multiprotocol.
-            auto &protocols = from.boxedFor().protocols();
-            auto it = std::find_if(protocols.begin(), protocols.end(), [protocol](auto &t) {
-                return t.protocol() == protocol;
-            });
-            if (it != protocols.end()) {
-                return fg->buildGetBoxConformance(boxInfo, from, it - protocols.begin());
-            }
+        // A box for a multiprotocol already has the conformance to each of its protocols.
+        if (auto index = FunctionCodeGenerator::multiprotocolIndex(from, protocol)) {
+            return fg->buildGetBoxConformance(boxInfo, from, *index);
         }
         if (boxPtr == nullptr) {
             boxPtr = fg->createEntryAlloca(fg->typeHelper().box());
@@ -76,14 +70,9 @@ Value* ASTRebox::rebox(Value *box, FunctionCodeGenerator *fg) const {
     auto &to = expressionType().boxedFor();
     if (to.type() == TypeType::MultiProtocol) {
         // The box points to a table of the conformances to the protocols of the multiprotocol.
-        auto arrayType = llvm::ArrayType::get(fg->typeHelper().pointer(), to.protocols().size());
-        auto conformances = fg->createEntryAlloca(arrayType);
-        for (size_t i = 0; i < to.protocols().size(); i++) {
-            fg->builder().CreateStore(conformanceTo(to.protocols()[i].protocol()),
-                                      fg->builder().CreateConstInBoundsGEP2_32(arrayType, conformances, 0, i));
-        }
-        auto table = fg->builder().CreateCall(fg->generator()->runTime().multiprotocolTable(),
-                                              { conformances, fg->int64(to.protocols().size()) });
+        auto table = fg->buildMultiprotocolTable(to.protocols(), [&](size_t i) {
+            return conformanceTo(to.protocols()[i].protocol());
+        });
         return fg->builder().CreateInsertValue(box, table, 0);
     }
     return fg->builder().CreateInsertValue(box, conformanceTo(to.protocol()), 0);

@@ -4,6 +4,7 @@
 // The lexer follows Compiler/Lex/Lexer.cpp: strings, interpolations, comments and documentation comments are told
 // apart first, so that an emoji in a string is explained as part of the string. The code tokens are then classified
 // by their neighbours, e.g. whether ❗️ declares a method or calls one, which a keyword alone does not tell.
+import { modifierEmoji, operatorEmoji } from './emojiRoles';
 
 /** A section of the documentation website. */
 export interface Section {
@@ -228,10 +229,12 @@ const S = {
 export type SectionName = keyof typeof S;
 export const sections: Record<SectionName, Section> = S;
 
-const OPERATORS = new Set(['➕', '➖', '➗', '✖', '⭕', '💢', '❌', '👈', '👉', '🚮', '🙌', '◀', '▶']);
+/** The binary operators; 👐 🤝 and 😜 have help of their own, see KEYWORDS. */
+const OPERATORS = new Set(operatorEmoji.filter((e) => !'👐🤝😜'.includes(e)));
 /** What can follow the 🍉 of a closure, as the expression goes on. */
 const CONTINUATIONS = ['❗', '❓', '⁉', '➡', '🤛', '🍆'];
-const MODIFIERS = new Set(['🌍', '🔏', '✒', '🥯', '⚠', '🔑', '☣', '🔓', '🔒', '🔐', '📻', '🍼']);
+/** 🖍 is handled apart from the other modifiers. */
+const MODIFIERS = new Set(modifierEmoji.filter((e) => e !== '🖍'));
 const DECORATORS: Record<string, SectionName> = {
     '🐌': 'branchSpeed', '🏎': 'branchSpeed', '🛢': 'noDynamism', '🥡': 'escaping', '🌊': 'cFunction',
 };

@@ -14,6 +14,7 @@
 #include "Types/TypeExpectation.hpp"
 #include "AST/ASTExpr.hpp"
 #include "AST/ASTUnary.hpp"
+#include "AST/Releasing.hpp"
 
 namespace EmojicodeCompiler {
 
@@ -46,14 +47,19 @@ void ErrorSelfDestructing::buildDestruct(FunctionCodeGenerator *fg) const {
                 // partially initialized object, so this is the only opportunity to release it before the receiver
                 // itself is freed below.
                 auto gargs = fg->builder().CreateLoad(fg->genericArgsType(), fg->genericArgsPtr());
-                fg->createIf(fg->builder().CreateIsNull(fg->builder().CreateExtractValue(gargs, { 1 })), [&] {
-                    fg->builder().CreateCall(fg->generator()->runTime().freeDescription(),
-                                             { fg->builder().CreateExtractValue(gargs, { 0 }) });
-                });
+                fg->freeOwnedDescription(gargs);
             }
             fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), fg->thisValue());
         });
     }
+}
+
+void ErrorSelfDestructing::buildErrorExit(FunctionCodeGenerator *fg, const Releasing *node, bool clearQueue,
+                                          bool skipLast) const {
+    fg->releaseTemporaryObjects(clearQueue, skipLast);
+    node->release(fg);
+    buildDestruct(fg);
+    fg->buildErrorReturn();
 }
 
 ASTCall* ErrorHandling::handleCall(std::shared_ptr<ASTExpr> *expr) {
@@ -92,8 +98,7 @@ bool ErrorHandling::handledCallProducesTemporaryObject() const {
 }
 
 llvm::Value* ErrorHandling::isError(FunctionCodeGenerator *fg, llvm::Value *errorDestination) const {
-    auto null = llvm::ConstantPointerNull::get(fg->typeHelper().pointer());
-    return fg->builder().CreateICmpNE(null, fg->builder().CreateLoad(fg->typeHelper().pointer(), errorDestination));
+    return fg->isErrorSet(errorDestination);
 }
 
 }  // namespace EmojicodeCompiler
