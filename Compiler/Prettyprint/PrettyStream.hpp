@@ -72,7 +72,9 @@ public:
     void printRemainingComments(SourceFile *file);
     /// Prints the comments that follow the code on the source line of @p p after what is already written to the
     /// current line. Does nothing if the current line is empty. Must be called before the line is ended.
-    void printTrailingComments(const SourcePosition &p);
+    /// @param tokenEnd If true, p is the position of a single-character token and only a comment directly
+    /// following that token on its line (no other code in between) is printed.
+    void printTrailingComments(const SourcePosition &p, bool tokenEnd = false);
     /// Returns true iff there is a comment that was not printed yet in front of @p p.
     bool hasCommentsBefore(const SourcePosition &p) const;
     /// Ends the current line if it is not empty, instead of offering a new line.

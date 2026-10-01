@@ -32,6 +32,16 @@ bool hasCodeBefore(const SourcePosition &position) {
     return std::any_of(line.begin(), line.begin() + end, [](char32_t c) { return c != U' ' && c != U'\t'; });
 }
 
+/// Returns true iff only whitespace lies between the one-character token at a and the position b (same line).
+bool onlySpaceBetween(const SourcePosition &a, const SourcePosition &b) {
+    auto line = a.wholeLine();
+    auto end = std::min<size_t>(b.character > 0 ? b.character - 1 : 0, line.size());
+    for (size_t i = a.character; i < end; i++) {
+        if (line[i] != U' ' && line[i] != U'\t') return false;
+    }
+    return true;
+}
+
 }  // namespace
 
 void PrettyStream::write(const std::string &string) {
@@ -50,6 +60,7 @@ void PrettyStream::printComment(const Token &comment) {
     auto multiline = comment.type() == TokenType::MultilineComment;
     auto trailing = hasCodeBefore(position) && lastChar_ != '\n';
     auto offeredNewLine = whitespaceOffer_ == '\n';
+    auto blankWritten = offeredNewLine && lastChar_ == '\n';
     whitespaceOffer_ = 0;
     // The comment has its own indentation, whatever it stands in front of still needs its indentation.
     auto wasIndentPending = indentPending_;
@@ -63,7 +74,7 @@ void PrettyStream::printComment(const Token &comment) {
             write("\n");
         }
         // Keep a blank line between two comments.
-        if (lastCommentFile_ == position.file && lastCommentEndLine_ != 0 && position.line > lastCommentEndLine_ + 1) {
+        if (lastCommentFile_ == position.file && !blankWritten && lastCommentEndLine_ != 0 && position.line > lastCommentEndLine_ + 1) {
             write("\n");
         }
         write(std::string(indentation_ * 2, ' '));
@@ -94,7 +105,7 @@ void PrettyStream::printComments(const SourcePosition &p) {
     }
 }
 
-void PrettyStream::printTrailingComments(const SourcePosition &p) {
+void PrettyStream::printTrailingComments(const SourcePosition &p, bool tokenEnd) {
     if (p.file == nullptr || lastChar_ == '\n' || lastChar_ == 0) {
         return;
     }
@@ -102,7 +113,7 @@ void PrettyStream::printTrailingComments(const SourcePosition &p) {
     auto printed = false;
     p.file->findComments(lastCommentQuery_, endOfLine, [&](const Token &comment) {
         auto &position = comment.position();
-        if (position.line == p.line && hasCodeBefore(position)) {
+        if (position.line == p.line && hasCodeBefore(position) && (!tokenEnd || onlySpaceBetween(p, position))) {
             printComment(comment);
             printed = true;
         }

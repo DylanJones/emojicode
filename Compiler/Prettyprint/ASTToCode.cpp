@@ -55,7 +55,7 @@ void ASTBlock::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     if (stmts_.empty() && !pretty.hasCommentsBefore(endPosition_)) {
         pretty << "🍇🍉";
-        pretty.printTrailingComments(endPosition_);
+        pretty.printTrailingComments(endPosition_, true);
         pretty.refuseOffer() << "\n";
         return;
     }
@@ -63,7 +63,7 @@ void ASTBlock::toCode(PrettyStream &pretty) const {
     pretty.offerNewLine();
     innerToCode(pretty);
     pretty.indent() << "🍉";
-    pretty.printTrailingComments(endPosition_);
+    pretty.printTrailingComments(endPosition_, true);
     pretty.refuseOffer() << "\n";
 }
 
