@@ -242,18 +242,12 @@ llvm::Value *MultiprotocolCallCodeGenerator::generate(llvm::Value *callee, const
 
     auto &protocol = calleeType.protocols()[multiprotocolN];
     llvm::Value *conformance = nullptr;
-    if (calleeType.boxedFor().type() == TypeType::MultiProtocol) {
-        // The box can be for a multiprotocol of some of the protocols, e.g. a multiprotocol value returned as a generic
-        // argument for it, whose table has the conformances in its order.
-        auto &boxProtocols = calleeType.boxedFor().protocols();
-        auto it = std::find_if(boxProtocols.begin(), boxProtocols.end(), [&protocol](const Type &t) {
-            return t.protocol() == protocol.protocol();
-        });
-        if (it != boxProtocols.end()) {
-            auto boxInfo = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
-                                                      fg()->buildGetBoxInfoPtr(argsv.front()));
-            conformance = fg()->buildGetBoxConformance(boxInfo, calleeType, it - boxProtocols.begin());
-        }
+    // The box can be for a multiprotocol of some of the protocols, e.g. a multiprotocol value returned as a generic
+    // argument for it, whose table has the conformances in its order.
+    if (auto index = FunctionCodeGenerator::multiprotocolIndex(calleeType, protocol.protocol())) {
+        auto boxInfo = fg()->builder().CreateLoad(fg()->typeHelper().pointer(),
+                                                  fg()->buildGetBoxInfoPtr(argsv.front()));
+        conformance = fg()->buildGetBoxConformance(boxInfo, calleeType, *index);
     }
     if (conformance == nullptr) {
         conformance = buildFindProtocolConformance(argsv, calleeType, protocol);
