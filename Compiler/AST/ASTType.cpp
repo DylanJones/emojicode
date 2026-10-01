@@ -16,7 +16,8 @@
 
 namespace EmojicodeCompiler {
 
-Type& ASTType::analyseType(const TypeContext &typeContext, bool allowReference, bool allowGenericInference) {
+Type& ASTType::analyseType(const TypeContext &typeContext, bool allowReference, bool allowGenericInference,
+                           bool allowNoReturn) {
     if (!wasAnalysed()) {
         type_ = getType(typeContext, allowGenericInference).applyMinimalBoxing().optionalized(optional_);
         if (reference_) {
@@ -37,6 +38,9 @@ Type& ASTType::analyseType(const TypeContext &typeContext, bool allowReference, 
         if (observer != nullptr) {
             observer->analysedType(this);
         }
+    }
+    if (!allowNoReturn && type_.unoptionalized().type() == TypeType::NoReturn) {
+        throw CompilerError(position(), "◼️ is only allowed as a return or error type.");
     }
     return type_;
 }
@@ -192,8 +196,8 @@ Type ASTGenericVariable::getType(const TypeContext &typeContext, bool allowGener
 }
 
 Type ASTCallableType::getType(const TypeContext &typeContext, bool allowGenericInference) const {
-    auto returnType = return_ == nullptr ? Type::noReturn() : return_->analyseType(typeContext);
-    auto errorType = errorType_ == nullptr ? Type::noReturn() : errorType_->analyseType(typeContext);
+    auto returnType = return_ == nullptr ? Type::noReturn() : return_->analyseType(typeContext, false, false, true);
+    auto errorType = errorType_ == nullptr ? Type::noReturn() : errorType_->analyseType(typeContext, false, false, true);
     auto type = Type(returnType, transformTypeAstVector(params_, typeContext), errorType);
     if (c_) {
         type.setCCallable();

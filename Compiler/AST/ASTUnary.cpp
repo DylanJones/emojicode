@@ -36,7 +36,7 @@ Type ASTHandledCall::comply(ExpressionAnalyser *analyser, const TypeExpectation 
 Type ASTUnwrap::analyse(ExpressionAnalyser *analyser) {
     auto call = handleCall(&expr_);
 
-    Type t = analyser->expect(TypeExpectation(false, false), &expr_);
+    Type t = expectCall(analyser, &expr_);
 
     if (t.unboxedType() == TypeType::Optional) {
         if (call != nullptr && call->isErrorProne()) {
@@ -57,7 +57,7 @@ Type ASTUnwrap::analyse(ExpressionAnalyser *analyser) {
 
 Type ASTReraise::analyse(ExpressionAnalyser *analyser) {
     auto call = handleCall(&expr_);
-    Type t = analyser->expect(TypeExpectation(false, false), &expr_);
+    Type t = expectCall(analyser, &expr_);
     if (call == nullptr || !call->isErrorProne()) {
         analyser->error(CompilerError(position(), "Provided value is not an error-prone call."));
         return t;

@@ -66,7 +66,7 @@ void Class::analyseSuperType(std::vector<std::function<void()>> *constraintCheck
         }
     }
 
-    auto &type = superType()->analyseType(TypeContext(TypeContext(classType), constraintChecks));
+    auto &type = superType()->analyseType(TypeContext(TypeContext(classType), constraintChecks), false, false, true);
 
     if (type.type() != TypeType::Class) {
         throw CompilerError(superType()->position(), "The superclass must be a class.");

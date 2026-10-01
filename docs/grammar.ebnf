@@ -360,6 +360,7 @@ c-function-body     ::= function-body
  * 5. Types
  * ================================================================================================================ */
 
+/* ◼ is semantically allowed only as a function/callable return or error type, never as a value type. */
 type                ::= type-value-type
                       | '◼'                                        /* no return */
                       | '✴'? '⚪'                                   /* something */

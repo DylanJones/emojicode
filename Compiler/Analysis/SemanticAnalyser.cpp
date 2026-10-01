@@ -366,7 +366,7 @@ void SemanticAnalyser::analyseFunctionDeclaration(Function *function) const {
     if (function->errorType() == nullptr) {
         function->setErrorType(std::make_unique<ASTLiteralType>(Type::noReturn()));
     }
-    auto errType = function->errorType()->analyseType(context);
+    auto errType = function->errorType()->analyseType(context, false, false, true);
     if (errType.type() != TypeType::NoReturn && !errType.compatibleTo(Type(compiler()->sError), context)) {
         throw CompilerError(function->errorType()->position(), "Error type must be a subclass of 🚧.");
     }
@@ -378,7 +378,7 @@ void SemanticAnalyser::analyseFunctionDeclaration(Function *function) const {
             param.type->type().setReference();
         }
     }
-    function->returnType()->analyseType(context, true);
+    function->returnType()->analyseType(context, true, false, true);
 
     if (function->isC()) {
         checkCFunctionDeclaration(function);
@@ -641,20 +641,23 @@ void SemanticAnalyser::finalizeProtocols(const Type &type, std::vector<std::func
     // A type can conform to a protocol only once, even with different generic arguments.
     std::set<Protocol *> protocols;
 
-    for (auto &protocol : type.typeDefinition()->protocols()) {
+    auto &conformances = type.typeDefinition()->protocols();
+    // Entries that are not protocols are removed so that no later stage sees them.
+    conformances.erase(std::remove_if(conformances.begin(), conformances.end(), [&](ProtocolConformance &protocol) {
         auto &protocolType = protocol.type->analyseType(TypeContext(TypeContext(type), constraintChecks));
         Type unboxed = protocolType.unboxed();
         if (!unboxed.is<TypeType::Protocol>()) {
             package_->compiler()->error(CompilerError(protocol.type->position(), "Type is not a protocol."));
-            continue;
+            return true;
         }
         if (protocols.find(unboxed.protocol()) != protocols.end()) {
             package_->compiler()->error(CompilerError(protocol.type->position(),
                                                       "Conformance to protocol was already declared."));
-            continue;
+            return false;
         }
         protocols.emplace(unboxed.protocol());
-    }
+        return false;
+    }), conformances.end());
 }
 
 Type SemanticAnalyser::defaultLiteralType(const Type &type) const {

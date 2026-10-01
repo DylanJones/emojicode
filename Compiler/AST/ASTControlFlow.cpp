@@ -79,7 +79,7 @@ void ASTErrorHandler::analyse(FunctionAnalyser *analyser) {
         throw CompilerError(position(), "Expression is not a call.");
     }
 
-    valueType_ = analyser->expect(TypeExpectation(false, false), &value_);
+    valueType_ = expectCall(analyser, &value_);
 
     if (!call->isErrorProne()) {
         throw CompilerError(position(), "Provided call is not error-prone.");

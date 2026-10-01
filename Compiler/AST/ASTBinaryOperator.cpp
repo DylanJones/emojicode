@@ -155,14 +155,14 @@ std::pair<bool, ASTBinaryOperator::BuiltIn> ASTBinaryOperator::builtInPrimitiveO
     }
 
     if (operator_ == OperatorType::LogicalAnd) {
-        if (type.valueType() != analyser->compiler()->sBoolean) {
+        if (type.type() != TypeType::ValueType || type.valueType() != analyser->compiler()->sBoolean) {
             throw CompilerError(position(), "🤝 can only be used with 👌.");
         }
         builtIn_ = BuiltInType::BooleanAnd;
         return std::make_pair(true, BuiltIn(analyser->boolean()));
     }
     if (operator_ == OperatorType::LogicalOr) {
-        if (type.valueType() != analyser->compiler()->sBoolean) {
+        if (type.type() != TypeType::ValueType || type.valueType() != analyser->compiler()->sBoolean) {
             throw CompilerError(position(), "👐 can only be used with 👌.");
         }
         builtIn_ = BuiltInType::BooleanOr;
