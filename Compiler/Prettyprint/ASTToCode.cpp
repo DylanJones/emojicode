@@ -53,6 +53,7 @@ void ASTArguments::toCode(PrettyStream &pretty) const {
 
 void ASTBlock::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
+    pretty.indentAtLineStart();
     if (stmts_.empty() && !pretty.hasCommentsBefore(endPosition_)) {
         pretty << "🍇🍉";
         pretty.printTrailingComments(endPosition_, true);
@@ -82,7 +83,9 @@ void ASTBlock::innerToCode(PrettyStream &pretty) const {
 
 void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🔁 " << condition_ << " " << block_;
+    pretty.indent() << "🔁 " << condition_;
+    pretty.indentAtLineStart().ensureSpace();
+    pretty << block_;
 }
 
 void ASTForIn::toCode(PrettyStream &pretty) const {
@@ -110,11 +113,13 @@ void printBranchSpeed(PrettyStream &pretty, ASTIf::BranchSpeed speed) {
 
 void ASTIf::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "↪️ " << conditions_.front() << " ";
+    pretty.indent() << "↪️ " << conditions_.front();
+    pretty.indentAtLineStart().ensureSpace();
     printBranchSpeed(pretty, blocks_.front().speed);
     pretty << blocks_.front().block;
     for (size_t i = 1; i < conditions_.size(); i++) {
-        pretty.indent() << "🙅↪️ " << conditions_[i] << " ";
+        pretty.indent() << "🙅↪️ " << conditions_[i];
+        pretty.indentAtLineStart().ensureSpace();
         printBranchSpeed(pretty, blocks_[i].speed);
         pretty << blocks_[i].block;
     }
