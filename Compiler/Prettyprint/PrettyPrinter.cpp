@@ -526,7 +526,8 @@ void PrettyPrinter::printBody(Function *function) {
                 auto str = function->position().file->file();
                 auto code = str.substr(function->ast()->beginIndex(),
                                        function->ast()->endIndex() - function->ast()->beginIndex() + 1);
-                prettyStream_ << " 🍇\n";
+                prettyStream_.ensureSpace();
+                prettyStream_ << "🍇\n";
                 prettyStream_.increaseIndent();
                 prettyStream_.indent() << code;
                 prettyStream_.decreaseIndent();

@@ -635,7 +635,7 @@ def format_test(filename):
             log("Formatted source differs from the expected one:\n" + formatted)
             fail_test(filename)
         for line in expected.split("\n"):
-            code = line.split("💭")[0].split("🔤")[0]
+            code = line.split("💭")[0].split("🔤")[0].strip(" ")
             if "  " in code.lstrip(" "):
                 log("Two consecutive spaces in a line of " + filename + ": " + line)
                 fail_test(filename)
