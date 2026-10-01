@@ -52,7 +52,12 @@ void ASTArguments::toCode(PrettyStream &pretty) const {
 }
 
 void ASTBlock::toCode(PrettyStream &pretty) const {
+    auto newLineWasOffered = pretty.newLineOffered();
     pretty.printComments(position());
+    // A trailing comment on the statement head ends its line, so the block still needs to be indented.
+    if (!newLineWasOffered && pretty.newLineOffered()) {
+        pretty.indent();
+    }
     if (stmts_.empty() && !pretty.hasCommentsBefore(endPosition_)) {
         pretty << "🍇🍉";
         pretty.printTrailingComments(endPosition_, true);
