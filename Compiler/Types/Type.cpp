@@ -335,7 +335,14 @@ Type Type::resolveOn(const TypeContext &typeContext) const {
 }
 
 Type Type::resolveOnWithoutCompletion(const TypeContext &typeContext) const {
-    if (type() == TypeType::Optional || type() == TypeType::Box) {
+    if (type() == TypeType::Box) {
+        // The type a box is for is written in the context of the callee too, so it must be resolved as well. Else it
+        // would be taken for a type of the caller, e.g. in diagnostics.
+        auto resolved = rewrapped(genericArguments_[0].resolveOn(typeContext));
+        resolved.genericArguments_[1] = genericArguments_[1].resolveOn(typeContext);
+        return resolved;
+    }
+    if (type() == TypeType::Optional) {
         return rewrapped(genericArguments_[0].resolveOn(typeContext));
     }
 

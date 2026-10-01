@@ -23,7 +23,8 @@
  * The grammar has two levels. The lexical grammar (section 1) describes characters and tokens. The syntactic
  * grammar (sections 2 to 7) describes sequences of tokens. The section headings are marked @lexical and @syntax.
  *
- * A source document is divided into tokens as follows, starting at the first character:
+ * A source document is divided into tokens as follows, starting at the first character. A leading U+FEFF (byte order
+ * mark) is a signature, not part of the document: it is skipped, and only at the very start.
  *
  *   1. If `ignorable` matches at the current position, the longest match is skipped.
  *   2. Otherwise the longest match of `token-shape` is taken. The lexer reads each kind of token greedily and
@@ -54,7 +55,9 @@
  *   - more than one 🏁 or more than one list of link hints in a package (these may be in different documents),
  *   - 📦 and 📜: whether the package can be found and loaded, and whether the included file has a valid name and
  *     can be read,
- *   - whether the string after 📻 on a value type names a C type that the compiler knows (see Types/CRepresentation.cpp).
+ *   - whether the string after 📻 on a value type names a C type that the compiler knows (see Types/CRepresentation.cpp),
+ *   - whether an integer or real literal is in range (fits into a 🔢 or 🚂),
+ *   - implementation limits on nesting depth ("Nesting too deep.").
  *
  * Interface documents (🏛, interface.emojii), which the compiler generates, are also not described. They differ
  * from source documents in one respect: a `function-body` may be omitted, and only functions with the 🥯

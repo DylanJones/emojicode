@@ -63,6 +63,10 @@
     🔡👇 🔧🔤  é  🔤❗️ 🔤é🔤 🔤Trim combining char🔤❗️
     🔡👇 🔧🔤 xé 🔤❗️ 🔤xé🔤 🔤Trim combining sequence🔤❗️
     🔡👇 🔧🔤🔤❗️ 🔤🔤 🔤Trim empty string🔤❗️
+    🔡👇 🔧🔤　a　🔤❗️ 🔤a🔤 🔤Trim ideographic space🔤❗️
+    🔡👇 🔧🔤 é 🔤❗️ 🔤é🔤 🔤Trim em space🔤❗️
+    🔡👇 🔧🔤　한 　🔤❗️ 🔤한🔤 🔤Trim mixed spaces around 3 byte🔤❗️
+    🔡👇 🔧🔤　　🔤❗️ 🔤🔤 🔤Trim only non-ASCII spaces🔤❗️
     ⛔👇 📏📇🔧🔤 café 🔤❗️❗️❓ 🙌 5 🔤Trim byte length🔤❗️
 
     🔢👇 📏🔫🔤Gans;Ente;Schwein🔤 🔤;🔤❗️❓ 3 🔤Split ;🔤❗️

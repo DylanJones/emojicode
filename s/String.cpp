@@ -356,6 +356,13 @@ extern "C" runtime::SimpleOptional<runtime::Real> sStringToReal(String *string) 
     return d;
 }
 
+extern "C" runtime::Real sStringToRealExact(String *string) {
+    // strtod needs a terminated copy; the runtime never calls setlocale, so the
+    // conversion is locale independent and correctly rounded.
+    std::string copy(string->characters.get(), string->count);
+    return std::strtod(copy.c_str(), nullptr);
+}
+
 extern "C" runtime::Integer sStringHash(String *string) {
     auto len = string->count;
     const unsigned int m = 0x5bd1e995;

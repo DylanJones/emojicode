@@ -514,6 +514,30 @@ bool SemanticAnalyser::checkReturnPromise(const Function *sub, const TypeContext
     return subReturn.isStoredLike(superReturn, subContext) && subReturn.isReference() == superReturn.isReference();
 }
 
+bool SemanticAnalyser::checkErrorPromise(const Function *sub, const TypeContext &subContext, const Function *super,
+                                         const TypeContext &superContext, const Type &superSource) const {
+    if (!sub->errorProne()) {
+        return true;
+    }
+    if (!super->errorProne()) {
+        package_->compiler()->error(CompilerError(sub->position(), "Overriding method ", utf8(sub->name()),
+                                                  " may raise an error but the method it overrides in ",
+                                                  utf8(superSource.typeDefinition()->name()), " does not."));
+        return false;
+    }
+    auto superError = super->errorType()->type().resolveOn(superContext);
+    auto subError = sub->errorType()->type().resolveOn(subContext);
+    if (!subError.compatibleTo(superError, subContext)) {
+        package_->compiler()->error(CompilerError(sub->position(), "Error type ", subError.toString(subContext),
+                                                  " of ", utf8(sub->name()),
+                                                  " is not compatible to the error type ",
+                                                  superError.toString(subContext), " defined in ",
+                                                  utf8(superSource.typeDefinition()->name()), "."));
+        return false;
+    }
+    return true;
+}
+
 std::unique_ptr<Function> SemanticAnalyser::enforcePromises(Function *sub, Function *super,
                                                             const Type &superSource,
                                                             const TypeContext &subContext,
@@ -530,6 +554,9 @@ std::unique_ptr<Function> SemanticAnalyser::enforcePromises(Function *sub, Funct
                                                   "accessible than the overridden method."));
     }
 
+    if (!checkErrorPromise(sub, subContext, super, superContext, superSource)) {
+        return nullptr;  // A boxing thunk cannot bridge the mismatch.
+    }
     bool isReturnOk = checkReturnPromise(sub, subContext, super, superContext, superSource);
     bool isParamsOk = checkArgumentPromise(sub, super, subContext, superContext) ;
     if (!isParamsOk || !isReturnOk) {

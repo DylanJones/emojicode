@@ -1,0 +1,1 @@
+may raise an error but the method it overrides in 🅰 does not.

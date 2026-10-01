@@ -356,6 +356,12 @@ void ExpressionAnalyser::makeIntoBox(Type &exprType, const TypeExpectation &expe
                                         exprType.boxedFor().toString(typeContext()), " cannot be used as ",
                                         expectation.boxedFor().toString(typeContext()), ".");
                 }
+                if (callableBoxingRequired(TypeExpectation(expectation.boxedFor()), exprType.boxedFor())) {
+                    // ASTRebox cannot create the thunk that converts between callables with different storage.
+                    throw CompilerError((*node)->position(), "A value boxed for ",
+                                        exprType.boxedFor().toString(typeContext()), " cannot be used as ",
+                                        expectation.boxedFor().toString(typeContext()), ".");
+                }
                 if (exprType.isReference()) {
                     // This is an edge case caused by ASTInterpolationLiteral.
                     exprType.setReference(false);
