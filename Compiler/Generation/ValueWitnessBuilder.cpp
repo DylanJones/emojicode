@@ -121,11 +121,7 @@ llvm::Function* ValueWitnessBuilder::buildLoad(const Type &type, const std::stri
             fg.builder().CreateStore(fg.builder().CreateLoad(fg.typeHelper().box(), raw), box);
             fg.retain(box, type);
             if (FunctionCodeGenerator::boxHasConformance(type)) {
-                auto infoPtr = fg.buildGetBoxInfoPtr(box);
-                auto conformance = fg.builder().CreateLoad(fg.typeHelper().pointer(), infoPtr);
-                fg.createIf(fg.builder().CreateIsNotNull(conformance), [&] {
-                    fg.builder().CreateStore(fg.buildGetValueBoxInfo(conformance, type), infoPtr);
-                });
+                fg.conformanceToBoxInfo(box, type);
             }
             break;
         }
@@ -165,10 +161,7 @@ llvm::Function* ValueWitnessBuilder::buildStore(const Type &type, const std::str
         case StorageType::Box: {
             fg.builder().CreateStore(fg.builder().CreateLoad(fg.typeHelper().box(), box), raw);
             if (FunctionCodeGenerator::boxHasConformance(type)) {
-                auto boxInfo = fg.builder().CreateLoad(fg.typeHelper().pointer(), fg.buildGetBoxInfoPtr(box));
-                fg.createIf(fg.builder().CreateIsNotNull(boxInfo), [&] {
-                    fg.builder().CreateStore(fg.buildBoxConformance(box, boxInfo, type), fg.buildGetBoxInfoPtr(raw));
-                });
+                fg.boxInfoToConformance(raw, type);
             }
             fg.retain(raw, type);
             break;

@@ -457,32 +457,34 @@ llvm::Value* FunctionCodeGenerator::buildBoxConformance(llvm::Value *box, llvm::
         return buildFindProtocolConformance(box, boxInfo, boxedFor.protocol()->rtti());
     }
     auto &protocols = boxedFor.protocols();
+    return buildMultiprotocolTable(protocols, [&](size_t i) {
+        return buildFindProtocolConformance(box, boxInfo, protocols[i].protocol()->rtti());
+    });
+}
+
+llvm::Value* FunctionCodeGenerator::buildMultiprotocolTable(const std::vector<Type> &protocols,
+                                                            const std::function<llvm::Value*(size_t)> &conformanceAt) {
     auto arrayType = llvm::ArrayType::get(typeHelper().pointer(), protocols.size());
     auto conformances = createEntryAlloca(arrayType);
     for (size_t i = 0; i < protocols.size(); i++) {
-        auto conformance = buildFindProtocolConformance(box, boxInfo, protocols[i].protocol()->rtti());
-        builder().CreateStore(conformance, builder().CreateConstInBoundsGEP2_32(arrayType, conformances, 0, i));
+        builder().CreateStore(conformanceAt(i), builder().CreateConstInBoundsGEP2_32(arrayType, conformances, 0, i));
     }
     return builder().CreateCall(generator()->runTime().multiprotocolTable(), { conformances, int64(protocols.size()) });
 }
 
-/// Replaces the protocol conformance (or table of them) in the box of @p type to which @p box points with the box info
-/// of its value, as the boxes of value witnesses hold.
-static void conformanceToBoxInfo(FunctionCodeGenerator *fg, llvm::Value *box, const Type &type) {
-    auto infoPtr = fg->buildGetBoxInfoPtr(box);
-    auto conformance = fg->builder().CreateLoad(fg->typeHelper().pointer(), infoPtr);
-    fg->createIf(fg->builder().CreateIsNotNull(conformance), [&] {
-        fg->builder().CreateStore(fg->buildGetValueBoxInfo(conformance, type), infoPtr);
+void FunctionCodeGenerator::conformanceToBoxInfo(llvm::Value *box, const Type &type) {
+    auto infoPtr = buildGetBoxInfoPtr(box);
+    auto conformance = builder().CreateLoad(typeHelper().pointer(), infoPtr);
+    createIf(builder().CreateIsNotNull(conformance), [&] {
+        builder().CreateStore(buildGetValueBoxInfo(conformance, type), infoPtr);
     });
 }
 
-/// Replaces the box info in the box of @p type to which @p box points with what a box of @p type holds instead (see
-/// FunctionCodeGenerator::buildBoxConformance()).
-static void boxInfoToConformance(FunctionCodeGenerator *fg, llvm::Value *box, const Type &type) {
-    auto infoPtr = fg->buildGetBoxInfoPtr(box);
-    auto boxInfo = fg->builder().CreateLoad(fg->typeHelper().pointer(), infoPtr);
-    fg->createIf(fg->builder().CreateIsNotNull(boxInfo), [&] {
-        fg->builder().CreateStore(fg->buildBoxConformance(box, boxInfo, type), infoPtr);
+void FunctionCodeGenerator::boxInfoToConformance(llvm::Value *box, const Type &type) {
+    auto infoPtr = buildGetBoxInfoPtr(box);
+    auto boxInfo = builder().CreateLoad(typeHelper().pointer(), infoPtr);
+    createIf(builder().CreateIsNotNull(boxInfo), [&] {
+        builder().CreateStore(buildBoxConformance(box, boxInfo, type), infoPtr);
     });
 }
 
@@ -502,7 +504,7 @@ llvm::Value* FunctionCodeGenerator::buildLoadErased(llvm::Value *reference, cons
     }, [&] {
         builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, 1), { address, box });
         if (boxHasConformance(type)) {
-            boxInfoToConformance(this, box, type);
+            boxInfoToConformance(box, type);
         }
     });
     return builder().CreateLoad(typeHelper().box(), box);
@@ -513,7 +515,7 @@ void FunctionCodeGenerator::buildStoreErased(llvm::Value *address, llvm::Value *
     auto box = createEntryAlloca(typeHelper().box());
     builder().CreateStore(boxValue, box);
     if (boxHasConformance(type)) {
-        conformanceToBoxInfo(this, box, type);
+        conformanceToBoxInfo(box, type);
     }
     builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, 2), { address, box });
 }
@@ -556,7 +558,7 @@ llvm::Value* FunctionCodeGenerator::buildErasedReferenceBox(llvm::Value *referen
         auto box = createEntryAlloca(typeHelper().box());
         builder().CreateCall(typeHelper().valueWitnessCopy(), witnessField(this, entry, 1), { address, box });
         if (boxHasConformance(type)) {
-            boxInfoToConformance(this, box, type);
+            boxInfoToConformance(box, type);
         }
         return box;
     });
