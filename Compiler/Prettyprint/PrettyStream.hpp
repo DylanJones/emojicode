@@ -48,12 +48,14 @@ public:
     template <typename T>
     PrettyStream& operator<<(const std::unique_ptr<T> &node) {
         node->toCode(*this);
+        printGroupEnd(node.get());
         return *this;
     }
 
     template <typename T>
     PrettyStream& operator<<(const std::shared_ptr<T> &node) {
         node->toCode(*this);
+        printGroupEnd(node.get());
         return *this;
     }
 
@@ -62,6 +64,10 @@ public:
     PrettyStream& operator<<(ASTNode *node);
     PrettyStream& operator<<(const ASTNode &node);
     PrettyStream& operator<<(const Type &type);
+
+    /// Prints the comments in front of the 🤛 that closed a group around @p node, if it is an expression. Called after
+    /// every node, so the comments stay in front of the 🤛 whether it is written or dropped as redundant.
+    void printGroupEnd(const ASTNode *node);
 
     void printClosure(Function *function, bool escaping);
 
@@ -90,12 +96,21 @@ public:
     /// The indentation is not written until then, so that comments can go in front of the line.
     PrettyStream& indent() { indentPending_ = true; return *this; }
 
+    /// Like indent(), but only if the stream is at the start of a line or a new line is about to be written, e.g.
+    /// after a comment.
+    PrettyStream& indentAtLineStart() {
+        indentPending_ = indentPending_ || whitespaceOffer_ == '\n' || lastChar_ == '\n';
+        return *this;
+    }
+
     void increaseIndent() { indentation_++; }
     void decreaseIndent() { indentation_--; }
 
     /// Refuses any available whitespace offer.
     /// @returns The instance.
     PrettyStream& refuseOffer() { whitespaceOffer_ = 0; return *this; }
+    /// Refuses a whitespace offer unless it is a new line, e.g. after a comment.
+    PrettyStream& refuseSpaceOffer() { if (whitespaceOffer_ == ' ') { whitespaceOffer_ = 0; } return *this; }
     /// Offers a space character
     void offerSpace() { whitespaceOffer_ = ' '; }
     /// Offers a new line character unless the output already ends with one, which blocks do.
