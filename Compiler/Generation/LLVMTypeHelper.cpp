@@ -53,6 +53,7 @@ LLVMTypeHelper::LLVMTypeHelper(llvm::LLVMContext &context, CodeGenerator *codeGe
         pointer(),  // retains a value in memory: void (ptr value)
         llvm::Type::getInt1Ty(context_),  // whether a value can be copied by copying its bytes, i.e. is not managed
     }, "valueWitness");
+    assert(valueWitness_->getNumElements() == WitnessFieldCount);
     erasedReference_ = llvm::StructType::create({ pointer(), pointer() }, "erasedReference");
     valueWitnessCopy_ = llvm::FunctionType::get(llvm::Type::getVoidTy(context_), { pointer(), pointer() }, false);
 
