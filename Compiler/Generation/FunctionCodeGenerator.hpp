@@ -317,7 +317,8 @@ public:
     /// Registers a variable holding a receiver that was allocated before its initializer’s arguments are evaluated,
     /// but whose ownership is only transferred to the initializer call once it is reached. Unlike
     /// addTemporaryRemoteObject(), this entry is protected: releaseTemporaryObjectsSince() skips it, so it
-    /// survives checkpoints hit while evaluating those arguments (e.g. short-circuiting 🤝/👐) that must not assume the initializer, which alone would take ownership of it, has been reached. It is still
+    /// survives checkpoints hit while evaluating those arguments (e.g. short-circuiting 🤝/👐) that must not assume
+    /// the initializer, which alone would take ownership of it, has been reached. It is still
     /// released, by ASTReraise on its error path, if one of the arguments reraises. Disarm by storing null once the
     /// initializer call is reached.
     void addPendingReceiver(llvm::Value *objectVariable) {
@@ -376,9 +377,10 @@ private:
 
     std::unique_ptr<TypeContext> typeContext_;
 
-    /// @param retain True if the box should be released, false if it should be retained.
+    /// Releases (@p isRetain false) or retains (@p isRetain true) @p value, which is of type @p type.
     /// Releases (@p isRetain false) or retains (@p isRetain true) @p value, which is of type @p type.
     void manage(bool isRetain, llvm::Value *value, const Type &type);
+    /// @param retain True if the box should be retained, false if it should be released.
     void manageBox(bool retain, llvm::Value *boxInfo, llvm::Value *value, const Type &type);
 
     void addParamAttrs(const Type &argType, llvm::Argument &llvmArg);

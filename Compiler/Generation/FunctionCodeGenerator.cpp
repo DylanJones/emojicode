@@ -628,7 +628,7 @@ void TemporaryObjectsManager::releaseTemporaryObjects(FunctionCodeGenerator *fg,
 
 void TemporaryObjectsManager::releaseTemporaryObjectsSince(FunctionCodeGenerator *fg, size_t mark) {
     if (mark >= temporaryObjects_.size()) return;
-    // Protected entries stay: they belong to a call that has not been reached yet (see releaseTemporaryObjectsSince()).
+    // Protected entries stay: they belong to a call that has not been reached yet (see addPendingReceiver()).
     std::vector<Temporary> kept(temporaryObjects_.begin(), temporaryObjects_.begin() + mark);
     for (auto it = temporaryObjects_.begin() + mark; it != temporaryObjects_.end(); it++) {
         if (it->protectedEntry) {
