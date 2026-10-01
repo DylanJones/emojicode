@@ -46,10 +46,7 @@ void ErrorSelfDestructing::buildDestruct(FunctionCodeGenerator *fg) const {
                 // partially initialized object, so this is the only opportunity to release it before the receiver
                 // itself is freed below.
                 auto gargs = fg->builder().CreateLoad(fg->genericArgsType(), fg->genericArgsPtr());
-                fg->createIf(fg->builder().CreateIsNull(fg->builder().CreateExtractValue(gargs, { 1 })), [&] {
-                    fg->builder().CreateCall(fg->generator()->runTime().freeDescription(),
-                                             { fg->builder().CreateExtractValue(gargs, { 0 }) });
-                });
+                fg->freeOwnedDescription(gargs);
             }
             fg->builder().CreateCall(fg->generator()->runTime().releaseWithoutDeinit(), fg->thisValue());
         });
@@ -92,8 +89,7 @@ bool ErrorHandling::handledCallProducesTemporaryObject() const {
 }
 
 llvm::Value* ErrorHandling::isError(FunctionCodeGenerator *fg, llvm::Value *errorDestination) const {
-    auto null = llvm::ConstantPointerNull::get(fg->typeHelper().pointer());
-    return fg->builder().CreateICmpNE(null, fg->builder().CreateLoad(fg->typeHelper().pointer(), errorDestination));
+    return fg->isErrorSet(errorDestination);
 }
 
 }  // namespace EmojicodeCompiler
