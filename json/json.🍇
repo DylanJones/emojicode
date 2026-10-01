@@ -225,22 +225,25 @@
   📗
   ☣️🖍🔒❗️💜 initial 🔢 neg 👌 ➡️⚪️ 🚧🚧🔸🌸 🍇
     index ➖ 1 ➡️ tokenStart
+    initial ➡️ 🖍🆕first
     ↪️ neg 🍇
+      💭 A minus sign must be followed by a digit, which is handled like the first digit of a non-negative number.
       ↪️ index 🙌 count 🍇
         🚨🆕🚧🔸🌸 🔤Expected digit after minus sign🔤❗️
       🍉
-      🐽🐚💧🍆string index❗️ ➡️ dv
-      ↪️ dv ◀️ 0x30 👐 dv ▶️ 0x39 🍇
+      🐽🐚💧🍆string index❗️ ➡️ nd
+      ↪️ nd ◀️ 0x30 👐 nd ▶️ 0x39 🍇
         🚨🆕🚧🔸🌸 🔤Expected digit after minus sign🔤❗️
       🍉
+      index ⬅️➕ 1
+      🔢nd❗️ ➖ 0x30 ➡️ 🖍first
     🍉
-    0 ➡️ 🖍🆕integer
+    first ➡️ 🖍🆕integer
+    ↪️ first ▶️ 0 🍇  💭 "with no superfluous leading zero"
+      🔢👇first❗️➡️ 🖍integer
+    🍉
     ↪️ neg 🍇
-      🔢👇initial❗️➡️ 🖍integer
       integer⬅️✖️-1
-    🍉
-    🙅‍♀️↪️ initial ▶️ 0 🍇  💭 "with no superfluous leading zero"
-      🔢👇initial❗️➡️ 🖍integer
     🍉
 
     ↪️ index 🙌 count 🍇
