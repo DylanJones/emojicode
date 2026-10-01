@@ -65,6 +65,9 @@ void PrettyStream::printComment(const Token &comment) {
     // The comment has its own indentation, whatever it stands in front of still needs its indentation.
     auto wasIndentPending = indentPending_;
     indentPending_ = false;
+    // An own-line comment in the middle of a statement is indented like the rest of the statement.
+    auto midStatement = !trailing && !wasIndentPending &&
+                        (continuation_ || (!offeredNewLine && lastChar_ != 0 && lastChar_ != '\n'));
     if (trailing) {
         write("  ");
     }
@@ -77,7 +80,7 @@ void PrettyStream::printComment(const Token &comment) {
         if (lastCommentFile_ == position.file && !blankWritten && lastCommentEndLine_ != 0 && position.line > lastCommentEndLine_ + 1) {
             write("\n");
         }
-        write(std::string(indentation_ * 2, ' '));
+        write(std::string((indentation_ + (midStatement ? 1 : 0)) * 2, ' '));
     }
     write(multiline ? "💭🔜" : "💭");
     write(utf8(comment.value()));
@@ -92,7 +95,7 @@ void PrettyStream::printComment(const Token &comment) {
     }
     indentPending_ = wasIndentPending;
     // A line comment ends the line in the middle of an expression, unless the statement printer ends the line.
-    continuation_ = trailing && !multiline;
+    continuation_ = (trailing && !multiline && !offeredNewLine) || midStatement;
     lastCommentFile_ = position.file;
     lastCommentEndLine_ = position.line + std::count(comment.value().begin(), comment.value().end(), U'\n');
 }
@@ -123,6 +126,7 @@ void PrettyStream::printTrailingComments(const SourcePosition &p, bool tokenEnd)
     if (printed) {
         // The caller ends the line.
         whitespaceOffer_ = 0;
+        continuation_ = false;
     }
 }
 

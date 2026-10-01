@@ -99,7 +99,7 @@ public:
     /// Offers a space character
     void offerSpace() { whitespaceOffer_ = ' '; }
     /// Offers a new line character unless the output already ends with one, which blocks do.
-    void endLine() { if (lastChar_ != '\n') { offerNewLine(); } }
+    void endLine() { if (lastChar_ != '\n') { offerNewLine(); } continuation_ = false; }
     /// Offers a new line character
     void offerNewLine() { whitespaceOffer_ = '\n'; }
     /// Calls offerSpace() unless collection returns true for empty()

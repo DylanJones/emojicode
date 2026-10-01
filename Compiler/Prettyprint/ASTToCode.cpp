@@ -339,7 +339,8 @@ void ASTInterpolationLiteral::toCode(PrettyStream &pretty) const {
 
 void ASTCollectionLiteral::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty << "🍿 ";
+    pretty << "🍿";
+    pretty.offerSpace();
     if (pairs_) {
         for (auto it = values_.begin(); it != values_.end(); it++) {
             pretty << *it++;
