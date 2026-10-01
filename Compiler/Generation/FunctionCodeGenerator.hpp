@@ -128,6 +128,11 @@ public:
     /// @returns The LLVM type of the value to which genericArgsPtr() returns a pointer.
     /// @pre The function must not be a type method.
     llvm::Type* genericArgsType();
+    /// Frees the class generic description @c gargs ({ptr, i1}) if its flag is false, i.e. it was dynamically
+    /// allocated. Static descriptions (flag true) are left alone. Not for value type descriptions (see releaseMemory).
+    void freeOwnedDescription(llvm::Value *gargs);
+    /// Returns an i1 that is true if the error slot @c errorPointer holds an error (is non-null).
+    llvm::Value* isErrorSet(llvm::Value *errorPointer);
     llvm::Value* functionGenericArgs() const { return functionGenericArgs_; };
 
     /// @returns The number of bytes an instance of @c type takes up in memory.
@@ -157,6 +162,16 @@ public:
     /// in the box to which @p box points, whose box info is @p boxInfo: its conformance to the protocol, or a table of
     /// its conformances to those of the multiprotocol.
     llvm::Value* buildBoxConformance(llvm::Value *box, llvm::Value *boxInfo, const Type &type);
+    /// Builds the table of the conformances to @p protocols, in that order, with @p conformanceAt(i) returning the one
+    /// to protocols[i].
+    llvm::Value* buildMultiprotocolTable(const std::vector<Type> &protocols,
+                                         const std::function<llvm::Value*(size_t)> &conformanceAt);
+    /// Replaces the protocol conformance (or table of them) in the box of @p type to which @p box points with the box
+    /// info of its value, as the boxes of value witnesses hold. Does nothing for an empty box.
+    void conformanceToBoxInfo(llvm::Value *box, const Type &type);
+    /// Replaces the box info in the box of @p type to which @p box points with what a box of @p type holds instead (see
+    /// buildBoxConformance()). Does nothing for an empty box.
+    void boxInfoToConformance(llvm::Value *box, const Type &type);
     /// Ensures that the box to which @p box points is the only box storing its value of the remote @p type, by copying
     /// the value into a new object if other boxes share the object storing it. Copies of a box share the object, so a
     /// value must be made unique before it is mutated in place.

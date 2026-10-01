@@ -1,0 +1,8 @@
+{
+  "_comment": "The one source of truth for how editors and the language server group emoji. Written without U+FE0F. Run tools/emoji_roles.py after editing; tools/grammar_check.py compares this file with the compiler.",
+  "keyword": "🏁📦📜🔗🙅🤷♻↪",
+  "modifier": "🌍🔏✒🥯⚠🔑☣🖍🔓🔒🔐📻🍼",
+  "operator": "➕➖➗✖👐🤝⭕💢❌👈👉🚮🙌😜◀▶",
+  "typeOperator": "🍺🔺🔲⚖🏮🍬✴⬛🚧🍱",
+  "builtinType": "◼⚪🔵⚫"
+}

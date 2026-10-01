@@ -746,6 +746,53 @@ def check_tables(g, report):
     check_operators(g, report, constants, keywords, special)
 
 
+def check_emoji_roles(report):
+    """The emoji roles shared by the language server and the editors (tools/emoji_roles.json) against the compiler."""
+    report.section('Emoji roles of the language server and the editors')
+    constants = emoji_constants()
+    roles_path = os.path.join(ROOT, 'tools', 'emoji_roles.json')
+    with open(roles_path, encoding='utf-8') as f:
+        roles = {role: set(emoji) for role, emoji in json.load(f).items() if role != '_comment'}
+
+    parsing = os.path.join('Compiler', 'Parsing')
+    header = read_source(parsing, 'AttributesParser.hpp')
+    decorators = set(re.findall(r'attr == Attribute::(\w+)', re.search(r'bool isDecoratorAttribute.*?\}', header, re.S).group(0)))
+    attributes = {chr(constants[value]) for name, value in re.findall(r'(\w+) = (E_\w+)', header) if name not in decorators}
+    # 🐇 is a keyword that also marks type methods, 🔓🔒🔐 are access levels and 🍼 marks an initializer parameter.
+    compare_sets(report, 'modifiers', attributes - {'🐇'} | set('🔓🔒🔐🍼'), roles['modifier'])
+
+    operator_type = re.search(r'OperatorType operatorType\(.*?return OperatorType::Invalid', read_source(
+        parsing, 'OperatorHelper.cpp'), re.S).group(0)
+    operators = {chr(constants[name]) for name in re.findall(r'case (E_\w+):', operator_type)}
+    compare_sets(report, 'operators', operators, roles['operator'])
+
+    overlap = [e for a in roles for b in roles if a < b for e in roles[a] & roles[b]]
+    if overlap:
+        report.fail('emoji with two roles: ' + ' '.join(sorted(overlap)))
+
+    generated = subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'emoji_roles.py'), '--check'],
+                               capture_output=True, text=True)
+    if generated.returncode:
+        report.fail(generated.stdout.strip())
+    else:
+        report.ok('generated tables are up to date')
+
+    completion = read_source('LanguageServer', 'Completion.cpp')
+    offered = ''.join(re.findall(r'^\s*\{"[^"]*", "([^"]*)"', completion, re.M)).replace('\ufe0f', '')
+    missing = sorted((roles['keyword'] | roles['modifier']) - set(offered))
+    if missing:
+        report.fail('completion has no entry for ' + ' '.join(missing))
+    else:
+        report.ok('completion offers every keyword and modifier')
+
+    tm = subprocess.run([sys.executable, os.path.join(ROOT, 'editors', 'vscode', 'syntaxes', 'generate.py'), '--check'],
+                        capture_output=True, text=True)
+    if tm.returncode:
+        report.fail(tm.stdout.strip() or tm.stderr.strip())
+    else:
+        report.ok('emojicode.tmLanguage.json is up to date')
+
+
 def compare_sets(report, what, expected, actual):
     if expected == actual:
         report.ok('{}: {} entries match'.format(what, len(expected)))
@@ -1411,6 +1458,7 @@ def main():
     grammar = Grammar(args.grammar)
     check_well_formed(grammar, report)
     check_tables(grammar, report)
+    check_emoji_roles(report)
     lexer = Lexer(grammar)
     check_literals(grammar, lexer, report)
 

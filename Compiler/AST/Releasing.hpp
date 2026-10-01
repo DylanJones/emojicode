@@ -14,6 +14,7 @@
 namespace EmojicodeCompiler {
 
 class ASTRelease;
+class ErrorSelfDestructing;
 class FunctionCodeGenerator;
 
 /// Nodes to which release statements can be attached inherit from this class.
@@ -22,6 +23,8 @@ class FunctionCodeGenerator;
 /// objects need to be released after the any expressions of the node are evaluated but before the actual return
 /// instruction.
 class Releasing {
+    friend class ErrorSelfDestructing;
+
 public:
     Releasing();
     

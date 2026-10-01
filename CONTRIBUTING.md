@@ -27,7 +27,8 @@ Contributing is as easy as
   interfaces (🏛), increase `kABIVersion` in `Compiler/Package/Package.hpp` and the version in the first line of each
   `tests/packages/*/interface.emojii`, except `abiVersionMismatch`, which must keep an older version, and
   `abiVersionMissing`, which must have none. Keep the CRLF line endings of `abiVersionCRLF`. The compiler then refuses
-  to import packages compiled by an earlier version and asks for them to be recompiled.
+  to import packages compiled by an earlier version and asks for them to be recompiled. The names of protocol
+  conformances contain `kABIVersion` too, so objects of an earlier version do not link either.
 - Try to follow the coding style established in the file you're editing.
 
 ## Adding a Test
