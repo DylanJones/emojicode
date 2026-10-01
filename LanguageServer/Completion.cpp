@@ -5,6 +5,7 @@
 
 #include "Completion.hpp"
 #include "EmojiNames.hpp"
+#include "EmojiRoles.hpp"
 #include "Index.hpp"
 #include "Navigation.hpp"
 #include "AST/ASTType.hpp"
@@ -16,6 +17,7 @@
 #include <algorithm>
 #include <cctype>
 #include <set>
+#include <string_view>
 #include <unordered_map>
 
 namespace EmojicodeLanguageServer {
@@ -104,6 +106,9 @@ const Keyword kKeywords[] = {
     {"list array collection", "🍿", "A list or dictionary literal.", "🍿 $1 🍆", Places::Code},
     {"optional maybe", "🍬", "Makes a type optional.", nullptr, Places::Code | Places::Declaration},
     {"generic", "🐚", "Generic arguments or parameters.", "🐚$1🍆", Places::Code | Places::Declaration},
+    {"link library", "🔗", "Names a library to link with.", "🔗 🔤$1🔤", Places::TopLevel},
+    {"decorator attribute", "🎍", "Starts a decorator, e.g. 🎍🌊 for C functions.", nullptr, Places::Member},
+    {"init parameter property", "🍼", "Copies an initializer parameter into the instance variable of that name.", nullptr, Places::Member},
     {"export public", "🌍", "Exports a type from the package.", nullptr, Places::TopLevel},
     {"final sealed", "🔏", "Prevents overriding or subclassing.", nullptr, Places::TopLevel | Places::Member},
     {"override", "✒️", "Overrides a method of the superclass.", nullptr, Places::Member},
@@ -111,6 +116,9 @@ const Keyword kKeywords[] = {
     {"private", "🔒", "Private access.", nullptr, Places::Member},
     {"protected", "🔐", "Protected access.", nullptr, Places::Member},
     {"required", "🔑", "Requires subclasses to implement the initializer.", nullptr, Places::Member},
+    {"foreign c", "📻", "Implements the method in another language such as C.", nullptr, Places::Member},
+    {"inline", "🥯", "Asks the compiler to inline the method.", nullptr, Places::Member},
+    {"deprecated", "⚠️", "Marks a method as deprecated.", nullptr, Places::Member},
     {"static typemethod", "🐇", "Makes a method a type method.", nullptr, Places::Member},
     {"and", "🤝", "Logical and.", nullptr, Places::Code},
     {"or", "👐", "Logical or.", nullptr, Places::Code},
@@ -187,14 +195,13 @@ std::string firstParagraph(const std::u32string &documentation) {
 }
 
 bool isOperator(const std::u32string &name) {
-    static const std::u32string operators = U"➕➖➗✖👐🤝⭕💢❌👈👉🚮🙌😜◀▶";
-    return !name.empty() && operators.find(name.front()) != std::u32string::npos;
+    return !name.empty() && std::u32string_view(EmojiRoles::kOperator).find(name.front()) != std::u32string_view::npos;
 }
 
 /// Whether @p token is an attribute of a declaration, or ends a block before a statement on the same line, so that a
 /// statement can still start after it.
 bool precedesStatement(const TokenSpan &token) {
-    static const std::u32string attributes = U"🌍🔏📻🥯⚠✒☣🖍🔑🔓🔒🔐";
+    static const std::u32string_view attributes = EmojiRoles::kModifier;
     switch (token.type) {
         case TokenType::Decorator:
         case TokenType::BlockEnd:
@@ -203,7 +210,7 @@ bool precedesStatement(const TokenSpan &token) {
         case TokenType::MultilineComment:
             return true;
         default:
-            return token.value.size() == 1 && attributes.find(token.value[0]) != std::u32string::npos;
+            return token.value.size() == 1 && attributes.find(token.value[0]) != std::u32string_view::npos;
     }
 }
 

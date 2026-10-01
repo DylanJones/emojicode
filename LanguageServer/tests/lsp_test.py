@@ -914,6 +914,16 @@ class NavigationTests(ServerTestCase):
             self.assertEqual(tokens[("🏊", call + 1)], "method", broken)
             self.assertEqual(tokens[("😀", text.split("\n").index("  😀 🔤Depth 🧲total🧲🔤❗️"))], "method")
 
+    def test_semantic_tokens_of_modifiers(self):
+        # ☣ and 🖍 are modifiers like the other attributes, as in the TextMate and tree-sitter grammars.
+        text = "☣️ 🐇 🐟 🍇\n  🖍🆕 a 🔢\n🍉\n🔏 🐇 🐠 🍇🍉\n🏁 🍇\n  ☣️ 🍇🍉\n🍉\n"
+        self.client.change(self.path, text)
+        tokens = self.semantic_types(text)
+        self.assertEqual(tokens[("☣️", 0)], "modifier")
+        self.assertEqual(tokens[("🖍", 1)], "modifier")
+        self.assertEqual(tokens[("🔏", 3)], "modifier")
+        self.assertEqual(tokens[("☣️", 5)], "modifier")
+
     def test_document_symbols(self):
         symbols = self.client.request("textDocument/documentSymbol", {"textDocument": {"uri": uri(self.path)}})
         self.assertEqual([s["name"] for s in symbols], ["🐟"])
@@ -1104,6 +1114,13 @@ class CompletionTests(ServerTestCase):
             self.assertNotIn("↪️ if", labels, text)
             self.assertNotIn("🐇 class", labels, text)
             self.assertFalse([label for label in labels if label.startswith("🔢")], text)
+
+    def test_keywords_of_every_attribute(self):
+        for text, label in (("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n", "📻"), ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n", "🥯"),
+                            ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n", "⚠️"), ("🐇 🐟 🍇\n  |\n🍉\n🏁 🍇🍉\n", "🍼"),
+                            ("|\n🏁 🍇🍉\n", "🔗")):
+            labels = self.complete_at(text)
+            self.assertTrue([l for l in labels if l.startswith(label)], (label, labels))
 
     def test_member_by_keyword(self):
         self.assertEqual(self.complete_at("🐇 🐟 🍇\n  meth|\n🍉\n🏁 🍇🍉\n")[0], "❗️ method function func def")
