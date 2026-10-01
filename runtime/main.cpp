@@ -93,6 +93,8 @@ extern "C" void ejcFreeDescription(int8_t *ptr) {
     free(ptr);
 }
 
+// ejcRetain handles null (stack object) and the ignore block; ejcRetainMemory only the ignore block, so its object
+// must be on the heap.
 extern "C" void ejcRetain(runtime::Object<void> *object) {
     runtime::internal::ControlBlock *controlBlock = object->controlBlock();
     if (controlBlock == nullptr) {
@@ -128,6 +130,24 @@ void releaseWeakCount(runtime::internal::ControlBlock *block) {
     }
 }
 
+/// Drops one strong reference of a heap object (one with a real control block). If it was the last one, runs
+/// `destruct` (if any), frees the object and drops the strong references' share of the weak count, so the block
+/// outlives the object until the last weak reference is gone.
+template<typename Destruct>
+static inline void releaseStrong(runtime::internal::ControlBlock *controlBlock, void *object, Destruct destruct) {
+    if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
+
+    destruct();
+    freeObject(object);
+    releaseWeakCount(controlBlock);
+}
+
+// Null/ignore policy per entry point:
+//  ejcRelease:              null (stack object) and ignore block.
+//  ejcReleaseCapture:       null (stack closure) only; captures never carry the ignore block.
+//  ejcReleaseMemory:        ignore block only; the object must be on the heap.
+//  ejcReleaseWithoutDeinit: null (stack object) only; the object must not be a literal (ignore block).
+
 extern "C" void ejcRelease(runtime::Object<void> *object) {
     runtime::internal::ControlBlock *controlBlock = object->controlBlock();
     if (controlBlock == nullptr) {
@@ -138,11 +158,7 @@ extern "C" void ejcRelease(runtime::Object<void> *object) {
     }
     if (controlBlock == &ejcIgnoreBlock) return;
 
-    if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
-
-    object->classInfo()->destructor(object);
-    freeObject(object);
-    releaseWeakCount(controlBlock);
+    releaseStrong(controlBlock, object, [&] { object->classInfo()->destructor(object); });
 }
 
 extern "C" void ejcReleaseCapture(runtime::internal::Capture *capture) {
@@ -154,22 +170,14 @@ extern "C" void ejcReleaseCapture(runtime::internal::Capture *capture) {
         return;
     }
 
-    if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
-
-    capture->deinit(capture);
-    freeObject(capture);
-    releaseWeakCount(controlBlock);
+    releaseStrong(controlBlock, capture, [&] { capture->deinit(capture); });
 }
 
 extern "C" void ejcReleaseMemory(runtime::Object<void> *object) {
     runtime::internal::ControlBlock *controlBlock = object->controlBlock();
-
     if (controlBlock == &ejcIgnoreBlock) return;
 
-    if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
-
-    freeObject(object);
-    releaseWeakCount(controlBlock);
+    releaseStrong(controlBlock, object, [] {});
 }
 
 extern "C" void ejcReleaseWithoutDeinit(runtime::Object<void> *object) {
@@ -178,10 +186,8 @@ extern "C" void ejcReleaseWithoutDeinit(runtime::Object<void> *object) {
         releaseLocal(object);
         return;
     }
-    if (controlBlock->strongCount.fetch_sub(1, std::memory_order_acq_rel) - 1 != 0) return;
 
-    freeObject(object);
-    releaseWeakCount(controlBlock);
+    releaseStrong(controlBlock, object, [] {});
 }
 
 struct WeakReference {
