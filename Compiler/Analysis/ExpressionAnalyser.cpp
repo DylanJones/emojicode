@@ -118,6 +118,8 @@ bool ExpressionAnalyser::storesGenericValuesUnboxed(TypeDefinition *typeDef) con
                                   typeDef == compiler()->cVoidPointer);
 }
 
+/// Unlike Type::containsGenericVariables(), this deliberately ignores LocalGenericVariable: only variables owned by the
+/// type are described by the type's generic arguments, which is what UsedTypeGenericArguments tracks.
 static bool containsTypeGenericVariable(const Type &type) {
     auto &unboxed = type.withoutBoxAndOptional();
     if (unboxed.type() == TypeType::GenericVariable) {
@@ -156,8 +158,7 @@ Type ExpressionAnalyser::analyseFunctionCall(ASTArguments *node, const Type &typ
     }
     // So are those of the type to a type method or an initializer of a type that stores them.
     if (function->owner() != nullptr && function->owner()->storesGenericArgs() &&
-        (isTypeMethod(function) || function->functionType() == FunctionType::ObjectInitializer ||
-         function->functionType() == FunctionType::ValueTypeInitializer)) {
+        (isTypeMethod(function) || takesInitializerGenericArgs(function))) {
         usesGenericArgumentsOf(type);
     }
 
