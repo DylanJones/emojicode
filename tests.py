@@ -190,7 +190,7 @@ def discover_importing_tests(directory):
 package_ir_tests = names_with_extension(os.path.join(dist.source, "tests", "packageIR"), ".ir")
 
 compilation_directory = os.path.join(dist.source, "tests", "compilation")
-# Formatting a file also formats the files it includes, which only it includes, so they are covered by its lock.
+# Formatting a file also formats the files it includes, so they are copied and formatted together with it.
 # A file listed here is an include-only fragment, not a test of its own, so it needs no NAME.txt.
 formatted_includes = {
     "includer": ["included"],
@@ -233,16 +233,6 @@ jobs = int(os.environ.get("EMOJICODE_TEST_JOBS", os.cpu_count() or 1))
 # The seconds a command, e.g. the compiler or a test program, may run. One that hangs fails its test instead of the
 # whole suite.
 command_timeout = 300
-
-
-source_locks = {}
-source_locks_lock = threading.Lock()
-
-
-def source_lock(path):
-    """Returns the lock held while the compiler reads the source file at path, or while formatting rewrites it."""
-    with source_locks_lock:
-        return source_locks.setdefault(path, threading.Lock())
 
 
 def log(text):
@@ -367,8 +357,7 @@ def compilation_test(name, optimize=True):
     # Each compilation has its own directory, as a test can be compiled several times at once.
     with tempfile.TemporaryDirectory() as directory:
         binary_path = os.path.join(directory, name)
-        with source_lock(source_path):
-            compiled = run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
+        compiled = run([emojicodec, source_path, '-o', binary_path] + (['-O'] if optimize else []), check=True)
         check_warnings(name, compiled.stderr.decode('utf-8', 'replace'),
                        os.path.join(dist.source, "tests", "compilation", name + ".warnings"))
         check_output(name, binary_path)
@@ -377,8 +366,7 @@ def compilation_test(name, optimize=True):
 def specialization_test(name):
     source_path = test_paths(name, 'compilation')[0]
     with tempfile.TemporaryDirectory() as directory:
-        with source_lock(source_path):
-            run([emojicodec, source_path, '--emit-llvm', '-o', os.path.join(directory, name)], check=True)
+        run([emojicodec, source_path, '--emit-llvm', '-o', os.path.join(directory, name)], check=True)
         ir = open(os.path.join(directory, name + ".ll"), "r", encoding='utf-8').read()
     check_specializations(name, ir, os.path.join(dist.source, "tests", "compilation", name + ".specializations"))
 
@@ -396,8 +384,7 @@ def check_specializations(name, ir, exp_path):
 def ir_test(name):
     source_path = test_paths(name, 'compilation')[0]
     with tempfile.TemporaryDirectory() as directory:
-        with source_lock(source_path):
-            run([emojicodec, source_path, '--emit-llvm', '-o', os.path.join(directory, name)], check=True)
+        run([emojicodec, source_path, '--emit-llvm', '-o', os.path.join(directory, name)], check=True)
         ir = open(os.path.join(directory, name + ".ll"), "r", encoding='utf-8').read()
     check_ir(name, ir, os.path.join(dist.source, "tests", "compilation", name + ".ir"))
 
@@ -591,34 +578,37 @@ def source_text_tokens(path):
 
 
 def formatted_test(name, formatted):
-    """Formats the sources of the compilation tests in formatted, compiles the test name from them and checks its
-    output. Formatting must keep all tokens (including comments and documentation) and formatting the result again
-    must not change it. The sources are restored before the program runs."""
-    source_path = test_paths(name, 'compilation')[0]
-    paths = [test_paths(file, 'compilation')[0] for file in formatted]
+    """Formats copies of the sources of the compilation tests in formatted, compiles the test name from them and
+    checks its output. Formatting must keep all tokens (including comments and documentation) and formatting the result
+    again must not change it. The tracked sources are never written, so killing the run cannot leave them formatted."""
     with tempfile.TemporaryDirectory() as directory:
+        sources = os.path.join(directory, "sources")
+        os.mkdir(sources)
         binary_path = os.path.join(directory, name)
-        with source_lock(source_path):
-            pristine = {path: open(path, 'rb').read() for path in paths}
-            try:
-                tokens = {path: source_text_tokens(path) for path in paths}
-                run([emojicodec, '--format', paths[0]], check=True)
-                once = {path: open(path, 'rb').read() for path in paths}
-                for path in paths:
-                    if source_text_tokens(path) != tokens[path]:
-                        log("Formatting changed the comments, documentation or strings of " + path)
-                        fail_test(name + " (formatted)")
-                run([emojicodec, source_path, '-O', '-o', binary_path], check=True)
-                run([emojicodec, '--format', paths[0]], check=True)
-                for path in paths:
-                    if open(path, 'rb').read() != once[path]:
-                        log("Formatting " + path + " a second time changed it")
-                        fail_test(name + " (formatted)")
-            finally:
-                for path in paths:
-                    open(path, 'wb').write(pristine[path])
-                    if os.path.exists(path + '_original'):
-                        os.remove(path + '_original')
+        originals = [test_paths(file, 'compilation')[0] for file in formatted]
+        # The copies keep their names so that the includer still finds the files it includes.
+        paths = [os.path.join(sources, os.path.basename(original)) for original in originals]
+        for original, path in zip(originals, paths):
+            shutil.copyfile(original, path)
+        # Sources can link C files next to them.
+        for fixture in glob.glob(os.path.join(compilation_directory, "*.[ch]")):
+            shutil.copy(fixture, sources)
+        source_path = os.path.join(sources, name + ".emojic")
+        if source_path not in paths:
+            shutil.copyfile(test_paths(name, 'compilation')[0], source_path)
+        tokens = {path: source_text_tokens(path) for path in paths}
+        run([emojicodec, '--format', paths[0]], check=True)
+        once = {path: open(path, 'rb').read() for path in paths}
+        for path in paths:
+            if source_text_tokens(path) != tokens[path]:
+                log("Formatting changed the comments, documentation or strings of " + path)
+                fail_test(name + " (formatted)")
+        run([emojicodec, source_path, '-O', '-o', binary_path], check=True)
+        run([emojicodec, '--format', paths[0]], check=True)
+        for path in paths:
+            if open(path, 'rb').read() != once[path]:
+                log("Formatting " + path + " a second time changed it")
+                fail_test(name + " (formatted)")
         check_output(name, binary_path)
 
 
@@ -707,8 +697,7 @@ slow_tests = set(stress_tests) | {name for name, tokens in library_test_directiv
 
 
 def test():
-    # Tests write only to their own directories or files. Formatting rewrites a source, which is locked meanwhile (see
-    # source_lock()), so all tests can run at once.
+    # Tests write only to their own directories or files. Formatting works on copies, so all tests can run at once.
     tasks = [(test, compilation_test, test) for test in compilation_tests]
     if not quick:
         tasks += [(test + " (formatted)", prettyprint_test, test) for test in compilation_tests]
