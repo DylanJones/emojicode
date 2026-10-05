@@ -193,8 +193,6 @@ void PrettyPrinter::printClosure(Function *function, bool escaping) {
     prettyStream_ << "\n";
     function->ast()->innerToCode(prettyStream_);
     prettyStream_.indent() << "🍉";
-    prettyStream_.printTrailingComments(function->ast()->endPosition(), true);
-    prettyStream_.refuseOffer() << "\n";
 }
 
 void PrettyPrinter::printReturnType(Function *function) {
