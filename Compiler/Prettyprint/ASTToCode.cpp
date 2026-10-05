@@ -129,7 +129,9 @@ void ASTIf::toCode(PrettyStream &pretty) const {
         pretty << blocks_[i].block;
     }
     if (hasElse()) {
-        pretty.indent() << "🙅 " << blocks_.back().block;
+        pretty.indent() << "🙅";
+        pretty.ensureSpace();
+        pretty << blocks_.back().block;
     }
 }
 
@@ -143,7 +145,9 @@ void ASTErrorHandler::toCode(PrettyStream &pretty) const {
     pretty.indent() << "🆗 " << valueVarName_ << " " << value_;
     pretty.ensureSpace();
     pretty << valueBlock_;
-    pretty.indent() << "🙅‍♀️ " << errorVarName_ << " " << errorBlock_;
+    pretty.indent() << "🙅‍♀️ " << errorVarName_;
+    pretty.ensureSpace();
+    pretty << errorBlock_;
 }
 
 void ASTExprStatement::toCode(PrettyStream &pretty) const {
@@ -391,7 +395,8 @@ void ASTBinaryOperator::toCode(PrettyStream &pretty) const {
     auto precedence = operatorPrecedence(operator_);
     printBinaryOperand(precedence, left_, pretty);
     pretty.ensureSpace();
-    pretty << operatorName(operator_) << " ";
+    pretty << operatorName(operator_);
+    pretty.ensureSpace();
     printBinaryOperand(precedence, right_, pretty);
 }
 
