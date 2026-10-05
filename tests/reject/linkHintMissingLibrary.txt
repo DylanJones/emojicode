@@ -1,1 +1,1 @@
-clang++-23 failed with exit code 1.
+failed with exit code 1.
