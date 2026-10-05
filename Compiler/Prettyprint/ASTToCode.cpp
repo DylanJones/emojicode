@@ -86,7 +86,9 @@ void ASTBlock::innerToCode(PrettyStream &pretty) const {
 
 void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🔁 " << condition_;
+    pretty.indent() << "🔁";
+    pretty.ensureSpace();
+    pretty << condition_;
     pretty.printComments(block_.position(), true);
     pretty.indentStatementAtLineStart().ensureSpace();
     pretty << block_;
@@ -94,7 +96,9 @@ void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
 
 void ASTForIn::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🔂 " << varName_ << " " << iteratee_;
+    pretty.indent() << "🔂 " << varName_;
+    pretty.ensureSpace();
+    pretty << iteratee_;
     pretty.printComments(block_.position(), true);
     pretty.indentStatementAtLineStart().ensureSpace();
     pretty << block_;
@@ -124,13 +128,17 @@ void printBranchSpeed(PrettyStream &pretty, ASTIf::BranchSpeed speed) {
 
 void ASTIf::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "↪️ " << conditions_.front();
+    pretty.indent() << "↪️";
+    pretty.ensureSpace();
+    pretty << conditions_.front();
     pretty.printComments(blocks_.front().block.position(), true);
     pretty.indentStatementAtLineStart().ensureSpace();
     printBranchSpeed(pretty, blocks_.front().speed);
     pretty << blocks_.front().block;
     for (size_t i = 1; i < conditions_.size(); i++) {
-        pretty.indent() << "🙅↪️ " << conditions_[i];
+        pretty.indent() << "🙅↪️";
+        pretty.ensureSpace();
+        pretty << conditions_[i];
         pretty.printComments(blocks_[i].block.position(), true);
         pretty.indentStatementAtLineStart().ensureSpace();
         printBranchSpeed(pretty, blocks_[i].speed);
@@ -483,7 +491,9 @@ void ASTLiteralType::toCode(PrettyStream &pretty) const {
 
 void ASTSelection::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty << "📣 " << expr_;
+    pretty << "📣";
+    pretty.ensureSpace();
+    pretty << expr_;
     pretty.offerSpace();
     pretty << typeExpr_;
 }
