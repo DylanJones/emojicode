@@ -4,44 +4,37 @@
 💭 still be released, without running a destructor over its uninitialized fields.
 🐇 💰 🍇
   🖍🆕 name 🔡
-
-  🆕🍼 name 🔡 🍇🍉
-
+  🆕 🍼 name 🔡 🍇🍉
 🍉
 
 🐇 📦 🍇
   🖍🆕 a 💰
   🖍🆕 b 💰
-
-  🆕🍼 a 💰 🍼 b 💰 🍇🍉
-
+  🆕 🍼 a 💰 🍼 b 💰 🍇🍉
 🍉
 
 🐇 🐟 🍇
-  🐇 ❗️ 🥭 fail 👌 tag 🔡 ➡️ 💰🚧🚧 🍇
-    ↪️ fail 🍇
-      🚨🆕🚧 🔤failed🔤❗️
-    🍉
+  🐇❗️ 🥭 fail 👌 tag 🔡 ➡️ 💰 🚧🚧 🍇
+    ↪️ fail 🍇 🚨🆕🚧 🔤failed🔤❗️ 🍉
     ↩️ 🆕💰 tag❗️
   🍉
 
-  🐇 ❗️ 🙋 first 👌 second 👌 ➡️ 📦🚧🚧 🍇
+  🐇❗️ 🙋 first 👌 second 👌 ➡️ 📦 🚧🚧 🍇
     ↩️ 🆕📦 🔺🥭🐇🐟 first 🔤a🔤❗️ 🔺🥭🐇🐟 second 🔤b🔤❗️❗️
   🍉
-
 🍉
 
 🏁 🍇
   🔂 i 🆕⏩ 0 100❗️ 🍇
     💭 the first argument reraises before the receiver's initializer is ever entered
     🆗 s 🙋🐇🐟 👍 👍❗️ 🍇🍉
-    🙅‍♀️ e 🍇🍉
+    🙅 e 🍇🍉
     💭 the second argument reraises after the first, managed, argument was already evaluated
     🆗 s2 🙋🐇🐟 👎 👍❗️ 🍇🍉
-    🙅‍♀️ e2 🍇🍉
+    🙅 e2 🍇🍉
     💭 both arguments succeed, so the receiver is actually constructed
     🆗 s3 🙋🐇🐟 👎 👎❗️ 🍇🍉
-    🙅‍♀️ e3 🍇🍉
+    🙅 e3 🍇🍉
   🍉
-  😀🔤done🔤❗️
+  😀 🔤done🔤❗️
 🍉
