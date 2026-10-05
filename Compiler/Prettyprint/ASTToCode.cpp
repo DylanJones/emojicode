@@ -138,7 +138,8 @@ void ASTIf::toCode(PrettyStream &pretty) const {
     }
     if (hasElse()) {
         pretty.indent() << "🙅";
-        pretty.ensureSpace();
+        pretty.printComments(blocks_.back().block.position());
+        pretty.indentAtLineStart().ensureSpace();
         pretty << blocks_.back().block;
     }
 }
