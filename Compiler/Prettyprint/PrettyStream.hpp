@@ -90,6 +90,13 @@ public:
     /// The indentation is not written until then, so that comments can go in front of the line.
     PrettyStream& indent() { indentPending_ = true; continuation_ = false; return *this; }
 
+    /// Like indent(), but only if the stream is at the start of a line or a new line is about to be written, e.g.
+    /// after a comment.
+    PrettyStream& indentAtLineStart() {
+        indentPending_ = indentPending_ || whitespaceOffer_ == '\n' || lastChar_ == '\n';
+        return *this;
+    }
+
     void increaseIndent() { indentation_++; }
     void decreaseIndent() { indentation_--; }
 
@@ -125,6 +132,8 @@ private:
     SourcePosition lastCommentQuery_ = SourcePosition();
     /// The source line on which the comment that was printed last ends, if nothing but whitespace was written since.
     unsigned int lastCommentEndLine_ = 0;
+    /// True iff the last thing written was a 💭 line comment, which swallows anything printed on its line.
+    bool lastWasLineComment_ = false;
     const SourceFile *lastCommentFile_ = nullptr;
 };
 

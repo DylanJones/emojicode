@@ -42,7 +42,7 @@ void ASTArguments::genericArgsToCode(PrettyStream &pretty) const {
 
 void ASTArguments::toCode(PrettyStream &pretty) const {
     if (!arguments_.empty()) {
-        pretty << " ";
+        pretty.offerSpace();
         for (auto &arg : arguments_) {
             pretty << arg;
             pretty.offerSpace();
@@ -53,6 +53,7 @@ void ASTArguments::toCode(PrettyStream &pretty) const {
 
 void ASTBlock::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
+    pretty.indentAtLineStart();
     if (stmts_.empty() && !pretty.hasCommentsBefore(endPosition_)) {
         pretty << "🍇🍉";
         pretty.printTrailingComments(endPosition_, true);
@@ -83,7 +84,7 @@ void ASTBlock::innerToCode(PrettyStream &pretty) const {
 void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent() << "🔁 " << condition_;
-    pretty.ensureSpace();
+    pretty.indentAtLineStart().ensureSpace();
     pretty << block_;
 }
 
@@ -119,12 +120,14 @@ void printBranchSpeed(PrettyStream &pretty, ASTIf::BranchSpeed speed) {
 void ASTIf::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent() << "↪️ " << conditions_.front();
-    pretty.ensureSpace();
+    pretty.printComments(blocks_.front().block.position());
+    pretty.indentAtLineStart().ensureSpace();
     printBranchSpeed(pretty, blocks_.front().speed);
     pretty << blocks_.front().block;
     for (size_t i = 1; i < conditions_.size(); i++) {
         pretty.indent() << "🙅↪️ " << conditions_[i];
-        pretty.ensureSpace();
+        pretty.printComments(blocks_[i].block.position());
+        pretty.indentAtLineStart().ensureSpace();
         printBranchSpeed(pretty, blocks_[i].speed);
         pretty << blocks_[i].block;
     }
@@ -379,24 +382,32 @@ void ASTCollectionLiteral::toCode(PrettyStream &pretty) const {
 
 void ASTBinaryOperator::printBinaryOperand(int precedence, const std::shared_ptr<ASTExpr> &expr,
                                            PrettyStream &pretty) const {
-    pretty.printComments(position());
     if (auto oper = dynamic_cast<ASTBinaryOperator *>(expr.get())) {
         if (operatorPrecedence(oper->operator_) < precedence) {
             pretty << "🤜" << expr;
-            pretty.refuseOffer() << "🤛";
+            if (!pretty.hasCommentsBefore(oper->groupEnd_)) {
+                pretty.refuseOffer();
+            }
+            pretty.printComments(oper->groupEnd_);
+            pretty << "🤛";
             return;
         }
+        // The group is dropped; keep its comments in place.
+        pretty << expr;
+        pretty.printComments(oper->groupEnd_);
+        return;
     }
     pretty << expr;
 }
 
 void ASTBinaryOperator::toCode(PrettyStream &pretty) const {
-    pretty.printComments(position());
     auto precedence = operatorPrecedence(operator_);
     printBinaryOperand(precedence, left_, pretty);
+    // The operator comes after the left operand, so the comments before it must as well.
+    pretty.printComments(position());
     pretty.ensureSpace();
     pretty << operatorName(operator_);
-    pretty.ensureSpace();
+    pretty.offerSpace();
     printBinaryOperand(precedence, right_, pretty);
 }
 
@@ -460,6 +471,7 @@ void ASTLiteralType::toCode(PrettyStream &pretty) const {
 }
 
 void ASTSelection::toCode(PrettyStream &pretty) const {
+    pretty.printComments(position());
     pretty << "📣 " << expr_;
     pretty.ensureSpace();
     pretty << typeExpr_;

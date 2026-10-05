@@ -49,6 +49,7 @@ void PrettyStream::write(const std::string &string) {
         return;
     }
     *stream_ << string;
+    lastWasLineComment_ = false;
     lastChar_ = string.back();
 }
 
@@ -58,7 +59,7 @@ void PrettyStream::printComment(const Token &comment) {
         return;
     }
     auto multiline = comment.type() == TokenType::MultilineComment;
-    auto trailing = hasCodeBefore(position) && lastChar_ != '\n';
+    auto trailing = hasCodeBefore(position) && lastChar_ != '\n' && !lastWasLineComment_;
     auto offeredNewLine = whitespaceOffer_ == '\n';
     auto blankWritten = offeredNewLine && lastChar_ == '\n';
     whitespaceOffer_ = 0;
@@ -94,6 +95,7 @@ void PrettyStream::printComment(const Token &comment) {
         offerNewLine();
     }
     indentPending_ = wasIndentPending;
+    lastWasLineComment_ = !multiline;
     // A line comment ends the line in the middle of an expression, unless the statement printer ends the line.
     continuation_ = (trailing && !multiline && !offeredNewLine) || midStatement;
     lastCommentFile_ = position.file;
