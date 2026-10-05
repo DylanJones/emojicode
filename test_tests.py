@@ -406,6 +406,33 @@ class FailureReportTests(unittest.TestCase):
         self.assertTrue(failed)
         self.assertEqual(tests_py.failed_tests, ["both"])
 
+    def test_formatting_never_writes_the_tracked_sources(self):
+        # Regression test for #446: formatting used to rewrite tests/compilation in place, so a killed run left the
+        # sources formatted. The fake compiler "formats" whatever path it is given and the tracked bytes must survive.
+        written = []
+
+        def fake_run(args, check=False, **kwargs):
+            if "--format" in args:
+                with open(args[-1], "ab") as f:
+                    f.write(b" formatted")
+                written.append(args[-1])
+            elif "--dump-tokens" in args:
+                return subprocess.CompletedProcess(args, 0, stdout=b"")
+            return subprocess.CompletedProcess(args, 0, stdout=b"", stderr=b"")
+        tests_py.run = fake_run
+        original_check_output = tests_py.check_output
+        tests_py.check_output = lambda name, binary: None
+        paths = [tests_py.test_paths(name, "compilation")[0] for name in ("includer", "included")]
+        before = [open(path, "rb").read() for path in paths]
+
+        try:
+            tests_py.perform("includer", tests_py.formatted_test, "includer", ["included"])
+        finally:
+            tests_py.check_output = original_check_output
+        self.assertTrue(written)
+        self.assertNotIn(paths[0], written)
+        self.assertEqual([open(path, "rb").read() for path in paths], before)
+
     def test_test_that_raises_is_reported(self):
         def raises():
             raise ValueError("boom")
