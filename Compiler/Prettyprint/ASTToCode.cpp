@@ -84,6 +84,7 @@ void ASTBlock::innerToCode(PrettyStream &pretty) const {
 void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent() << "🔁 " << condition_;
+    pretty.printComments(block_.position());
     pretty.indentAtLineStart().ensureSpace();
     pretty << block_;
 }
@@ -91,7 +92,8 @@ void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
 void ASTForIn::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent() << "🔂 " << varName_ << " " << iteratee_;
-    pretty.ensureSpace();
+    pretty.printComments(block_.position());
+    pretty.indentAtLineStart().ensureSpace();
     pretty << block_;
 }
 
@@ -144,9 +146,13 @@ void ASTClosure::toCode(PrettyStream &pretty) const {
 void ASTErrorHandler::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent() << "🆗 " << valueVarName_ << " " << value_;
-    pretty.ensureSpace();
+    pretty.printComments(valueBlock_.position());
+    pretty.indentAtLineStart().ensureSpace();
     pretty << valueBlock_;
-    pretty.indent() << "🙅‍♀️ " << errorVarName_ << " " << errorBlock_;
+    pretty.indent() << "🙅‍♀️ " << errorVarName_;
+    pretty.printComments(errorBlock_.position());
+    pretty.indentAtLineStart().ensureSpace();
+    pretty << errorBlock_;
 }
 
 void ASTExprStatement::toCode(PrettyStream &pretty) const {
@@ -376,10 +382,12 @@ void ASTCollectionLiteral::toCode(PrettyStream &pretty) const {
     pretty << "🍆";
 }
 
-void ASTBinaryOperator::printBinaryOperand(int precedence, const std::shared_ptr<ASTExpr> &expr,
+void ASTBinaryOperator::printBinaryOperand(int precedence, bool isRight, const std::shared_ptr<ASTExpr> &expr,
                                            PrettyStream &pretty) const {
     if (auto oper = dynamic_cast<ASTBinaryOperator *>(expr.get())) {
-        if (operatorPrecedence(oper->operator_) < precedence) {
+        // Operators are left-associative, so an equal-precedence right operand was explicitly grouped.
+        auto operandPrecedence = operatorPrecedence(oper->operator_);
+        if (isRight ? operandPrecedence <= precedence : operandPrecedence < precedence) {
             pretty.printComments(oper->groupStart_);
             pretty << "🤜" << expr;
             if (!pretty.hasCommentsBefore(oper->groupEnd_)) {
@@ -399,13 +407,13 @@ void ASTBinaryOperator::printBinaryOperand(int precedence, const std::shared_ptr
 
 void ASTBinaryOperator::toCode(PrettyStream &pretty) const {
     auto precedence = operatorPrecedence(operator_);
-    printBinaryOperand(precedence, left_, pretty);
+    printBinaryOperand(precedence, false, left_, pretty);
     // The operator comes after the left operand, so the comments before it must as well.
     pretty.printComments(position());
     pretty.ensureSpace();
     pretty << operatorName(operator_);
     pretty.offerSpace();
-    printBinaryOperand(precedence, right_, pretty);
+    printBinaryOperand(precedence, true, right_, pretty);
 }
 
 void ASTType::toCode(PrettyStream &pretty) const {
@@ -470,7 +478,7 @@ void ASTLiteralType::toCode(PrettyStream &pretty) const {
 void ASTSelection::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty << "📣 " << expr_;
-    pretty.ensureSpace();
+    pretty.offerSpace();
     pretty << typeExpr_;
 }
 
