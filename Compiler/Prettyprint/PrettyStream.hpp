@@ -67,7 +67,9 @@ public:
 
     void setLastCommentQueryPlace(const SourcePosition &p);
     /// Prints the comments of the source file that are in front of @p p and were not printed yet.
-    void printComments(const SourcePosition &p);
+    /// @param statementLevel Own-line comments are never indented as a continuation of the current line, e.g. in
+    /// front of a block, where the head's line is finished.
+    void printComments(const SourcePosition &p, bool statementLevel = false);
     /// Prints all comments of @p file that were not printed yet.
     void printRemainingComments(SourceFile *file);
     /// Prints the comments that follow the code on the source line of @p p after what is already written to the
@@ -122,7 +124,7 @@ private:
     std::set<std::tuple<const SourceFile *, unsigned int, unsigned int>> printedComments_;
 
     void write(const std::string &string);
-    void printComment(const Token &comment);
+    void printComment(const Token &comment, bool statementLevel = false);
     unsigned int indentation_ = 0;
     SourcePosition lastCommentQuery_ = SourcePosition();
     /// The source line on which the comment that was printed last ends, if nothing but whitespace was written since.

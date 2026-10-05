@@ -52,7 +52,7 @@ void PrettyStream::write(const std::string &string) {
     lastChar_ = string.back();
 }
 
-void PrettyStream::printComment(const Token &comment) {
+void PrettyStream::printComment(const Token &comment, bool statementLevel) {
     auto &position = comment.position();
     if (!printedComments_.emplace(position.file, position.line, position.character).second) {
         return;
@@ -66,7 +66,7 @@ void PrettyStream::printComment(const Token &comment) {
     auto wasIndentPending = indentPending_;
     indentPending_ = false;
     // An own-line comment in the middle of a statement is indented like the rest of the statement.
-    auto midStatement = !trailing && !wasIndentPending &&
+    auto midStatement = !trailing && !wasIndentPending && !statementLevel &&
                         (continuation_ || (!offeredNewLine && lastChar_ != 0 && lastChar_ != '\n'));
     if (trailing) {
         write("  ");
@@ -100,11 +100,11 @@ void PrettyStream::printComment(const Token &comment) {
     lastCommentEndLine_ = position.line + std::count(comment.value().begin(), comment.value().end(), U'\n');
 }
 
-void PrettyStream::printComments(const SourcePosition &p) {
+void PrettyStream::printComments(const SourcePosition &p, bool statementLevel) {
     if (p.file == nullptr) {
         return;
     }
-    p.file->findComments(lastCommentQuery_, p, [this](const Token &comment) { printComment(comment); });
+    p.file->findComments(lastCommentQuery_, p, [&](const Token &comment) { printComment(comment, statementLevel); });
     if (isBefore(lastCommentQuery_, p)) {
         lastCommentQuery_ = p;
     }
