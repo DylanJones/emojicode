@@ -103,6 +103,15 @@ public:
         return *this;
     }
 
+    /// Like indentAtLineStart(), but a line after a comment gets the statement's indentation, e.g. for a block's 🍇.
+    PrettyStream& indentStatementAtLineStart() {
+        if (indentPending_ || whitespaceOffer_ == '\n' || lastChar_ == '\n') {
+            indentPending_ = true;
+            continuation_ = false;
+        }
+        return *this;
+    }
+
     void increaseIndent() { indentation_++; }
     void decreaseIndent() { indentation_--; }
 
