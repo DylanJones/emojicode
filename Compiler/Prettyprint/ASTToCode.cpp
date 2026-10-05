@@ -397,6 +397,7 @@ void ASTBinaryOperator::printBinaryOperand(int precedence, bool isRight, const s
         // Operators are left-associative, so an equal-precedence right operand was explicitly grouped.
         auto operandPrecedence = operatorPrecedence(oper->operator_);
         if (isRight ? operandPrecedence <= precedence : operandPrecedence < precedence) {
+            pretty.printComments(oper->groupStart_);
             pretty << "🤜" << expr;
             pretty.refuseSpaceOffer().indentAtLineStart() << "🤛";
             return;

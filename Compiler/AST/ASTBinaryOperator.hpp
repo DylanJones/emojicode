@@ -22,6 +22,8 @@ public:
                                                  right_(std::move(right)) {}
 
     OperatorType operatorType() const { return operator_; }
+    /// Records the position of the 🤜 that opened a group around this operator, for the code formatter.
+    void setGroupStart(const SourcePosition &p) { groupStart_ = p; }
     const std::shared_ptr<ASTExpr>& right() const { return right_; }
 
     Type analyse(ExpressionAnalyser *analyser) override;
@@ -45,6 +47,7 @@ private:
     OperatorType operator_;
     std::shared_ptr<ASTExpr> left_;
     std::shared_ptr<ASTExpr> right_;
+    SourcePosition groupStart_;
 };
 
 }  // namespace EmojicodeCompiler
