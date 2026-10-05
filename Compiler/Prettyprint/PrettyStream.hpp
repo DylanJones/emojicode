@@ -90,6 +90,13 @@ public:
     /// The indentation is not written until then, so that comments can go in front of the line.
     PrettyStream& indent() { indentPending_ = true; continuation_ = false; return *this; }
 
+    /// Like indent(), but only if the stream is at the start of a line or a new line is about to be written, e.g.
+    /// after a comment.
+    PrettyStream& indentAtLineStart() {
+        indentPending_ = indentPending_ || whitespaceOffer_ == '\n' || lastChar_ == '\n';
+        return *this;
+    }
+
     void increaseIndent() { indentation_++; }
     void decreaseIndent() { indentation_--; }
 
@@ -100,8 +107,6 @@ public:
     void offerSpace() { whitespaceOffer_ = ' '; }
     /// Offers a new line character unless the output already ends with one, which blocks do.
     void endLine() { if (lastChar_ != '\n') { offerNewLine(); } continuation_ = false; }
-    /// @returns Whether a new line is currently offered.
-    bool newLineOffered() const { return whitespaceOffer_ == '\n'; }
     /// Offers a new line character
     void offerNewLine() { whitespaceOffer_ = '\n'; }
     /// Calls offerSpace() unless collection returns true for empty()
