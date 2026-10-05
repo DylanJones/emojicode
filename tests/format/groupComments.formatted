@@ -6,10 +6,10 @@
   1 ➕ 2  💭 c
     ➡️ h
   1  💭 before op
-  ➕ 2 ➡️ d
+    ➕ 2 ➡️ d
   🤜e ➕ 1  💭 inner
     🤛 ✖ 2  💭 outer
-  ➖ 3 ➡️ m
+    ➖ 3 ➡️ m
   ↪️ e ▶ e ➕ 1  💭🔜 n 🔚💭 🍇
     e ➡️ i
   🍉

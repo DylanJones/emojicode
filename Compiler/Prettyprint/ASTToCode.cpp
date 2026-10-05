@@ -401,7 +401,7 @@ void ASTBinaryOperator::toCode(PrettyStream &pretty) const {
     printBinaryOperand(precedence, left_, pretty);
     // The operator comes after the left operand, so the comments before it must as well.
     pretty.printComments(position());
-    pretty.indentAtLineStart().ensureSpace();
+    pretty.ensureSpace();
     pretty << operatorName(operator_) << " ";
     printBinaryOperand(precedence, right_, pretty);
 }
