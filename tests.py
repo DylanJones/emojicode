@@ -631,6 +631,9 @@ def format_test(filename):
         shutil.copyfile(filename, path)
         run([emojicodec, '-S', test_packages, '--format', path], check=True)
         formatted = open(path, encoding='utf-8').read()
+        if re.search(r'[ \t]+$', formatted, re.M):
+            log("Formatted source has trailing whitespace:\n" + formatted)
+            fail_test(filename)
         if formatted != expected:
             log("Formatted source differs from the expected one:\n" + formatted)
             fail_test(filename)
