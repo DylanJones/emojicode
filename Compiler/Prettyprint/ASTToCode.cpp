@@ -467,6 +467,7 @@ void ASTLiteralType::toCode(PrettyStream &pretty) const {
 }
 
 void ASTSelection::toCode(PrettyStream &pretty) const {
+    pretty.printComments(position());
     pretty << "📣 " << expr_;
     pretty.ensureSpace();
     pretty << typeExpr_;
