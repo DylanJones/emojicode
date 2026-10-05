@@ -203,7 +203,9 @@ void ASTOperatorAssignment::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent();
     auto binaryOperator = dynamic_cast<ASTBinaryOperator *>(expr_.get());
-    pretty << name() << " ⬅️" << operatorName(binaryOperator->operatorType()) << " " << binaryOperator->right();
+    pretty << name() << " ⬅️" << operatorName(binaryOperator->operatorType());
+    pretty.ensureSpace();
+    pretty << binaryOperator->right();
 }
 
 void ASTGetVariable::toCode(PrettyStream &pretty) const {
@@ -325,7 +327,9 @@ void ASTReturn::toCode(PrettyStream &pretty) const {
         pretty.indent() << "↩️↩️";
     }
     else {
-        pretty.indent() << "↩️ " << value_;
+        pretty.indent() << "↩️";
+        pretty.ensureSpace();
+        pretty << value_;
     }
 }
 
