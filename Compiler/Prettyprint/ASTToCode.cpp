@@ -391,7 +391,8 @@ void ASTBinaryOperator::toCode(PrettyStream &pretty) const {
     auto precedence = operatorPrecedence(operator_);
     printBinaryOperand(precedence, left_, pretty);
     pretty.ensureSpace();
-    pretty << operatorName(operator_) << " ";
+    pretty << operatorName(operator_);
+    pretty.offerSpace();
     printBinaryOperand(precedence, right_, pretty);
 }
 
