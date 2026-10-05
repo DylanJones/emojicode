@@ -88,7 +88,7 @@ public:
 
     /// Makes the next thing appended to the stream be preceded by the requested amount of indentation characters.
     /// The indentation is not written until then, so that comments can go in front of the line.
-    PrettyStream& indent() { indentPending_ = true; return *this; }
+    PrettyStream& indent() { indentPending_ = true; continuation_ = false; return *this; }
 
     /// Like indent(), but only if the stream is at the start of a line or a new line is about to be written, e.g.
     /// after a comment.
@@ -106,7 +106,7 @@ public:
     /// Offers a space character
     void offerSpace() { whitespaceOffer_ = ' '; }
     /// Offers a new line character unless the output already ends with one, which blocks do.
-    void endLine() { if (lastChar_ != '\n') { offerNewLine(); } }
+    void endLine() { if (lastChar_ != '\n') { offerNewLine(); } continuation_ = false; }
     /// Offers a new line character
     void offerNewLine() { whitespaceOffer_ = '\n'; }
     /// Calls offerSpace() unless collection returns true for empty()
@@ -122,6 +122,8 @@ private:
     char whitespaceOffer_ = 0;
     char lastChar_ = 0;
     bool indentPending_ = false;
+    /// Whether a comment ended the line in the middle of a statement, so that the next line is a continuation.
+    bool continuation_ = false;
     std::set<std::tuple<const SourceFile *, unsigned int, unsigned int>> printedComments_;
 
     void write(const std::string &string);

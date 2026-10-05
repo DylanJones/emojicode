@@ -90,21 +90,27 @@ void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
 
 void ASTForIn::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🔂 " << varName_ << " " << iteratee_ << " " << block_;
+    pretty.indent() << "🔂 " << varName_ << " " << iteratee_;
+    pretty.ensureSpace();
+    pretty << block_;
 }
 
 void ASTUnsafeBlock::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "☣️ " << block_;
+    pretty.indent() << "☣️";
+    pretty.ensureSpace();
+    pretty << block_;
 }
 
 void printBranchSpeed(PrettyStream &pretty, ASTIf::BranchSpeed speed) {
     switch (speed) {
         case ASTIf::BranchSpeed::Fast:
             pretty << "🎍🏎";
+            pretty.offerSpace();
             break;
         case ASTIf::BranchSpeed::Slow:
             pretty << "🎍🐌";
+            pretty.offerSpace();
             break;
         default:
             break;
@@ -137,7 +143,9 @@ void ASTClosure::toCode(PrettyStream &pretty) const {
 
 void ASTErrorHandler::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🆗 " << valueVarName_ << " " << value_ << " " << valueBlock_;
+    pretty.indent() << "🆗 " << valueVarName_ << " " << value_;
+    pretty.ensureSpace();
+    pretty << valueBlock_;
     pretty.indent() << "🙅‍♀️ " << errorVarName_ << " " << errorBlock_;
 }
 
@@ -168,7 +176,7 @@ void ASTVariableDeclareAndAssign::toCode(PrettyStream &pretty) const {
 void ASTConstantVariable::toCode(PrettyStream &pretty) const {
     pretty.indent() << expr_;
     pretty.printComments(position());
-    pretty.indentAtLineStart().ensureSpace();
+    pretty.ensureSpace();
     pretty << "➡️ " << name();
 }
 
@@ -346,12 +354,14 @@ void ASTInterpolationLiteral::toCode(PrettyStream &pretty) const {
 
 void ASTCollectionLiteral::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty << "🍿 ";
+    pretty << "🍿";
+    pretty.offerSpace();
     if (pairs_) {
         for (auto it = values_.begin(); it != values_.end(); it++) {
             pretty << *it++;
             pretty.ensureSpace();
             pretty << "➡️ " << *it;
+            pretty.ensureSpace();
         }
         // An empty dictionary is 🍿➡️🍆, which would otherwise be printed as an empty list.
         if (values_.empty()) {
@@ -371,8 +381,11 @@ void ASTBinaryOperator::printBinaryOperand(int precedence, const std::shared_ptr
     if (auto oper = dynamic_cast<ASTBinaryOperator *>(expr.get())) {
         if (operatorPrecedence(oper->operator_) < precedence) {
             pretty << "🤜" << expr;
+            if (!pretty.hasCommentsBefore(oper->groupEnd_)) {
+                pretty.refuseOffer();
+            }
             pretty.printComments(oper->groupEnd_);
-            pretty.indentAtLineStart() << "🤛";
+            pretty << "🤛";
             return;
         }
         // The group is dropped; keep its comments in place.
@@ -453,7 +466,9 @@ void ASTLiteralType::toCode(PrettyStream &pretty) const {
 }
 
 void ASTSelection::toCode(PrettyStream &pretty) const {
-    pretty << "📣 " << expr_ << " " << typeExpr_;
+    pretty << "📣 " << expr_;
+    pretty.ensureSpace();
+    pretty << typeExpr_;
 }
 
 } // namespace EmojicodeCompiler
