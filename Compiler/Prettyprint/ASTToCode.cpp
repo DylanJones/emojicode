@@ -44,16 +44,19 @@ void ASTArguments::toCode(PrettyStream &pretty) const {
     if (!arguments_.empty()) {
         pretty.offerSpace();
         for (auto &arg : arguments_) {
-            pretty << arg;
-            pretty.offerSpace();
+            pretty.printComments(arg->position());
+            pretty.indentAtLineStart() << arg;
+            pretty.ensureSpace();
         }
     }
-    pretty.refuseOffer() << (mood_ == Mood::Imperative ? "❗️" : "❓️");
+    pretty.printComments(moodPosition_);
+    // A comment in front of the mood ends the line and the mood must not end up in it.
+    pretty.refuseSpaceOffer().indentAtLineStart() << (mood_ == Mood::Imperative ? "❗️" : "❓️");
 }
 
 void ASTBlock::toCode(PrettyStream &pretty) const {
-    pretty.printComments(position());
-    pretty.indentAtLineStart();
+    pretty.printComments(position(), true);
+    pretty.indentStatementAtLineStart();
     if (stmts_.empty() && !pretty.hasCommentsBefore(endPosition_)) {
         pretty << "🍇🍉";
         pretty.printTrailingComments(endPosition_, true);
@@ -86,8 +89,8 @@ void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
     pretty.indent() << "🔁";
     pretty.ensureSpace();
     pretty << condition_;
-    pretty.printComments(block_.position());
-    pretty.indentAtLineStart().ensureSpace();
+    pretty.printComments(block_.position(), true);
+    pretty.indentStatementAtLineStart().ensureSpace();
     pretty << block_;
 }
 
@@ -96,8 +99,8 @@ void ASTForIn::toCode(PrettyStream &pretty) const {
     pretty.indent() << "🔂 " << varName_;
     pretty.ensureSpace();
     pretty << iteratee_;
-    pretty.printComments(block_.position());
-    pretty.indentAtLineStart().ensureSpace();
+    pretty.printComments(block_.position(), true);
+    pretty.indentStatementAtLineStart().ensureSpace();
     pretty << block_;
 }
 
@@ -128,21 +131,23 @@ void ASTIf::toCode(PrettyStream &pretty) const {
     pretty.indent() << "↪️";
     pretty.ensureSpace();
     pretty << conditions_.front();
-    pretty.printComments(blocks_.front().block.position());
-    pretty.indentAtLineStart().ensureSpace();
+    pretty.printComments(blocks_.front().block.position(), true);
+    pretty.indentStatementAtLineStart().ensureSpace();
     printBranchSpeed(pretty, blocks_.front().speed);
     pretty << blocks_.front().block;
     for (size_t i = 1; i < conditions_.size(); i++) {
         pretty.indent() << "🙅↪️";
         pretty.ensureSpace();
         pretty << conditions_[i];
-        pretty.printComments(blocks_[i].block.position());
-        pretty.indentAtLineStart().ensureSpace();
+        pretty.printComments(blocks_[i].block.position(), true);
+        pretty.indentStatementAtLineStart().ensureSpace();
         printBranchSpeed(pretty, blocks_[i].speed);
         pretty << blocks_[i].block;
     }
     if (hasElse()) {
-        pretty.indent() << "🙅 " << blocks_.back().block;
+        pretty.indent() << "🙅";
+        pretty.ensureSpace();
+        pretty << blocks_.back().block;
     }
 }
 
@@ -156,11 +161,11 @@ void ASTErrorHandler::toCode(PrettyStream &pretty) const {
     pretty.indent() << "🆗 " << valueVarName_;
     pretty.ensureSpace();
     pretty << value_;
-    pretty.printComments(valueBlock_.position());
+    pretty.printComments(valueBlock_.position(), true);
     pretty.indentAtLineStart().ensureSpace();
     pretty << valueBlock_;
     pretty.indent() << "🙅‍♀️ " << errorVarName_;
-    pretty.printComments(errorBlock_.position());
+    pretty.printComments(errorBlock_.position(), true);
     pretty.indentAtLineStart().ensureSpace();
     pretty << errorBlock_;
 }
@@ -183,16 +188,16 @@ void ASTVariableAssignment::toCode(PrettyStream &pretty) const {
 }
 
 void ASTVariableDeclareAndAssign::toCode(PrettyStream &pretty) const {
-    pretty.printComments(position());
     pretty.indent() << expr_;
-    pretty.ensureSpace();
+    pretty.printComments(position());
+    pretty.indentAtLineStart().ensureSpace();
     pretty << "➡️ 🖍🆕 " << name();
 }
 
 void ASTConstantVariable::toCode(PrettyStream &pretty) const {
     pretty.indent() << expr_;
     pretty.printComments(position());
-    pretty.ensureSpace();
+    pretty.indentAtLineStart().ensureSpace();
     pretty << "➡️ " << name();
 }
 
@@ -345,11 +350,13 @@ void ASTMethod::toCode(PrettyStream &pretty) const {
         pretty << "➡️ " << name_;
         args_.genericArgsToCode(pretty);
         pretty << callee_;
-        pretty.offerSpace();
+        pretty.ensureSpace();
         for (size_t i = 1; i < args_.args().size(); i++) {
-            pretty << args_.args()[i];
+            pretty.printComments(args_.args()[i]->position());
+            pretty.indentAtLineStart() << args_.args()[i];
         }
-        pretty.refuseOffer() << "❗️";
+        pretty.printComments(args_.moodPosition());
+        pretty.refuseSpaceOffer().indentAtLineStart() << "❗️";
     }
     else {
         pretty << name_;
@@ -398,18 +405,11 @@ void ASTBinaryOperator::printBinaryOperand(int precedence, bool isRight, const s
         // Operators are left-associative, so an equal-precedence right operand was explicitly grouped.
         auto operandPrecedence = operatorPrecedence(oper->operator_);
         if (isRight ? operandPrecedence <= precedence : operandPrecedence < precedence) {
+            pretty.printComments(oper->groupStart_);
             pretty << "🤜" << expr;
-            if (!pretty.hasCommentsBefore(oper->groupEnd_)) {
-                pretty.refuseOffer();
-            }
-            pretty.printComments(oper->groupEnd_);
-            pretty << "🤛";
+            pretty.refuseSpaceOffer().indentAtLineStart() << "🤛";
             return;
         }
-        // The group is dropped; keep its comments in place.
-        pretty << expr;
-        pretty.printComments(oper->groupEnd_);
-        return;
     }
     pretty << expr;
 }
@@ -419,7 +419,7 @@ void ASTBinaryOperator::toCode(PrettyStream &pretty) const {
     printBinaryOperand(precedence, false, left_, pretty);
     // The operator comes after the left operand, so the comments before it must as well.
     pretty.printComments(position());
-    pretty.ensureSpace();
+    pretty.indentAtLineStart().ensureSpace();
     pretty << operatorName(operator_);
     pretty.offerSpace();
     printBinaryOperand(precedence, true, right_, pretty);

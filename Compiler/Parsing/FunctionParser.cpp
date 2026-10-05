@@ -99,8 +99,9 @@ void FunctionParser::parseMainArguments(ASTArguments *arguments, const SourcePos
            stream_.nextTokenIsEverythingBut(TokenType::EndInterrogativeArgumentList)) {
         arguments->addArguments(parseExpr(0));
     }
-    arguments->setMood(stream_.consumeToken().type() == TokenType::EndArgumentList ? Mood::Imperative :
-                                                                                     Mood::Interogative);
+    auto mood = stream_.consumeToken();
+    arguments->setMoodPosition(mood.position());
+    arguments->setMood(mood.type() == TokenType::EndArgumentList ? Mood::Imperative : Mood::Interogative);
 }
 
 std::unique_ptr<ASTStatement> FunctionParser::parseStatement() {
@@ -331,7 +332,7 @@ std::shared_ptr<ASTExpr> FunctionParser::parseExprLeft(const EmojicodeCompiler::
         case TokenType::Identifier:
             return parseExprIdentifier(token);
         case TokenType::GroupBegin:
-            return parseGroup();
+            return parseGroup(token.position());
         case TokenType::BlockBegin:
             return parseClosure(token);
         case TokenType::New:
@@ -399,12 +400,13 @@ std::shared_ptr<ASTExpr> FunctionParser::parseExprIdentifier(const Token &token)
     }
 }
 
-std::shared_ptr<ASTExpr> FunctionParser::parseGroup() {
+std::shared_ptr<ASTExpr> FunctionParser::parseGroup(const SourcePosition &start) {
     auto expr = parseExpr(0);
     auto end = stream_.consumeToken(TokenType::GroupEnd);
     if (auto oper = std::dynamic_pointer_cast<ASTBinaryOperator>(expr)) {
-        oper->setGroupEnd(end.position());
+        oper->setGroupStart(start);
     }
+    expr->setGroupEnd(end.position());
     return expr;
 }
 
