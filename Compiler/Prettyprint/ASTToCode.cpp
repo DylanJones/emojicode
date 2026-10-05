@@ -55,7 +55,7 @@ void ASTArguments::toCode(PrettyStream &pretty) const {
 }
 
 void ASTBlock::toCode(PrettyStream &pretty) const {
-    pretty.printComments(position());
+    pretty.printComments(position(), true);
     pretty.indentStatementAtLineStart();
     if (stmts_.empty() && !pretty.hasCommentsBefore(endPosition_)) {
         pretty << "🍇🍉";
@@ -87,7 +87,7 @@ void ASTBlock::innerToCode(PrettyStream &pretty) const {
 void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent() << "🔁 " << condition_;
-    pretty.printComments(block_.position());
+    pretty.printComments(block_.position(), true);
     pretty.indentStatementAtLineStart().ensureSpace();
     pretty << block_;
 }
@@ -95,7 +95,7 @@ void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
 void ASTForIn::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent() << "🔂 " << varName_ << " " << iteratee_;
-    pretty.printComments(block_.position());
+    pretty.printComments(block_.position(), true);
     pretty.indentStatementAtLineStart().ensureSpace();
     pretty << block_;
 }
@@ -125,13 +125,13 @@ void printBranchSpeed(PrettyStream &pretty, ASTIf::BranchSpeed speed) {
 void ASTIf::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent() << "↪️ " << conditions_.front();
-    pretty.printComments(blocks_.front().block.position());
+    pretty.printComments(blocks_.front().block.position(), true);
     pretty.indentStatementAtLineStart().ensureSpace();
     printBranchSpeed(pretty, blocks_.front().speed);
     pretty << blocks_.front().block;
     for (size_t i = 1; i < conditions_.size(); i++) {
         pretty.indent() << "🙅↪️ " << conditions_[i];
-        pretty.printComments(blocks_[i].block.position());
+        pretty.printComments(blocks_[i].block.position(), true);
         pretty.indentStatementAtLineStart().ensureSpace();
         printBranchSpeed(pretty, blocks_[i].speed);
         pretty << blocks_[i].block;
@@ -153,11 +153,11 @@ void ASTErrorHandler::toCode(PrettyStream &pretty) const {
     pretty.indent() << "🆗 " << valueVarName_;
     pretty.ensureSpace();
     pretty << value_;
-    pretty.printComments(valueBlock_.position());
+    pretty.printComments(valueBlock_.position(), true);
     pretty.indentAtLineStart().ensureSpace();
     pretty << valueBlock_;
     pretty.indent() << "🙅‍♀️ " << errorVarName_;
-    pretty.printComments(errorBlock_.position());
+    pretty.printComments(errorBlock_.position(), true);
     pretty.indentAtLineStart().ensureSpace();
     pretty << errorBlock_;
 }
