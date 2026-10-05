@@ -42,7 +42,7 @@ void ASTArguments::genericArgsToCode(PrettyStream &pretty) const {
 
 void ASTArguments::toCode(PrettyStream &pretty) const {
     if (!arguments_.empty()) {
-        pretty << " ";
+        pretty.offerSpace();
         for (auto &arg : arguments_) {
             pretty.printComments(arg->position());
             pretty.indentAtLineStart() << arg;
@@ -399,7 +399,8 @@ void ASTBinaryOperator::toCode(PrettyStream &pretty) const {
     // The operator comes after the left operand, so the comments before it must as well.
     pretty.printComments(position());
     pretty.indentAtLineStart().ensureSpace();
-    pretty << operatorName(operator_) << " ";
+    pretty << operatorName(operator_);
+    pretty.offerSpace();
     printBinaryOperand(precedence, right_, pretty);
 }
 
