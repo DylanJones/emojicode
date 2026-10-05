@@ -8,7 +8,8 @@ Agent sandboxes mount only their own worktree, so every sibling worktree looks m
 
 - Never run `git worktree prune`, `git gc` or `git prune`. They act on the whole shared repository, not just your worktree, even when you run them from inside it.
 - Only run `git worktree remove <path>` on a temporary worktree you created yourself.
-- If you need a temporary worktree, create it with `git worktree add --detach build/tmp-wt` (`build/` is git-ignored, so `git add -A` won't stage it as an embedded repository), and remove it by path with `git worktree remove build/tmp-wt`.
+- If you need a temporary worktree, give it a run-unique name. Git names the admin directory under the shared `.git/worktrees/` after the last path component, so a fixed name like `tmp-wt` is shared by every run. Create it with `TMP_WT=build/tmp-wt-$(basename "$PWD")` and `git worktree add --detach "$TMP_WT"` (`build/` is git-ignored, so `git add -A` won't stage it as an embedded repository), and remove it by that path with `git worktree remove "$TMP_WT"`.
+- If git commands in a temporary worktree fail with `fatal: not a git repository: …/.git/worktrees/…`, don't prune or repair anything. Report it, and recreate the temporary worktree under a fresh name.
 
 ## Moving work
 
