@@ -6,6 +6,7 @@
 //
 
 #include "PrettyStream.hpp"
+#include "AST/ASTExpr.hpp"
 #include "AST/ASTType.hpp"
 #include "CompilerError.hpp"
 #include "Lex/SourceManager.hpp"
@@ -109,6 +110,12 @@ void PrettyStream::printComments(const SourcePosition &p, bool statementLevel) {
     p.file->findComments(lastCommentQuery_, p, [&](const Token &comment) { printComment(comment, statementLevel); });
     if (isBefore(lastCommentQuery_, p)) {
         lastCommentQuery_ = p;
+    }
+}
+
+void PrettyStream::printGroupEnd(const ASTNode *node) {
+    if (auto expr = dynamic_cast<const ASTExpr *>(node)) {
+        printComments(expr->groupEnd());
     }
 }
 

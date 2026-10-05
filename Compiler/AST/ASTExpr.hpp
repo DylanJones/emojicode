@@ -47,6 +47,10 @@ class ASTExpr : public ASTNode {
     friend ASTHandledCall;
 public:
     explicit ASTExpr(const SourcePosition &p) : ASTNode(p) {}
+    /// Records the position of the 🤛 that closed a group around this expression, for the code formatter.
+    void setGroupEnd(const SourcePosition &p) { groupEnd_ = p; }
+    const SourcePosition& groupEnd() const { return groupEnd_; }
+
     /// Set after semantic analysis and transformation.
     /// Iff this node represents an expression type this type is the exact type produced by this node.
     const Type& expressionType() const { return expressionType_; }
@@ -95,6 +99,7 @@ protected:
 private:
     bool isTemporary_ = true;
     Type expressionType_ = Type::invalid();
+    SourcePosition groupEnd_;
 };
 
 /// All expressions that represent a call (method, initializer, callable) that potentially raises an error inherit
@@ -159,7 +164,10 @@ public:
     void toCode(PrettyStream &pretty) const;
     void genericArgsToCode(PrettyStream &pretty) const;
     Mood mood() const { return mood_; }
+    const SourcePosition& moodPosition() const { return moodPosition_; }
     void setMood(Mood mood) { mood_ = mood; }
+    /// Records the position of the ❗️ or ❓️ that ended the arguments, for the code formatter.
+    void setMoodPosition(const SourcePosition &p) { moodPosition_ = p; }
 
     const std::vector<Type>& genericArgumentTypes() const { return genericArgumentsTypes_; }
     void setGenericArgumentTypes(std::vector<Type> types) { genericArgumentsTypes_ = std::move(types); }
@@ -176,6 +184,7 @@ public:
 
 private:
     Mood mood_ = Mood::Imperative;
+    SourcePosition moodPosition_;
     std::vector<std::shared_ptr<ASTType>> genericArguments_;
     std::vector<std::shared_ptr<ASTExpr>> arguments_;
     std::vector<Type> genericArgumentsTypes_;
