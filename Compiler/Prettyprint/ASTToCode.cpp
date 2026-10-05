@@ -137,7 +137,9 @@ void ASTIf::toCode(PrettyStream &pretty) const {
         pretty << blocks_[i].block;
     }
     if (hasElse()) {
-        pretty.indent() << "🙅 " << blocks_.back().block;
+        pretty.indent() << "🙅";
+        pretty.ensureSpace();
+        pretty << blocks_.back().block;
     }
 }
 
@@ -148,7 +150,9 @@ void ASTClosure::toCode(PrettyStream &pretty) const {
 
 void ASTErrorHandler::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
-    pretty.indent() << "🆗 " << valueVarName_ << " " << value_;
+    pretty.indent() << "🆗 " << valueVarName_;
+    pretty.ensureSpace();
+    pretty << value_;
     pretty.printComments(valueBlock_.position());
     pretty.indentAtLineStart().ensureSpace();
     pretty << valueBlock_;
