@@ -84,7 +84,7 @@ void ASTBlock::innerToCode(PrettyStream &pretty) const {
 void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent() << "🔁 " << condition_;
-    pretty.printComments(block_.position());
+    pretty.printComments(block_.position(), true);
     pretty.indentAtLineStart().ensureSpace();
     pretty << block_;
 }
@@ -92,7 +92,7 @@ void ASTRepeatWhile::toCode(PrettyStream &pretty) const {
 void ASTForIn::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent() << "🔂 " << varName_ << " " << iteratee_;
-    pretty.printComments(block_.position());
+    pretty.printComments(block_.position(), true);
     pretty.indentAtLineStart().ensureSpace();
     pretty << block_;
 }
@@ -146,11 +146,11 @@ void ASTClosure::toCode(PrettyStream &pretty) const {
 void ASTErrorHandler::toCode(PrettyStream &pretty) const {
     pretty.printComments(position());
     pretty.indent() << "🆗 " << valueVarName_ << " " << value_;
-    pretty.printComments(valueBlock_.position());
+    pretty.printComments(valueBlock_.position(), true);
     pretty.indentAtLineStart().ensureSpace();
     pretty << valueBlock_;
     pretty.indent() << "🙅‍♀️ " << errorVarName_;
-    pretty.printComments(errorBlock_.position());
+    pretty.printComments(errorBlock_.position(), true);
     pretty.indentAtLineStart().ensureSpace();
     pretty << errorBlock_;
 }
