@@ -42,7 +42,7 @@ void ASTArguments::genericArgsToCode(PrettyStream &pretty) const {
 
 void ASTArguments::toCode(PrettyStream &pretty) const {
     if (!arguments_.empty()) {
-        pretty << " ";
+        pretty.offerSpace();
         for (auto &arg : arguments_) {
             pretty << arg;
             pretty.offerSpace();
