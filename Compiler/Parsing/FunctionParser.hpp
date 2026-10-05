@@ -45,7 +45,7 @@ private:
     std::shared_ptr<ASTExpr> parseInterpolation(const Token &token);
 
     std::shared_ptr<ASTExpr> parseCondition();
-    std::shared_ptr<ASTExpr> parseGroup();
+    std::shared_ptr<ASTExpr> parseGroup(const SourcePosition &start);
 
     std::shared_ptr<ASTExpr> parseTypeAsValue(const Token &token);
 

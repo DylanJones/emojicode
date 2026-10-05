@@ -331,7 +331,7 @@ std::shared_ptr<ASTExpr> FunctionParser::parseExprLeft(const EmojicodeCompiler::
         case TokenType::Identifier:
             return parseExprIdentifier(token);
         case TokenType::GroupBegin:
-            return parseGroup();
+            return parseGroup(token.position());
         case TokenType::BlockBegin:
             return parseClosure(token);
         case TokenType::New:
@@ -399,10 +399,11 @@ std::shared_ptr<ASTExpr> FunctionParser::parseExprIdentifier(const Token &token)
     }
 }
 
-std::shared_ptr<ASTExpr> FunctionParser::parseGroup() {
+std::shared_ptr<ASTExpr> FunctionParser::parseGroup(const SourcePosition &start) {
     auto expr = parseExpr(0);
     auto end = stream_.consumeToken(TokenType::GroupEnd);
     if (auto oper = std::dynamic_pointer_cast<ASTBinaryOperator>(expr)) {
+        oper->setGroupStart(start);
         oper->setGroupEnd(end.position());
     }
     return expr;

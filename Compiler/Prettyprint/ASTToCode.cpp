@@ -380,6 +380,7 @@ void ASTBinaryOperator::printBinaryOperand(int precedence, const std::shared_ptr
                                            PrettyStream &pretty) const {
     if (auto oper = dynamic_cast<ASTBinaryOperator *>(expr.get())) {
         if (operatorPrecedence(oper->operator_) < precedence) {
+            pretty.printComments(oper->groupStart_);
             pretty << "🤜" << expr;
             if (!pretty.hasCommentsBefore(oper->groupEnd_)) {
                 pretty.refuseOffer();
