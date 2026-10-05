@@ -99,8 +99,9 @@ void FunctionParser::parseMainArguments(ASTArguments *arguments, const SourcePos
            stream_.nextTokenIsEverythingBut(TokenType::EndInterrogativeArgumentList)) {
         arguments->addArguments(parseExpr(0));
     }
-    arguments->setMood(stream_.consumeToken().type() == TokenType::EndArgumentList ? Mood::Imperative :
-                                                                                     Mood::Interogative);
+    auto mood = stream_.consumeToken();
+    arguments->setMoodPosition(mood.position());
+    arguments->setMood(mood.type() == TokenType::EndArgumentList ? Mood::Imperative : Mood::Interogative);
 }
 
 std::unique_ptr<ASTStatement> FunctionParser::parseStatement() {
@@ -404,8 +405,8 @@ std::shared_ptr<ASTExpr> FunctionParser::parseGroup(const SourcePosition &start)
     auto end = stream_.consumeToken(TokenType::GroupEnd);
     if (auto oper = std::dynamic_pointer_cast<ASTBinaryOperator>(expr)) {
         oper->setGroupStart(start);
-        oper->setGroupEnd(end.position());
     }
+    expr->setGroupEnd(end.position());
     return expr;
 }
 
