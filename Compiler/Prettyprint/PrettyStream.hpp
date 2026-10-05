@@ -132,6 +132,8 @@ private:
     SourcePosition lastCommentQuery_ = SourcePosition();
     /// The source line on which the comment that was printed last ends, if nothing but whitespace was written since.
     unsigned int lastCommentEndLine_ = 0;
+    /// True iff the last thing written was a 💭 line comment, which swallows anything printed on its line.
+    bool lastWasLineComment_ = false;
     const SourceFile *lastCommentFile_ = nullptr;
 };
 
