@@ -345,6 +345,7 @@ void ASTCollectionLiteral::toCode(PrettyStream &pretty) const {
             pretty << *it++;
             pretty.ensureSpace();
             pretty << "➡️ " << *it;
+            pretty.ensureSpace();
         }
         // An empty dictionary is 🍿➡️🍆, which would otherwise be printed as an empty list.
         if (values_.empty()) {
