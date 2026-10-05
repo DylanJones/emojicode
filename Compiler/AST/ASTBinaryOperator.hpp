@@ -40,7 +40,7 @@ private:
     };
 
     std::pair<bool, BuiltIn> builtInPrimitiveOperator(ExpressionAnalyser *analyser, const Type &type);
-    void printBinaryOperand(int precedence, const std::shared_ptr<ASTExpr> &expr, PrettyStream &pretty) const;
+    void printBinaryOperand(int precedence, bool isRight, const std::shared_ptr<ASTExpr> &expr, PrettyStream &pretty) const;
     Type analyseIsNoValue(ExpressionAnalyser *analyser, std::shared_ptr<ASTExpr> &expr,
                               BuiltInType builtInType);
 
