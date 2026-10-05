@@ -171,7 +171,8 @@ void PrettyPrinter::printArguments(Function *function) {
             if (arg.memoryFlowType.isEscaping()) {
                 prettyStream_ << "🎍🥡 ";
             }
-            prettyStream_ << arg.name << " " << arg.type << " ";
+            prettyStream_ << arg.name << " " << arg.type;
+            prettyStream_.ensureSpace();
         }
         return;
     }
@@ -179,7 +180,8 @@ void PrettyPrinter::printArguments(Function *function) {
         if (arg.memoryFlowType.isEscaping()) {
             prettyStream_ << "🎍🥡 ";
         }
-        prettyStream_ << arg.name << " " << arg.type << " ";
+        prettyStream_ << arg.name << " " << arg.type;
+        prettyStream_.ensureSpace();
     }
 }
 
@@ -522,7 +524,8 @@ void PrettyPrinter::printBody(Function *function) {
                 auto str = function->position().file->file();
                 auto code = str.substr(function->ast()->beginIndex(),
                                        function->ast()->endIndex() - function->ast()->beginIndex() + 1);
-                prettyStream_ << " 🍇\n";
+                prettyStream_.ensureSpace();
+                prettyStream_ << "🍇\n";
                 prettyStream_.increaseIndent();
                 prettyStream_.indent() << code;
                 prettyStream_.decreaseIndent();
